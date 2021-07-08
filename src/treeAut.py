@@ -68,8 +68,6 @@ class TTreeAut:
 
     def makePrefix(self, additionalTransitions):
         prefixSelf = self
-
-
         return prefixSelf
     
     def makeSuffix(self):
@@ -85,47 +83,29 @@ class TTreeAut:
                 suffixSelf.rootStates.append(state)
         return suffixSelf
 
-    def matchTree(self, someTreeRoot):
-        for rootPtr in self.rootStates:
-            if match(self, rootPtr, someTreeRoot) == True:
-                return True
-        return False
-
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-
-# match(node, state)
-#   descendantTuples = delta(state, node.symbol)
-#   foreach (vec in descendantTuples):
-#       foreach (i in len(vec)):          
-#           b = match(node.children[i], vec[i])
-#           if not b:
-#               break
-#       if b:
-#           return True
-#   return False
+def matchTree(treeAutomaton:TTreeAut, treeRootNode:TTreeNode):
+    for rootPtr in treeAutomaton.rootStates:
+        if match(treeAutomaton, treeRootNode, rootPtr) == True:
+            return True
+    return False
 
 def match(treeaut:TTreeAut, node:TTreeNode, state:str):
     descendantTuples = []
+
+    # definitely needs polishing
     for stateName, content in treeaut.transitions.items():
-        if stateName == node.value:
-            for key, transition in content:
+        for key, transition in content.items():
+            if stateName == state and node.value == transition[1]:
                 descendantTuples.append(transition[2])
     
     for tuple in descendantTuples:
-        for i in len(tuple):
-            b = match(node.children[i], tuple[i])
+        b = True
+        for i in range(len(tuple)):
+            b = match(treeaut, node.children[i], tuple[i])
             if not b:
                 break
         if b:
             return True
     return False
-
 
 # End of file

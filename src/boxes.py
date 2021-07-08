@@ -84,8 +84,10 @@ testTransitionsBoxLPort = {
     }
 }
 
-# first argument is a list of all root states
-# leaf states 
+# first argument is a list of all "root" states
+# "leaf" states are recognized by having at least one transition which
+# has an empty tuple at the end (descendants) -> "output edge"
+
 boxX = TTreeAut(["q0"], testTransitionsBoxX)
 boxL0 = TTreeAut(["q0"], testTransitionsBoxL0)
 boxL1 = TTreeAut(["q0"], testTransitionsBoxL1)

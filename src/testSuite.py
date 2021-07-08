@@ -15,14 +15,16 @@ def main():
 
 def treeAutTests():
     # test tree for H1 box
-    testForL0 = TTreeNode("LH")
-    testForL0.addChild("LH")
-    testForL0.addChild("1")
-    testForL0.children[0].addChild("Port_H1")
-    testForL0.children[0].addChild("1")
+    testForH1 = TTreeNode("LH")
+    testForH1.addChild("LH")
+    testForH1.addChild("1")
+    testForH1.children[0].addChild("Port_H1")
+    testForH1.children[0].addChild("1")
 
-    boxH1.printTreeAut()
-    testForL0.printNode()
+    # boxH1.printTreeAut()
+    # testForH1.printNode()
+
+    print(matchTree(boxH1, testForH1))
 
 
 def basicTests():

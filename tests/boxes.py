@@ -1,3 +1,8 @@
+# boxes.py
+# Examples of basic boxes - needed for testing
+# Implementation of tree automata for article about automata-based BDDs
+# Author: Jany26  (Jan Matufka)
+
 testTransitionsBoxX = {
     'q0': {
         'a': ('q0', 'LH', ['q0', 'q0']),

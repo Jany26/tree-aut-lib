@@ -3,10 +3,29 @@
 
 """
 
-def main():
-    return
-
 import sys
+from pprint import pprint
+
+
+def main():
+    x = TTreeNode(10)
+    x.addChild(5)
+    x.addChild(15)
+    x.children[0].addChild(1)
+    x.children[0].addChild(4)
+    x.children[0].addChild(2)
+    x.children[1].addChild(3)
+    x.children[1].addChild(4)
+    x.printNode()
+    y = x.findFromLeft(4)
+    print("")
+    y.printNode()
+    y.parent.printNode()
+    z = x.findFromRight(4)
+    print("")
+    z.printNode()
+    z.parent.printNode()
+
 # import os
 
 # class TAlphabetSymbol:
@@ -36,21 +55,43 @@ class TTreeNode:
         self.value = value
         self.parent = None # if None = the node is a root
         self.children = []
+        self.depth = 0
 
     # def connectChild(self, childPtr):
     #     childPtr.parent = self # connecting the children to the parent node
     #     self.children.append(childPtr)
     
-    def createChild(self, value):
+    def addChild(self, value):
         childPtr = TTreeNode(value)
+        childPtr.depth = self.depth + 1
         childPtr.parent = self
         self.children.append(childPtr)
     
     def removeChild(self, value): # removes 1 child with specified value
         for i in range(len(self.children)):
-            if (self.children[i].value == value):
+            if self.children[i].value == value:
                 self.children.pop(i)
                 return
+    
+    def printNode(self):
+        print(2 * self.depth * ' ' + str(self.value) + "   --> lv " + str(self.depth))
+        for i in self.children:
+            i.printNode()
+    
+    def findFromLeft(self, valueToFind):
+        for i in self.children:
+            x = i.findFromLeft(valueToFind)
+            if x != None:
+                return x
+        return self if (self.value == valueToFind) else None
+
+    def findFromRight(self, valueToFind):
+        tempList = self.children[::-1]
+        for i in tempList:
+            x = i.findFromRight(valueToFind)
+            if x != None:
+                return x
+        return self if (self.value == valueToFind) else None
 
 def match(node, state):
     return True
@@ -74,8 +115,8 @@ class TTreeAut:
         pass # TODO
 
     def matchTree(self, someTreeRoot):
-        for ptr in self.rootStates:
-            if match(someTreeRoot, ptr) == True:
+        for rootPtr in self.rootStates:
+            if match(someTreeRoot, rootPtr) == True:
                 return True
         return False
 

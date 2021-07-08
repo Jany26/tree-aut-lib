@@ -6,28 +6,6 @@
 import sys
 # import os
 
-# class TAlphabetSymbol:
-#     def __init__(self, name, arity:int):
-#         self.name = name
-#         self.arity = arity
-
-# class TTreeTransition:
-#     def __init__(self, initialState, symbol:TAlphabetSymbol, nextStates):
-#         self.initialState = initialState
-#         self.symbol = symbol
-#         self.nextStates = nextStates
-
-# class TTreeAut:
-#     def __init__(self, states, alphabet, transitions:TTreeTransition, rootStates): # A = (Q, Sigma, Delta, R)
-#         self.states = states
-#         self.alphabet = alphabet
-#         self.transitions = transitions # TODO define leaf transitions 
-#         self.rootStates = rootStates
-#         # how to perform top-down run for checking if the TA accepts a language
-
-"""
-    Node of a basic tree (general, does not have to be binary)
-"""
 class TTreeNode:
     def __init__(self, value):
         self.value = value
@@ -35,22 +13,19 @@ class TTreeNode:
         self.children = []
         self.depth = 0
 
-    # def connectChild(self, childPtr):
-    #     childPtr.parent = self # connecting the children to the parent node
-    #     self.children.append(childPtr)
-    
     def addChild(self, value):
         childPtr = TTreeNode(value)
         childPtr.depth = self.depth + 1
         childPtr.parent = self
         self.children.append(childPtr)
     
-    def removeChild(self, value): # removes 1 child with specified value
+    def removeChild(self, value): # removes 1 child (starts from smallest index (left)) with specified value
         for i in range(len(self.children)):
             if self.children[i].value == value:
                 self.children.pop(i)
                 return
     
+    # needed for testing
     def printNode(self):
         print(2 * self.depth * ' ' + str(self.value) + "   --> lv " + str(self.depth))
         for i in self.children:
@@ -71,13 +46,9 @@ class TTreeNode:
                 return x
         return self if (self.value == valueToFind) else None
 
-def match(node, state):
-    return True
-    # TODO
-
 """
     transitions = dictionary (A) of dictionaries (B) referenced by state name
-    inner dictionaries (B) are then referenced by some transitions
+    inner dictionaries (B) are then referenced by some transitions (arbitrary name)
     the transitions are then tuples of input state, 
     type of transition and output states
 """
@@ -86,16 +57,75 @@ class TTreeAut:
         self.rootStates = rootStates
         self.transitions = transitions
 
-    def makePrefix(self, prefixSelf):
-        pass # TODO
+    def printTreeAut(self):
+        for state, content in self.transitions.items():
+            print("--- State " + state + " ---")
+            # needs polishing
+            for key, transition in content.items():
+                print(  "  from  '" + transition[0] + 
+                        "'  through  '" + transition[1] + 
+                        "'  to  " + str(transition[2]))
+
+    def makePrefix(self, additionalTransitions):
+        prefixSelf = self
+
+
+        return prefixSelf
     
-    def makeSuffix(self, suffixSelf):
-        pass # TODO
+    def makeSuffix(self):
+        suffixSelf = self
+        for state, content in self.transitions.items():
+            check = True
+            # needs polishing
+            for key, transition in content.items():
+                if (transition[1].startswith("Port")):
+                    check = False
+                    break
+            if check == True and state not in self.rootStates:
+                suffixSelf.rootStates.append(state)
+        return suffixSelf
 
     def matchTree(self, someTreeRoot):
         for rootPtr in self.rootStates:
-            if match(someTreeRoot, rootPtr) == True:
+            if match(self, rootPtr, someTreeRoot) == True:
                 return True
         return False
+
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+
+# match(node, state)
+#   descendantTuples = delta(state, node.symbol)
+#   foreach (vec in descendantTuples):
+#       foreach (i in len(vec)):          
+#           b = match(node.children[i], vec[i])
+#           if not b:
+#               break
+#       if b:
+#           return True
+#   return False
+
+def match(treeaut:TTreeAut, node:TTreeNode, state:str):
+    descendantTuples = []
+    for stateName, content in treeaut.transitions.items():
+        if stateName == node.value:
+            for key, transition in content:
+                descendantTuples.append(transition[2])
+    
+    for tuple in descendantTuples:
+        for i in len(tuple):
+            b = match(node.children[i], tuple[i])
+            if not b:
+                break
+        if b:
+            return True
+    return False
+
 
 # End of file

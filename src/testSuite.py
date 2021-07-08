@@ -4,12 +4,26 @@
 # Author: Jany26  (Jan Matufka)
 
 import sys
-sys.path.append('../')
+# sys.path.append('../')
 
-from src.treeAut import *
+from treeAut import *
+from boxes import *
 
 def main():
-    basicTests()
+    # basicTests()
+    treeAutTests()
+
+def treeAutTests():
+    # test tree for H1 box
+    testForL0 = TTreeNode("LH")
+    testForL0.addChild("LH")
+    testForL0.addChild("1")
+    testForL0.children[0].addChild("Port_H1")
+    testForL0.children[0].addChild("1")
+
+    boxH1.printTreeAut()
+    testForL0.printNode()
+
 
 def basicTests():
     # some tests ... 

@@ -4,7 +4,8 @@
 # Author: Jany26  (Jan Matufka)
 
 import sys
-# import os
+import os
+import re
 
 class TTreeNode:
     def __init__(self, value):
@@ -115,5 +116,35 @@ def match(treeaut:TTreeAut, node:TTreeNode, state:str):
         if b:
             return True
     return False
+
+
+# Functions for testing purposes
+
+def getNodeFromString(string:str):
+    string = string.strip()
+    nodeName = re.match("^[\w]+", string).group()
+    string = string.lstrip(str(nodeName))
+    node = TTreeNode(nodeName)
+    return node, string
+
+def buildTreeFromString(currentNode:TTreeNode, string:str):
+    # print(string)
+    # currentNode.printNode()
+    string = string.strip()
+    if len(string) == 0: # empty string - ending recursion
+        return currentNode
+    if string.startswith("["): # starting children generation (down a level)
+        node, string = getNodeFromString(string[1:])
+        currentNode.connectChild(node)
+        return buildTreeFromString(node, string)
+    elif string.startswith(";"): # continuing children generation (same level)
+        node, string = getNodeFromString(string[1:])
+        currentNode.parent.connectChild(node)
+        return buildTreeFromString(node, string)
+    elif string.startswith("]"): # ending children generation - returning to a parent (up a level)
+        return buildTreeFromString(currentNode.parent, string[1:])
+    else: # start of a string - root creation
+        root, string = getNodeFromString(string)
+        return buildTreeFromString(root, string)
 
 # End of file

@@ -11,35 +11,50 @@ from boxes import *
 from treeExamples import *
 
 def main():
-    basicTests()
-    H1Tests()
+    print("testing match() ... \n\t" + matchTests())
 
-def H1Tests():
-    # test tree for H1 box
-    testForH1 = buildTreeFromString(None, H1TreeExample1)
-    print("ok: H1-1" if matchTree(boxH1, testForH1) else "error: H1 - example 1") 
-    testForH1 = buildTreeFromString(None, H1TreeExample2)
-    print("ok: H1-2" if matchTree(boxH1, testForH1) else "error: H1 - example 2") 
+def matchTests():
+    failedTests = ""
 
-def basicTests():
-    # some random tests ... 
-    x = TTreeNode(10)
-    x.addChild(5)
-    x.addChild(15)
-    x.children[0].addChild(1)
-    x.children[0].addChild(4)
-    x.children[0].addChild(2)
-    x.children[1].addChild(3)
-    x.children[1].addChild(4)
-    x.printNode()
-    y = x.findFromLeft(4)
-    print("")
-    y.printNode()
-    y.parent.printNode()
-    z = x.findFromRight(4)
-    print("")
-    z.printNode()
-    z.parent.printNode()
+    if not matchTree(boxX, treeXtest1):
+        failedTests += "X-1, "
+    if matchTree(boxX, treeXtest2):
+        failedTests += "X-2, "
+    if not matchTree(boxX, treeXtest3):
+        failedTests += "X-3, "
+
+    if not matchTree(boxH0, treeH0test1):
+        failedTests += "H0-1, "
+    if not matchTree(boxH0, treeH0test2):
+        failedTests += "H0-2, "
+    if not matchTree(boxH0, treeH0test3):
+        failedTests += "H0-3, "
+    
+    if not matchTree(boxH1, treeH1test1):
+        failedTests += "H1-1, "
+    if not matchTree(boxH1, treeH1test2):
+        failedTests += "H1-2, "
+    if not matchTree(boxH1, treeH1test3):
+        failedTests += "H1-3, "
+    
+    if not matchTree(boxL0, treeL0test1):
+        failedTests += "L0-1, "
+    if not matchTree(boxL0, treeL0test2):
+        failedTests += "L0-2, "
+    if not matchTree(boxL0, treeL0test3):
+        failedTests += "L0-3, "
+
+    if not matchTree(boxL1, treeL1test1):
+        failedTests += "L1-1, "
+    if not matchTree(boxL1, treeL1test2):
+        failedTests += "L1-2, "
+    if not matchTree(boxL1, treeL1test3):
+        failedTests += "L1-3, "
+
+    if failedTests == "":
+        failedTests = "None"
+    return "Failed tests: " + failedTests
+    
 
 if __name__ == '__main__':
     main()

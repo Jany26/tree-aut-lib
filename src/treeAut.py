@@ -19,6 +19,11 @@ class TTreeNode:
         childPtr.parent = self
         self.children.append(childPtr)
     
+    def connectChild(self, node): 
+        self.children.append(node)
+        node.parent = self
+        node.depth = self.depth + 1
+    
     def removeChild(self, value): # removes 1 child (starts from smallest index (left)) with specified value
         for i in range(len(self.children)):
             if self.children[i].value == value:
@@ -101,6 +106,9 @@ def match(treeaut:TTreeAut, node:TTreeNode, state:str):
     for tuple in descendantTuples:
         b = True
         for i in range(len(tuple)):
+            if i not in range(len(node.children)):
+                b = False # tree has less children than expected
+                break
             b = match(treeaut, node.children[i], tuple[i])
             if not b:
                 break

@@ -8,27 +8,21 @@ import sys
 
 from treeAut import *
 from boxes import *
+from treeExamples import *
 
 def main():
-    # basicTests()
-    treeAutTests()
+    basicTests()
+    H1Tests()
 
-def treeAutTests():
+def H1Tests():
     # test tree for H1 box
-    testForH1 = TTreeNode("LH")
-    testForH1.addChild("LH")
-    testForH1.addChild("1")
-    testForH1.children[0].addChild("Port_H1")
-    testForH1.children[0].addChild("1")
-
-    # boxH1.printTreeAut()
-    # testForH1.printNode()
-
-    print(matchTree(boxH1, testForH1))
-
+    testForH1 = buildTreeFromString(None, H1TreeExample1)
+    print("ok: H1-1" if matchTree(boxH1, testForH1) else "error: H1 - example 1") 
+    testForH1 = buildTreeFromString(None, H1TreeExample2)
+    print("ok: H1-2" if matchTree(boxH1, testForH1) else "error: H1 - example 2") 
 
 def basicTests():
-    # some tests ... 
+    # some random tests ... 
     x = TTreeNode(10)
     x.addChild(5)
     x.addChild(15)

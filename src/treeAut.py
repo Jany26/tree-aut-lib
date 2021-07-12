@@ -3,9 +3,10 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)
 
-import sys
-import os
+# import sys
+# import os
 import re
+from sys import prefix
 
 class TTreeNode:
     def __init__(self, value):
@@ -54,9 +55,12 @@ class TTreeNode:
 
 """
     transitions = dictionary (A) of dictionaries (B) referenced by state name
-    inner dictionaries (B) are then referenced by some transitions (arbitrary name)
-    the transitions are then tuples of input state, 
-    type of transition and output states
+    inner dictionaries (B) are then referenced by transition names (arbitrary)
+    the transition itself is then just a tuple of:
+        - input state, 
+        - transition label (edge name/type) 
+        - array of output states (size of array = arity of the node)
+    * all state and label names are considered as strings
 """
 class TTreeAut:
     def __init__(self, rootStates, transitions):
@@ -64,6 +68,9 @@ class TTreeAut:
         self.transitions = transitions
 
     def printTreeAut(self):
+        print("--- Root States ---")
+        print(str(self.rootStates))
+
         for state, content in self.transitions.items():
             print("--- State " + state + " ---")
             # needs polishing
@@ -72,8 +79,35 @@ class TTreeAut:
                         "'  through  '" + transition[1] + 
                         "'  to  " + str(transition[2]))
 
+    # needed for feeding makePrefix() function
+    # generates all edge symbols labeling the output edges from the tree automaton
+    def getOutputEdges(self):
+        outputEdgeArray = []
+        for state, content in self.transitions.items():
+            for key, transition in content.items():
+                if len(transition[2]) == 0:
+                    outputEdgeArray.append(transition[1])
+        return outputEdgeArray
+    
     def makePrefix(self, additionalTransitions):
         prefixSelf = self
+        for state, content in prefixSelf.transitions.items():
+            tempDict = {}
+            for symbol in additionalTransitions:
+                tempString = str(state) + "-" + str(symbol) + "-()"
+                tempTuple = (state, symbol, [])
+                tempDict[tempString] = tempTuple
+            for tempName, tempTransition in tempDict.items():
+                # checking for non-port output edge
+                nonPortOutput = False
+                for name, transition in content.items():
+                    if not transition[1].startswith('Port') and len(transition[2]) == 0:
+                        nonPortOutput = True
+                # skip adding non-port output edge if another non-port output present
+                if not tempTransition[1].startswith('Port') and nonPortOutput:
+                    continue
+                else:
+                    content[tempName] = tempTransition
         return prefixSelf
     
     def makeSuffix(self):
@@ -117,15 +151,33 @@ def match(treeaut:TTreeAut, node:TTreeNode, state:str):
             return True
     return False
 
+# Basic operations on tree automata
+
+def treeAutDetermize(treeAut1:TTreeAut) -> TTreeAut:
+    pass
+
+def treeAutUnion(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
+    pass
+
+def treeAutIntersection(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
+    pass
+
+def treeAutComplement(treeAut:TTreeAut) -> TTreeAut:
+    pass
 
 # Functions for testing purposes
 
+# Does not cover edge cases (wrong string structure) !
 def getNodeFromString(string:str):
     string = string.strip()
     nodeName = re.match("^[\w]+", string).group()
     string = string.lstrip(str(nodeName))
     node = TTreeNode(nodeName)
     return node, string
+
+# Recursive function to generate a tree from a structured string
+# XYZ [...] = node with list of children following (can be nested)
+# [ node1 ; node2 [...] ; node3 ; ... ] = list of children of a previous node
 
 def buildTreeFromString(currentNode:TTreeNode, string:str):
     # print(string)

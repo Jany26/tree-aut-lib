@@ -88,9 +88,9 @@ testTransitionsBoxLPort = {
 # "leaf" states are recognized by having at least one transition which
 # has an empty tuple at the end (descendants) -> "output edge"
 
-boxX = TTreeAut(["q0"], testTransitionsBoxX)
-boxL0 = TTreeAut(["q0"], testTransitionsBoxL0)
-boxL1 = TTreeAut(["q0"], testTransitionsBoxL1)
-boxH0 = TTreeAut(["q0"], testTransitionsBoxH0)
-boxH1 = TTreeAut(["q0"], testTransitionsBoxH1)
-boxLPort = TTreeAut(["q0"], testTransitionsBoxLPort)
+boxX    = TTreeAut(["q0"], testTransitionsBoxX)
+boxL0   = TTreeAut(["q0"], testTransitionsBoxL0)
+boxL1   = TTreeAut(["q0"], testTransitionsBoxL1)
+boxH0   = TTreeAut(["q0"], testTransitionsBoxH0)
+boxH1   = TTreeAut(["q0"], testTransitionsBoxH1)
+boxLPort= TTreeAut(["q0"], testTransitionsBoxLPort)

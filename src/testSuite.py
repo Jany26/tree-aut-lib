@@ -11,7 +11,12 @@ from boxes import *
 from treeExamples import *
 
 def main():
-    print("testing match() ... \n\t" + matchTests())
+    print("\n1)\ttesting match() ... \n")
+    matchTests()
+    print("\n2)\ttesting suffix() ... \n")
+    suffixTests()
+    print("\n3)\ttesting prefix() ... \n")
+    prefixTests()
 
 def matchTests():
     failedTests = ""
@@ -29,6 +34,8 @@ def matchTests():
         failedTests += "H0-2, "
     if not matchTree(boxH0, treeH0test3):
         failedTests += "H0-3, "
+    if not matchTree(boxH0, treeH0test4):
+        failedTests += "H0-4, "
     
     if not matchTree(boxH1, treeH1test1):
         failedTests += "H1-1, "
@@ -36,6 +43,8 @@ def matchTests():
         failedTests += "H1-2, "
     if not matchTree(boxH1, treeH1test3):
         failedTests += "H1-3, "
+    if not matchTree(boxH1, treeH1test4):
+        failedTests += "H1-4, "
     
     if not matchTree(boxL0, treeL0test1):
         failedTests += "L0-1, "
@@ -43,6 +52,8 @@ def matchTests():
         failedTests += "L0-2, "
     if not matchTree(boxL0, treeL0test3):
         failedTests += "L0-3, "
+    if not matchTree(boxL0, treeL0test4):
+        failedTests += "L0-4, "
 
     if not matchTree(boxL1, treeL1test1):
         failedTests += "L1-1, "
@@ -50,11 +61,36 @@ def matchTests():
         failedTests += "L1-2, "
     if not matchTree(boxL1, treeL1test3):
         failedTests += "L1-3, "
+    if not matchTree(boxL1, treeL1test4):
+        failedTests += "L1-4, "
 
     if failedTests == "":
         failedTests = "None"
-    return "Failed tests: " + failedTests
     
+    print("Failed tests: " + failedTests)
+    
+def suffixTests():
+    suffixH0 = boxH0.makeSuffix()
+    suffixH0.printTreeAut()
+
+def prefixTests():
+    outputEdgesL0 = boxL0.getOutputEdges()
+    # print("L0 box - " + str(outputEdgesL0))
+    outputEdgesL1 = boxL1.getOutputEdges()
+    # print("L1 box - " + str(outputEdgesL1))
+    outputEdgesH0 = boxH0.getOutputEdges()
+    # print("H0 box - " + str(outputEdgesH0))
+    outputEdgesH1 = boxH1.getOutputEdges()
+    # print("H1 box - " + str(outputEdgesH1))
+    outputEdgesLPort = boxLPort.getOutputEdges()
+    # print("L+ box - " + str(outputEdgesLPort))
+    outputEdgesX = boxX.getOutputEdges()
+    # print("X  box - " + str(outputEdgesX))
+    boxL0.printTreeAut()
+    print(outputEdgesL1)
+    temp = boxL0.makePrefix(outputEdgesL1)
+    temp.printTreeAut()
+    pass
 
 if __name__ == '__main__':
     main()

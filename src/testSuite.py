@@ -3,7 +3,7 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)
 
-import sys
+# import sys
 import copy
 # sys.path.append('../')
 
@@ -12,13 +12,15 @@ from boxes import *
 from treeExamples import *
 
 def main():
-    print("\n1)\ttesting match() ... \n")
+    print("TEST 1) testing match() ... \n")
     matchTests()
-    print("\n2)\ttesting suffix() ... \n")
+    print("TEST 2) testing suffix() ... \n")
     suffixTests()
-    print("\n3)\ttesting prefix() ... \n")
+    print("TEST 3) testing prefix() ... \n")
     prefixTests()
-    # print("\n4)\ttesting complement() ... \n")
+    print("TEST 4) testing union() ... \n")
+    unionTests()
+    # print("TEST 5) testing complement() ... \n")
     # complementTests()
 
 def matchTests():
@@ -73,8 +75,7 @@ def matchTests():
     print("Failed tests: " + failedTests)
     
 def suffixTests():
-    suffixH0 = copy.deepcopy(boxH0)
-    suffixH0.makeSuffix()
+    suffixH0 = boxH0.createSuffix()
     suffixH0.printTreeAut()
 
 def prefixTests():
@@ -85,44 +86,29 @@ def prefixTests():
     outputEdgesLPort = boxLPort.getOutputEdges()
     outputEdgesX = boxX.getOutputEdges()
 
-    prefixL0withX = copy.deepcopy(boxL0)
-    prefixL0withL1 = copy.deepcopy(boxL0)
-    prefixL0withH0 = copy.deepcopy(boxL0)
-    prefixL0withH1 = copy.deepcopy(boxL0)
-
-    prefixL0withX.makePrefix(outputEdgesX)
-    prefixL0withL1.makePrefix(outputEdgesL1)
-    prefixL0withH0.makePrefix(outputEdgesH0)
-    prefixL0withH1.makePrefix(outputEdgesH1)
+    prefixL0withX = boxL0.createPrefix(outputEdgesX)
+    prefixL0withL1 = boxL0.createPrefix(outputEdgesL1)
+    prefixL0withH0 = boxL0.createPrefix(outputEdgesH0)
+    prefixL0withH1 = boxL0.createPrefix(outputEdgesH1)
 
     prefixL0withX.printTreeAut()
     prefixL0withL1.printTreeAut()
     prefixL0withH0.printTreeAut()
     prefixL0withH1.printTreeAut()
     
+def unionTests():
+    test = copy.deepcopy(boxL1)
+    renameStateInTreeAut("q0", "q0_*", test)
+    test.printTreeAut()
+
+    # L0unionL1 = treeAutUnion(boxL0, boxL1)
 
 def complementTests():
-    # print("\n- L0 complement\n")
     complementL0 = treeAutComplement(boxL0)
-    # complementL0.printTreeAut()
-
-    # print("\n- L1 complement\n")
     complementL1 = treeAutComplement(boxL1)
-    # complementL1.printTreeAut()
-
-    # print("\n- H0 complement\n")
     complementH0 = treeAutComplement(boxH0)
-    # complementH0.printTreeAut()
-
-    # print("\n- H1 complement\n")
     complementH1 = treeAutComplement(boxH1)
-    # complementH1.printTreeAut()
-
-    # print("\n- X complement\n")
     complementX = treeAutComplement(boxX)
-    # complementX.printTreeAut()
-
-    
 
 if __name__ == '__main__':
     main()

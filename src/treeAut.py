@@ -5,6 +5,7 @@
 
 # import sys
 # import os
+import copy
 import re
 from sys import prefix
 
@@ -89,9 +90,9 @@ class TTreeAut:
                     outputEdgeArray.append(transition[1])
         return outputEdgeArray
     
-    def makePrefix(self, additionalOutputEdges): 
-        # prefixSelf = TTreeAut(treeAut.rootStates, treeAut.transitions)
-        for stateName, content in self.transitions.items():
+    def createPrefix(self, additionalOutputEdges): 
+        result = copy.deepcopy(self)
+        for stateName, content in result.transitions.items():
             tempDict = {}
             for symbol in additionalOutputEdges:
                 tempString = str(stateName) + "-" + str(symbol) + "-()"
@@ -108,8 +109,10 @@ class TTreeAut:
                     continue
                 else:
                     content[tempName] = tempTransition
+        return result
 
-    def makeSuffix(self):
+    def createSuffix(self):
+        result = copy.deepcopy(self)
         for stateName, content in self.transitions.items():
             check = True
             # needs polishing
@@ -119,6 +122,7 @@ class TTreeAut:
                     break
             if check == True and stateName not in self.rootStates:
                 self.rootStates.append(stateName)
+        return result
 
 def matchTree(treeAutomaton:TTreeAut, treeRootNode:TTreeNode):
     for rootPtr in treeAutomaton.rootStates:
@@ -138,8 +142,9 @@ def match(treeAut:TTreeAut, node:TTreeNode, state:str):
     for tuple in descendantTuples:
         b = True
         for i in range(len(tuple)):
+            # when tree has less children than expected
             if i not in range(len(node.children)):
-                b = False # tree has less children than expected
+                b = False 
                 break
             b = match(treeAut, node.children[i], tuple[i])
             if not b:
@@ -153,13 +158,51 @@ def match(treeAut:TTreeAut, node:TTreeNode, state:str):
 def treeAutDetermize(treeAut1:TTreeAut) -> TTreeAut:
     pass
 
+# -- temporary notes --
+# A1 U A2
+#
+# A1 = (Q1, delta1, R1), A2 = (Q2, delta2, R2)
+# A1 U A2 = (Q1 U Q2 (with renaming at conflicts), delta1 U delta2, R1 U R2)
+
+
+# find out how to change tuples and dictionary keys :(
+def renameStateInTreeAut(oldName, newName, treeAut:TTreeAut):
+    for stateName, content in treeAut.transitions.items():
+        if stateName == oldName:
+            # renaming name of the state (on 1st layer)
+            # only one state with a certain name is expected
+            treeAut.transitions[newName] = treeAut.transitions.pop(oldName)
+            break
+
+    # renaming name of the state inside transitions (2nd layer)
+    content = treeAut.transitions[newName]
+    for key, transition in content.items():
+        if transition[0] == oldName:
+            transition[0] = str(newName)
+        for i in range(len(transition[2])):
+            if transition[2][i] == oldName:
+                transition[2][i] = newName
+    if oldName in treeAut.rootStates:
+        treeAut.rootStates.remove(oldName)
+        treeAut.rootStates.append(newName)
+
 def treeAutUnion(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
-    pass
+    result = copy.deepcopy(treeAut2)
+    for stateName in treeAut1.transitions:
+        for stateName2 in result.transitions:
+            if stateName == stateName2:
+                renameStateInTreeAut(stateName2, result)
+    # TODO = merge the two automata elements
+    return result
 
 def treeAutIntersection(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
     pass
 
 def treeAutComplement(treeAut:TTreeAut) -> TTreeAut:
+
+    # TODO: bottom-up determinization implementation needed
+    # treeAutdeterminize(treeAut)
+
     rootStates = []
     for stateName, content in treeAut.transitions.items():
         if stateName not in treeAut.rootStates:
@@ -168,7 +211,7 @@ def treeAutComplement(treeAut:TTreeAut) -> TTreeAut:
 
 # Functions for testing purposes
 
-# Does not cover edge cases (wrong string structure) !
+# Does not cover edge cases! (e.g. wrong string structure)
 def getNodeFromString(string:str):
     string = string.strip()
     nodeName = re.match("^[\w]+", string).group()
@@ -181,20 +224,30 @@ def getNodeFromString(string:str):
 # [ node1 ; node2 [...] ; node3 ; ... ] = list of children of a previous node
 
 def buildTreeFromString(currentNode:TTreeNode, string:str):
-    string = string.strip()
-    if len(string) == 0: # empty string - ending recursion
+    string = string.strip() # skipping whitespaces
+
+    # empty string - ending recursion
+    if len(string) == 0:
         return currentNode
-    if string.startswith("["): # starting children generation (down a level)
-        node, string = getNodeFromString(string[1:])
+    
+    # starting children generation (down a level)
+    if string.startswith("["):
+        node, string = getNodeFromString(string[1:]) 
         currentNode.connectChild(node)
         return buildTreeFromString(node, string)
-    elif string.startswith(";"): # continuing children generation (same level)
+
+    # continuing children generation (same level)
+    elif string.startswith(";"):
         node, string = getNodeFromString(string[1:])
         currentNode.parent.connectChild(node)
         return buildTreeFromString(node, string)
-    elif string.startswith("]"): # ending children generation - returning to a parent (up a level)
+
+    # ending children generation - returning to a parent (up a level)
+    elif string.startswith("]"):
         return buildTreeFromString(currentNode.parent, string[1:])
-    else: # start of a string - root creation
+
+    # start of a string - root creation (initial case - no special character at the beginning)
+    else:
         root, string = getNodeFromString(string)
         return buildTreeFromString(root, string)
 

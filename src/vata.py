@@ -1,0 +1,14 @@
+# vata.py
+# Functions for loading/saving tree automaton from/to VATA format (.vtf)
+# Implementation of tree automata for article about automata-based BDDs
+# Author: Jany26  (Jan Matufka)
+
+# import sys
+# import os
+from treeAut import TTreeAut
+
+def loadAutomatonFromFile(fileName) -> TTreeAut:
+    pass
+
+def saveAutomatonToFile(fileName, treeAut:TTreeAut):
+    pass

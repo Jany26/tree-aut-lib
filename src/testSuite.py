@@ -4,6 +4,7 @@
 # Author: Jany26  (Jan Matufka)
 
 import sys
+import copy
 # sys.path.append('../')
 
 from treeAut import *
@@ -17,6 +18,8 @@ def main():
     suffixTests()
     print("\n3)\ttesting prefix() ... \n")
     prefixTests()
+    # print("\n4)\ttesting complement() ... \n")
+    # complementTests()
 
 def matchTests():
     failedTests = ""
@@ -70,27 +73,56 @@ def matchTests():
     print("Failed tests: " + failedTests)
     
 def suffixTests():
-    suffixH0 = boxH0.makeSuffix()
+    suffixH0 = copy.deepcopy(boxH0)
+    suffixH0.makeSuffix()
     suffixH0.printTreeAut()
 
 def prefixTests():
     outputEdgesL0 = boxL0.getOutputEdges()
-    # print("L0 box - " + str(outputEdgesL0))
     outputEdgesL1 = boxL1.getOutputEdges()
-    # print("L1 box - " + str(outputEdgesL1))
     outputEdgesH0 = boxH0.getOutputEdges()
-    # print("H0 box - " + str(outputEdgesH0))
     outputEdgesH1 = boxH1.getOutputEdges()
-    # print("H1 box - " + str(outputEdgesH1))
     outputEdgesLPort = boxLPort.getOutputEdges()
-    # print("L+ box - " + str(outputEdgesLPort))
     outputEdgesX = boxX.getOutputEdges()
-    # print("X  box - " + str(outputEdgesX))
-    boxL0.printTreeAut()
-    print(outputEdgesL1)
-    temp = boxL0.makePrefix(outputEdgesL1)
-    temp.printTreeAut()
-    pass
+
+    prefixL0withX = copy.deepcopy(boxL0)
+    prefixL0withL1 = copy.deepcopy(boxL0)
+    prefixL0withH0 = copy.deepcopy(boxL0)
+    prefixL0withH1 = copy.deepcopy(boxL0)
+
+    prefixL0withX.makePrefix(outputEdgesX)
+    prefixL0withL1.makePrefix(outputEdgesL1)
+    prefixL0withH0.makePrefix(outputEdgesH0)
+    prefixL0withH1.makePrefix(outputEdgesH1)
+
+    prefixL0withX.printTreeAut()
+    prefixL0withL1.printTreeAut()
+    prefixL0withH0.printTreeAut()
+    prefixL0withH1.printTreeAut()
+    
+
+def complementTests():
+    # print("\n- L0 complement\n")
+    complementL0 = treeAutComplement(boxL0)
+    # complementL0.printTreeAut()
+
+    # print("\n- L1 complement\n")
+    complementL1 = treeAutComplement(boxL1)
+    # complementL1.printTreeAut()
+
+    # print("\n- H0 complement\n")
+    complementH0 = treeAutComplement(boxH0)
+    # complementH0.printTreeAut()
+
+    # print("\n- H1 complement\n")
+    complementH1 = treeAutComplement(boxH1)
+    # complementH1.printTreeAut()
+
+    # print("\n- X complement\n")
+    complementX = treeAutComplement(boxX)
+    # complementX.printTreeAut()
+
+    
 
 if __name__ == '__main__':
     main()

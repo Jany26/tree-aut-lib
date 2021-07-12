@@ -71,8 +71,8 @@ class TTreeAut:
         print("--- Root States ---")
         print(str(self.rootStates))
 
-        for state, content in self.transitions.items():
-            print("--- State " + state + " ---")
+        for stateName, content in self.transitions.items():
+            print("--- State " + stateName + " ---")
             # needs polishing
             for key, transition in content.items():
                 print(  "  from  '" + transition[0] + 
@@ -83,19 +83,19 @@ class TTreeAut:
     # generates all edge symbols labeling the output edges from the tree automaton
     def getOutputEdges(self):
         outputEdgeArray = []
-        for state, content in self.transitions.items():
+        for stateName, content in self.transitions.items():
             for key, transition in content.items():
                 if len(transition[2]) == 0:
                     outputEdgeArray.append(transition[1])
         return outputEdgeArray
     
-    def makePrefix(self, additionalTransitions):
-        prefixSelf = self
-        for state, content in prefixSelf.transitions.items():
+    def makePrefix(self, additionalOutputEdges): 
+        # prefixSelf = TTreeAut(treeAut.rootStates, treeAut.transitions)
+        for stateName, content in self.transitions.items():
             tempDict = {}
-            for symbol in additionalTransitions:
-                tempString = str(state) + "-" + str(symbol) + "-()"
-                tempTuple = (state, symbol, [])
+            for symbol in additionalOutputEdges:
+                tempString = str(stateName) + "-" + str(symbol) + "-()"
+                tempTuple = (stateName, symbol, [])
                 tempDict[tempString] = tempTuple
             for tempName, tempTransition in tempDict.items():
                 # checking for non-port output edge
@@ -108,20 +108,17 @@ class TTreeAut:
                     continue
                 else:
                     content[tempName] = tempTransition
-        return prefixSelf
-    
+
     def makeSuffix(self):
-        suffixSelf = self
-        for state, content in self.transitions.items():
+        for stateName, content in self.transitions.items():
             check = True
             # needs polishing
             for key, transition in content.items():
                 if (transition[1].startswith("Port")):
                     check = False
                     break
-            if check == True and state not in self.rootStates:
-                suffixSelf.rootStates.append(state)
-        return suffixSelf
+            if check == True and stateName not in self.rootStates:
+                self.rootStates.append(stateName)
 
 def matchTree(treeAutomaton:TTreeAut, treeRootNode:TTreeNode):
     for rootPtr in treeAutomaton.rootStates:
@@ -129,11 +126,11 @@ def matchTree(treeAutomaton:TTreeAut, treeRootNode:TTreeNode):
             return True
     return False
 
-def match(treeaut:TTreeAut, node:TTreeNode, state:str):
+def match(treeAut:TTreeAut, node:TTreeNode, state:str):
     descendantTuples = []
 
     # definitely needs polishing
-    for stateName, content in treeaut.transitions.items():
+    for stateName, content in treeAut.transitions.items():
         for key, transition in content.items():
             if stateName == state and node.value == transition[1]:
                 descendantTuples.append(transition[2])
@@ -144,7 +141,7 @@ def match(treeaut:TTreeAut, node:TTreeNode, state:str):
             if i not in range(len(node.children)):
                 b = False # tree has less children than expected
                 break
-            b = match(treeaut, node.children[i], tuple[i])
+            b = match(treeAut, node.children[i], tuple[i])
             if not b:
                 break
         if b:
@@ -163,7 +160,11 @@ def treeAutIntersection(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
     pass
 
 def treeAutComplement(treeAut:TTreeAut) -> TTreeAut:
-    pass
+    rootStates = []
+    for stateName, content in treeAut.transitions.items():
+        if stateName not in treeAut.rootStates:
+            rootStates.append(stateName)
+    return TTreeAut(rootStates, treeAut.transitions)
 
 # Functions for testing purposes
 
@@ -180,8 +181,6 @@ def getNodeFromString(string:str):
 # [ node1 ; node2 [...] ; node3 ; ... ] = list of children of a previous node
 
 def buildTreeFromString(currentNode:TTreeNode, string:str):
-    # print(string)
-    # currentNode.printNode()
     string = string.strip()
     if len(string) == 0: # empty string - ending recursion
         return currentNode

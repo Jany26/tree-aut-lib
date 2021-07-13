@@ -113,15 +113,15 @@ class TTreeAut:
 
     def createSuffix(self):
         result = copy.deepcopy(self)
-        for stateName, content in self.transitions.items():
+        for stateName, content in result.transitions.items():
             check = True
             # needs polishing
             for key, transition in content.items():
                 if (transition[1].startswith("Port")):
                     check = False
                     break
-            if check == True and stateName not in self.rootStates:
-                self.rootStates.append(stateName)
+            if check == True and stateName not in result.rootStates:
+                result.rootStates.append(stateName)
         return result
 
 def matchTree(treeAutomaton:TTreeAut, treeRootNode:TTreeNode):
@@ -167,32 +167,36 @@ def treeAutDetermize(treeAut1:TTreeAut) -> TTreeAut:
 
 # find out how to change tuples and dictionary keys :(
 def renameStateInTreeAut(oldName, newName, treeAut:TTreeAut):
-    for stateName, content in treeAut.transitions.items():
-        if stateName == oldName:
-            # renaming name of the state (on 1st layer)
-            # only one state with a certain name is expected
-            treeAut.transitions[newName] = treeAut.transitions.pop(oldName)
-            break
+    if oldName not in treeAut.transitions:
+        return
+    # supposing only one state with the oldName exists in treeAut
+    # renaming state in the dictionary of states (1st layer)
+    treeAut.transitions[newName] = treeAut.transitions.pop(oldName)
 
     # renaming name of the state inside transitions (2nd layer)
-    content = treeAut.transitions[newName]
-    for key, transition in content.items():
-        if transition[0] == oldName:
-            transition[0] = str(newName)
-        for i in range(len(transition[2])):
-            if transition[2][i] == oldName:
-                transition[2][i] = newName
+    for stateName, content in treeAut.transitions.items():
+        for key, transition in content.items():
+            if transition[0] == oldName:
+                transition[0] = str(newName)
+            # renaming state name inside 
+            for i in range(len(transition[2])):
+                if transition[2][i] == oldName:
+                    transition[2][i] = newName
     if oldName in treeAut.rootStates:
         treeAut.rootStates.remove(oldName)
         treeAut.rootStates.append(newName)
 
 def treeAutUnion(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
     result = copy.deepcopy(treeAut2)
+
+    # remove name collisions by renaming states in a new automaton
     for stateName in treeAut1.transitions:
-        for stateName2 in result.transitions:
-            if stateName == stateName2:
-                renameStateInTreeAut(stateName2, result)
-    # TODO = merge the two automata elements
+        if stateName in result.transitions:
+            renameStateInTreeAut(stateName, str(stateName) + "_new", result)
+    
+    # merge the two automata elements
+    result.transitions = {**result.transitions, **treeAut1.transitions}
+    result.rootStates = result.rootStates + treeAut1.rootStates
     return result
 
 def treeAutIntersection(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:

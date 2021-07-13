@@ -97,9 +97,23 @@ def prefixTests():
     prefixL0withH1.printTreeAut()
     
 def unionTests():
-    test = copy.deepcopy(boxL1)
-    renameStateInTreeAut("q0", "q0_*", test)
-    test.printTreeAut()
+    errorString = ""
+    test = treeAutUnion(boxL0, boxH0)
+    tempResultArray = []
+    tempResultArray.append(matchTree(test, treeL0test1))
+    tempResultArray.append(matchTree(test, treeL0test2))
+    tempResultArray.append(matchTree(test, treeL0test3))
+    tempResultArray.append(matchTree(test, treeL0test4))
+    tempResultArray.append(matchTree(test, treeH0test1))
+    tempResultArray.append(matchTree(test, treeH0test2))
+    tempResultArray.append(matchTree(test, treeH0test3))
+    tempResultArray.append(matchTree(test, treeH0test4))
+    for i in range(len(tempResultArray)):
+        if tempResultArray[i] == False:
+            errorString += "L0 U H0 test" + str(i) + ", "
+    if errorString == "":
+        errorString += "All passed"
+    print(errorString)    
 
     # L0unionL1 = treeAutUnion(boxL0, boxL1)
 

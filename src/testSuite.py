@@ -12,15 +12,17 @@ from boxes import *
 from treeExamples import *
 
 def main():
-    print("TEST 1) testing match() ... \n")
-    matchTests()
-    print("TEST 2) testing suffix() ... \n")
-    suffixTests()
-    print("TEST 3) testing prefix() ... \n")
-    prefixTests()
-    print("TEST 4) testing union() ... \n")
-    unionTests()
-    # print("TEST 5) testing complement() ... \n")
+    # print("TEST 1) testing match() ... \n")
+    # matchTests()
+    # print("TEST 2) testing suffix() ... \n")
+    # suffixTests()
+    # print("TEST 3) testing prefix() ... \n")
+    # prefixTests()
+    # print("TEST 4) testing union() ... \n")
+    # unionTests()
+    # print("TEST 5) testing intersection() ... \n")
+    intersectionTests()
+    # print("TEST 6) testing complement() ... \n")
     # complementTests()
 
 def matchTests():
@@ -116,6 +118,12 @@ def unionTests():
     print(errorString)    
 
     # L0unionL1 = treeAutUnion(boxL0, boxL1)
+
+def intersectionTests():
+    test = treeAutIntersection(boxL0, boxH0)
+    test.printTreeAut()
+    # treeAutIntersection(boxL0, boxL1)
+    # treeAutIntersection(boxX, boxL0)
 
 def complementTests():
     complementL0 = treeAutComplement(boxL0)

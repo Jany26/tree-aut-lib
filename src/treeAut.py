@@ -133,7 +133,7 @@ def matchTree(treeAutomaton:TTreeAut, treeRootNode:TTreeNode):
 def match(treeAut:TTreeAut, node:TTreeNode, state:str):
     descendantTuples = []
 
-    # definitely needs polishing
+    # maybe needs polishing
     for stateName, content in treeAut.transitions.items():
         for key, transition in content.items():
             if stateName == state and node.value == transition[1]:
@@ -141,11 +141,11 @@ def match(treeAut:TTreeAut, node:TTreeNode, state:str):
     
     for tuple in descendantTuples:
         b = True
+        # when tree unexpected amount children than expected
+        if len(tuple) != len(node.children):
+            break
         for i in range(len(tuple)):
-            # when tree has less children than expected
-            if i not in range(len(node.children)):
-                b = False 
-                break
+            # recursive matching for all children
             b = match(treeAut, node.children[i], tuple[i])
             if not b:
                 break
@@ -186,6 +186,9 @@ def renameStateInTreeAut(oldName, newName, treeAut:TTreeAut):
         treeAut.rootStates.remove(oldName)
         treeAut.rootStates.append(newName)
 
+
+# just merging transition dictionaries and set of rootstates
+# before merging, name resolution is needed for states with the same name
 def treeAutUnion(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
     result = copy.deepcopy(treeAut2)
 
@@ -194,18 +197,49 @@ def treeAutUnion(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
         if stateName in result.transitions:
             renameStateInTreeAut(stateName, str(stateName) + "_new", result)
     
-    # merge the two automata elements
+    # merge
     result.transitions = {**result.transitions, **treeAut1.transitions}
     result.rootStates = result.rootStates + treeAut1.rootStates
     return result
 
+# TODO: REFACTORING needed here
 def treeAutIntersection(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
-    pass
+    result = TTreeAut([], {})
+    for stateName1, content1 in treeAut1.transitions.items():
+        for stateName2, content2 in treeAut2.transitions.items():
+            newStateName = "(" + stateName1 + ", " + stateName2 + ")"
+            if stateName1 in treeAut1.rootStates and stateName2 in treeAut2.rootStates:
+                result.rootStates.append(newStateName)
+            for key1, transition1 in content1.items():
+                for key2, transition2 in content2.items():
+                    # adding new transition to the intersection if possible
+                    if transition1[1] == transition2[1]:
+                        # check if the arity is consistent (for now we just assume it is)
+                        if len(transition1[2]) != len(transition2[2]):
+                            # TODO error handle
+                            return result  
+                        newTransition = []
+                        newTransition.append("(" + transition1[0] + ", " + transition2[0] + ")")
+                        newTransition.append(transition1[1])
+                        childStates = []
+                        for i in range(len(transition1[2])):
+                            childStates.append("(" + transition1[2][i] + ", " + transition2[2][i] + ")")
+                        newTransition.append(childStates)
+
+                        newKey = "(" + key1 + ", " + key2 + ")"
+                        if newStateName not in result.transitions:
+                            # add state to transition dictionary
+                            result.transitions[newStateName] = {}
+                            pass
+                        result.transitions[newStateName][newKey] = newTransition
+                    pass
+    print(str(result.rootStates))
+    return result
 
 def treeAutComplement(treeAut:TTreeAut) -> TTreeAut:
 
     # TODO: bottom-up determinization implementation needed
-    # treeAutdeterminize(treeAut)
+    # result = treeAutdeterminize(treeAut)
 
     rootStates = []
     for stateName, content in treeAut.transitions.items():

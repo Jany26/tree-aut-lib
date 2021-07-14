@@ -76,9 +76,7 @@ class TTreeAut:
             print("--- State " + stateName + " ---")
             # needs polishing
             for key, transition in content.items():
-                print(  "  from  '" + transition[0] + 
-                        "'  through  '" + transition[1] + 
-                        "'  to  " + str(transition[2]))
+                print(transition[0] + " --( " + transition[1] + " )--> " + str(transition[2]))
 
     # needed for feeding makePrefix() function
     # generates all edge symbols labeling the output edges from the tree automaton
@@ -213,12 +211,13 @@ def treeAutIntersection(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
             for key1, transition1 in content1.items():
                 for key2, transition2 in content2.items():
                     # adding new transition to the intersection if possible
+                    newTransition = []
+                    newKey = "(" + key1 + ", " + key2 + ")"
+                    if len(transition1[2]) != len(transition2[2]):
+                        # TODO error handle
+                        continue
                     if transition1[1] == transition2[1]:
                         # check if the arity is consistent (for now we just assume it is)
-                        if len(transition1[2]) != len(transition2[2]):
-                            # TODO error handle
-                            return result  
-                        newTransition = []
                         newTransition.append("(" + transition1[0] + ", " + transition2[0] + ")")
                         newTransition.append(transition1[1])
                         childStates = []
@@ -226,13 +225,11 @@ def treeAutIntersection(treeAut1:TTreeAut, treeAut2:TTreeAut) -> TTreeAut:
                             childStates.append("(" + transition1[2][i] + ", " + transition2[2][i] + ")")
                         newTransition.append(childStates)
 
-                        newKey = "(" + key1 + ", " + key2 + ")"
                         if newStateName not in result.transitions:
                             # add state to transition dictionary
                             result.transitions[newStateName] = {}
                             pass
                         result.transitions[newStateName][newKey] = newTransition
-                    pass
     print(str(result.rootStates))
     return result
 

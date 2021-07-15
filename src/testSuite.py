@@ -11,6 +11,13 @@ from treeAut import *
 from boxes import *
 from treeExamples import *
 
+outputEdgesL0 = boxL0.getOutputEdges()
+outputEdgesL1 = boxL1.getOutputEdges()
+outputEdgesH0 = boxH0.getOutputEdges()
+outputEdgesH1 = boxH1.getOutputEdges()
+outputEdgesLPort = boxLPort.getOutputEdges()
+outputEdgesX = boxX.getOutputEdges()
+
 def main():
     # print("TEST 1) testing match() ... \n")
     # matchTests()
@@ -81,13 +88,6 @@ def suffixTests():
     suffixH0.printTreeAut()
 
 def prefixTests():
-    outputEdgesL0 = boxL0.getOutputEdges()
-    outputEdgesL1 = boxL1.getOutputEdges()
-    outputEdgesH0 = boxH0.getOutputEdges()
-    outputEdgesH1 = boxH1.getOutputEdges()
-    outputEdgesLPort = boxLPort.getOutputEdges()
-    outputEdgesX = boxX.getOutputEdges()
-
     prefixL0withX = boxL0.createPrefix(outputEdgesX)
     prefixL0withL1 = boxL0.createPrefix(outputEdgesL1)
     prefixL0withH0 = boxL0.createPrefix(outputEdgesH0)
@@ -120,8 +120,29 @@ def unionTests():
     # L0unionL1 = treeAutUnion(boxL0, boxL1)
 
 def intersectionTests():
-    test = treeAutIntersection(boxL0, boxH0)
-    test.printTreeAut()
+
+    print("\nTEST A) Intersection of L0 and H0:\n")
+
+    tempH0 = copy.deepcopy(boxH0)
+    tempH0.renameState('q0', 'r0')
+    tempH0.renameState('q1', 'r1')
+    tempH0.renameState('q2', 'r2')
+    test1 = treeAutIntersection(boxL0, tempH0)
+    test1.printTreeAut()
+
+    print("\nTEST B) Intersection of prefix(L0) and suffix(H1)\n")
+
+    L0prefix = boxL0.createPrefix(['1', 'Port_H1'])
+    H1suffix = boxH1.createSuffix()
+
+    L0prefix.renameState('q0', 's')
+    L0prefix.renameState('q1', 'u')
+    L0prefix.renameState('q2', 't')
+    H1suffix.renameState('q0', 'p')
+    H1suffix.renameState('q1', 'q')
+    H1suffix.renameState('q2', 'r')
+    test2 = treeAutIntersection(L0prefix, H1suffix)
+    test2.printTreeAut()
     # treeAutIntersection(boxL0, boxL1)
     # treeAutIntersection(boxX, boxL0)
 

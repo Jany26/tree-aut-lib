@@ -5,15 +5,28 @@
 
 from testData import *
 
+# helperFuncTests()
+# TODO: test outputStateList generator
+# TODO: test getSymbolArityDict
+# TODO: test removeState func
+
+# removeUselessStates()
+# TODO: test top down reachable func
+# TODO: test bottom up reachable func
+
+
 def main():
-    matchTests()
-    suffixTests()
-    prefixTests()
-    unionTests()
-    intersectionTests()
-    complementTests()
-    nonEmptinessTests()
+    helperFuncTests() #0
+    matchTests() #1
+    suffixTests() #2
+    prefixTests() #3
+    unionTests() #4
+    intersectionTests() #5
+    complementTests() #6
+    nonEmptinessTests() #7
     print(">>> UNIT TESTS DONE!")
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def printFailedTests(failedTestsArray):
     try:
@@ -21,9 +34,16 @@ def printFailedTests(failedTestsArray):
     except:
         print("Tests failed (" + str(len(failedTestsArray)) + "):")
         for i in failedTestsArray:
-            print("\t" + i)
+            print("    " + i)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def helperFuncTests():
+    print(">>> UNIT TEST 0) testing helper functions...")
+    failures = []
+
+
+    printFailedTests(failures)
 
 def matchTests():
     print(">>> UNIT TEST 1) testing match() ...")
@@ -194,36 +214,36 @@ def complementTests():
 def nonEmptinessTests():
     print(">>> UNIT TEST 7) testing nonEmptiness() ...")
     failures = []
-    if not nonEmptyTD(boxX):
-        failures.append("nonEmptyTD(boxX)")
-    if not nonEmptyTD(boxL0):
-        failures.append("nonEmptyTD(boxL0)")
-    if not nonEmptyTD(boxL1):
-        failures.append("nonEmptyTD(boxL1)")
-    if not nonEmptyTD(boxH0):
-        failures.append("nonEmptyTD(boxH0)")
-    if not nonEmptyTD(boxH1):
-        failures.append("nonEmptyTD(boxH1)")
-    if not nonEmptyTD(boxLPort):
-        failures.append("nonEmptyTD(boxLPort)")
+    if not nonEmptyTopDown(boxX):
+        failures.append("nonEmptyTopDown(boxX)")
+    if not nonEmptyTopDown(boxL0):
+        failures.append("nonEmptyTopDown(boxL0)")
+    if not nonEmptyTopDown(boxL1):
+        failures.append("nonEmptyTopDown(boxL1)")
+    if not nonEmptyTopDown(boxH0):
+        failures.append("nonEmptyTopDown(boxH0)")
+    if not nonEmptyTopDown(boxH1):
+        failures.append("nonEmptyTopDown(boxH1)")
+    if not nonEmptyTopDown(boxLPort):
+        failures.append("nonEmptyTopDown(boxLPort)")
     
-    if nonEmptyTD(treeAutIntersection(boxL0, boxX)):
-        failures.append("nonEmptyTD(treeAutIntersection(boxL0, boxX))")
-    if nonEmptyTD(treeAutIntersection(boxL0, boxL1)):
-        failures.append("nonEmptyTD(treeAutIntersection(boxL0, boxL1))")
-    if nonEmptyTD(treeAutIntersection(boxL0, boxH0)):
-        failures.append("nonEmptyTD(treeAutIntersection(boxL0, boxH0))")
-    if nonEmptyTD(treeAutIntersection(boxL0, boxH1)):
-        failures.append("nonEmptyTD(treeAutIntersection(boxL0, boxH1))")
+    if nonEmptyTopDown(treeAutIntersection(boxL0, boxX)):
+        failures.append("nonEmptyTopDown(treeAutIntersection(boxL0, boxX))")
+    if nonEmptyTopDown(treeAutIntersection(boxL0, boxL1)):
+        failures.append("nonEmptyTopDown(treeAutIntersection(boxL0, boxL1))")
+    if nonEmptyTopDown(treeAutIntersection(boxL0, boxH0)):
+        failures.append("nonEmptyTopDown(treeAutIntersection(boxL0, boxH0))")
+    if nonEmptyTopDown(treeAutIntersection(boxL0, boxH1)):
+        failures.append("nonEmptyTopDown(treeAutIntersection(boxL0, boxH1))")
 
-    if not nonEmptyTD(treeAutIntersection(L0prefixForX, Xsuffix)):
-        failures.append("nonEmptyTD(treeAutIntersection(L0prefixForX, Xsuffix))")
-    if not nonEmptyTD(treeAutIntersection(L0prefixForL1, L1suffix)):
-        failures.append("nonEmptyTD(treeAutIntersection(L0prefixForL1, L1suffix))")
-    if not nonEmptyTD(treeAutIntersection(L0prefixForH0, H0suffix)):
-        failures.append("nonEmptyTD(treeAutIntersection(L0prefixForH0, H0suffix))")
-    if not nonEmptyTD(treeAutIntersection(L0prefixForH0, H1suffix)):
-        failures.append("nonEmptyTD(treeAutIntersection(L0prefixForH0, H1suffix))")
+    if not nonEmptyTopDown(treeAutIntersection(L0prefixForX, Xsuffix)):
+        failures.append("nonEmptyTopDown(treeAutIntersection(L0prefixForX, Xsuffix))")
+    if not nonEmptyTopDown(treeAutIntersection(L0prefixForL1, L1suffix)):
+        failures.append("nonEmptyTopDown(treeAutIntersection(L0prefixForL1, L1suffix))")
+    if not nonEmptyTopDown(treeAutIntersection(L0prefixForH0, H0suffix)):
+        failures.append("nonEmptyTopDown(treeAutIntersection(L0prefixForH0, H0suffix))")
+    if nonEmptyTopDown(treeAutIntersection(L0prefixForH0, H1suffix)):
+        failures.append("nonEmptyTopDown(treeAutIntersection(L0prefixForH0, H1suffix))")
 
     printFailedTests(failures)
 

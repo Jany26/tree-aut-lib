@@ -54,3 +54,5 @@ treeH1test1 = buildTreeFromString(None, H1TreeExample1)
 treeH1test2 = buildTreeFromString(None, H1TreeExample2)
 treeH1test3 = buildTreeFromString(None, H1TreeExample3)
 treeH1test4 = buildTreeFromString(None, H1TreeExample4)
+
+# End of file treeExamples.py

@@ -15,82 +15,73 @@ testTransitionsBoxX = {
 }
 
 testTransitionsBoxL0 = {
-    'q0': {
-        'a': ['q0', 'LH', ['q1', 'q0']],
-        'b': ['q0', 'LH', ['q1', 'q2']]
+    'r0': {
+        'a': ['r0', 'LH', ['r1', 'r0']],
+        'b': ['r0', 'LH', ['r1', 'r2']]
         }, 
-    'q1': {
-        'c': ['q1', 'LH', ['q1', 'q1']],
-        'd': ['q1', '0', []]
+    'r1': {
+        'c': ['r1', 'LH', ['r1', 'r1']],
+        'd': ['r1', '0', []]
     },
-    'q2': {
-        'e': ['q2', 'Port_L0', []]
+    'r2': {
+        'e': ['r2', 'Port_L0', []]
     }
 }
 
 testTransitionsBoxL1 = {
-    'q0': {
-        'a': ['q0', 'LH', ['q1', 'q0']],
-        'b': ['q0', 'LH', ['q1', 'q2']]
+    's0': {
+        'a': ['s0', 'LH', ['s1', 's0']],
+        'b': ['s0', 'LH', ['s1', 's2']]
         }, 
-    'q1': {
-        'c': ['q1', 'LH', ['q1', 'q1']],
-        'd': ['q1', '1', []]
+    's1': {
+        'c': ['s1', 'LH', ['s1', 's1']],
+        'd': ['s1', '1', []]
     },
-    'q2': {
-        'e': ['q2', 'Port_L1', []]
+    's2': {
+        'e': ['s2', 'Port_L1', []]
     }
 }
 
 testTransitionsBoxH0 = {
-    'q0': {
-        'a': ['q0', 'LH', ['q0', 'q2']],
-        'b': ['q0', 'LH', ['q1', 'q2']]
+    't0': {
+        'a': ['t0', 'LH', ['t0', 't2']],
+        'b': ['t0', 'LH', ['t1', 't2']]
         }, 
-    'q1': {
-        'c': ['q1', 'Port_H0', []]
+    't1': {
+        'c': ['t1', 'Port_H0', []]
     },
-    'q2': {
-        'd': ['q2', 'LH', ['q2', 'q2']],
-        'e': ['q2', '0', []]
+    't2': {
+        'd': ['t2', 'LH', ['t2', 't2']],
+        'e': ['t2', '0', []]
     }
 }
 
 testTransitionsBoxH1 = {
-    'q0': {
-        'a': ['q0', 'LH', ['q0', 'q2']],
-        'b': ['q0', 'LH', ['q1', 'q2']]
+    'u0': {
+        'a': ['u0', 'LH', ['u0', 'u2']],
+        'b': ['u0', 'LH', ['u1', 'u2']]
         }, 
-    'q1': {
-        'c': ['q1', 'Port_H1', []]
+    'u1': {
+        'c': ['u1', 'Port_H1', []]
     },
-    'q2': {
-        'd': ['q2', 'LH', ['q2', 'q2']],
-        'e': ['q2', '1', []]
+    'u2': {
+        'd': ['u2', 'LH', ['u2', 'u2']],
+        'e': ['u2', '1', []]
     }
 }
 
 testTransitionsBoxLPort = {
-    'q0': {
-        'a': ['q0', 'LH', ['q1', 'q0']],
-        'b': ['q0', 'LH', ['q1', 'q2']]
+    'v0': {
+        'a': ['v0', 'LH', ['v1', 'v0']],
+        'b': ['v0', 'LH', ['v1', 'v2']]
         }, 
-    'q1': {
-        'c': ['q1', 'LH', ['q1', 'q1']],
-        'd': ['q1', 'Port_LPort0', []]
+    'v1': {
+        'c': ['v1', 'LH', ['v1', 'v1']],
+        'd': ['v1', 'Port_LPort0', []]
     },
-    'q2': {
-        'e': ['q2', 'Port_LPort1', []]
+    'v2': {
+        'e': ['v2', 'Port_LPort1', []]
     }
 }
 
-# first argument is a list of all "root" states
-# "leaf" states are recognized by having at least one transition which
-# has an empty tuple at the end (descendants) -> "output edge"
-
-boxX    = TTreeAut(["q0"], testTransitionsBoxX)
-boxL0   = TTreeAut(["q0"], testTransitionsBoxL0)
-boxL1   = TTreeAut(["q0"], testTransitionsBoxL1)
-boxH0   = TTreeAut(["q0"], testTransitionsBoxH0)
-boxH1   = TTreeAut(["q0"], testTransitionsBoxH1)
-boxLPort= TTreeAut(["q0"], testTransitionsBoxLPort)
+# End of file boxes.py

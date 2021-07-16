@@ -3,157 +3,233 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)
 
-# import sys
-import copy
-# sys.path.append('../')
-
-from treeAut import *
-from boxes import *
-from treeExamples import *
-
-outputEdgesL0 = boxL0.getOutputEdges()
-outputEdgesL1 = boxL1.getOutputEdges()
-outputEdgesH0 = boxH0.getOutputEdges()
-outputEdgesH1 = boxH1.getOutputEdges()
-outputEdgesLPort = boxLPort.getOutputEdges()
-outputEdgesX = boxX.getOutputEdges()
+from testData import *
 
 def main():
-    # print("TEST 1) testing match() ... \n")
-    # matchTests()
-    # print("TEST 2) testing suffix() ... \n")
-    # suffixTests()
-    # print("TEST 3) testing prefix() ... \n")
-    # prefixTests()
-    # print("TEST 4) testing union() ... \n")
-    # unionTests()
-    # print("TEST 5) testing intersection() ... \n")
+    matchTests()
+    suffixTests()
+    prefixTests()
+    unionTests()
     intersectionTests()
-    # print("TEST 6) testing complement() ... \n")
-    # complementTests()
+    complementTests()
+    nonEmptinessTests()
+    print(">>> UNIT TESTS DONE!")
+
+def printFailedTests(failedTestsArray):
+    try:
+        assert failedTestsArray == []
+    except:
+        print("Tests failed (" + str(len(failedTestsArray)) + "):")
+        for i in failedTestsArray:
+            print("\t" + i)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def matchTests():
-    failedTests = ""
-
+    print(">>> UNIT TEST 1) testing match() ...")
+    failures = []
     if not matchTree(boxX, treeXtest1):
-        failedTests += "X-1, "
+        failures.append("matchTree(boxX, treeXtest1)")
     if matchTree(boxX, treeXtest2):
-        failedTests += "X-2, "
+        failures.append("matchTree(boxX, treeXtest2)")
     if not matchTree(boxX, treeXtest3):
-        failedTests += "X-3, "
-
-    if not matchTree(boxH0, treeH0test1):
-        failedTests += "H0-1, "
-    if not matchTree(boxH0, treeH0test2):
-        failedTests += "H0-2, "
-    if not matchTree(boxH0, treeH0test3):
-        failedTests += "H0-3, "
-    if not matchTree(boxH0, treeH0test4):
-        failedTests += "H0-4, "
-    
-    if not matchTree(boxH1, treeH1test1):
-        failedTests += "H1-1, "
-    if not matchTree(boxH1, treeH1test2):
-        failedTests += "H1-2, "
-    if not matchTree(boxH1, treeH1test3):
-        failedTests += "H1-3, "
-    if not matchTree(boxH1, treeH1test4):
-        failedTests += "H1-4, "
+        failures.append("matchTree(boxX, treeXtest3)")
     
     if not matchTree(boxL0, treeL0test1):
-        failedTests += "L0-1, "
+        failures.append("matchTree(boxL0, treeL0test1)")
     if not matchTree(boxL0, treeL0test2):
-        failedTests += "L0-2, "
+        failures.append("matchTree(boxL0, treeL0test2)")
     if not matchTree(boxL0, treeL0test3):
-        failedTests += "L0-3, "
+        failures.append("matchTree(boxL0, treeL0test3)")
     if not matchTree(boxL0, treeL0test4):
-        failedTests += "L0-4, "
+        failures.append("matchTree(boxL0, treeL0test4)")
 
     if not matchTree(boxL1, treeL1test1):
-        failedTests += "L1-1, "
+        failures.append("matchTree(boxL1, treeL0test1)")
     if not matchTree(boxL1, treeL1test2):
-        failedTests += "L1-2, "
+        failures.append("matchTree(boxL1, treeL0test2)")
     if not matchTree(boxL1, treeL1test3):
-        failedTests += "L1-3, "
+        failures.append("matchTree(boxL1, treeL0test3)")
     if not matchTree(boxL1, treeL1test4):
-        failedTests += "L1-4, "
+        failures.append("matchTree(boxL1, treeL0test4)")
 
-    if failedTests == "":
-        failedTests = "None"
+    if not matchTree(boxH0, treeH0test1):
+        failures.append("matchTree(boxH0, treeH0test1)")
+    if not matchTree(boxH0, treeH0test2):
+        failures.append("matchTree(boxH0, treeH0test2)")
+    if not matchTree(boxH0, treeH0test3):
+        failures.append("matchTree(boxH0, treeH0test3)")
+    if not matchTree(boxH0, treeH0test4):
+        failures.append("matchTree(boxH0, treeH0test4)")
     
-    print("Failed tests: " + failedTests)
+    if not matchTree(boxH1, treeH1test1):
+        failures.append("matchTree(boxH1, treeH1test1)")
+    if not matchTree(boxH1, treeH1test2):
+        failures.append("matchTree(boxH1, treeH1test2)")
+    if not matchTree(boxH1, treeH1test3):
+        failures.append("matchTree(boxH1, treeH1test3)")
+    if not matchTree(boxH1, treeH1test4):
+        failures.append("matchTree(boxH1, treeH1test4)")
+    
+    printFailedTests(failures)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     
 def suffixTests():
-    suffixH0 = boxH0.createSuffix()
-    suffixH0.printTreeAut()
+    print(">>> UNIT TEST 2) testing suffix() ...")
+    failures = []
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+    
+    try: boxL0.createSuffix()    
+    except: failures.append("boxL0.createSuffix()")
+
+    try: boxL0.createSuffix()    
+    except: failures.append("boxL0.createSuffix()")
+
+    try: boxL0.createSuffix()    
+    except: failures.append("boxL0.createSuffix()")
+
+    try: boxL0.createSuffix()    
+    except: failures.append("boxL0.createSuffix()")
+
+    printFailedTests(failures)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def prefixTests():
-    prefixL0withX = boxL0.createPrefix(outputEdgesX)
-    prefixL0withL1 = boxL0.createPrefix(outputEdgesL1)
-    prefixL0withH0 = boxL0.createPrefix(outputEdgesH0)
-    prefixL0withH1 = boxL0.createPrefix(outputEdgesH1)
+    print(">>> UNIT TEST 3) testing prefix() ...")
+    failures = []
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+    
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+    
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+    
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+    
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
 
-    prefixL0withX.printTreeAut()
-    prefixL0withL1.printTreeAut()
-    prefixL0withH0.printTreeAut()
-    prefixL0withH1.printTreeAut()
+    printFailedTests(failures)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     
 def unionTests():
-    errorString = ""
-    test = treeAutUnion(boxL0, boxH0)
-    tempResultArray = []
-    tempResultArray.append(matchTree(test, treeL0test1))
-    tempResultArray.append(matchTree(test, treeL0test2))
-    tempResultArray.append(matchTree(test, treeL0test3))
-    tempResultArray.append(matchTree(test, treeL0test4))
-    tempResultArray.append(matchTree(test, treeH0test1))
-    tempResultArray.append(matchTree(test, treeH0test2))
-    tempResultArray.append(matchTree(test, treeH0test3))
-    tempResultArray.append(matchTree(test, treeH0test4))
-    for i in range(len(tempResultArray)):
-        if tempResultArray[i] == False:
-            errorString += "L0 U H0 test" + str(i) + ", "
-    if errorString == "":
-        errorString += "All passed"
-    print(errorString)    
+    print(">>> UNIT TEST 4) testing union() ...")
+    failures = []
+    if not matchTree(unionL0H0, treeL0test1):
+        failures.append("matchTree(unionL0H0, treeL0test1)")
+    if not matchTree(unionL0H0, treeL0test2):
+        failures.append("matchTree(unionL0H0, treeL0test2)")
+    if not matchTree(unionL0H0, treeL0test3):
+        failures.append("matchTree(unionL0H0, treeL0test3)")
+    if not matchTree(unionL0H0, treeL0test4):
+        failures.append("matchTree(unionL0H0, treeL0test4)")
+    if not matchTree(unionL0H0, treeH0test1):
+        failures.append("matchTree(unionL0H0, treeH0test1)")
+    if not matchTree(unionL0H0, treeH0test2):
+        failures.append("matchTree(unionL0H0, treeH0test2)")
+    if not matchTree(unionL0H0, treeH0test3):
+        failures.append("matchTree(unionL0H0, treeH0test3)")
+    if not matchTree(unionL0H0, treeH0test4):
+        failures.append("matchTree(unionL0H0, treeH0test4)")
 
-    # L0unionL1 = treeAutUnion(boxL0, boxL1)
+    if not matchTree(unionL0H1, treeL0test1):
+        failures.append("matchTree(unionL0H0, treeL0test1)")
+    if not matchTree(unionL0H0, treeL0test2):
+        failures.append("matchTree(unionL0H0, treeL0test2)")
+    if not matchTree(unionL0H0, treeL0test3):
+        failures.append("matchTree(unionL0H0, treeL0test3)")
+    if not matchTree(unionL0H0, treeL0test4):
+        failures.append("matchTree(unionL0H0, treeL0test4)")
+    if not matchTree(unionL0H0, treeH0test1):
+        failures.append("matchTree(unionL0H0, treeH0test1)")
+    if not matchTree(unionL0H0, treeH0test2):
+        failures.append("matchTree(unionL0H0, treeH0test2)")
+    if not matchTree(unionL0H0, treeH0test3):
+        failures.append("matchTree(unionL0H0, treeH0test3)")
+    if not matchTree(unionL0H0, treeH0test4):
+        failures.append("matchTree(unionL0H0, treeH0test4)")
+
+    printFailedTests(failures)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def intersectionTests():
+    print(">>> UNIT TEST 5) testing intersection() ...")
+    failures = []
 
-    print("\nTEST A) Intersection of L0 and H0:\n")
+    treeAutIntersection(boxL0, boxH0)
+    treeAutIntersection(L0prefixForH1, H1suffix)
 
-    tempH0 = copy.deepcopy(boxH0)
-    tempH0.renameState('q0', 'r0')
-    tempH0.renameState('q1', 'r1')
-    tempH0.renameState('q2', 'r2')
-    test1 = treeAutIntersection(boxL0, tempH0)
-    test1.printTreeAut()
-
-    print("\nTEST B) Intersection of prefix(L0) and suffix(H1)\n")
-
-    L0prefix = boxL0.createPrefix(['1', 'Port_H1'])
-    H1suffix = boxH1.createSuffix()
-
-    L0prefix.renameState('q0', 's')
-    L0prefix.renameState('q1', 'u')
-    L0prefix.renameState('q2', 't')
-    H1suffix.renameState('q0', 'p')
-    H1suffix.renameState('q1', 'q')
-    H1suffix.renameState('q2', 'r')
-    test2 = treeAutIntersection(L0prefix, H1suffix)
-    test2.printTreeAut()
-    # treeAutIntersection(boxL0, boxL1)
-    # treeAutIntersection(boxX, boxL0)
+    printFailedTests(failures)
 
 def complementTests():
-    complementL0 = treeAutComplement(boxL0)
-    complementL1 = treeAutComplement(boxL1)
-    complementH0 = treeAutComplement(boxH0)
-    complementH1 = treeAutComplement(boxH1)
-    complementX = treeAutComplement(boxX)
+    print(">>> UNIT TEST 6) testing complement() ...")
+    failures = []
+    try: treeAutComplement(boxX)
+    except: failures.append("treeAutComplement(boxX)")
+
+    try: treeAutComplement(boxL0)
+    except: failures.append("treeAutComplement(boxL0)")
+
+    try: treeAutComplement(boxL1)
+    except: failures.append("treeAutComplement(boxL1)")
+
+    try: treeAutComplement(boxH0)
+    except: failures.append("treeAutComplement(boxH0)")
+    
+    try: treeAutComplement(boxH1)
+    except: failures.append("treeAutComplement(boxH1)")
+
+    printFailedTests(failures)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def nonEmptinessTests():
+    print(">>> UNIT TEST 7) testing nonEmptiness() ...")
+    failures = []
+    if not nonEmptyTD(boxX):
+        failures.append("nonEmptyTD(boxX)")
+    if not nonEmptyTD(boxL0):
+        failures.append("nonEmptyTD(boxL0)")
+    if not nonEmptyTD(boxL1):
+        failures.append("nonEmptyTD(boxL1)")
+    if not nonEmptyTD(boxH0):
+        failures.append("nonEmptyTD(boxH0)")
+    if not nonEmptyTD(boxH1):
+        failures.append("nonEmptyTD(boxH1)")
+    if not nonEmptyTD(boxLPort):
+        failures.append("nonEmptyTD(boxLPort)")
+    
+    if nonEmptyTD(treeAutIntersection(boxL0, boxX)):
+        failures.append("nonEmptyTD(treeAutIntersection(boxL0, boxX))")
+    if nonEmptyTD(treeAutIntersection(boxL0, boxL1)):
+        failures.append("nonEmptyTD(treeAutIntersection(boxL0, boxL1))")
+    if nonEmptyTD(treeAutIntersection(boxL0, boxH0)):
+        failures.append("nonEmptyTD(treeAutIntersection(boxL0, boxH0))")
+    if nonEmptyTD(treeAutIntersection(boxL0, boxH1)):
+        failures.append("nonEmptyTD(treeAutIntersection(boxL0, boxH1))")
+
+    if not nonEmptyTD(treeAutIntersection(L0prefixForX, Xsuffix)):
+        failures.append("nonEmptyTD(treeAutIntersection(L0prefixForX, Xsuffix))")
+    if not nonEmptyTD(treeAutIntersection(L0prefixForL1, L1suffix)):
+        failures.append("nonEmptyTD(treeAutIntersection(L0prefixForL1, L1suffix))")
+    if not nonEmptyTD(treeAutIntersection(L0prefixForH0, H0suffix)):
+        failures.append("nonEmptyTD(treeAutIntersection(L0prefixForH0, H0suffix))")
+    if not nonEmptyTD(treeAutIntersection(L0prefixForH0, H1suffix)):
+        failures.append("nonEmptyTD(treeAutIntersection(L0prefixForH0, H1suffix))")
+
+    printFailedTests(failures)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 if __name__ == '__main__':
     main()
 
-# End of file
+# End of file testSuite.py

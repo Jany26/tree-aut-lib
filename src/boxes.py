@@ -1,8 +1,9 @@
 # boxes.py
 # Examples of basic boxes - needed for testing
 # Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)
-from treeAut import *
+# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+
+from taLib import *
 
 testTransitionsBoxX = {
     'q0': {

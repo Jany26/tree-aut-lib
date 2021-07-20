@@ -1,9 +1,9 @@
 # treeExamples.py
 # Some basic trees for testing
 # Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)
+# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from treeAut import *
+from taLib import *
 
 # maybe load trees from this template form instead of calling class methods manually ???
 

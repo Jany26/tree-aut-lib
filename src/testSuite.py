@@ -1,13 +1,11 @@
 # boxes.py
 # Some basic testing for tree implementation and tree automata
 # Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)
+# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
 from testData import *
 
 # helperFuncTests()
-# TODO: test outputStateList generator
-# TODO: test getSymbolArityDict
 # TODO: test removeState func
 
 # removeUselessStates()
@@ -17,14 +15,14 @@ from testData import *
 
 def main():
     helperFuncTests() #0
-    matchTests() #1
-    suffixTests() #2
-    prefixTests() #3
-    unionTests() #4
-    intersectionTests() #5
-    complementTests() #6
-    nonEmptinessTests() #7
-    print(">>> UNIT TESTS DONE!")
+    # matchTests() #1
+    # suffixTests() #2
+    # prefixTests() #3
+    # unionTests() #4
+    # intersectionTests() #5
+    # complementTests() #6
+    # nonEmptinessTests() #7
+    # print(">>> UNIT TESTS DONE!")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -42,6 +40,29 @@ def helperFuncTests():
     print(">>> UNIT TEST 0) testing helper functions...")
     failures = []
 
+    if not boxX.getOutputStates() == ['q1']:
+        failures.append("boxX.getOutputStates()")
+    if not boxH1.getOutputStates() == ['u1', 'u2']:
+        failures.append("boxH1.getOutputStates()")
+
+    print(boxX.getSymbolArityDict())
+    print(boxL0.getSymbolArityDict())
+    print(boxL1.getSymbolArityDict())
+    print(boxH0.getSymbolArityDict())
+    print(boxH1.getSymbolArityDict())
+    print(boxLPort.getSymbolArityDict())
+
+    testL0 = copy.deepcopy(boxL0)
+    testL1 = copy.deepcopy(boxL1)
+
+    testL0.printTreeAut()
+    testL0.removeState('r1')
+    testL0.printTreeAut()
+    
+
+    testL1.printTreeAut()
+    testL1.removeState('r0')
+    testL1.printTreeAut()
 
     printFailedTests(failures)
 

@@ -119,11 +119,15 @@ class TTreeAut:
             return
         
         self.transitions.pop(state)
+
+        resultDict = {}
         for stateName, content in self.transitions.items():
+            tempDict = {}
             for key, transition in content.items():
-                if state in transition[2]:
-                    content.pop(key)
-        
+                if state not in transition[2]:
+                    tempDict[key] = transition
+            resultDict[stateName] = tempDict
+        self.transitions = resultDict      
 
     # needed for feeding makePrefix() function
     # generates all edge symbols labeling the output edges from the tree automaton

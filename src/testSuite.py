@@ -5,9 +5,6 @@
 
 from testData import *
 
-# helperFuncTests()
-# TODO: test removeState func
-
 # removeUselessStates()
 # TODO: test top down reachable func
 # TODO: test bottom up reachable func
@@ -15,14 +12,14 @@ from testData import *
 
 def main():
     helperFuncTests() #0
-    # matchTests() #1
-    # suffixTests() #2
-    # prefixTests() #3
-    # unionTests() #4
-    # intersectionTests() #5
-    # complementTests() #6
-    # nonEmptinessTests() #7
-    # print(">>> UNIT TESTS DONE!")
+    matchTests() #1
+    suffixTests() #2
+    prefixTests() #3
+    unionTests() #4
+    intersectionTests() #5
+    complementTests() #6
+    nonEmptinessTests() #7
+    print(">>> UNIT TESTS DONE!")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -45,24 +42,43 @@ def helperFuncTests():
     if not boxH1.getOutputStates() == ['u1', 'u2']:
         failures.append("boxH1.getOutputStates()")
 
-    print(boxX.getSymbolArityDict())
-    print(boxL0.getSymbolArityDict())
-    print(boxL1.getSymbolArityDict())
-    print(boxH0.getSymbolArityDict())
-    print(boxH1.getSymbolArityDict())
-    print(boxLPort.getSymbolArityDict())
+    if boxX.getSymbolArityDict() != {'LH': 2, 'Port_X': 0}:
+        failures.append("boxX.getSymbolArityDict()")
+    if boxL0.getSymbolArityDict() != {'LH': 2, '0': 0, 'Port_L0': 0}:
+        failures.append("boxL0.getSymbolArityDict()")
+    if boxL1.getSymbolArityDict() != {'LH': 2, '1': 0, 'Port_L1': 0}:
+        failures.append("boxL1.getSymbolArityDict()")
+    if boxH0.getSymbolArityDict() != {'LH': 2, 'Port_H0': 0, '0': 0}:
+        failures.append("boxH0.getSymbolArityDict()")
+    if boxH1.getSymbolArityDict() != {'LH': 2, 'Port_H1': 0, '1': 0}:
+        failures.append("boxH1.getSymbolArityDict()")
+    if boxLPort.getSymbolArityDict() != {'LH': 2, 'Port_LPort0': 0, 'Port_LPort1': 0}:
+        failures.append("boxLPort.getSymbolArityDict()")
 
     testL0 = copy.deepcopy(boxL0)
-    testL1 = copy.deepcopy(boxL1)
-
-    testL0.printTreeAut()
-    testL0.removeState('r1')
-    testL0.printTreeAut()
+    testL0.removeState('r2')
     
+    if matchTree(testL0, treeL0test1):
+        failures.append("matchTree(testL0, treeL0test1)")
+    if matchTree(testL0, treeL0test2):
+        failures.append("matchTree(testL0, treeL0test2)")
+    if matchTree(testL0, treeL0test3):
+        failures.append("matchTree(testL0, treeL0test3)")
+    if matchTree(testL0, treeL0test4):
+        failures.append("matchTree(testL0, treeL0test4)")
 
-    testL1.printTreeAut()
-    testL1.removeState('r0')
-    testL1.printTreeAut()
+    testL1 = copy.deepcopy(boxL1)
+    testL1.removeState('s0')
+
+    if matchTree(testL1, treeL1test1):
+        failures.append("matchTree(testL1, treeL1test1)")
+    if matchTree(testL1, treeL1test2):
+        failures.append("matchTree(testL1, treeL1test2)")
+    if matchTree(testL1, treeL1test3):
+        failures.append("matchTree(testL1, treeL1test3)")
+    if matchTree(testL1, treeL1test4):
+        failures.append("matchTree(testL1, treeL1test4)")
+
 
     printFailedTests(failures)
 

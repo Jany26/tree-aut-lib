@@ -4,8 +4,8 @@
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
 from taLib import *
-from boxes import *
-from treeExamples import *
+from testTAs import *
+from testTrees import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

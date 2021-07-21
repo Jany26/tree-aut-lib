@@ -1,9 +1,14 @@
-# boxes.py
+# testTAs.py
 # Examples of basic boxes - needed for testing
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
 from taLib import *
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Basic boxes from the article
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 testTransitionsBoxX = {
     'q0': {
@@ -85,4 +90,17 @@ testTransitionsBoxLPort = {
     }
 }
 
-# End of file boxes.py
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Testing boxes = with top-down/bottom-up unreachable states ...
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+unreachableBUtest1 = {
+    'q0': {
+        'a': ['q0', 'LH', ['q1', 'q0']],
+    },
+    'q1': {
+        'b': ['q1', '1', []]
+    }
+}
+
+# End of file testTAs.py

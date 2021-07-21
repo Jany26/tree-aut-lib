@@ -1,4 +1,4 @@
-# treeExamples.py
+# testTrees.py
 # Some basic trees for testing
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
@@ -55,4 +55,4 @@ treeH1test2 = buildTreeFromString(None, H1TreeExample2)
 treeH1test3 = buildTreeFromString(None, H1TreeExample3)
 treeH1test4 = buildTreeFromString(None, H1TreeExample4)
 
-# End of file treeExamples.py
+# End of file testTrees.py

@@ -11,14 +11,15 @@ from testData import *
 
 
 def main():
-    helperFuncTests() #0
-    matchTests() #1
-    suffixTests() #2
-    prefixTests() #3
-    unionTests() #4
-    intersectionTests() #5
-    complementTests() #6
-    nonEmptinessTests() #7
+    # helperFuncTests() #0
+    # matchTests() #1
+    # suffixTests() #2
+    # prefixTests() #3
+    # unionTests() #4
+    # intersectionTests() #5
+    # complementTests() #6
+    # nonEmptinessTests() #7
+    reachabilityTests() #8
     print(">>> UNIT TESTS DONE!")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -34,7 +35,7 @@ def printFailedTests(failedTestsArray):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def helperFuncTests():
-    print(">>> UNIT TEST 0) testing helper functions...")
+    print(">>> SUBUNIT TEST 2) testing helper functions...")
     failures = []
 
     if not boxX.getOutputStates() == ['q1']:
@@ -81,6 +82,8 @@ def helperFuncTests():
 
 
     printFailedTests(failures)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def matchTests():
     print(">>> UNIT TEST 1) testing match() ...")
@@ -283,6 +286,44 @@ def nonEmptinessTests():
         failures.append("nonEmptyTopDown(treeAutIntersection(L0prefixForH0, H1suffix))")
 
     printFailedTests(failures)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def reachabilityTests():
+    print(">>> UNIT TEST 8) testing reachability()...")
+    temp = generatePossibleChildren('q0', ['q0','q1','q2'], 3)
+    for i in temp:
+        print(str(i))
+    
+    testBox = TTreeAut(['q0'], unreachableBUtest1)
+
+    print("")
+
+    print(str(topDownReachable(boxL0)))
+    print(str(topDownReachable(boxX)))
+    print(str(topDownReachable(testBox)))
+
+    print(str(bottomUpReachable(boxL0)))
+    print(str(bottomUpReachable(boxX)))
+    print(str(bottomUpReachable(testBox)))
+
+
+    testBox.printTreeAut()
+    removeUselessStates(testBox)
+    testBox.printTreeAut()
+
+    boxL0.printTreeAut()
+    removeUselessStates(boxL0)
+    boxL0.printTreeAut()
+    
+    boxX.printTreeAut()
+    removeUselessStates(boxX)
+    boxX.printTreeAut()
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

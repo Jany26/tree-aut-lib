@@ -181,12 +181,11 @@ class TTreeAut:
         result = copy.deepcopy(self)
         for stateName, content in result.transitions.items():
             check = True
-            # needs polishing
             for key, transition in content.items():
                 if (transition[1].startswith("Port")):
                     check = False
                     break
-            if check == True and stateName not in result.rootStates:
+            if check and stateName not in result.rootStates:
                 result.rootStates.append(stateName)
         return result
 

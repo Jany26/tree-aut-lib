@@ -8,6 +8,7 @@
 import copy
 import re
 from taClasses import *
+from itertools import permutations, product
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # BASIC OPERATIONS ON TREE AUTOMATA
@@ -172,12 +173,13 @@ def topDownReachable(ta:TTreeAut) -> list:
     #                 done.append(r[i])
     # return done
 
-    workList = ta.rootStates
-    result = ta.rootStates
+    workList = copy.deepcopy(ta.rootStates)
+    result = copy.deepcopy(ta.rootStates)
 
     while len(workList) > 0:
         state = workList.pop()
-        for key, transition in ta.transitions[state].items():
+        content = ta.transitions[state]
+        for key, transition in content.items():
             for i in transition[2]:
                 if i not in result:
                     workList.append(i)
@@ -185,41 +187,69 @@ def topDownReachable(ta:TTreeAut) -> list:
     return result
 
 
-def possibleChildrenList(ta:TTreeAut, state:str, parents:list) -> list:
-    pass
+def generatePossibleChildren(state:str, parents:list, size:int) -> list:
+    result = []
+    possibilites = product(parents, repeat = size)
+    for k in possibilites:
+        if state in k:
+            result.append(list(k))
+    return result
+    
 
 def bottomUpReachable(ta:TTreeAut) -> list:
     # PSEUDO-CODE
     # 
     # worklist = { q | q -> ()}
-    # done = worklist
+    # result = worklist
     # while len(worklist) > 0:
     #     q = worklist.pop()
     #     for a in alphabet and arity(a) > 0:
-    #         generate all tuples t from done, that contain q
+    #         generate all tuples t from result, that contain q
     #             --- ("variations" of tuples, can contain q more than once)
     #         for s --[a]-->  t:
-    #             if s not in done:
+    #             if s not in result:
     #                 worklist.append(s)
-    #                 done.append(s)
-    # return done
+    #                 result.append(s)
+    # return result
     
     workList = ta.getOutputStates()
-    result = workList
+    result = ta.getOutputStates()
     while len(workList) > 0:
         state = workList.pop()
-        allPossibilites = possibleChildrenList(ta, state, result)
-        
+        arityDict = ta.getSymbolArityDict()
+        for symbol in arityDict:
+            arity = arityDict[symbol]
+            if not arity > 0:
+                continue
+            allPossibileTuples = generatePossibleChildren(state, result, arity)
+            for stateName, content in ta.transitions.items():
+                for key, transition in content.items():
+                    if (
+                        transition[0] != stateName
+                        or transition[1] != symbol
+                        or transition[2] not in allPossibileTuples 
+                    ):
+                        continue
+                    if stateName not in result:
+                        workList.append(stateName)
+                        result.append(stateName)
         
     return result
 
+## Shrinks tree automaton to only contain the states from list
+def shrinkTA(ta:TTreeAut, states:list):
+    toDelete = []
+    for stateName in ta.transitions:
+        if stateName not in states:
+            toDelete.append(stateName)
+    for i in toDelete:
+        ta.removeState(i)
+
 def removeUselessStates(ta:TTreeAut):
     reachableStatesBU = bottomUpReachable(ta)
-    for i in reachableStatesBU:
-        ta.transitions.pop(i)
+    shrinkTA(ta, reachableStatesBU)
     reachableStatesTD = topDownReachable(ta)
-    for i in reachableStatesTD:
-        ta.transitions.pop(i)
+    shrinkTA(ta, reachableStatesTD)
     return ta
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

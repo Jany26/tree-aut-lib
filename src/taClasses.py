@@ -42,6 +42,8 @@ class TTreeNode:
         for i in self.children:
             i.printNode()
     
+    ### Maybe redundant functions ###
+
     def findFromLeft(self, valueToFind):
         for i in self.children:
             x = i.findFromLeft(valueToFind)
@@ -88,7 +90,47 @@ class TTreeAut:
             for key, transition in content.items():
                 print(transition[0] + " -- " + transition[1] + " --> " + str(transition[2]))
         print("")
+    
+    ### Informative functions ###
 
+    def getStates(self) -> list:
+        result = []
+        for stateName in self.rootStates:
+            result.append(stateName)
+        for stateName in self.transitions:
+            result.append(stateName)
+        return set(result)
+
+    # needed for feeding makePrefix() function
+    # generates all edge symbols labeling the output edges from the tree automaton
+    def getOutputEdges(self) -> list:
+        outputEdgeList = []
+        for stateName, content in self.transitions.items():
+            for key, transition in content.items():
+                if len(transition[2]) == 0:
+                    outputEdgeList.append(transition[1])
+        return outputEdgeList
+
+    # needed for bottom-up reachability -> used in useless state removal
+    def getOutputStates(self) -> list:
+        outputStateList = []
+        for stateName, content in self.transitions.items():
+            for key, transition in content.items():
+                if len(transition[2]) == 0:
+                    outputStateList.append(stateName)
+                    break
+        return outputStateList
+    
+    def getSymbolArityDict(self) -> dict:
+        symbolDict = {}
+        for state, content in self.transitions.items():
+            for key, transition in content.items():
+                if transition[1] not in symbolDict:
+                    symbolDict[transition[1]] = len(transition[2])
+        return symbolDict
+    
+    ### Modifying functions ###
+    
     # needed for union (and testing) - name collision resolving
     def renameState(self, oldName:str, newName:str):
         if oldName in self.rootStates:
@@ -129,34 +171,8 @@ class TTreeAut:
             resultDict[stateName] = tempDict
         self.transitions = resultDict      
 
-    # needed for feeding makePrefix() function
-    # generates all edge symbols labeling the output edges from the tree automaton
-    def getOutputEdges(self) -> list:
-        outputEdgeList = []
-        for stateName, content in self.transitions.items():
-            for key, transition in content.items():
-                if len(transition[2]) == 0:
-                    outputEdgeList.append(transition[1])
-        return outputEdgeList
+    ### Building functions ###
 
-    # needed for bottom-up reachability -> used in useless state removal
-    def getOutputStates(self) -> list:
-        outputStateList = []
-        for stateName, content in self.transitions.items():
-            for key, transition in content.items():
-                if len(transition[2]) == 0:
-                    outputStateList.append(stateName)
-                    break
-        return outputStateList
-    
-    def getSymbolArityDict(self) -> dict:
-        symbolDict = {}
-        for state, content in self.transitions.items():
-            for key, transition in content.items():
-                if transition[1] not in symbolDict:
-                    symbolDict[transition[1]] = len(transition[2])
-        return symbolDict
-    
     def createPrefix(self, additionalOutputEdges): 
         result = copy.deepcopy(self)
         for stateName, content in result.transitions.items():

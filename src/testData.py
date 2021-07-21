@@ -39,30 +39,30 @@ H1suffix = boxH1.createSuffix()
 
 # createprefix() test data
 
-XprefixForL0 = boxX.createPrefix(['0', 'Port_L0'])
-XprefixForL1 = boxX.createPrefix(['1', 'Port_L1'])
-XprefixForH0 = boxX.createPrefix(['0', 'Port_H0'])
-XprefixForH1 = boxX.createPrefix(['1', 'Port_H1'])
+XprefixForL0 = boxX.createPrefix(outputEdgesL0)
+XprefixForL1 = boxX.createPrefix(outputEdgesL1)
+XprefixForH0 = boxX.createPrefix(outputEdgesH0)
+XprefixForH1 = boxX.createPrefix(outputEdgesH0)
 
-L0prefixForX = boxL0.createPrefix(['Port_X'])
-L0prefixForL1 = boxL0.createPrefix(['1', 'Port_L1'])
-L0prefixForH0 = boxL0.createPrefix(['0', 'Port_H0'])
-L0prefixForH1 = boxL0.createPrefix(['1', 'Port_H1'])
+L0prefixForX = boxL0.createPrefix(outputEdgesX)
+L0prefixForL1 = boxL0.createPrefix(outputEdgesL1)
+L0prefixForH0 = boxL0.createPrefix(outputEdgesH0)
+L0prefixForH1 = boxL0.createPrefix(outputEdgesH0)
 
-L1prefixForX = boxL1.createPrefix(['Port_X'])
-L1prefixForL0 = boxL1.createPrefix(['0', 'Port_L0'])
-L1prefixForH0 = boxL1.createPrefix(['0', 'Port_H0'])
-L1prefixForH1 = boxL1.createPrefix(['1', 'Port_H1'])
+L1prefixForX = boxL1.createPrefix(outputEdgesX)
+L1prefixForL0 = boxL1.createPrefix(outputEdgesL0)
+L1prefixForH0 = boxL1.createPrefix(outputEdgesH0)
+L1prefixForH1 = boxL1.createPrefix(outputEdgesH0)
 
-H0prefixForX = boxH0.createPrefix(['Port_X'])
-H0prefixForL0 = boxH0.createPrefix(['0', 'Port_L0'])
-H0prefixForL1 = boxH0.createPrefix(['1', 'Port_L1'])
-H0prefixForH1 = boxH0.createPrefix(['1', 'Port_H1'])
+H0prefixForX = boxH0.createPrefix(outputEdgesX)
+H0prefixForL0 = boxH0.createPrefix(outputEdgesL0)
+H0prefixForL1 = boxH0.createPrefix(outputEdgesL1)
+H0prefixForH1 = boxH0.createPrefix(outputEdgesH0)
 
-H1prefixForX = boxH1.createPrefix(['Port_X'])
-H1prefixForL0 = boxH1.createPrefix(['0', 'Port_L0'])
-H1prefixForL1 = boxH1.createPrefix(['1', 'Port_L1'])
-H1prefixForH0 = boxH1.createPrefix(['0', 'Port_H0'])
+H1prefixForX = boxH1.createPrefix(outputEdgesX)
+H1prefixForL0 = boxH1.createPrefix(outputEdgesL0)
+H1prefixForL1 = boxH1.createPrefix(outputEdgesL1)
+H1prefixForH0 = boxH1.createPrefix(outputEdgesH0)
 
 # treeAutUnion() test data
 

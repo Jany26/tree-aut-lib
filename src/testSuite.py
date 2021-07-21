@@ -11,14 +11,14 @@ from testData import *
 
 
 def main():
-    # helperFuncTests() #0
-    # matchTests() #1
-    # suffixTests() #2
-    # prefixTests() #3
-    # unionTests() #4
-    # intersectionTests() #5
-    # complementTests() #6
-    # nonEmptinessTests() #7
+    helperFuncTests() #0
+    matchTests() #1
+    suffixTests() #2
+    prefixTests() #3
+    unionTests() #4
+    intersectionTests() #5
+    complementTests() #6
+    nonEmptinessTests() #7
     reachabilityTests() #8
     print(">>> UNIT TESTS DONE!")
 
@@ -35,7 +35,7 @@ def printFailedTests(failedTestsArray):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def helperFuncTests():
-    print(">>> SUBUNIT TEST 2) testing helper functions...")
+    print(">>> UNIT TEST 0) testing helper functions...")
     failures = []
 
     if not boxX.getOutputStates() == ['q1']:
@@ -291,34 +291,58 @@ def nonEmptinessTests():
 
 def reachabilityTests():
     print(">>> UNIT TEST 8) testing reachability()...")
-    temp = generatePossibleChildren('q0', ['q0','q1','q2'], 3)
-    for i in temp:
-        print(str(i))
+    failures = []
     
-    testBox = TTreeAut(['q0'], unreachableBUtest1)
-
-    print("")
-
-    print(str(topDownReachable(boxL0)))
-    print(str(topDownReachable(boxX)))
-    print(str(topDownReachable(testBox)))
-
-    print(str(bottomUpReachable(boxL0)))
-    print(str(bottomUpReachable(boxX)))
-    print(str(bottomUpReachable(testBox)))
-
-
-    testBox.printTreeAut()
-    removeUselessStates(testBox)
-    testBox.printTreeAut()
-
-    boxL0.printTreeAut()
-    removeUselessStates(boxL0)
-    boxL0.printTreeAut()
+    if len(generatePossibleChildren('q0', ['q0','q1','q2'], 3)) != 19:
+        failures.append("generatePossibleChildren('q0', ['q0','q1','q2'], 3)")
+    if len(generatePossibleChildren('q0', ['q0','q1'], 3)) != 7:
+        failures.append("generatePossibleChildren('q0', ['q0','q1'], 3)")
+    if len(generatePossibleChildren('q0', ['q0','q1'], 2)) != 3:
+        failures.append("generatePossibleChildren('q0', ['q0','q1'], 2))")
+    if len(generatePossibleChildren('q0', ['q0','q1','q2','q3','q4'], 3)) != 61:
+        failures.append("generatePossibleChildren('q0', ['q0','q1'], 2))")
+    if len(generatePossibleChildren('q0', ['q0','q1'], 4)) != 15:
+        failures.append("generatePossibleChildren('q0', ['q0','q1'], 2))")
     
-    boxX.printTreeAut()
-    removeUselessStates(boxX)
-    boxX.printTreeAut()
+    testBox1 = TTreeAut(['q0'], unreachableTest1)
+    testBox2a = TTreeAut(['q0'], unreachableTest2a)
+    testBox2b = TTreeAut(['q0'], unreachableTest2b)
+    testBox3 = copy.deepcopy(boxL0)
+
+    if set(topDownReachable(testBox1)) != set(['q0','q1']):
+        failures.append("topDownReachable(testBox1)")
+    if set(topDownReachable(testBox2a)) != set(['q0','q1','q2','q3']):
+        failures.append("topDownReachable(testBox2a")
+    if set(topDownReachable(testBox2b)) != set(['q0','q1','q2','q3']):
+        failures.append("topDownReachable(testBox2b)")
+    if set(topDownReachable(testBox3)) != set(['r0','r1','r2']):
+        failures.append("topDownReachable(testBox3)")
+
+    if set(bottomUpReachable(testBox1)) != set(['q1']):
+        failures.append("bottomUpReachable(testBox1)")
+    if set(bottomUpReachable(testBox2a)) != set(['q0','q1','q2','q3']):
+        failures.append("bottomUpReachable(testBox2a")
+    if set(bottomUpReachable(testBox2b)) != set(['q0','q1','q2','q3']):
+        failures.append("bottomUpReachable(testBox2b)")
+    if set(topDownReachable(testBox3)) != set(['r0','r1','r2']):
+        failures.append("bottomUpReachable(testBox3)")
+
+    removeUselessStates(testBox1)
+    removeUselessStates(testBox2a)
+    removeUselessStates(testBox2b)
+    removeUselessStates(testBox3)
+
+    if set(testBox1.getStates()) != set([]):
+        failures.append("removeUselessStates(testBox1)")
+    if set(testBox2a.getStates()) != set(['q0', 'q1', 'q2', 'q3']):
+        failures.append("removeUselessStates(testBox2a)")
+    if set(testBox2b.getStates()) != set(['q0', 'q1', 'q2', 'q3']):
+        failures.append("removeUselessStates(testBox2b)")
+    if testBox3.transitions != boxL0.transitions:
+        failures.append("removeUselessStates(testBox3)")
+    
+    
+    printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

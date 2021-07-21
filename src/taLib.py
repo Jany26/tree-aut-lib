@@ -14,6 +14,8 @@ from itertools import permutations, product
 # BASIC OPERATIONS ON TREE AUTOMATA
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+## Logical equivalent to function accept(DFA, string)
+# works recursively, as all children from array have to be matched
 def matchTree(ta:TTreeAut, root:TTreeNode):
     for rootPtr in ta.rootStates:
         if match(ta, root, rootPtr) == True:
@@ -23,7 +25,6 @@ def matchTree(ta:TTreeAut, root:TTreeNode):
 def match(ta:TTreeAut, node:TTreeNode, state:str):
     descendantTuples = []
 
-    # maybe needs polishing
     for stateName, content in ta.transitions.items():
         for key, transition in content.items():
             if stateName == state and node.value == transition[1]:
@@ -43,6 +44,9 @@ def match(ta:TTreeAut, node:TTreeNode, state:str):
             return True
     
     return False
+
+# bottom up match
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -160,19 +164,6 @@ def nonEmptyBottomUp(ta:TTreeAut) -> bool:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def topDownReachable(ta:TTreeAut) -> list:
-    # PSEUDO-CODE
-    #
-    # worklist = treeAut.rootStates
-    # done = treeAut.rootStates
-    # while len(worklist) > 0:
-    #     q = worklist.pop()
-    #     for q --[a]--> (r[1], ..., r[n]):
-    #         for i in range(n):
-    #             if r[i] not in done:
-    #                 worklist.append(r[i])
-    #                 done.append(r[i])
-    # return done
-
     workList = copy.deepcopy(ta.rootStates)
     result = copy.deepcopy(ta.rootStates)
 
@@ -197,26 +188,12 @@ def generatePossibleChildren(state:str, parents:list, size:int) -> list:
     
 
 def bottomUpReachable(ta:TTreeAut) -> list:
-    # PSEUDO-CODE
-    # 
-    # worklist = { q | q -> ()}
-    # result = worklist
-    # while len(worklist) > 0:
-    #     q = worklist.pop()
-    #     for a in alphabet and arity(a) > 0:
-    #         generate all tuples t from result, that contain q
-    #             --- ("variations" of tuples, can contain q more than once)
-    #         for s --[a]-->  t:
-    #             if s not in result:
-    #                 worklist.append(s)
-    #                 result.append(s)
-    # return result
-    
     workList = ta.getOutputStates()
-    result = ta.getOutputStates()
+    result = ta.getOutputStates() # dict
     while len(workList) > 0:
         state = workList.pop()
         arityDict = ta.getSymbolArityDict()
+        # check for root -> True
         for symbol in arityDict:
             arity = arityDict[symbol]
             if not arity > 0:
@@ -232,8 +209,7 @@ def bottomUpReachable(ta:TTreeAut) -> list:
                         continue
                     if stateName not in result:
                         workList.append(stateName)
-                        result.append(stateName)
-        
+                        result.append(stateName) # similarly for dictionary
     return result
 
 ## Shrinks tree automaton to only contain the states from list

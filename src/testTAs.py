@@ -94,12 +94,56 @@ testTransitionsBoxLPort = {
 # Testing boxes = with top-down/bottom-up unreachable states ...
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-unreachableBUtest1 = {
+unreachableTest1 = {
     'q0': {
         'a': ['q0', 'LH', ['q1', 'q0']],
     },
     'q1': {
         'b': ['q1', '1', []]
+    }
+}
+
+# basically H1 box with extra 2 states = q3, q4 and 3 transitions f-h
+unreachableTest2a = {
+    'q0': {
+        'a': ['q0', 'LH', ['q1', 'q2']],
+        'b': ['q0', 'LH', ['q0', 'q2']],
+    },
+    'q1': {
+        'c': ['q1','Port', []],
+    },
+    'q2': {
+        'd': ['q2', 'LH', ['q2', 'q2']],
+        'e': ['q2', '1', []],
+        'f': ['q2', 'LH', ['q2', 'q3']],
+    },
+    'q3': {
+        'g': ['q3', '1', []],
+    },
+    'q4': {
+        'h': ['q4', 'LH', ['q4','q3']],
+    }
+}
+
+# same as unreachableTest2, but 'f' transition connects to root not to itself 
+unreachableTest2b = {
+    'q0': {
+        'a': ['q0', 'LH', ['q1', 'q2']],
+        'b': ['q0', 'LH', ['q0', 'q2']],
+    },
+    'q1': {
+        'c': ['q1','Port', []],
+    },
+    'q2': {
+        'd': ['q2', 'LH', ['q2', 'q2']],
+        'e': ['q2', '1', []],
+        'f': ['q2', 'LH', ['q0', 'q3']],
+    },
+    'q3': {
+        'g': ['q3', '1', []],
+    },
+    'q4': {
+        'h': ['q4', 'LH', ['q4','q3']],
     }
 }
 

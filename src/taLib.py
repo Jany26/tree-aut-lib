@@ -33,7 +33,7 @@ def matchTopDown(ta:TTreeAut, node:TTreeNode, state:str):
     descendantTuples = []
 
     for stateName, content in ta.transitions.items():
-        for key, transition in content.items():
+        for transition in content.values():
             if stateName == state and node.value == transition[1]:
                 descendantTuples.append(transition[2])
     
@@ -52,11 +52,12 @@ def matchTopDown(ta:TTreeAut, node:TTreeNode, state:str):
     
     return False
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 ## Logical equivalent to function accept(DFA, string)
 # works recursively, but starts the matching process from the leaves
 # instead of starting from the root
 def matchTreeBU(ta:TTreeAut, root:TTreeNode):
-    result = []
     result = matchBottomUp(ta, root)
     temp = []
     for value in result:
@@ -65,10 +66,10 @@ def matchTreeBU(ta:TTreeAut, root:TTreeNode):
     return len(temp) != 0
 
 def matchBottomUp(ta:TTreeAut, root:TTreeNode) -> list:
+    result = []
     if len(root.children) == 0:
-        result = []
         for stateName, content in ta.transitions.items():
-            for key, transition in content.items():
+            for transition in content.values():
                 if (
                     transition[1] == root.value # or symbol
                     and len(transition[2]) == 0
@@ -80,10 +81,8 @@ def matchBottomUp(ta:TTreeAut, root:TTreeNode) -> list:
         childrenSymbols = []
         for i in range(len(root.children)):
             childrenSymbols.append(matchBottomUp(ta, root.children[i]))
-        
-        result = []
         for stateName, content in ta.transitions.items():
-            for key, transition in content.items():
+            for transition in content.values():
                 if transition[1] == root.value: # or symbol
                     x = True
                     for i in range(len(transition[2])):
@@ -97,14 +96,43 @@ def matchBottomUp(ta:TTreeAut, root:TTreeNode) -> list:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def treeAutDeterminize(ta:TTreeAut) -> TTreeAut:
-    # workset = []
-    # done = []
-    # arityDict = ta.getSymbolArityDict()
-    # for a in arityDict:
-    #     pass
-
-
+    workSet = ta.getOutputStates()
+    done = ta.getOutputStates()
+    newTransitions = {}
+    while len(workSet) > 0:
+        state = workSet.pop()
+        arityDict = ta.getSymbolArityDict()
+        for symbol in arityDict:
+            arity = arityDict[symbol]
+            tuples = generatePossibleChildren(state, done, arity)
+            
     return copy.deepcopy(ta)
+
+# def bottomUpReachable(ta:TTreeAut) -> list:
+#     workList = ta.getOutputStates()
+#     result = ta.getOutputStates() # dict
+#     while len(workList) > 0:
+#         state = workList.pop()
+#         arityDict = ta.getSymbolArityDict()
+#         # check for root -> True
+#         for symbol in arityDict:
+#             arity = arityDict[symbol]
+#             if not arity > 0:
+#                 continue
+#             allPossibileTuples = generatePossibleChildren(state, result, arity)
+#             for stateName, content in ta.transitions.items():
+#                 for key, transition in content.items():
+#                     if (
+#                         transition[0] != stateName
+#                         or transition[1] != symbol
+#                         or transition[2] not in allPossibileTuples 
+#                     ):
+#                         continue
+#                     if stateName not in result:
+#                         workList.append(stateName)
+#                         result.append(stateName) # similarly for dictionary
+#     return result
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -182,7 +210,9 @@ def treeAutComplement(ta:TTreeAut) -> TTreeAut:
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-#
+## Returns True if the tree automaton has non empty tree "language"
+# meaning the tree automaton can generate at least one tree
+# starts the mock tree generation from the root states, uses backtracking
 def nonEmptyTopDown(ta:TTreeAut) -> bool:
     for root in ta.rootStates:
         stack = []
@@ -190,7 +220,7 @@ def nonEmptyTopDown(ta:TTreeAut) -> bool:
             return True
     return False
 
-## this function checks whether a tree can be produced from the state
+## this function checks whether a tree can be produced from the specific state
 # producing a tree means generating output (going thru output edges) from at
 # least one transition -> either directly or thru all children of at least one transition
 def outputCheckTD(state:str, ta:TTreeAut, stack) -> bool:
@@ -204,14 +234,14 @@ def outputCheckTD(state:str, ta:TTreeAut, stack) -> bool:
     stack.append(state)
 
     # look for output edges first... at least one is needed to return
-    for key, transition in ta.transitions[state].items():
+    for transition in ta.transitions[state].values():
         if len(transition[2]) == 0:
             stack.pop()
             return True
 
-    # no output edge detected, now trying to recursively find output edges
+    # no direct  output edge detected, now trying to recursively find output edges
     # trying to generate outputs from all children in at least one transition
-    for key, transition in ta.transitions[state].items():
+    for transition in ta.transitions[state].values():
         b = True
         for i in transition[2]:
             b = outputCheckTD(i, ta, stack)
@@ -223,6 +253,10 @@ def outputCheckTD(state:str, ta:TTreeAut, stack) -> bool:
     stack.pop()
     return False
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+## Bottom-up version of non empty language check
+# starts the mock tree generation from the leaves (states with output transitions)
 def nonEmptyBottomUp(ta:TTreeAut) -> bool:
     workList = ta.getOutputStates()
     done = ta.getOutputStates()
@@ -237,10 +271,9 @@ def nonEmptyBottomUp(ta:TTreeAut) -> bool:
                 continue
             allPossibleTuples = generatePossibleChildren(state, done, arity)
             for stateName, content in ta.transitions.items():
-                for key, transition in content.items():
+                for transition in content.values():
                     if (
-                        transition[0] != stateName
-                        or transition[1] != symbol
+                        transition[1] != symbol
                         or transition[2] not in allPossibleTuples
                     ):
                         continue
@@ -251,25 +284,55 @@ def nonEmptyBottomUp(ta:TTreeAut) -> bool:
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+## Searches the tree from bottom-up and from top-down, removing unreachable states
 def removeUselessStates(ta:TTreeAut):
     reachableStatesBU = bottomUpReachable(ta)
-    shrinkTA(ta, reachableStatesBU)
+    ta.shrinkTA(reachableStatesBU)
     reachableStatesTD = topDownReachable(ta)
-    shrinkTA(ta, reachableStatesTD)
+    ta.shrinkTA(reachableStatesTD)
     return ta
-
-
-## Shrinks tree automaton to only contain the states from list
-def shrinkTA(ta:TTreeAut, states:list):
-    toDelete = []
-    for stateName in ta.transitions:
-        if stateName not in states:
-            toDelete.append(stateName)
-    for i in toDelete:
-        ta.removeState(i)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+def createWitnessBU(ta:TTreeAut):
+    # initialization phase (finding all output )
+    workList = ta.getOutputStates()
+    done = {}
+    for state in workList:
+        for key, transition in ta.transitions[state]:
+            if len(transition[2]) == 0:
+                done[state] = transition
+
+    # tree automaton bottom-up parsing phase
+    while len(workList) != 0:
+        state = workList.pop()
+        if state in ta.rootStates:
+            return generateTrivialTree(done, state)
+        pass
+        arityDict = ta.getSymbolArityDict()
+        for symbol in arityDict:
+            if arityDict[symbol] == 0:
+                continue
+            allPossibleTuples = generatePossibleChildren(state, list(done), arityDict[symbol])
+            for stateName, content in ta.transitions.items():
+                for transition in content.values():
+                    if (
+                        transition[1] != symbol
+                        or transition[2] not in allPossibleTuples
+                    ):
+                        continue
+                    if stateName not in done:
+                        workList.append(stateName)
+                        done[stateName] = transition
+    return None
+
+def generateTrivialTree(transitions:dict, root:str) -> TTreeNode:
+    return transitions
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+## Generates a list of states reachable from the root states
 def topDownReachable(ta:TTreeAut) -> list:
     workList = copy.deepcopy(ta.rootStates)
     result = copy.deepcopy(ta.rootStates)
@@ -277,7 +340,7 @@ def topDownReachable(ta:TTreeAut) -> list:
     while len(workList) > 0:
         state = workList.pop()
         content = ta.transitions[state]
-        for key, transition in content.items():
+        for transition in content.values():
             for i in transition[2]:
                 if i not in result:
                     workList.append(i)
@@ -293,7 +356,7 @@ def generatePossibleChildren(state:str, parents:list, size:int) -> list:
             result.append(list(k))
     return result
     
-
+## Generates a list of states reachable from the leaf states
 def bottomUpReachable(ta:TTreeAut) -> list:
     workList = ta.getOutputStates()
     result = ta.getOutputStates() # dict
@@ -307,11 +370,10 @@ def bottomUpReachable(ta:TTreeAut) -> list:
                 continue
             allPossibileTuples = generatePossibleChildren(state, result, arity)
             for stateName, content in ta.transitions.items():
-                for key, transition in content.items():
+                for transition in content.values():
                     if (
-                        transition[0] != stateName
-                        or transition[1] != symbol
-                        or transition[2] not in allPossibileTuples 
+                        transition[1] != symbol
+                        or transition[2] not in allPossibileTuples
                     ):
                         continue
                     if stateName not in result:

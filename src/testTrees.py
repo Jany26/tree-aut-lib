@@ -4,8 +4,56 @@
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
 from taLib import *
+import re
 
 # maybe load trees from this template form instead of calling class methods manually ???
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# FUNCTIONS FOR TESTING PURPOSES
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+## Does not cover edge cases! (e.g. wrong string structure)
+def getNodeFromString(string:str):
+    string = string.strip()
+    nodeName = re.match("^[\w]+", string).group()
+    string = string.lstrip(str(nodeName))
+    node = TTreeNode(nodeName)
+    return node, string
+
+## Recursive function to generate a tree from a structured string
+# XYZ [...] = node with list of children following (can be nested)
+# [ node1 ; node2 [...] ; node3 ; ... ] = list of children of a previous node
+def buildTreeFromString(currentNode:TTreeNode, string:str):
+    string = string.strip() # skipping whitespaces
+
+    # empty string - ending recursion
+    if len(string) == 0:
+        return currentNode
+    
+    # starting children generation (down a level)
+    if string.startswith("["):
+        node, string = getNodeFromString(string[1:]) 
+        currentNode.connectChild(node)
+        return buildTreeFromString(node, string)
+
+    # continuing children generation (same level)
+    elif string.startswith(";"):
+        node, string = getNodeFromString(string[1:])
+        currentNode.parent.connectChild(node)
+        return buildTreeFromString(node, string)
+
+    # ending children generation - returning to a parent (up a level)
+    elif string.startswith("]"):
+        return buildTreeFromString(currentNode.parent, string[1:])
+
+    # start of a string - root creation (initial case - no special character at the beginning)
+    else:
+        root, string = getNodeFromString(string)
+        return buildTreeFromString(root, string)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# TESTING DATA (trees represented by structured strings)
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 XTreeExample1 = "LH[Port_X;Port_X]"
 XTreeExample2 = "LH[LH[LH[Port_X;Port_X];Port_X];LH[Port_X;LH[Port_X;Port_X]]]"

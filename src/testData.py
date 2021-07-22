@@ -90,4 +90,20 @@ intersectionL1H0 = treeAutIntersection(boxL1, boxH0)
 intersectionL1H1 = treeAutIntersection(boxL1, boxH1)
 intersectionH0H1 = treeAutIntersection(boxH0, boxH1)
 
+# treeAutComplement() test data
+
+complementBoxX = treeAutComplement(boxX)
+complementBoxL0 = treeAutComplement(boxL0)
+complementBoxL1 = treeAutComplement(boxL1)
+complementBoxH0 = treeAutComplement(boxH0)
+complementBoxH1 = treeAutComplement(boxH1)
+complementBoxLPort = treeAutComplement(boxLPort)
+
+# reachability and useless state removal test data
+
+testBox1 = TTreeAut(['q0'], unreachableTest1)
+testBox2a = TTreeAut(['q0'], unreachableTest2a)
+testBox2b = TTreeAut(['q0'], unreachableTest2b)
+testBox3 = copy.deepcopy(boxL0)
+
 # End of file testData.py

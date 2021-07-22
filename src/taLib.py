@@ -52,8 +52,9 @@ def matchTopDown(ta:TTreeAut, node:TTreeNode, state:str):
     
     return False
 
-# bottom up match
-
+## Logical equivalent to function accept(DFA, string)
+# works recursively, but starts the matching process from the leaves
+# instead of starting from the root
 def matchTreeBU(ta:TTreeAut, root:TTreeNode):
     result = []
     result = matchBottomUp(ta, root)
@@ -93,16 +94,16 @@ def matchBottomUp(ta:TTreeAut, root:TTreeNode) -> list:
                         result.append(stateName)
         return result
 
-    # if root is leaf:
-    #     return {q | q -- [root.symbol] --> []}
-    # else:
-    #     children = [ matchBottomUp(A,root[1]), ..., matchBottomUp(A, root[n]) ]
-    #     return { s | there exists s -- [root.symbol] --> [s[1], ..., s[n]], 
-    #         such that forall i in (1,n). s[i] in children[i] }
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def treeAutDeterminize(ta:TTreeAut) -> TTreeAut:
+    # workset = []
+    # done = []
+    # arityDict = ta.getSymbolArityDict()
+    # for a in arityDict:
+    #     pass
+
+
     return copy.deepcopy(ta)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -181,8 +182,17 @@ def treeAutComplement(ta:TTreeAut) -> TTreeAut:
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+#
+def nonEmptyTopDown(ta:TTreeAut) -> bool:
+    for root in ta.rootStates:
+        stack = []
+        if outputCheckTD(root, ta, stack) == True:
+            return True
+    return False
 
-## needs to break recursion with some sort of a list or sth
+## this function checks whether a tree can be produced from the state
+# producing a tree means generating output (going thru output edges) from at
+# least one transition -> either directly or thru all children of at least one transition
 def outputCheckTD(state:str, ta:TTreeAut, stack) -> bool:
     if (
         state in stack
@@ -193,7 +203,7 @@ def outputCheckTD(state:str, ta:TTreeAut, stack) -> bool:
 
     stack.append(state)
 
-    # look for output edges first... at least one is needed for True
+    # look for output edges first... at least one is needed to return
     for key, transition in ta.transitions[state].items():
         if len(transition[2]) == 0:
             stack.pop()
@@ -213,17 +223,31 @@ def outputCheckTD(state:str, ta:TTreeAut, stack) -> bool:
     stack.pop()
     return False
 
-
-def nonEmptyTopDown(ta:TTreeAut) -> bool:
-    for root in ta.rootStates:
-        stack = []
-        if outputCheckTD(root, ta, stack) == True:
-            return True
-    return False
-
-
 def nonEmptyBottomUp(ta:TTreeAut) -> bool:
-    pass
+    workList = ta.getOutputStates()
+    done = ta.getOutputStates()
+    while len(workList) > 0:
+        state = workList.pop()
+        if state in ta.rootStates:
+            return True
+        arityDict = ta.getSymbolArityDict()
+        for symbol in arityDict:
+            arity = arityDict[symbol]
+            if not arity > 0:
+                continue
+            allPossibleTuples = generatePossibleChildren(state, done, arity)
+            for stateName, content in ta.transitions.items():
+                for key, transition in content.items():
+                    if (
+                        transition[0] != stateName
+                        or transition[1] != symbol
+                        or transition[2] not in allPossibleTuples
+                    ):
+                        continue
+                    if stateName not in done:
+                        workList.append(stateName)
+                        done.append(stateName)
+    return False
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

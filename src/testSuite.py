@@ -10,21 +10,23 @@ def main():
 
     matchTestsTD()
     matchTestsBU()
-    
     nonEmptinessTestsTD()
     nonEmptinessTestsBU()
     witnessGenTestsTD()
     witnessGenTestsBU()
 
-    suffixTests()
-    prefixTests()
-
     unionTests()
     intersectionTests()
     complementTests()
 
-    reachabilityTests()
-    print(">>> UNIT TESTS DONE!")
+    reachabilityTDTests()
+    reachabilityBUTests()
+    removeUselessStatesTests()
+    
+    suffixTests()
+    prefixTests()
+
+    print(">> UNIT TESTS DONE!")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -39,13 +41,29 @@ def printFailedTests(failedTestsArray):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def helperFuncTests():
-    print(">>> UNIT TEST: testing helper functions...")
+    print(">> UNIT TEST: testing helper functions...")
+    
+    getOuptutStatesTests()
+    getArityDictTests()
+    removeStateTests()
+    generateTuplesTest()
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def getOuptutStatesTests():
+    print(">>>> SUBUNIT TEST: testing getOutputStates()...")
     failures = []
 
     if not boxX.getOutputStates() == ['q1']:
         failures.append("boxX.getOutputStates()")
     if not boxH1.getOutputStates() == ['u1', 'u2']:
         failures.append("boxH1.getOutputStates()")
+    
+    printFailedTests(failures)
+
+def getArityDictTests():
+    print(">>>> SUBUNIT TEST: testing getArityDict()...")
+    failures = []
 
     if boxX.getSymbolArityDict() != {'LH': 2, 'Port_X': 0}:
         failures.append("boxX.getSymbolArityDict()")
@@ -59,6 +77,12 @@ def helperFuncTests():
         failures.append("boxH1.getSymbolArityDict()")
     if boxLPort.getSymbolArityDict() != {'LH': 2, 'Port_LPort0': 0, 'Port_LPort1': 0}:
         failures.append("boxLPort.getSymbolArityDict()")
+
+    printFailedTests(failures)
+
+def removeStateTests():
+    print(">>>> SUBUNIT TEST: testing removeState()...")
+    failures = []
 
     testL0 = copy.deepcopy(boxL0)
     testL0.removeState('r2')
@@ -84,6 +108,12 @@ def helperFuncTests():
     if matchTreeTD(testL1, treeL1test4):
         failures.append("matchTreeTD(testL1, treeL1test4)")
 
+    printFailedTests(failures)
+
+def generateTuplesTest():
+    print(">>>> SUBUNIT TEST: testing generator of possibleChildrenTuples...")
+    failures = []
+
     if len(generatePossibleChildren('q0', ['q0','q1','q2'], 3)) != 19:
         failures.append("generatePossibleChildren('q0', ['q0','q1','q2'], 3)")
     if len(generatePossibleChildren('q0', ['q0','q1'], 3)) != 7:
@@ -100,7 +130,7 @@ def helperFuncTests():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def matchTestsTD():
-    print(">>> UNIT TEST: testing top-down match() ...")
+    print(">> UNIT TEST: testing top-down match() ...")
     failures = []
     if not matchTreeTD(boxX, treeXtest1):
         failures.append("matchTreeTD(boxX, treeXtest1)")
@@ -166,7 +196,7 @@ def matchTestsTD():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def matchTestsBU():
-    print(">>> UNIT TEST: testing bottom-up match() ...")
+    print(">> UNIT TEST: testing bottom-up match() ...")
     failures = []
 
     if not matchTreeBU(boxX, treeXtest1):
@@ -231,53 +261,9 @@ def matchTestsBU():
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def suffixTests():
-    print(">>> UNIT TEST: testing suffix() ...")
-    failures = []
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-    
-    try: boxL0.createSuffix()    
-    except: failures.append("boxL0.createSuffix()")
-
-    try: boxL0.createSuffix()    
-    except: failures.append("boxL0.createSuffix()")
-
-    try: boxL0.createSuffix()    
-    except: failures.append("boxL0.createSuffix()")
-
-    try: boxL0.createSuffix()    
-    except: failures.append("boxL0.createSuffix()")
-
-    printFailedTests(failures)
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def prefixTests():
-    print(">>> UNIT TEST: testing prefix() ...")
-    failures = []
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-    
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-    
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-    
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-    
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-
-    printFailedTests(failures)
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     
 def unionTests():
-    print(">>> UNIT TEST: testing union() ...")
+    print(">> UNIT TEST: testing union() ...")
     failures = []
     if not matchTreeTD(unionL0H0, treeL0test1):
         failures.append("matchTreeTD(unionL0H0, treeL0test1)")
@@ -318,7 +304,7 @@ def unionTests():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def intersectionTests():
-    print(">>> UNIT TEST: testing intersection() ...")
+    print(">> UNIT TEST: testing intersection() ...")
     failures = []
 
     treeAutIntersection(boxL0, boxH0)
@@ -329,7 +315,7 @@ def intersectionTests():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def complementTests():
-    print(">>> UNIT TEST: testing complement() ...")
+    print(">> UNIT TEST: testing complement() ...")
     failures = []
 
     if matchTreeTD(boxX, treeXtest1):
@@ -396,7 +382,7 @@ def complementTests():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def nonEmptinessTestsTD():
-    print(">>> UNIT TEST: testing top-down nonEmptiness() ...")
+    print(">> UNIT TEST: testing top-down nonEmptiness() ...")
     failures = []
     if not nonEmptyTopDown(boxX):
         failures.append("nonEmptyTopDown(boxX)")
@@ -434,9 +420,39 @@ def nonEmptinessTestsTD():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def nonEmptinessTestsBU():
-    print(">>> UNIT TEST: testing bottom-up nonEmptiness() ...")
+    print(">> UNIT TEST: testing bottom-up nonEmptiness() ...")
     failures = []
 
+    if not nonEmptyBottomUp(boxX):
+        failures.append("nonEmptyBottomUp(boxX)")
+    if not nonEmptyBottomUp(boxL0):
+        failures.append("nonEmptyBottomUp(boxL0)")
+    if not nonEmptyBottomUp(boxL1):
+        failures.append("nonEmptyBottomUp(boxL1)")
+    if not nonEmptyBottomUp(boxH0):
+        failures.append("nonEmptyBottomUp(boxH0)")
+    if not nonEmptyBottomUp(boxH1):
+        failures.append("nonEmptyBottomUp(boxH1)")
+    if not nonEmptyBottomUp(boxLPort):
+        failures.append("nonEmptyBottomUp(boxLPort)")
+    
+    if nonEmptyBottomUp(treeAutIntersection(boxL0, boxX)):
+        failures.append("nonEmptyBottomUp(treeAutIntersection(boxL0, boxX))")
+    if nonEmptyBottomUp(treeAutIntersection(boxL0, boxL1)):
+        failures.append("nonEmptyBottomUp(treeAutIntersection(boxL0, boxL1))")
+    if nonEmptyBottomUp(treeAutIntersection(boxL0, boxH0)):
+        failures.append("nonEmptyBottomUp(treeAutIntersection(boxL0, boxH0))")
+    if nonEmptyBottomUp(treeAutIntersection(boxL0, boxH1)):
+        failures.append("nonEmptyBottomUp(treeAutIntersection(boxL0, boxH1))")
+
+    if not nonEmptyBottomUp(treeAutIntersection(L0prefixForX, Xsuffix)):
+        failures.append("nonEmptyBottomUp(treeAutIntersection(L0prefixForX, Xsuffix))")
+    if not nonEmptyBottomUp(treeAutIntersection(L0prefixForL1, L1suffix)):
+        failures.append("nonEmptyBottomUp(treeAutIntersection(L0prefixForL1, L1suffix))")
+    if not nonEmptyBottomUp(treeAutIntersection(L0prefixForH0, H0suffix)):
+        failures.append("nonEmptyBottomUp(treeAutIntersection(L0prefixForH0, H0suffix))")
+    if nonEmptyBottomUp(treeAutIntersection(L0prefixForH0, H1suffix)):
+        failures.append("nonEmptyBottomUp(treeAutIntersection(L0prefixForH0, H1suffix))")
 
 
     printFailedTests(failures)
@@ -444,7 +460,7 @@ def nonEmptinessTestsBU():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def witnessGenTestsTD():
-    print(">>> UNIT TEST: testing top-down witnessGeneration()...")
+    print(">> UNIT TEST: testing top-down witnessGeneration()...")
     failures = []
 
     printFailedTests(failures)
@@ -452,7 +468,7 @@ def witnessGenTestsTD():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def witnessGenTestsBU():
-    print(">>> UNIT TEST: testing bottom-up witnessGeneration()...")
+    print(">> UNIT TEST: testing bottom-up witnessGeneration()...")
 
     failures = []
     printFailedTests(failures)
@@ -460,7 +476,7 @@ def witnessGenTestsBU():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def reachabilityTDTests():
-    print(">>> UNIT TEST: testing top-down reachability()...")
+    print(">> UNIT TEST: testing top-down reachability()...")
     failures = []
     
     if set(topDownReachable(testBox1)) != set(['q0','q1']):
@@ -474,8 +490,10 @@ def reachabilityTDTests():
 
     printFailedTests(failures)
 
-def reachabilityTests():
-    print(">>> UNIT TEST: testing bottom-up reachability()...")
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def reachabilityBUTests():
+    print(">> UNIT TEST: testing bottom-up reachability()...")
     failures = []
     
     if set(bottomUpReachable(testBox1)) != set(['q1']):
@@ -489,8 +507,10 @@ def reachabilityTests():
     
     printFailedTests(failures)
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 def removeUselessStatesTests():
-    print(">>> UNIT TEST: testing removeUselessStates()...")
+    print(">> UNIT TEST: testing removeUselessStates()...")
     failures = []
 
     removeUselessStates(testBox1)
@@ -512,8 +532,47 @@ def removeUselessStatesTests():
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+def suffixTests():
+    print(">> UNIT TEST: testing suffix() ...")
+    failures = []
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+    
+    try: boxL0.createSuffix()    
+    except: failures.append("boxL0.createSuffix()")
 
+    try: boxL0.createSuffix()    
+    except: failures.append("boxL0.createSuffix()")
 
+    try: boxL0.createSuffix()    
+    except: failures.append("boxL0.createSuffix()")
+
+    try: boxL0.createSuffix()    
+    except: failures.append("boxL0.createSuffix()")
+
+    printFailedTests(failures)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def prefixTests():
+    print(">> UNIT TEST: testing prefix() ...")
+    failures = []
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+    
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+    
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+    
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+    
+    try: boxX.createSuffix()    
+    except: failures.append("boxX.createSuffix()")
+
+    printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

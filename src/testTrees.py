@@ -93,28 +93,30 @@ H1TreeExample2 = "LH[LH[LH[Port_H1;1];LH[LH[1;1];LH[1;1]]];1]"
 H1TreeExample3 = "LH[LH[LH[Port_H1;1];LH[1;1]];LH[LH[1;1];LH[1;1]]]"
 H1TreeExample4 = "LH[Port_H1;1]"
 
-treeXtest1 = buildTreeFromString(None, XTreeExample1)
-treeXtest2 = buildTreeFromString(None, XTreeExample2)
-treeXtest3 = buildTreeFromString(None, XTreeExample3)
+testTreeDict = {
+    "treeXtest1" : buildTreeFromString(None, XTreeExample1),
+    "treeXtest2" : buildTreeFromString(None, XTreeExample2),
+    "treeXtest3" : buildTreeFromString(None, XTreeExample3),
 
-treeL0test1 = buildTreeFromString(None, L0TreeExample1)
-treeL0test2 = buildTreeFromString(None, L0TreeExample2)
-treeL0test3 = buildTreeFromString(None, L0TreeExample3)
-treeL0test4 = buildTreeFromString(None, L0TreeExample4)
+    "treeL0test1" : buildTreeFromString(None, L0TreeExample1),
+    "treeL0test2" : buildTreeFromString(None, L0TreeExample2),
+    "treeL0test3" : buildTreeFromString(None, L0TreeExample3),
+    "treeL0test4" : buildTreeFromString(None, L0TreeExample4),
 
-treeL1test1 = buildTreeFromString(None, L1TreeExample1)
-treeL1test2 = buildTreeFromString(None, L1TreeExample2)
-treeL1test3 = buildTreeFromString(None, L1TreeExample3)
-treeL1test4 = buildTreeFromString(None, L1TreeExample4)
+    "treeL1test1" : buildTreeFromString(None, L1TreeExample1),
+    "treeL1test2" : buildTreeFromString(None, L1TreeExample2),
+    "treeL1test3" : buildTreeFromString(None, L1TreeExample3),
+    "treeL1test4" : buildTreeFromString(None, L1TreeExample4),
 
-treeH0test1 = buildTreeFromString(None, H0TreeExample1)
-treeH0test2 = buildTreeFromString(None, H0TreeExample2)
-treeH0test3 = buildTreeFromString(None, H0TreeExample3)
-treeH0test4 = buildTreeFromString(None, H0TreeExample4)
+    "treeH0test1" : buildTreeFromString(None, H0TreeExample1),
+    "treeH0test2" : buildTreeFromString(None, H0TreeExample2),
+    "treeH0test3" : buildTreeFromString(None, H0TreeExample3),
+    "treeH0test4" : buildTreeFromString(None, H0TreeExample4),
 
-treeH1test1 = buildTreeFromString(None, H1TreeExample1)
-treeH1test2 = buildTreeFromString(None, H1TreeExample2)
-treeH1test3 = buildTreeFromString(None, H1TreeExample3)
-treeH1test4 = buildTreeFromString(None, H1TreeExample4)
+    "treeH1test1" : buildTreeFromString(None, H1TreeExample1),
+    "treeH1test2" : buildTreeFromString(None, H1TreeExample2),
+    "treeH1test3" : buildTreeFromString(None, H1TreeExample3),
+    "treeH1test4" : buildTreeFromString(None, H1TreeExample4)
+}
 
 # End of file testTrees.py

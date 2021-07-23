@@ -213,3 +213,4 @@ class TTreeAut:
                 result.rootStates.append(stateName)
         return result
 
+# End of file taClasses.py

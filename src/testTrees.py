@@ -51,6 +51,20 @@ def buildTreeFromString(currentNode:TTreeNode, string:str):
         root, string = getNodeFromString(string)
         return buildTreeFromString(root, string)
 
+## Reverse of the buildTreeFromString function
+# Creates a concise (string) representation of a tree from its structure
+def buildStringFromTree(currentNode:TTreeNode) -> str:
+    if len(currentNode.children) == 0:
+        return str(currentNode.value)
+    else:
+        temp = currentNode.value + "["
+        for i in range(len(currentNode.children)):
+            temp += str(buildStringFromTree(currentNode.children[i]))
+            if i < len(currentNode.children) - 1: 
+                temp += ";"
+        temp += "]"
+        return temp
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # TESTING DATA (trees represented by structured strings)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

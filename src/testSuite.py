@@ -469,8 +469,20 @@ def witnessGenTestsTD():
 
 def witnessGenTestsBU():
     print(">> UNIT TEST: testing bottom-up witnessGeneration()...")
-
     failures = []
+    # TODO: more tests
+
+    temp1tree, temp1str = createWitnessBU(L0suffix)
+    temp2tree, temp2str = createWitnessBU(boxL0)
+    temp3tree, temp3str = createWitnessBU(intersectionL0H1)
+    
+    if temp1tree is None or temp1str == "":
+        failures.append("createWitnessBU(L0suffix)")
+    if temp2tree is None or temp2str == "":
+        failures.append("createWitnessBU(boxL0)")
+    if temp3tree is not None or temp3str != "":
+        failures.append("createWitnessBU(intersectionL0H1)")
+    
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

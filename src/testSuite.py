@@ -1,4 +1,4 @@
-# boxes.py
+# testSuite.py
 # Some basic testing for tree implementation and tree automata
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
@@ -6,48 +6,66 @@
 from testData import *
 
 def main():
-    helperFuncTests()
+    print(">> UNIT TEST: helper functions...")
+    getOuptutStatesTests()
+    getArityDictTests()
+    removeStateTests()
+    generateTuplesTest()
 
+    print("\n>> UNIT TEST: matching trees to TAs...")
     matchTestsTD()
     matchTestsBU()
-    nonEmptinessTestsTD()
-    nonEmptinessTestsBU()
-    witnessGenTestsTD()
-    witnessGenTestsBU()
 
+    print("\n>> UNIT TEST: empty language check...")
+    nonEmptyTDTests()
+    nonEmptyBUTests()
+
+    print("\n>> UNIT TEST: basic automata operations...")
     unionTests()
     intersectionTests()
     complementTests()
 
+    print("\n>> UNIT TEST: reachable states...")
     reachabilityTDTests()
     reachabilityBUTests()
     removeUselessStatesTests()
     
+    print("\n>> UNIT TEST: partial order finding...")
     suffixTests()
     prefixTests()
 
-    print(">> UNIT TESTS DONE!")
+    print("\n>> UNIT TESTS DONE!")
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# HELPER FUNCTIONS FOR TEST SUITES
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def printFailedTests(failedTestsArray):
     try:
         assert failedTestsArray == []
     except:
-        print("Tests failed (" + str(len(failedTestsArray)) + "):")
+        print("## Tests failed (" + str(len(failedTestsArray)) + "):")
         for i in failedTestsArray:
             print("    " + i)
 
+def matchTest(function:str, ta:str, tree:str, expectingMatch, failures):
+    func = functionPtrs[function]
+    box = boxesDict[ta]
+    testTree = testTreeDict[tree]
+    if (expectingMatch and not func(box, testTree)) or (not expectingMatch and func(box, testTree)):
+        failures.append(function+"("+ta+", "+tree+")")
+
+def nonEmptyTest(function:str, ta:str, expectedEmpty, failures):
+    func = functionPtrs[function]
+    box = boxesDict[ta]
+    testTree, testString = func(box)
+    if not expectedEmpty and (testTree is None or testString == ""):
+        failures.append(function + "(" + box + ")")
+    if expectedEmpty and (testTree is not None or testString != ""):
+        failures.append(function + "(" + box + ")")
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def helperFuncTests():
-    print(">> UNIT TEST: testing helper functions...")
-    
-    getOuptutStatesTests()
-    getArityDictTests()
-    removeStateTests()
-    generateTuplesTest()
-
+# TESTS FOR SUBFUNCTIONS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def getOuptutStatesTests():
@@ -83,31 +101,24 @@ def getArityDictTests():
 def removeStateTests():
     print(">>>> SUBUNIT TEST: testing removeState()...")
     failures = []
+       
+    boxL0withoutR2 = copy.deepcopy(boxL0)
+    boxL0withoutR2.removeState('r2')
+    boxesDict["boxL0withoutR2"] = boxL0withoutR2
+    boxL1withoutS0 = copy.deepcopy(boxL1)
+    boxL1withoutS0.removeState('s0')
+    boxesDict["boxL1withoutS0"] = boxL1withoutS0
 
-    testL0 = copy.deepcopy(boxL0)
-    testL0.removeState('r2')
+    matchTest("matchTreeTD", "boxL0withoutR2", "treeL0test1", False, failures)
+    matchTest("matchTreeTD", "boxL0withoutR2", "treeL0test2", False, failures)
+    matchTest("matchTreeTD", "boxL0withoutR2", "treeL0test3", False, failures)
+    matchTest("matchTreeTD", "boxL0withoutR2", "treeL0test4", False, failures)
+
+    matchTest("matchTreeTD", "boxL1withoutS0", "treeL1test1", False, failures)
+    matchTest("matchTreeTD", "boxL1withoutS0", "treeL1test2", False, failures)
+    matchTest("matchTreeTD", "boxL1withoutS0", "treeL1test3", False, failures)
+    matchTest("matchTreeTD", "boxL1withoutS0", "treeL1test4", False, failures)
     
-    if matchTreeTD(testL0, treeL0test1):
-        failures.append("matchTreeTD(testL0, treeL0test1)")
-    if matchTreeTD(testL0, treeL0test2):
-        failures.append("matchTreeTD(testL0, treeL0test2)")
-    if matchTreeTD(testL0, treeL0test3):
-        failures.append("matchTreeTD(testL0, treeL0test3)")
-    if matchTreeTD(testL0, treeL0test4):
-        failures.append("matchTreeTD(testL0, treeL0test4)")
-
-    testL1 = copy.deepcopy(boxL1)
-    testL1.removeState('s0')
-
-    if matchTreeTD(testL1, treeL1test1):
-        failures.append("matchTreeTD(testL1, treeL1test1)")
-    if matchTreeTD(testL1, treeL1test2):
-        failures.append("matchTreeTD(testL1, treeL1test2)")
-    if matchTreeTD(testL1, treeL1test3):
-        failures.append("matchTreeTD(testL1, treeL1test3)")
-    if matchTreeTD(testL1, treeL1test4):
-        failures.append("matchTreeTD(testL1, treeL1test4)")
-
     printFailedTests(failures)
 
 def generateTuplesTest():
@@ -130,399 +141,267 @@ def generateTuplesTest():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def matchTestsTD():
-    print(">> UNIT TEST: testing top-down match() ...")
+    print(">>>> SUBUNIT TEST: testing top-down match() ...")
     failures = []
-    if not matchTreeTD(boxX, treeXtest1):
-        failures.append("matchTreeTD(boxX, treeXtest1)")
-    if matchTreeTD(boxX, treeXtest2):
-        failures.append("matchTreeTD(boxX, treeXtest2)")
-    if not matchTreeTD(boxX, treeXtest3):
-        failures.append("matchTreeTD(boxX, treeXtest3)")
-    
-    if not matchTreeTD(boxL0, treeL0test1):
-        failures.append("matchTreeTD(boxL0, treeL0test1)")
-    if not matchTreeTD(boxL0, treeL0test2):
-        failures.append("matchTreeTD(boxL0, treeL0test2)")
-    if not matchTreeTD(boxL0, treeL0test3):
-        failures.append("matchTreeTD(boxL0, treeL0test3)")
-    if not matchTreeTD(boxL0, treeL0test4):
-        failures.append("matchTreeTD(boxL0, treeL0test4)")
-    if matchTreeTD(boxL0, treeL1test1):
-        failures.append("matchTreeTD(boxL0, treeL1test1)")
-    if matchTreeTD(boxL0, treeL1test2):
-        failures.append("matchTreeTD(boxL0, treeL1test2)")
-    if matchTreeTD(boxL0, treeL1test3):
-        failures.append("matchTreeTD(boxL0, treeL1test3)")
-    if matchTreeTD(boxL0, treeL1test4):
-        failures.append("matchTreeTD(boxL0, treeL1test4)")
-    if matchTreeTD(boxL0, treeH0test1):
-        failures.append("matchTreeTD(boxL0, treeH0test1)")
-    if matchTreeTD(boxL0, treeH0test2):
-        failures.append("matchTreeTD(boxL0, treeH0test2)")
-    if matchTreeTD(boxL0, treeH0test3):
-        failures.append("matchTreeTD(boxL0, treeH0test3)")
-    if matchTreeTD(boxL0, treeH0test4):
-        failures.append("matchTreeTD(boxL0, treeH0test4)")
 
-    if not matchTreeTD(boxL1, treeL1test1):
-        failures.append("matchTreeTD(boxL1, treeL0test1)")
-    if not matchTreeTD(boxL1, treeL1test2):
-        failures.append("matchTreeTD(boxL1, treeL0test2)")
-    if not matchTreeTD(boxL1, treeL1test3):
-        failures.append("matchTreeTD(boxL1, treeL0test3)")
-    if not matchTreeTD(boxL1, treeL1test4):
-        failures.append("matchTreeTD(boxL1, treeL0test4)")
+    matchTest("matchTreeTD", "boxX", "treeXtest1", True, failures)
+    matchTest("matchTreeTD", "boxX", "treeXtest2", False, failures)
+    matchTest("matchTreeTD", "boxX", "treeXtest3", True, failures)
+    
+    matchTest("matchTreeTD", "boxL0", "treeL0test1", True, failures)
+    matchTest("matchTreeTD", "boxL0", "treeL0test2", True, failures)
+    matchTest("matchTreeTD", "boxL0", "treeL0test3", True, failures)
+    matchTest("matchTreeTD", "boxL0", "treeL0test4", True, failures)
 
-    if not matchTreeTD(boxH0, treeH0test1):
-        failures.append("matchTreeTD(boxH0, treeH0test1)")
-    if not matchTreeTD(boxH0, treeH0test2):
-        failures.append("matchTreeTD(boxH0, treeH0test2)")
-    if not matchTreeTD(boxH0, treeH0test3):
-        failures.append("matchTreeTD(boxH0, treeH0test3)")
-    if not matchTreeTD(boxH0, treeH0test4):
-        failures.append("matchTreeTD(boxH0, treeH0test4)")
-    
-    if not matchTreeTD(boxH1, treeH1test1):
-        failures.append("matchTreeTD(boxH1, treeH1test1)")
-    if not matchTreeTD(boxH1, treeH1test2):
-        failures.append("matchTreeTD(boxH1, treeH1test2)")
-    if not matchTreeTD(boxH1, treeH1test3):
-        failures.append("matchTreeTD(boxH1, treeH1test3)")
-    if not matchTreeTD(boxH1, treeH1test4):
-        failures.append("matchTreeTD(boxH1, treeH1test4)")
-    
+    matchTest("matchTreeTD", "boxL0", "treeL1test1", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeL1test2", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeL1test3", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeL1test4", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeH0test1", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeH0test2", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeH0test3", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeH0test4", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeH1test1", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeH1test2", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeH1test3", False, failures)
+    matchTest("matchTreeTD", "boxL0", "treeH1test4", False, failures)
+
+    matchTest("matchTreeTD", "boxL1", "treeL1test1", True, failures)
+    matchTest("matchTreeTD", "boxL1", "treeL1test2", True, failures)
+    matchTest("matchTreeTD", "boxL1", "treeL1test3", True, failures)
+    matchTest("matchTreeTD", "boxL1", "treeL1test4", True, failures)
+
+    matchTest("matchTreeTD", "boxH0", "treeH0test1", True, failures)
+    matchTest("matchTreeTD", "boxH0", "treeH0test2", True, failures)
+    matchTest("matchTreeTD", "boxH0", "treeH0test3", True, failures)
+    matchTest("matchTreeTD", "boxH0", "treeH0test4", True, failures)
+
+    matchTest("matchTreeTD", "boxH1", "treeH1test1", True, failures)
+    matchTest("matchTreeTD", "boxH1", "treeH1test2", True, failures)
+    matchTest("matchTreeTD", "boxH1", "treeH1test3", True, failures)
+    matchTest("matchTreeTD", "boxH1", "treeH1test4", True, failures)
+
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def matchTestsBU():
-    print(">> UNIT TEST: testing bottom-up match() ...")
+    print(">>>> SUBUNIT TEST: testing bottom-up match() ...")
     failures = []
 
-    if not matchTreeBU(boxX, treeXtest1):
-        failures.append("matchTreeBU(boxX, treeXtest1)")
-    if matchTreeBU(boxX, treeXtest2):
-        failures.append("matchTreeBU(boxX, treeXtest2)")
-    if not matchTreeBU(boxX, treeXtest3):
-        failures.append("matchTreeBU(boxX, treeXtest3)")
+    matchTest("matchTreeBU", "boxX", "treeXtest1", True, failures)
+    matchTest("matchTreeBU", "boxX", "treeXtest2", False, failures)
+    matchTest("matchTreeBU", "boxX", "treeXtest3", True, failures)
     
-    if not matchTreeBU(boxL0, treeL0test1):
-        failures.append("matchTreeBU(boxL0, treeL0test1)")
-    if not matchTreeBU(boxL0, treeL0test2):
-        failures.append("matchTreeBU(boxL0, treeL0test2)")
-    if not matchTreeBU(boxL0, treeL0test3):
-        failures.append("matchTreeBU(boxL0, treeL0test3)")
-    if not matchTreeBU(boxL0, treeL0test4):
-        failures.append("matchTreeBU(boxL0, treeL0test4)")
-    if matchTreeBU(boxL0, treeL1test1):
-        failures.append("matchTreeBU(boxL0, treeL1test1)")
-    if matchTreeBU(boxL0, treeL1test2):
-        failures.append("matchTreeBU(boxL0, treeL1test2)")
-    if matchTreeBU(boxL0, treeL1test3):
-        failures.append("matchTreeBU(boxL0, treeL1test3)")
-    if matchTreeBU(boxL0, treeL1test4):
-        failures.append("matchTreeBU(boxL0, treeL1test4)")
-    if matchTreeBU(boxL0, treeH0test1):
-        failures.append("matchTreeBU(boxL0, treeH0test1)")
-    if matchTreeBU(boxL0, treeH0test2):
-        failures.append("matchTreeBU(boxL0, treeH0test2)")
-    if matchTreeBU(boxL0, treeH0test3):
-        failures.append("matchTreeBU(boxL0, treeH0test3)")
-    if matchTreeBU(boxL0, treeH0test4):
-        failures.append("matchTreeBU(boxL0, treeH0test4)")
+    matchTest("matchTreeBU", "boxL0", "treeL0test1", True, failures)
+    matchTest("matchTreeBU", "boxL0", "treeL0test2", True, failures)
+    matchTest("matchTreeBU", "boxL0", "treeL0test3", True, failures)
+    matchTest("matchTreeBU", "boxL0", "treeL0test4", True, failures)
 
-    if not matchTreeBU(boxL1, treeL1test1):
-        failures.append("matchTreeBU(boxL1, treeL0test1)")
-    if not matchTreeBU(boxL1, treeL1test2):
-        failures.append("matchTreeBU(boxL1, treeL0test2)")
-    if not matchTreeBU(boxL1, treeL1test3):
-        failures.append("matchTreeBU(boxL1, treeL0test3)")
-    if not matchTreeBU(boxL1, treeL1test4):
-        failures.append("matchTreeBU(boxL1, treeL0test4)")
+    matchTest("matchTreeBU", "boxL0", "treeL1test1", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeL1test2", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeL1test3", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeL1test4", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeH0test1", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeH0test2", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeH0test3", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeH0test4", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeH1test1", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeH1test2", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeH1test3", False, failures)
+    matchTest("matchTreeBU", "boxL0", "treeH1test4", False, failures)
 
-    if not matchTreeBU(boxH0, treeH0test1):
-        failures.append("matchTreeBU(boxH0, treeH0test1)")
-    if not matchTreeBU(boxH0, treeH0test2):
-        failures.append("matchTreeBU(boxH0, treeH0test2)")
-    if not matchTreeBU(boxH0, treeH0test3):
-        failures.append("matchTreeBU(boxH0, treeH0test3)")
-    if not matchTreeBU(boxH0, treeH0test4):
-        failures.append("matchTreeBU(boxH0, treeH0test4)")
-    
-    if not matchTreeBU(boxH1, treeH1test1):
-        failures.append("matchTreeBU(boxH1, treeH1test1)")
-    if not matchTreeBU(boxH1, treeH1test2):
-        failures.append("matchTreeBU(boxH1, treeH1test2)")
-    if not matchTreeBU(boxH1, treeH1test3):
-        failures.append("matchTreeBU(boxH1, treeH1test3)")
-    if not matchTreeBU(boxH1, treeH1test4):
-        failures.append("matchTreeBU(boxH1, treeH1test4)")
+    matchTest("matchTreeBU", "boxL1", "treeL1test1", True, failures)
+    matchTest("matchTreeBU", "boxL1", "treeL1test2", True, failures)
+    matchTest("matchTreeBU", "boxL1", "treeL1test3", True, failures)
+    matchTest("matchTreeBU", "boxL1", "treeL1test4", True, failures)
+
+    matchTest("matchTreeBU", "boxH0", "treeH0test1", True, failures)
+    matchTest("matchTreeBU", "boxH0", "treeH0test2", True, failures)
+    matchTest("matchTreeBU", "boxH0", "treeH0test3", True, failures)
+    matchTest("matchTreeBU", "boxH0", "treeH0test4", True, failures)
+
+    matchTest("matchTreeBU", "boxH1", "treeH1test1", True, failures)
+    matchTest("matchTreeBU", "boxH1", "treeH1test2", True, failures)
+    matchTest("matchTreeBU", "boxH1", "treeH1test3", True, failures)
+    matchTest("matchTreeBU", "boxH1", "treeH1test4", True, failures)
 
     printFailedTests(failures)
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     
 def unionTests():
-    print(">> UNIT TEST: testing union() ...")
+    print(">>>> SUBUNIT TEST: testing union() ...")
     failures = []
-    if not matchTreeTD(unionL0H0, treeL0test1):
-        failures.append("matchTreeTD(unionL0H0, treeL0test1)")
-    if not matchTreeTD(unionL0H0, treeL0test2):
-        failures.append("matchTreeTD(unionL0H0, treeL0test2)")
-    if not matchTreeTD(unionL0H0, treeL0test3):
-        failures.append("matchTreeTD(unionL0H0, treeL0test3)")
-    if not matchTreeTD(unionL0H0, treeL0test4):
-        failures.append("matchTreeTD(unionL0H0, treeL0test4)")
-    if not matchTreeTD(unionL0H0, treeH0test1):
-        failures.append("matchTreeTD(unionL0H0, treeH0test1)")
-    if not matchTreeTD(unionL0H0, treeH0test2):
-        failures.append("matchTreeTD(unionL0H0, treeH0test2)")
-    if not matchTreeTD(unionL0H0, treeH0test3):
-        failures.append("matchTreeTD(unionL0H0, treeH0test3)")
-    if not matchTreeTD(unionL0H0, treeH0test4):
-        failures.append("matchTreeTD(unionL0H0, treeH0test4)")
+    matchTest("matchTreeTD", "unionL0H0", "treeL0test1", True, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeL0test2", True, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeL0test3", True, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeL0test4", True, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeH0test1", True, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeH0test2", True, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeH0test3", True, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeH0test4", True, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeL1test1", False, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeL1test2", False, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeL1test3", False, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeL1test4", False, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeH1test1", False, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeH1test2", False, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeH1test3", False, failures)
+    matchTest("matchTreeTD", "unionL0H0", "treeH1test4", False, failures)
 
-    if not matchTreeTD(unionL0H1, treeL0test1):
-        failures.append("matchTreeTD(unionL0H0, treeL0test1)")
-    if not matchTreeTD(unionL0H0, treeL0test2):
-        failures.append("matchTreeTD(unionL0H0, treeL0test2)")
-    if not matchTreeTD(unionL0H0, treeL0test3):
-        failures.append("matchTreeTD(unionL0H0, treeL0test3)")
-    if not matchTreeTD(unionL0H0, treeL0test4):
-        failures.append("matchTreeTD(unionL0H0, treeL0test4)")
-    if not matchTreeTD(unionL0H0, treeH0test1):
-        failures.append("matchTreeTD(unionL0H0, treeH0test1)")
-    if not matchTreeTD(unionL0H0, treeH0test2):
-        failures.append("matchTreeTD(unionL0H0, treeH0test2)")
-    if not matchTreeTD(unionL0H0, treeH0test3):
-        failures.append("matchTreeTD(unionL0H0, treeH0test3)")
-    if not matchTreeTD(unionL0H0, treeH0test4):
-        failures.append("matchTreeTD(unionL0H0, treeH0test4)")
+    matchTest("matchTreeTD", "unionL0H1", "treeL0test1", True, failures)
+    matchTest("matchTreeTD", "unionL0H1", "treeL0test2", True, failures)
+    matchTest("matchTreeTD", "unionL0H1", "treeL0test3", True, failures)
+    matchTest("matchTreeTD", "unionL0H1", "treeL0test4", True, failures)
+    matchTest("matchTreeTD", "unionL0H1", "treeH1test1", True, failures)
+    matchTest("matchTreeTD", "unionL0H1", "treeH1test2", True, failures)
+    matchTest("matchTreeTD", "unionL0H1", "treeH1test3", True, failures)
+    matchTest("matchTreeTD", "unionL0H1", "treeH1test4", True, failures)
 
+    matchTest("matchTreeTD", "unionXL1", "treeXtest1", True, failures)
+    matchTest("matchTreeTD", "unionXL1", "treeXtest2", False, failures)
+    matchTest("matchTreeTD", "unionXL1", "treeXtest3", True, failures)
+    matchTest("matchTreeTD", "unionXL1", "treeL1test1", True, failures)
+    matchTest("matchTreeTD", "unionXL1", "treeL1test2", True, failures)
+    matchTest("matchTreeTD", "unionXL1", "treeL1test3", True, failures)
+    matchTest("matchTreeTD", "unionXL1", "treeL1test4", True, failures)
+    
     printFailedTests(failures)
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def intersectionTests():
-    print(">> UNIT TEST: testing intersection() ...")
+    print(">>>> SUBUNIT TEST: testing intersection() ...")
     failures = []
 
-    treeAutIntersection(boxL0, boxH0)
-    treeAutIntersection(L0prefixForH1, H1suffix)
+    matchTest("matchTreeTD", "intersectionL0H0", "treeL0test1", False, failures)
+    matchTest("matchTreeTD", "intersectionL0H0", "treeH0test2", False, failures)
+    matchTest("matchTreeTD", "intersectionL0H0", "treeL0test3", False, failures)
+    matchTest("matchTreeTD", "intersectionL0H0", "treeH0test4", False, failures)
+
+    boxesDict["intersectionXX"] = treeAutIntersection(boxesDict["boxX"], boxesDict["boxX"])
+    boxesDict["intersectionL0L0"] = treeAutIntersection(boxesDict["boxL0"], boxesDict["boxL0"])
+    boxesDict["intersectionL1L1"] = treeAutIntersection(boxesDict["boxL1"], boxesDict["boxL1"])
+    boxesDict["intersectionH0H0"] = treeAutIntersection(boxesDict["boxH0"], boxesDict["boxH0"])
+    boxesDict["intersectionH1H1"] = treeAutIntersection(boxesDict["boxH1"], boxesDict["boxH1"])
+    boxesDict["intersectionLPortLPort"] = treeAutIntersection(boxesDict["boxLPort"], boxesDict["boxLPort"])
+
+    matchTest("matchTreeTD", "intersectionL0H0", "treeH0test4", False, failures)
+
+    # boxesDict["prefixXsuffixL0"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
+    # boxesDict["prefixXsuffixL1"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
+    # boxesDict["prefixXsuffixH0"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
+    # boxesDict["prefixXsuffixH1"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
+    # boxesDict["prefixL0suffixX"] = treeAutIntersection(boxesDict["L0prefixForX"], boxesDict["Xsuffix"])
+    # boxesDict["prefixL1suffixX"] = treeAutIntersection(boxesDict["L1prefixForX"], boxesDict["Xsuffix"])
+    # boxesDict["prefixH0suffixX"] = treeAutIntersection(boxesDict["H0prefixForX"], boxesDict["Xsuffix"])
+    # boxesDict["prefixH1suffixX"] = treeAutIntersection(boxesDict["H1prefixForX"], boxesDict["Xsuffix"])
+
+
 
     printFailedTests(failures)
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def complementTests():
-    print(">> UNIT TEST: testing complement() ...")
+    print(">>>> SUBUNIT TEST: testing complement() ...")
     failures = []
-
-    if matchTreeTD(boxX, treeXtest1):
-        failures.append("matchTreeTD(boxX, treeXtest1)")
-    if not matchTreeTD(boxX, treeXtest2):
-        failures.append("matchTreeTD(boxX, treeXtest2)")
-    if matchTreeTD(boxX, treeXtest3):
-        failures.append("matchTreeTD(boxX, treeXtest3)")
-    
-    if matchTreeTD(boxL0, treeL0test1):
-        failures.append("matchTreeTD(boxL0, treeL0test1)")
-    if matchTreeTD(boxL0, treeL0test2):
-        failures.append("matchTreeTD(boxL0, treeL0test2)")
-    if matchTreeTD(boxL0, treeL0test3):
-        failures.append("matchTreeTD(boxL0, treeL0test3)")
-    if matchTreeTD(boxL0, treeL0test4):
-        failures.append("matchTreeTD(boxL0, treeL0test4)")
-    if not matchTreeTD(boxL0, treeL1test1):
-        failures.append("matchTreeTD(boxL0, treeL1test1)")
-    if not matchTreeTD(boxL0, treeL1test2):
-        failures.append("matchTreeTD(boxL0, treeL1test2)")
-    if not matchTreeTD(boxL0, treeL1test3):
-        failures.append("matchTreeTD(boxL0, treeL1test3)")
-    if not matchTreeTD(boxL0, treeL1test4):
-        failures.append("matchTreeTD(boxL0, treeL1test4)")
-    if not matchTreeTD(boxL0, treeH0test1):
-        failures.append("matchTreeTD(boxL0, treeH0test1)")
-    if not matchTreeTD(boxL0, treeH0test2):
-        failures.append("matchTreeTD(boxL0, treeH0test2)")
-    if not matchTreeTD(boxL0, treeH0test3):
-        failures.append("matchTreeTD(boxL0, treeH0test3)")
-    if not matchTreeTD(boxL0, treeH0test4):
-        failures.append("matchTreeTD(boxL0, treeH0test4)")
-
-    if matchTreeTD(boxL1, treeL1test1):
-        failures.append("matchTreeTD(boxL1, treeL0test1)")
-    if matchTreeTD(boxL1, treeL1test2):
-        failures.append("matchTreeTD(boxL1, treeL0test2)")
-    if matchTreeTD(boxL1, treeL1test3):
-        failures.append("matchTreeTD(boxL1, treeL0test3)")
-    if matchTreeTD(boxL1, treeL1test4):
-        failures.append("matchTreeTD(boxL1, treeL0test4)")
-
-    if matchTreeTD(boxH0, treeH0test1):
-        failures.append("matchTreeTD(boxH0, treeH0test1)")
-    if matchTreeTD(boxH0, treeH0test2):
-        failures.append("matchTreeTD(boxH0, treeH0test2)")
-    if matchTreeTD(boxH0, treeH0test3):
-        failures.append("matchTreeTD(boxH0, treeH0test3)")
-    if matchTreeTD(boxH0, treeH0test4):
-        failures.append("matchTreeTD(boxH0, treeH0test4)")
-    
-    if matchTreeTD(boxH1, treeH1test1):
-        failures.append("matchTreeTD(boxH1, treeH1test1)")
-    if matchTreeTD(boxH1, treeH1test2):
-        failures.append("matchTreeTD(boxH1, treeH1test2)")
-    if matchTreeTD(boxH1, treeH1test3):
-        failures.append("matchTreeTD(boxH1, treeH1test3)")
-    if matchTreeTD(boxH1, treeH1test4):
-        failures.append("matchTreeTD(boxH1, treeH1test4)")
-
-    # printFailedTests(failures)
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def nonEmptinessTestsTD():
-    print(">> UNIT TEST: testing top-down nonEmptiness() ...")
-    failures = []
-    if not nonEmptyTopDown(boxX):
-        failures.append("nonEmptyTopDown(boxX)")
-    if not nonEmptyTopDown(boxL0):
-        failures.append("nonEmptyTopDown(boxL0)")
-    if not nonEmptyTopDown(boxL1):
-        failures.append("nonEmptyTopDown(boxL1)")
-    if not nonEmptyTopDown(boxH0):
-        failures.append("nonEmptyTopDown(boxH0)")
-    if not nonEmptyTopDown(boxH1):
-        failures.append("nonEmptyTopDown(boxH1)")
-    if not nonEmptyTopDown(boxLPort):
-        failures.append("nonEmptyTopDown(boxLPort)")
-    
-    if nonEmptyTopDown(treeAutIntersection(boxL0, boxX)):
-        failures.append("nonEmptyTopDown(treeAutIntersection(boxL0, boxX))")
-    if nonEmptyTopDown(treeAutIntersection(boxL0, boxL1)):
-        failures.append("nonEmptyTopDown(treeAutIntersection(boxL0, boxL1))")
-    if nonEmptyTopDown(treeAutIntersection(boxL0, boxH0)):
-        failures.append("nonEmptyTopDown(treeAutIntersection(boxL0, boxH0))")
-    if nonEmptyTopDown(treeAutIntersection(boxL0, boxH1)):
-        failures.append("nonEmptyTopDown(treeAutIntersection(boxL0, boxH1))")
-
-    if not nonEmptyTopDown(treeAutIntersection(L0prefixForX, Xsuffix)):
-        failures.append("nonEmptyTopDown(treeAutIntersection(L0prefixForX, Xsuffix))")
-    if not nonEmptyTopDown(treeAutIntersection(L0prefixForL1, L1suffix)):
-        failures.append("nonEmptyTopDown(treeAutIntersection(L0prefixForL1, L1suffix))")
-    if not nonEmptyTopDown(treeAutIntersection(L0prefixForH0, H0suffix)):
-        failures.append("nonEmptyTopDown(treeAutIntersection(L0prefixForH0, H0suffix))")
-    if nonEmptyTopDown(treeAutIntersection(L0prefixForH0, H1suffix)):
-        failures.append("nonEmptyTopDown(treeAutIntersection(L0prefixForH0, H1suffix))")
 
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def nonEmptinessTestsBU():
-    print(">> UNIT TEST: testing bottom-up nonEmptiness() ...")
+def nonEmptyTDTests():
+    print(">>>> SUBUNIT TEST: testing top-down witnessGeneration()...")
     failures = []
 
-    if not nonEmptyBottomUp(boxX):
-        failures.append("nonEmptyBottomUp(boxX)")
-    if not nonEmptyBottomUp(boxL0):
-        failures.append("nonEmptyBottomUp(boxL0)")
-    if not nonEmptyBottomUp(boxL1):
-        failures.append("nonEmptyBottomUp(boxL1)")
-    if not nonEmptyBottomUp(boxH0):
-        failures.append("nonEmptyBottomUp(boxH0)")
-    if not nonEmptyBottomUp(boxH1):
-        failures.append("nonEmptyBottomUp(boxH1)")
-    if not nonEmptyBottomUp(boxLPort):
-        failures.append("nonEmptyBottomUp(boxLPort)")
-    
-    if nonEmptyBottomUp(treeAutIntersection(boxL0, boxX)):
-        failures.append("nonEmptyBottomUp(treeAutIntersection(boxL0, boxX))")
-    if nonEmptyBottomUp(treeAutIntersection(boxL0, boxL1)):
-        failures.append("nonEmptyBottomUp(treeAutIntersection(boxL0, boxL1))")
-    if nonEmptyBottomUp(treeAutIntersection(boxL0, boxH0)):
-        failures.append("nonEmptyBottomUp(treeAutIntersection(boxL0, boxH0))")
-    if nonEmptyBottomUp(treeAutIntersection(boxL0, boxH1)):
-        failures.append("nonEmptyBottomUp(treeAutIntersection(boxL0, boxH1))")
+    nonEmptyTest("nonEmptyTD", "boxX",  False, failures)
+    nonEmptyTest("nonEmptyTD", "boxL0", False, failures)
+    nonEmptyTest("nonEmptyTD", "boxL1", False, failures)
+    nonEmptyTest("nonEmptyTD", "boxH0", False, failures)
+    nonEmptyTest("nonEmptyTD", "boxH1", False, failures)
 
-    if not nonEmptyBottomUp(treeAutIntersection(L0prefixForX, Xsuffix)):
-        failures.append("nonEmptyBottomUp(treeAutIntersection(L0prefixForX, Xsuffix))")
-    if not nonEmptyBottomUp(treeAutIntersection(L0prefixForL1, L1suffix)):
-        failures.append("nonEmptyBottomUp(treeAutIntersection(L0prefixForL1, L1suffix))")
-    if not nonEmptyBottomUp(treeAutIntersection(L0prefixForH0, H0suffix)):
-        failures.append("nonEmptyBottomUp(treeAutIntersection(L0prefixForH0, H0suffix))")
-    if nonEmptyBottomUp(treeAutIntersection(L0prefixForH0, H1suffix)):
-        failures.append("nonEmptyBottomUp(treeAutIntersection(L0prefixForH0, H1suffix))")
+    nonEmptyTest("nonEmptyTD", "intersectionXL0", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionXL1", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionXH0", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionXH1", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL0L1", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL0H0", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL0H1", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL1H0", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL1H1", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionH0H1", True, failures)
 
-
-    printFailedTests(failures)
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def witnessGenTestsTD():
-    print(">> UNIT TEST: testing top-down witnessGeneration()...")
-    failures = []
+    nonEmptyTest("nonEmptyTD", "intersectionXL0", True, failures)
 
     printFailedTests(failures)
     
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def witnessGenTestsBU():
-    print(">> UNIT TEST: testing bottom-up witnessGeneration()...")
+def nonEmptyBUTests():
+    print(">>>> SUBUNIT TEST: testing bottom-up witnessGeneration()...")
     failures = []
-    # TODO: more tests
 
-    temp1tree, temp1str = createWitnessBU(L0suffix)
-    temp2tree, temp2str = createWitnessBU(boxL0)
-    temp3tree, temp3str = createWitnessBU(intersectionL0H1)
-    
-    if temp1tree is None or temp1str == "":
-        failures.append("createWitnessBU(L0suffix)")
-    if temp2tree is None or temp2str == "":
-        failures.append("createWitnessBU(boxL0)")
-    if temp3tree is not None or temp3str != "":
-        failures.append("createWitnessBU(intersectionL0H1)")
+    nonEmptyTest("nonEmptyBU", "boxX",  False, failures)
+    nonEmptyTest("nonEmptyBU", "boxL0", False, failures)
+    nonEmptyTest("nonEmptyBU", "boxL1", False, failures)
+    nonEmptyTest("nonEmptyBU", "boxH0", False, failures)
+    nonEmptyTest("nonEmptyBU", "boxH1", False, failures)
+
+    nonEmptyTest("nonEmptyBU", "intersectionXL0", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionXL1", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionXH0", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionXH1", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL0L1", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL0H0", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL0H1", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL1H0", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL1H1", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionH0H1", True, failures)
+
+    nonEmptyTest("nonEmptyBU", "intersectionXL0", True, failures)
     
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def reachabilityTDTests():
-    print(">> UNIT TEST: testing top-down reachability()...")
+    print(">>>> SUBUNIT TEST: testing top-down reachability()...")
     failures = []
     
-    if set(topDownReachable(testBox1)) != set(['q0','q1']):
-        failures.append("topDownReachable(testBox1)")
-    if set(topDownReachable(testBox2a)) != set(['q0','q1','q2','q3']):
-        failures.append("topDownReachable(testBox2a")
-    if set(topDownReachable(testBox2b)) != set(['q0','q1','q2','q3']):
-        failures.append("topDownReachable(testBox2b)")
-    if set(topDownReachable(testBox3)) != set(['r0','r1','r2']):
-        failures.append("topDownReachable(testBox3)")
+    if set(reachableTD(testBox1)) != set(['q0','q1']):
+        failures.append("reachableTD(testBox1)")
+    if set(reachableTD(testBox2a)) != set(['q0','q1','q2','q3']):
+        failures.append("reachableTD(testBox2a")
+    if set(reachableTD(testBox2b)) != set(['q0','q1','q2','q3']):
+        failures.append("reachableTD(testBox2b)")
+    if set(reachableTD(testBox3)) != set(['r0','r1','r2']):
+        failures.append("reachableTD(testBox3)")
 
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def reachabilityBUTests():
-    print(">> UNIT TEST: testing bottom-up reachability()...")
+    print(">>>> SUBUNIT TEST: testing bottom-up reachability()...")
     failures = []
     
-    if set(bottomUpReachable(testBox1)) != set(['q1']):
-        failures.append("bottomUpReachable(testBox1)")
-    if set(bottomUpReachable(testBox2a)) != set(['q0','q1','q2','q3']):
-        failures.append("bottomUpReachable(testBox2a")
-    if set(bottomUpReachable(testBox2b)) != set(['q0','q1','q2','q3']):
-        failures.append("bottomUpReachable(testBox2b)")
-    if set(topDownReachable(testBox3)) != set(['r0','r1','r2']):
-        failures.append("bottomUpReachable(testBox3)")
+    if set(reachableBU(testBox1)) != set(['q1']):
+        failures.append("reachableBU(testBox1)")
+    if set(reachableBU(testBox2a)) != set(['q0','q1','q2','q3']):
+        failures.append("reachableBU(testBox2a")
+    if set(reachableBU(testBox2b)) != set(['q0','q1','q2','q3']):
+        failures.append("reachableBU(testBox2b)")
+    if set(reachableBU(testBox3)) != set(['r0','r1','r2']):
+        failures.append("reachableBU(testBox3)")
     
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def removeUselessStatesTests():
-    print(">> UNIT TEST: testing removeUselessStates()...")
+    print(">>>> SUBUNIT TEST: testing removeUselessStates()...")
     failures = []
 
     removeUselessStates(testBox1)
@@ -542,10 +421,10 @@ def removeUselessStatesTests():
     
     printFailedTests(failures)
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def suffixTests():
-    print(">> UNIT TEST: testing suffix() ...")
+    print(">>>> SUBUNIT TEST: testing suffix() ...")
     failures = []
     try: boxX.createSuffix()    
     except: failures.append("boxX.createSuffix()")
@@ -562,12 +441,12 @@ def suffixTests():
     try: boxL0.createSuffix()    
     except: failures.append("boxL0.createSuffix()")
 
-    printFailedTests(failures)
+    printFailedTests(failures)    
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def prefixTests():
-    print(">> UNIT TEST: testing prefix() ...")
+    print(">>>> SUBUNIT TEST: testing prefix() ...")
     failures = []
     try: boxX.createSuffix()    
     except: failures.append("boxX.createSuffix()")

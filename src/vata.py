@@ -12,3 +12,5 @@ def loadAutomatonFromFile(fileName) -> TTreeAut:
 
 def saveAutomatonToFile(fileName, treeAut:TTreeAut):
     pass
+
+# End of file vata.py

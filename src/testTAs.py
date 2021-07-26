@@ -147,4 +147,32 @@ unreachableTest2b = {
     }
 }
 
+testTransitionscomplementL0 = {
+    'sink': {
+        'a': ['sink', 'LH', ['sink','q0']],
+        'b': ['sink', 'LH', ['q0','sink']],
+        'c': ['sink', 'LH', ['sink','q1']],
+        'd': ['sink', 'LH', ['q1','sink']],
+        'e': ['sink', 'LH', ['sink','q2']],
+        'f': ['sink', 'LH', ['q2','sink']],
+        'g': ['sink', 'LH', ['sink','sink']],
+        'h': ['sink', '1', []],
+        'k': ['sink', 'Port_X', []],
+        'i': ['sink', 'Port_L1', []],
+        'j': ['sink', 'Port_H0', []],
+        'l': ['sink', 'Port_H1', []]
+    },
+    'q0': {
+        'm': ['q0', 'LH', ['q1','q0']],
+        'n': ['q0', 'LH', ['q1','q2']]
+    },
+    'q1': {
+        'o': ['q1', '0', []]
+    },
+    'q2': {
+        'p': ['q2', 'LH', ['q2','q2']],
+        'q': ['q2', 'Port_L0', []]
+    }
+}
+
 # End of file testTAs.py

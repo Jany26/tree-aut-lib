@@ -102,13 +102,28 @@ class TTreeAut:
 
     # needed for feeding makePrefix() function
     # generates all edge symbols labeling the output edges from the tree automaton
-    def getOutputEdges(self) -> list:
+    def getOutputSymbols(self) -> list:
         outputEdgeList = []
-        for stateName, content in self.transitions.items():
-            for key, transition in content.items():
-                if len(transition[2]) == 0:
-                    outputEdgeList.append(transition[1])
+        for transition in self.transitions.values():
+            for data in transition.values():
+                if len(data[2]) == 0:
+                    outputEdgeList.append(data[1])
         return outputEdgeList
+
+    # needed for feeding treeAutDeterminize() function
+    # generates a dictionary of all output edge symbols which correspond to a list of states,
+    # from which the transitions with the specific symbol originate
+    def getOutputEdges(self) -> dict:
+        result = {}
+        for transition in self.transitions.values():
+            for data in transition.values():
+                if len(data[2]) == 0:
+                    if data[1] not in result:
+                        result[data[1]] = []
+                    result[data[1]].append(data[0])
+        for item in result.values():
+            item.sort()
+        return result
 
     # needed for bottom-up reachability -> used in useless state removal
     def getOutputStates(self) -> list:

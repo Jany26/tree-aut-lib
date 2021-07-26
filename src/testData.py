@@ -23,12 +23,12 @@ boxLPort = TTreeAut(["v0"], testTransitionsBoxLPort)
 
 # # output edge array for createPrefix()
 
-outputEdgesX = boxX.getOutputEdges()
-outputEdgesL0 = boxL0.getOutputEdges()
-outputEdgesL1 = boxL1.getOutputEdges()
-outputEdgesH0 = boxH0.getOutputEdges()
-outputEdgesH1 = boxH1.getOutputEdges()
-outputEdgesLPort = boxLPort.getOutputEdges()
+outputEdgesX = boxX.getOutputSymbols()
+outputEdgesL0 = boxL0.getOutputSymbols()
+outputEdgesL1 = boxL1.getOutputSymbols()
+outputEdgesH0 = boxH0.getOutputSymbols()
+outputEdgesH1 = boxH1.getOutputSymbols()
+outputEdgesLPort = boxLPort.getOutputSymbols()
 
 # reachability and useless state removal test data
 testBox1 = TTreeAut(['q0'], unreachableTest1)
@@ -68,12 +68,12 @@ boxesDict = {
     "intersectionL1H1" : treeAutIntersection(boxL1, boxH1),
     "intersectionH0H1" : treeAutIntersection(boxH0, boxH1),
 
-    "complementX" : treeAutComplement(boxX),
-    "complementL0" : treeAutComplement(boxL0),
-    "complementL1" : treeAutComplement(boxL1),
-    "complementH0" : treeAutComplement(boxH0),
-    "complementH1" : treeAutComplement(boxH1),
-    "complementLPort" : treeAutComplement(boxLPort),
+    # "complementX" : treeAutComplement(boxX, {}),
+    # "complementL0" : treeAutComplement(boxL0, {}),
+    # "complementL1" : treeAutComplement(boxL1, {}),
+    # "complementH0" : treeAutComplement(boxH0, {}),
+    # "complementH1" : treeAutComplement(boxH1, {}),
+    # "complementLPort" : treeAutComplement(boxLPort, {}),
     
     "Xsuffix" : boxX.createSuffix(),
     "L0suffix" : boxL0.createSuffix(),
@@ -111,7 +111,7 @@ functionPtrs = {
     
     "treeAutUnion" : treeAutUnion,
     "treeAutIntersection" : treeAutIntersection,
-    "treeAutDeterminize" : treeAutDeterminize,
+    "treeAutDeterminization" : treeAutDeterminization,
     "treeAutComplement" : treeAutComplement,
     
     "nonEmptyTD" : nonEmptyTD,

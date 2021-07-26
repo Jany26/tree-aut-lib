@@ -5,38 +5,40 @@
 
 from testData import *
 from vata import *
+import os
 
 def main():
-    print(">> UNIT TEST: helper functions...")
+    print(">> UNIT TEST: helper functions ...")
     getOuptutStatesTests()
     getArityDictTests()
     removeStateTests()
     generateTuplesTest()
 
-    print(">> UNIT TEST: matching trees to TAs...")
+    print(">> UNIT TEST: matching trees to TAs ...")
     matchTestsTD()
     matchTestsBU()
 
-    print(">> UNIT TEST: empty language check...")
+    print(">> UNIT TEST: empty language check ...")
     nonEmptyTDTests()
     nonEmptyBUTests()
 
-    print(">> UNIT TEST: basic automata operations...")
+    print(">> UNIT TEST: basic automata operations ...")
     determinizationTests()
     unionTests()
     intersectionTests()
     complementTests()
 
-    print(">> UNIT TEST: reachable states...")
+    print(">> UNIT TEST: reachable states ...")
     reachabilityTDTests()
     reachabilityBUTests()
     removeUselessStatesTests()
     
-    print(">> UNIT TEST: partial order finding...")
+    print(">> UNIT TEST: partial order finding ...")
     suffixTests()
     prefixTests()
 
-    print(">> UNIT TEST: VATA format parsing...")
+    print(">> UNIT TEST: VATA format parsing ...")
+    vataSaveTests()
     vataLoadTests()
 
     print(">> UNIT TESTS DONE!")
@@ -74,7 +76,7 @@ def nonEmptyTest(function:str, ta:str, expectedEmpty, failures):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def getOuptutStatesTests():
-    print(" > SUBUNIT TEST: testing getOutputStates()...")
+    print(" > SUBUNIT TEST: testing getOutputStates() ...")
     failures = []
 
     if not boxX.getOutputStates() == ['q1']:
@@ -85,7 +87,7 @@ def getOuptutStatesTests():
     printFailedTests(failures)
 
 def getArityDictTests():
-    print(" > SUBUNIT TEST: testing getArityDict()...")
+    print(" > SUBUNIT TEST: testing getArityDict() ...")
     failures = []
 
     if boxX.getSymbolArityDict() != {'LH': 2, 'Port_X': 0}:
@@ -104,7 +106,7 @@ def getArityDictTests():
     printFailedTests(failures)
 
 def removeStateTests():
-    print(" > SUBUNIT TEST: testing removeState()...")
+    print(" > SUBUNIT TEST: testing removeState() ...")
     failures = []
        
     boxL0withoutR2 = copy.deepcopy(boxL0)
@@ -127,7 +129,7 @@ def removeStateTests():
     printFailedTests(failures)
 
 def generateTuplesTest():
-    print(" > SUBUNIT TEST: testing generator of possibleChildrenTuples...")
+    print(" > SUBUNIT TEST: testing generator of possibleChildrenTuples ...")
     failures = []
 
     if len(generatePossibleChildren('q0', ['q0','q1','q2'], 3)) != 19:
@@ -325,7 +327,7 @@ def complementTests():
     print(" > SUBUNIT TEST: testing complement() ...")
     failures = []
 
-    doneComplementL0 = TTreeAut(['sink', 'q1', 'q2'], testTransitionscomplementL0)
+    doneComplementL0 = loadAutomatonFromFile("out/L0complement.vtf")
     boxesDict["complementL0"] = doneComplementL0
 
     matchTest("matchTreeBU", "complementL0", "treeL0test1", False, failures)
@@ -342,7 +344,7 @@ def complementTests():
     matchTest("matchTreeBU", "complementL0", "treeL1test4", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeH0test1", True, failures)
 
-    # somehow these two cannot be accepted by complementL0... needs further investigation
+    # somehow these two cannot be accepted by complementL0 ... needs further investigation
     matchTest("matchTreeBU", "complementL0", "treeH0test2", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeH0test3", True, failures)
     
@@ -357,7 +359,7 @@ def complementTests():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def nonEmptyTDTests():
-    print(" > SUBUNIT TEST: testing top-down witnessGeneration()...")
+    print(" > SUBUNIT TEST: testing top-down witnessGeneration() ...")
     failures = []
 
     nonEmptyTest("nonEmptyTD", "boxX",  False, failures)
@@ -384,7 +386,7 @@ def nonEmptyTDTests():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def nonEmptyBUTests():
-    print(" > SUBUNIT TEST: testing bottom-up witnessGeneration()...")
+    print(" > SUBUNIT TEST: testing bottom-up witnessGeneration() ...")
     failures = []
 
     nonEmptyTest("nonEmptyBU", "boxX",  False, failures)
@@ -411,7 +413,7 @@ def nonEmptyBUTests():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def reachabilityTDTests():
-    print(" > SUBUNIT TEST: testing top-down reachability()...")
+    print(" > SUBUNIT TEST: testing top-down reachability() ...")
     failures = []
     
     if set(reachableTD(testBox1)) != set(['q0','q1']):
@@ -428,7 +430,7 @@ def reachabilityTDTests():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def reachabilityBUTests():
-    print(" > SUBUNIT TEST: testing bottom-up reachability()...")
+    print(" > SUBUNIT TEST: testing bottom-up reachability() ...")
     failures = []
     
     if set(reachableBU(testBox1)) != set(['q1']):
@@ -445,7 +447,7 @@ def reachabilityBUTests():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def removeUselessStatesTests():
-    print(" > SUBUNIT TEST: testing removeUselessStates()...")
+    print(" > SUBUNIT TEST: testing removeUselessStates() ...")
     failures = []
 
     removeUselessStates(testBox1)
@@ -470,20 +472,21 @@ def removeUselessStatesTests():
 def suffixTests():
     print(" > SUBUNIT TEST: testing suffix() ...")
     failures = []
+
     try: boxX.createSuffix()    
     except: failures.append("boxX.createSuffix()")
     
     try: boxL0.createSuffix()    
     except: failures.append("boxL0.createSuffix()")
 
-    try: boxL0.createSuffix()    
-    except: failures.append("boxL0.createSuffix()")
+    try: boxL1.createSuffix()    
+    except: failures.append("boxL1.createSuffix()")
 
-    try: boxL0.createSuffix()    
-    except: failures.append("boxL0.createSuffix()")
+    try: boxH0.createSuffix()    
+    except: failures.append("boxH0.createSuffix()")
 
-    try: boxL0.createSuffix()    
-    except: failures.append("boxL0.createSuffix()")
+    try: boxH1.createSuffix()    
+    except: failures.append("boxH1.createSuffix()")
 
     printFailedTests(failures)    
 
@@ -512,13 +515,33 @@ def prefixTests():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def vataLoadTests():
-    test1 = loadAutomatonFromFile("nta/A0053.vtf")
-    test2 = loadAutomatonFromFile("nta/A0054.vtf")
-    test3 = loadAutomatonFromFile("nta/A0055.vtf")
+    print(" > SUBUNIT TEST: importing from VATA format ...")
+    failures = []
+    for subdir, dirs, files in os.walk("."):
+        for file in files:
+            filepath = subdir + os.sep + file
+            if not filepath.endswith(".vtf"):
+                continue
+            else:
+                try:
+                    testBox = loadAutomatonFromFile(filepath)
+                    # print(f"      loading from file {filepath}")
+                except:
+                    failures.append(f"loadAutomatonFromFile({filepath})")
+    printFailedTests(failures)
+
+def vataSaveTests():
+    print(" > SUBUNIT TEST: exporting to VATA format ...")
+    failures = []
+
+    for name, box in boxesDict.items():
+        try:
+            saveAutomatonToFile(f"out/{name}.vtf", box)
+        except:
+            failures.append(f"saveAutomatonToFile(out/{name}.vtf)")
+
     
-    # test1.printTreeAut()
-    # test2.printTreeAut()
-    # test3.printTreeAut()
+    printFailedTests(failures)
 
 if __name__ == '__main__':
     main()

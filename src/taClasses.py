@@ -96,8 +96,11 @@ class TTreeAut:
         result = []
         for stateName in self.rootStates:
             result.append(stateName)
-        for stateName in self.transitions:
+        for stateName, edges in self.transitions.items():
             result.append(stateName)
+            for data in edges.values():
+                for i in data[2]:
+                    result.append(i)
         return set(result)
 
     # needed for feeding makePrefix() function

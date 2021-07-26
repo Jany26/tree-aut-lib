@@ -16,6 +16,7 @@ def loadRootsFromVTF(line:str) -> list:
     result = []
 
     if not line.startswith("%Root"):
+        print("exception A")
         raise Exception("unexpected preamble")
 
     words = line.split()
@@ -32,6 +33,7 @@ def loadStatesFromVTF(line:str) -> list:
     result = []
 
     if not line.startswith("%States"):
+        print("exception B")
         raise Exception("unexpected preamble")
 
     words = line.split()
@@ -49,6 +51,7 @@ def loadArityFromVTF(line:str) -> dict:
     result = {}
 
     if not line.startswith("%Alphabet"):
+        print("exception C")
         raise Exception("unexpected preamble")
 
     words = line.split()
@@ -80,18 +83,18 @@ def loadTransitionFromVTF(line:str) -> list:
 
 
 def consistencyCheck(data:list, allStates:list, arityDict:dict):
-    # for stateName, edgeDict in transitions.items():
-    #     if stateName not in allStates:
-    #         raise Exception(f"state '{stateName}' not in preamble")
-    #     for data in edgeDict.values():
     if data[0] not in allStates:
+        print("exception D")
         raise Exception(f"state '{data[0]}' not in preamble")
     if data[1] not in arityDict:
+        print("exception E")
         raise Exception(f"symbol '{data[1]}' not in preamble")
     if len(data[2]) != arityDict[data[1]]:
+        print("exception F")
         raise Exception(f"inconsistent arity for symbol '{data[1]}'")
     for i in data[2]:
         if i not in allStates:
+            print("exception G")
             raise Exception(f"state '{i}' not in preamble")
 
 
@@ -126,6 +129,7 @@ def loadAutomatonFromFile(fileName) -> TTreeAut:
         line = parts[0]
         if line.startswith("@"):
             if not line.startswith("@NTA"):
+                print("exception H")
                 raise Exception(f"unexpected format {line}")
         elif line.startswith("%"):
             if line.startswith("%Root"):
@@ -138,6 +142,7 @@ def loadAutomatonFromFile(fileName) -> TTreeAut:
                 allStates = loadStatesFromVTF(line)
                 stateListProcessed = True
             else:
+                print("exception I")
                 raise Exception(f"unexpected preamble '{line}'")
         else:
             edge = loadTransitionFromVTF(line)
@@ -150,6 +155,7 @@ def loadAutomatonFromFile(fileName) -> TTreeAut:
                 transitions[str(edge[0])] = {}
             transitions[str(edge[0])][key] = edge
     if not rootsProcessed:
+        print("exception J")
         raise Exception(f"List of root states missing")
     
     file.close()
@@ -164,11 +170,34 @@ def loadAutomatonFromFile(fileName) -> TTreeAut:
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def saveAutomatonToFile(fileName:str, treeAut:TTreeAut):
+def saveAutomatonToFile(fileName:str, ta:TTreeAut):
     file = open(fileName, "w")
-    file.write()
+    file.write("@NTA\n")
+
+    file.write("%Root")
+    for root in ta.rootStates:
+        file.write(f" {root}")
+    file.write("\n")
     
+    states = ta.getStates()
+    file.write("%States")
+    for i in states:
+        file.write(f" {i}")
+    file.write("\n")
+
+    arityDict = ta.getSymbolArityDict()
+    file.write("%Alphabet")
+    for symbol in arityDict:
+        file.write(f" {symbol}:{arityDict[symbol]}")
+    file.write("\n\n")
     
+    for edge in ta.transitions.values():
+        for data in edge.values():
+            file.write(f"{data[0]} {data[1]} (")
+            for child in data[2]:
+                file.write(f" {child}")
+            file.write(" )\n")
+            
     file.close()
     return
 

@@ -60,16 +60,17 @@ def matchTest(function:str, ta:str, tree:str, expectingMatch, failures):
     box = boxesDict[ta]
     testTree = testTreeDict[tree]
     if (expectingMatch and not func(box, testTree)) or (not expectingMatch and func(box, testTree)):
-        failures.append(function+"("+ta+", "+tree+")")
+        failures.append(f"{function}({ta}, {tree})")
 
-def nonEmptyTest(function:str, ta:str, expectedEmpty, failures):
+def nonEmptyTest(function:str, ta:str, expectedResult, failures):
     func = functionPtrs[function]
     box = boxesDict[ta]
     testTree, testString = func(box)
-    if not expectedEmpty and (testTree is None or testString == ""):
-        failures.append(function + "(" + box + ")")
-    if expectedEmpty and (testTree is not None or testString != ""):
-        failures.append(function + "(" + box + ")")
+
+    if expectedResult and (testTree is None or testString == ""):
+        failures.append(f"{function}({ta})")
+    if not expectedResult and (testTree is not None or testString != ""):
+        failures.append(f"{function}({ta})")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # TESTS FOR SUBFUNCTIONS
@@ -242,10 +243,55 @@ def matchTestsBU():
 
 def determinizationTests():
     print(" > SUBUNIT TEST: testing determinization() ...")
-    test = copy.deepcopy(boxesDict["L0prefixForX"])
-    treeAutDeterminization(test, {})
-    # test.printTreeAut()
-    pass
+    failures = []
+    boxesDict["deterministicX"] = treeAutDeterminization(boxesDict["boxX"], fullAlphabet)
+    boxesDict["deterministicL0"] = treeAutDeterminization(boxesDict["boxL0"], fullAlphabet)
+    boxesDict["deterministicL1"] = treeAutDeterminization(boxesDict["boxL1"], fullAlphabet)
+    boxesDict["deterministicH0"] = treeAutDeterminization(boxesDict["boxH0"], fullAlphabet)
+    boxesDict["deterministicH1"] = treeAutDeterminization(boxesDict["boxH1"], fullAlphabet)
+    boxesDict["deterministicLPort"] = treeAutDeterminization(boxesDict["boxLPort"], fullAlphabet)
+
+    matchTest("matchTreeTD", "deterministicX", "treeXtest1", True, failures)
+    matchTest("matchTreeTD", "deterministicX", "treeXtest2", False, failures)
+    matchTest("matchTreeTD", "deterministicX", "treeXtest3", True, failures)
+
+    matchTest("matchTreeTD", "deterministicL0", "treeL0test1", True, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL0test2", True, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL0test3", True, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL0test4", True, failures)
+
+    matchTest("matchTreeTD", "deterministicL0", "treeXtest1", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeXtest2", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeXtest3", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL1test1", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL1test2", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL1test3", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL1test4", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeH0test1", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeH0test2", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeH0test3", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeH0test4", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeH1test1", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeH1test2", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeH1test3", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeH1test4", False, failures)
+
+    matchTest("matchTreeTD", "deterministicL1", "treeL1test1", True, failures)
+    matchTest("matchTreeTD", "deterministicL1", "treeL1test2", True, failures)
+    matchTest("matchTreeTD", "deterministicL1", "treeL1test3", True, failures)
+    matchTest("matchTreeTD", "deterministicL1", "treeL1test4", True, failures)
+
+    matchTest("matchTreeTD", "deterministicH0", "treeH0test1", True, failures)
+    matchTest("matchTreeTD", "deterministicH0", "treeH0test2", True, failures)
+    matchTest("matchTreeTD", "deterministicH0", "treeH0test3", True, failures)
+    matchTest("matchTreeTD", "deterministicH0", "treeH0test4", True, failures)
+
+    matchTest("matchTreeTD", "deterministicH1", "treeH1test1", True, failures)
+    matchTest("matchTreeTD", "deterministicH1", "treeH1test2", True, failures)
+    matchTest("matchTreeTD", "deterministicH1", "treeH1test3", True, failures)
+    matchTest("matchTreeTD", "deterministicH1", "treeH1test4", True, failures)
+
+    printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -295,8 +341,13 @@ def intersectionTests():
     failures = []
 
     matchTest("matchTreeTD", "intersectionL0H0", "treeL0test1", False, failures)
-    matchTest("matchTreeTD", "intersectionL0H0", "treeH0test2", False, failures)
+    matchTest("matchTreeTD", "intersectionL0H0", "treeL0test2", False, failures)
     matchTest("matchTreeTD", "intersectionL0H0", "treeL0test3", False, failures)
+    matchTest("matchTreeTD", "intersectionL0H0", "treeL0test4", False, failures)
+
+    matchTest("matchTreeTD", "intersectionL0H0", "treeH0test1", False, failures)
+    matchTest("matchTreeTD", "intersectionL0H0", "treeH0test2", False, failures)
+    matchTest("matchTreeTD", "intersectionL0H0", "treeH0test3", False, failures)
     matchTest("matchTreeTD", "intersectionL0H0", "treeH0test4", False, failures)
 
     boxesDict["intersectionXX"] = treeAutIntersection(boxesDict["boxX"], boxesDict["boxX"])
@@ -308,6 +359,17 @@ def intersectionTests():
 
     matchTest("matchTreeTD", "intersectionL0H0", "treeH0test4", False, failures)
 
+    nonEmptyTest("nonEmptyTD", "intersectionXX",   True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL0L0", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL1L1", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionH0H0", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionH1H1", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionXX",   True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL0L0", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL1L1", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionH0H0", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionH1H1", True, failures)
+
     # boxesDict["prefixXsuffixL0"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
     # boxesDict["prefixXsuffixL1"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
     # boxesDict["prefixXsuffixH0"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
@@ -317,8 +379,6 @@ def intersectionTests():
     # boxesDict["prefixH0suffixX"] = treeAutIntersection(boxesDict["H0prefixForX"], boxesDict["Xsuffix"])
     # boxesDict["prefixH1suffixX"] = treeAutIntersection(boxesDict["H1prefixForX"], boxesDict["Xsuffix"])
 
-
-
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -327,32 +387,105 @@ def complementTests():
     print(" > SUBUNIT TEST: testing complement() ...")
     failures = []
 
-    doneComplementL0 = loadAutomatonFromFile("out/L0complement.vtf")
-    boxesDict["complementL0"] = doneComplementL0
+    matchTest("matchTreeBU", "complementX", "treeXtest1",  False, failures)
+    matchTest("matchTreeBU", "complementX", "treeXtest2",  True, failures)
+    matchTest("matchTreeBU", "complementX", "treeXtest3",  False, failures)
+    matchTest("matchTreeBU", "complementX", "treeL0test1", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeL0test2", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeL0test3", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeL0test4", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeL1test1", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeL1test2", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeL1test3", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeL1test4", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeH0test1", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeH0test2", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeH0test3", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeH0test4", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeH1test1", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeH1test2", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeH1test3", True, failures)
+    matchTest("matchTreeBU", "complementX", "treeH1test4", True, failures)
 
+    matchTest("matchTreeBU", "complementL0", "treeXtest1",  True, failures)
+    matchTest("matchTreeBU", "complementL0", "treeXtest2",  True, failures)
+    matchTest("matchTreeBU", "complementL0", "treeXtest3",  True, failures)
     matchTest("matchTreeBU", "complementL0", "treeL0test1", False, failures)
     matchTest("matchTreeBU", "complementL0", "treeL0test2", False, failures)
     matchTest("matchTreeBU", "complementL0", "treeL0test3", False, failures)
     matchTest("matchTreeBU", "complementL0", "treeL0test4", False, failures)
-
-    matchTest("matchTreeBU", "complementL0", "treeXtest1", True, failures)
-    matchTest("matchTreeBU", "complementL0", "treeXtest2", True, failures)
-    matchTest("matchTreeBU", "complementL0", "treeXtest3", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeL1test1", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeL1test2", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeL1test3", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeL1test4", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeH0test1", True, failures)
-
-    # somehow these two cannot be accepted by complementL0 ... needs further investigation
     matchTest("matchTreeBU", "complementL0", "treeH0test2", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeH0test3", True, failures)
-    
     matchTest("matchTreeBU", "complementL0", "treeH0test4", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeH1test1", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeH1test2", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeH1test3", True, failures)
     matchTest("matchTreeBU", "complementL0", "treeH1test4", True, failures)
+
+    matchTest("matchTreeBU", "complementL1", "treeXtest1",  True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeXtest2",  True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeXtest3",  True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeL0test1", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeL0test2", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeL0test3", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeL0test4", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeL1test1", False, failures)
+    matchTest("matchTreeBU", "complementL1", "treeL1test2", False, failures)
+    matchTest("matchTreeBU", "complementL1", "treeL1test3", False, failures)
+    matchTest("matchTreeBU", "complementL1", "treeL1test4", False, failures)
+    matchTest("matchTreeBU", "complementL1", "treeH0test1", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeH0test2", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeH0test3", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeH0test4", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeH1test1", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeH1test2", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeH1test3", True, failures)
+    matchTest("matchTreeBU", "complementL1", "treeH1test4", True, failures)
+
+    matchTest("matchTreeBU", "complementH0", "treeXtest1",  True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeXtest2",  True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeXtest3",  True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeL0test1", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeL0test2", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeL0test3", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeL0test4", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeL1test1", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeL1test2", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeL1test3", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeL1test4", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeH0test1", False, failures)
+    matchTest("matchTreeBU", "complementH0", "treeH0test2", False, failures)
+    matchTest("matchTreeBU", "complementH0", "treeH0test3", False, failures)
+    matchTest("matchTreeBU", "complementH0", "treeH0test4", False, failures)
+    matchTest("matchTreeBU", "complementH0", "treeH1test1", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeH1test2", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeH1test3", True, failures)
+    matchTest("matchTreeBU", "complementH0", "treeH1test4", True, failures)
+
+    matchTest("matchTreeBU", "complementH1", "treeXtest1",  True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeXtest2",  True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeXtest3",  True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeL0test1", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeL0test2", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeL0test3", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeL0test4", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeL1test1", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeL1test2", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeL1test3", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeL1test4", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeH0test1", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeH0test2", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeH0test3", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeH0test4", True, failures)
+    matchTest("matchTreeBU", "complementH1", "treeH1test1", False, failures)
+    matchTest("matchTreeBU", "complementH1", "treeH1test2", False, failures)
+    matchTest("matchTreeBU", "complementH1", "treeH1test3", False, failures)
+    matchTest("matchTreeBU", "complementH1", "treeH1test4", False, failures)
 
     printFailedTests(failures)
 
@@ -362,24 +495,21 @@ def nonEmptyTDTests():
     print(" > SUBUNIT TEST: testing top-down witnessGeneration() ...")
     failures = []
 
-    nonEmptyTest("nonEmptyTD", "boxX",  False, failures)
-    nonEmptyTest("nonEmptyTD", "boxL0", False, failures)
-    nonEmptyTest("nonEmptyTD", "boxL1", False, failures)
-    nonEmptyTest("nonEmptyTD", "boxH0", False, failures)
-    nonEmptyTest("nonEmptyTD", "boxH1", False, failures)
-
-    nonEmptyTest("nonEmptyTD", "intersectionXL0", True, failures)
-    nonEmptyTest("nonEmptyTD", "intersectionXL1", True, failures)
-    nonEmptyTest("nonEmptyTD", "intersectionXH0", True, failures)
-    nonEmptyTest("nonEmptyTD", "intersectionXH1", True, failures)
-    nonEmptyTest("nonEmptyTD", "intersectionL0L1", True, failures)
-    nonEmptyTest("nonEmptyTD", "intersectionL0H0", True, failures)
-    nonEmptyTest("nonEmptyTD", "intersectionL0H1", True, failures)
-    nonEmptyTest("nonEmptyTD", "intersectionL1H0", True, failures)
-    nonEmptyTest("nonEmptyTD", "intersectionL1H1", True, failures)
-    nonEmptyTest("nonEmptyTD", "intersectionH0H1", True, failures)
-
-    nonEmptyTest("nonEmptyTD", "intersectionXL0", True, failures)
+    nonEmptyTest("nonEmptyTD", "boxX",  True, failures)
+    nonEmptyTest("nonEmptyTD", "boxL0", True, failures)
+    nonEmptyTest("nonEmptyTD", "boxL1", True, failures)
+    nonEmptyTest("nonEmptyTD", "boxH0", True, failures)
+    nonEmptyTest("nonEmptyTD", "boxH1", True, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionXL0",  False, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionXL1",  False, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionXH0",  False, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionXH1",  False, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL0L1", False, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL0H0", False, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL0H1", False, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL1H0", False, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionL1H1", False, failures)
+    nonEmptyTest("nonEmptyTD", "intersectionH0H1", False, failures)
 
     printFailedTests(failures)
     
@@ -389,24 +519,21 @@ def nonEmptyBUTests():
     print(" > SUBUNIT TEST: testing bottom-up witnessGeneration() ...")
     failures = []
 
-    nonEmptyTest("nonEmptyBU", "boxX",  False, failures)
-    nonEmptyTest("nonEmptyBU", "boxL0", False, failures)
-    nonEmptyTest("nonEmptyBU", "boxL1", False, failures)
-    nonEmptyTest("nonEmptyBU", "boxH0", False, failures)
-    nonEmptyTest("nonEmptyBU", "boxH1", False, failures)
-
-    nonEmptyTest("nonEmptyBU", "intersectionXL0", True, failures)
-    nonEmptyTest("nonEmptyBU", "intersectionXL1", True, failures)
-    nonEmptyTest("nonEmptyBU", "intersectionXH0", True, failures)
-    nonEmptyTest("nonEmptyBU", "intersectionXH1", True, failures)
-    nonEmptyTest("nonEmptyBU", "intersectionL0L1", True, failures)
-    nonEmptyTest("nonEmptyBU", "intersectionL0H0", True, failures)
-    nonEmptyTest("nonEmptyBU", "intersectionL0H1", True, failures)
-    nonEmptyTest("nonEmptyBU", "intersectionL1H0", True, failures)
-    nonEmptyTest("nonEmptyBU", "intersectionL1H1", True, failures)
-    nonEmptyTest("nonEmptyBU", "intersectionH0H1", True, failures)
-
-    nonEmptyTest("nonEmptyBU", "intersectionXL0", True, failures)
+    nonEmptyTest("nonEmptyBU", "boxX",  True, failures)
+    nonEmptyTest("nonEmptyBU", "boxL0", True, failures)
+    nonEmptyTest("nonEmptyBU", "boxL1", True, failures)
+    nonEmptyTest("nonEmptyBU", "boxH0", True, failures)
+    nonEmptyTest("nonEmptyBU", "boxH1", True, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionXL0",  False, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionXL1",  False, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionXH0",  False, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionXH1",  False, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL0L1", False, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL0H0", False, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL0H1", False, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL1H0", False, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionL1H1", False, failures)
+    nonEmptyTest("nonEmptyBU", "intersectionH0H1", False, failures)
     
     printFailedTests(failures)
 
@@ -464,7 +591,6 @@ def removeUselessStatesTests():
     if testBox3.transitions != boxL0.transitions:
         failures.append("removeUselessStates(testBox3)")
     
-    
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -517,7 +643,7 @@ def prefixTests():
 def vataLoadTests():
     print(" > SUBUNIT TEST: importing from VATA format ...")
     failures = []
-    for subdir, dirs, files in os.walk("."):
+    for subdir, dirs, files in os.walk("../"):
         for file in files:
             filepath = subdir + os.sep + file
             if not filepath.endswith(".vtf"):
@@ -540,7 +666,6 @@ def vataSaveTests():
         except:
             failures.append(f"saveAutomatonToFile(out/{name}.vtf)")
 
-    
     printFailedTests(failures)
 
 if __name__ == '__main__':

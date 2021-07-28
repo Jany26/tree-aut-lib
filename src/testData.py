@@ -14,6 +14,20 @@ from testTrees import *
 # "leaf" states are recognized by having at least one transition which
 # has an empty tuple at the end (descendants) -> "output edge"
 
+fullAlphabet = {
+    "LH" : 2,
+    "0" : 0,
+    "1" : 0,
+    "Port_X" : 0,
+    "Port_L0" : 0,
+    "Port_L1" : 0,
+    "Port_H0" : 0,
+    "Port_H1" : 0,
+    "Port_LPort0" : 0,
+    "Port_LPort1" : 0,
+}
+
+
 boxX    = TTreeAut(["q0"], testTransitionsBoxX)
 boxL0   = TTreeAut(["r0"], testTransitionsBoxL0)
 boxL1   = TTreeAut(["s0"], testTransitionsBoxL1)
@@ -68,12 +82,12 @@ boxesDict = {
     "intersectionL1H1" : treeAutIntersection(boxL1, boxH1),
     "intersectionH0H1" : treeAutIntersection(boxH0, boxH1),
 
-    # "complementX" : treeAutComplement(boxX, {}),
-    # "complementL0" : treeAutComplement(boxL0, {}),
-    # "complementL1" : treeAutComplement(boxL1, {}),
-    # "complementH0" : treeAutComplement(boxH0, {}),
-    # "complementH1" : treeAutComplement(boxH1, {}),
-    # "complementLPort" : treeAutComplement(boxLPort, {}),
+    "complementX" : treeAutComplement(boxX, fullAlphabet),
+    "complementL0" : treeAutComplement(boxL0, fullAlphabet),
+    "complementL1" : treeAutComplement(boxL1, fullAlphabet),
+    "complementH0" : treeAutComplement(boxH0, fullAlphabet),
+    "complementH1" : treeAutComplement(boxH1, fullAlphabet),
+    "complementLPort" : treeAutComplement(boxLPort, fullAlphabet),
     
     "Xsuffix" : boxX.createSuffix(),
     "L0suffix" : boxL0.createSuffix(),

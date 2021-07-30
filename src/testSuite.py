@@ -4,7 +4,8 @@
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
 from testData import *
-from vata import *
+from formatVTF import *
+from formatDOT import *
 import os
 
 def main():
@@ -38,8 +39,11 @@ def main():
     prefixTests()
 
     print(">> UNIT TEST: VATA format parsing ...")
-    vataSaveTests()
-    vataLoadTests()
+    vataExportTests()
+    # vataImportTests()
+
+    print(">> UNIT TEST: DOT format export ...")
+    dotExportTests()
 
     print(">> UNIT TESTS DONE!")
 
@@ -640,7 +644,7 @@ def prefixTests():
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def vataLoadTests():
+def vataImportTests():
     print(" > SUBUNIT TEST: importing from VATA format ...")
     failures = []
     for subdir, dirs, files in os.walk("../"):
@@ -650,23 +654,40 @@ def vataLoadTests():
                 continue
             else:
                 try:
-                    testBox = loadAutomatonFromFile(filepath)
+                    testBox = importTreeAutFromVTF(filepath)
                     # print(f"      loading from file {filepath}")
                 except:
-                    failures.append(f"loadAutomatonFromFile({filepath})")
+                    failures.append(f"importFromVTF({filepath})")
     printFailedTests(failures)
 
-def vataSaveTests():
+def vataExportTests():
     print(" > SUBUNIT TEST: exporting to VATA format ...")
     failures = []
 
     for name, box in boxesDict.items():
         try:
-            saveAutomatonToFile(f"out/{name}.vtf", box)
+            exportTreeAutToVTF(box, f"vtf/{name}.vtf")
         except:
-            failures.append(f"saveAutomatonToFile(out/{name}.vtf)")
+            failures.append(f"exportToVTF(out/{name}.vtf)")
 
     printFailedTests(failures)
+
+def dotExportTests():
+    print(" > SUBUNIT TEST: exporting to DOT format ...")
+    failures = []
+
+    for name, box in boxesDict.items():
+        try:
+            exportTreeAutToDOT(box, f"dot/{name}.dot")
+        except:
+            failures.append(f"exportToDOT(out/{name}.dot)")
+
+    printFailedTests(failures)
+
+    # testBox = importTreeAutFromVTF("../nta/A0070.vtf")
+    # testBoxDet = treeAutDeterminization(testBox, testBox.getSymbolArityDict())
+    # exportTreeAutToVTF(testBoxDet, "vtf/test.vtf")
+
 
 if __name__ == '__main__':
     main()

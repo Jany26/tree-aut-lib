@@ -1,4 +1,4 @@
-# vata.py
+# formatVTF.py
 # Functions for loading/saving tree automaton from/to VATA format (.vtf)
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
@@ -9,7 +9,6 @@ from taLib import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # helper functions
-
 
 def loadRootsFromVTF(line:str) -> list:
     words = line.strip()
@@ -26,8 +25,6 @@ def loadRootsFromVTF(line:str) -> list:
         result.append(i)
     return result
 
-
-
 def loadStatesFromVTF(line:str) -> list:
     words = line.strip()
     result = []
@@ -43,8 +40,6 @@ def loadStatesFromVTF(line:str) -> list:
         items = i.split(":")
         result.append(str(items[0].strip()))
     return result
-
-
 
 def loadArityFromVTF(line:str) -> dict:
     words = line.strip()
@@ -64,8 +59,6 @@ def loadArityFromVTF(line:str) -> dict:
         result[symbol] = arity
     return result
 
-
-
 def loadTransitionFromVTF(line:str) -> list:
     line = line.strip()
     if line == "":
@@ -80,7 +73,6 @@ def loadTransitionFromVTF(line:str) -> list:
         else:
             children.append(str(i))
     return [state, symbol, children]
-
 
 def consistencyCheck(data:list, allStates:list, arityDict:dict):
     if data[0] not in allStates:
@@ -97,8 +89,6 @@ def consistencyCheck(data:list, allStates:list, arityDict:dict):
             print("exception G")
             raise Exception(f"state '{i}' not in preamble")
 
-
-
 def generateKeyFromEdge(edge:list) -> str:
     children = ""
     for i in edge[2]:
@@ -108,10 +98,9 @@ def generateKeyFromEdge(edge:list) -> str:
     key = f"{edge[0]}-{edge[1]}-[{children}]"
     return key
 
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def loadAutomatonFromFile(fileName) -> TTreeAut:
+def importTreeAutFromVTF(fileName) -> TTreeAut:
     file = open(fileName, "r")
 
     arityDict = {}
@@ -167,10 +156,9 @@ def loadAutomatonFromFile(fileName) -> TTreeAut:
 
 # helper functions
 
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def saveAutomatonToFile(fileName:str, ta:TTreeAut):
+def exportTreeAutToVTF(ta:TTreeAut, fileName:str):
     file = open(fileName, "w")
     file.write("@NTA\n")
 
@@ -201,5 +189,4 @@ def saveAutomatonToFile(fileName:str, ta:TTreeAut):
     file.close()
     return
 
-
-# End of file vata.py
+# End of file formatVTF.py

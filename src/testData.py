@@ -5,8 +5,7 @@
 
 from taLib import *
 from taClasses import *
-from testTAs import *
-from testTrees import *
+from testExamples import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -28,11 +27,11 @@ fullAlphabet = {
 }
 
 
-boxX    = TTreeAut(["q0"], testTransitionsBoxX)
-boxL0   = TTreeAut(["r0"], testTransitionsBoxL0)
-boxL1   = TTreeAut(["s0"], testTransitionsBoxL1)
-boxH0   = TTreeAut(["t0"], testTransitionsBoxH0)
-boxH1   = TTreeAut(["u0"], testTransitionsBoxH1)
+boxX = TTreeAut(["q0"], testTransitionsBoxX)
+boxL0 = TTreeAut(["r0"], testTransitionsBoxL0)
+boxL1 = TTreeAut(["s0"], testTransitionsBoxL1)
+boxH0 = TTreeAut(["t0"], testTransitionsBoxH0)
+boxH1 = TTreeAut(["u0"], testTransitionsBoxH1)
 boxLPort = TTreeAut(["v0"], testTransitionsBoxLPort)
 
 # # output edge array for createPrefix()

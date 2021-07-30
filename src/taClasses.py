@@ -19,29 +19,34 @@ class TTreeNode:
         self.children = []
         self.depth = 0
 
+    ## Recursively rpints the whole node in somehow structured manner.
+    # If called on root node, prints the whole tree
+    def printNode(self):
+        print(2 * self.depth * ' ' + str(self.value) + "   --> lv " + str(self.depth))
+        for i in self.children:
+            i.printNode()
+
+    ## Creates a child node with a specific value.
+    # Connects the created node to the current node/parent.
     def addChild(self, value):
         childPtr = TTreeNode(value)
         childPtr.depth = self.depth + 1
         childPtr.parent = self
         self.children.append(childPtr)
     
+    ## Connects a specific node to current node
     def connectChild(self, node): 
         self.children.append(node)
         node.parent = self
         node.depth = self.depth + 1
     
-    def removeChild(self, value): # removes 1 child (starts from smallest index (left)) with specified value
+    ## removes the "leftest" 1 child with specified value.
+    def removeChild(self, value): 
         for i in range(len(self.children)):
             if self.children[i].value == value:
                 self.children.pop(i)
                 return
-    
-    # needed for testing
-    def printNode(self):
-        print(2 * self.depth * ' ' + str(self.value) + "   --> lv " + str(self.depth))
-        for i in self.children:
-            i.printNode()
-    
+
     ### Maybe redundant functions ###
 
     def findFromLeft(self, valueToFind):
@@ -85,11 +90,10 @@ class TTreeAut:
 
         for stateName, content in self.transitions.items():
             print("=== State " + stateName + " ===")
-            # needs polishing
-            for key, transition in content.items():
-                print(transition[0] + " -- " + transition[1] + " --> " + str(transition[2]))
+            for edge in content.values():
+                print(edge[0] + " -- " + edge[1] + " --> " + str(edge[2]))
         print("")
-    
+
     ### Informative functions ###
 
     def getStates(self) -> list:
@@ -131,19 +135,19 @@ class TTreeAut:
     # needed for bottom-up reachability -> used in useless state removal
     def getOutputStates(self) -> list:
         outputStateList = []
-        for stateName, content in self.transitions.items():
-            for key, transition in content.items():
-                if len(transition[2]) == 0:
+        for stateName, edges in self.transitions.items():
+            for data in edges.values():
+                if len(data[2]) == 0:
                     outputStateList.append(stateName)
                     break
         return outputStateList
     
     def getSymbolArityDict(self) -> dict:
         symbolDict = {}
-        for state, content in self.transitions.items():
-            for key, transition in content.items():
-                if transition[1] not in symbolDict:
-                    symbolDict[transition[1]] = len(transition[2])
+        for edge in self.transitions.values():
+            for data in edge.values():
+                if data[1] not in symbolDict:
+                    symbolDict[data[1]] = len(data[2])
         return symbolDict
     
     ### Modifying functions ###
@@ -161,14 +165,14 @@ class TTreeAut:
         self.transitions[newName] = self.transitions.pop(oldName)
 
         # renaming name of the state inside transitions (2nd layer)
-        for stateName, content in self.transitions.items():
-            for key, transition in content.items():
-                if transition[0] == oldName:
-                    transition[0] = str(newName)
+        for edges in self.transitions.values():
+            for data in edges.items():
+                if data[0] == oldName:
+                    data[0] = str(newName)
                 # renaming state name inside the children array (3rd layer)
-                for i in range(len(transition[2])):
-                    if transition[2][i] == oldName:
-                        transition[2][i] = newName
+                for i in range(len(data[2])):
+                    if data[2][i] == oldName:
+                        data[2][i] = newName
 
     def removeState(self, state:str):
         if state in self.rootStates:
@@ -209,7 +213,7 @@ class TTreeAut:
             for tempName, tempTransition in tempDict.items():
                 # checking for non-port output edge
                 nonPortOutput = False
-                for name, transition in content.items():
+                for transition in content.values():
                     if not transition[1].startswith('Port') and len(transition[2]) == 0:
                         nonPortOutput = True
                 # skip adding non-port output edge if another non-port output present
@@ -221,10 +225,10 @@ class TTreeAut:
 
     def createSuffix(self):
         result = copy.deepcopy(self)
-        for stateName, content in result.transitions.items():
+        for stateName, edges in result.transitions.items():
             check = True
-            for key, transition in content.items():
-                if (transition[1].startswith("Port")):
+            for data in edges.values():
+                if (data[1].startswith("Port")):
                     check = False
                     break
             if check and stateName not in result.rootStates:

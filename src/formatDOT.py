@@ -5,6 +5,9 @@
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
 from taLib import *
+from formatVTF import importTreeAutFromVTF
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def rootHandle(rootList:list, file):
     file.write("\tnode [ label=\"\", shape=point, width=0.001, height=0.001 ];\n")
@@ -12,7 +15,7 @@ def rootHandle(rootList:list, file):
         file.write(f"\t\"->{root}\"\n")
     file.write("\n\tnode [ shape=circle ];\n")
     for root in rootList:
-        file.write(f"\t\"->{root}\" -> \"{root}\";\n")
+        file.write(f"\t\"->{root}\" -> \"{root}\" [ penwidth=2.0, arrowsize=0.5 ] ;\n")
     file.write("\n")
 
 def outputEdgeHandle(edge:list, file):
@@ -20,7 +23,7 @@ def outputEdgeHandle(edge:list, file):
         file.write(f"\tnode [ label=\"\", shape=point, width=0.001, height=0.001 ];\n")
         endName = f"{edge[0]}-{edge[1]}->"
         file.write(f"\t\"{endName}\"\n")
-        file.write(f"\t\"{edge[0]}\" -> \"{endName}\" [ label = \"{edge[1]}\" ] \n\n")
+        file.write(f"\t\"{edge[0]}\" -> \"{endName}\" [ penwidth=2.0, arrowsize=0.5, label = \"{edge[1]}\" ] \n\n")
         return True
     return False
 
@@ -33,23 +36,20 @@ def allStatesHandle(stateList, file):
 def edgeHandle(edge:list, file):
     if outputEdgeHandle(edge, file):
         return
-    
+
+    # BUG: making a nicer self-loops creates an unexpected error for Graphviz
+    # in some cases - solution was to remove special treatment of self-loops
     tempName = f"{edge[0]}-{edge[1]}->"
-    selfLoop = True 
-    # if all children are the parent, then some adjustments have to be made
     for i in edge[2]:
-        if i != edge[0]:
-            selfLoop = False
         tempName += str(i)
 
-    if selfLoop:
-        file.write(f"\t{{ rank = same; \"{edge[0]}\"; \"{tempName}\"; }};\n")   
-
-    file.write(f"\t\"{tempName}\" [ label=\"\", shape=point, width=0.001, height=0.001 ];\n")
-    file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ arrowhead = None ]\n")
+    file.write(f"\t\"{tempName}\" [ label=\"\", shape=point, width=0.05, height=0.05 ];\n")
+    file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ penwidth=1.0, arrowhead = None ]\n")
     for i in range(len(edge[2])):
-        file.write(f"\t\"{tempName}\" -> \"{edge[2][i]}\" [ label = \"{edge[1][i]}\" ]\n")
+        file.write(f"\t\"{tempName}\" -> \"{edge[2][i]}\" [ penwidth=1.0, arrowsize=0.5, label = \"{edge[1][i]}\" ]\n")
     file.write(f"\n")
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def exportTreeAutToDOT(ta:TTreeAut, fileName:str):
     file = open(fileName, "w")
@@ -63,8 +63,12 @@ def exportTreeAutToDOT(ta:TTreeAut, fileName:str):
     file.close()
     pass
 
-def exportVTFToDOT(vtfFile:str, dotFile:str):
-    
+# Unnecessary most probably
+## Explicitly reads all data from VATA format and creates a DOT format from it.
+# -- could be easily done thru importTreeAutFromVTF() and exportTreeAutToDOT()
+# This is a more optimized version though.
+def exportVTFToDOT(fileNameVTF:str, fileNameDOT:str):
+    vtfFile = open(fileNameVTF, "r")
     pass
 
 # End of file formatDOT.py

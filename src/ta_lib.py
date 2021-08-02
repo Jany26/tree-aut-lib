@@ -1,9 +1,9 @@
-# taLib.py
+# ta_lib.py
 # Basic functions for working with tree automata (from taLib.py)
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from taClasses import *
+from ta_classes import *
 from itertools import product
 
 from typing import Tuple
@@ -486,4 +486,4 @@ def reachableBU(ta:TTreeAut) -> list:
                         result.append(stateName) # similarly for dictionary
     return result
 
-# End of file taLib.py
+# End of file ta_lib.py

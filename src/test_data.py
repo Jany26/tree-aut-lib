@@ -1,11 +1,12 @@
-# testData.py
+# test_data.py
 # Test variables used in testSuite.py for better readability
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from taLib import *
-from taClasses import *
-from testExamples import *
+from ta_lib import *
+from ta_classes import *
+from test_trees import *
+from test_boxes import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -135,4 +136,4 @@ functionPtrs = {
     "removeUselessStates" : removeUselessStates
 }
 
-# End of file testData.py
+# End of file test_data.py

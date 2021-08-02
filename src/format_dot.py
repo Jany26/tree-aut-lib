@@ -1,11 +1,11 @@
-# formatDOT.py
+# format_dot.py
 # Functions for exporting tree automaton into DOT format (.dot) 
 # for generating a graphical representation of the TA.
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from taLib import *
-from formatVTF import importTreeAutFromVTF
+from ta_lib import *
+from format_vtf import importTreeAutFromVTF
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -72,4 +72,4 @@ def exportVTFToDOT(fileNameVTF:str, fileNameDOT:str):
     exportTreeAutToDOT(temp, fileNameDOT)
     pass
 
-# End of file formatDOT.py
+# End of file format_dot.py

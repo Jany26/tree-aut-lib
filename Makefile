@@ -6,7 +6,7 @@
 .SILENT: all
 
 all:
-	cd src/ && python3 testSuite.py
+	cd src/ && python3 all_tests.py
 
 clean:
 	cd src/ && rm -r __pycache__/

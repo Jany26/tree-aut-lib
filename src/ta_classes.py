@@ -1,4 +1,4 @@
-# taClasses.py
+# ta_classes.py
 # Basic classes needed for implementing tree automata
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
@@ -66,14 +66,14 @@ class TTreeNode:
 
 
 class TEdge:
-    # arity = len(boxArray)
-    def __init__(self, label:str, arity:int, boxArray:list):
+    def __init__(self, label:str, arity:int, boxArray:list, variable:str):
         self.label = label
         self.arity = arity
         if len(boxArray) != arity:
             raise Exception("TEdge(): Inconsistent edge attributes")
         self.boxArray = boxArray
-    
+        self.variable = variable
+
     def shortenEdge(self):
         # None = Short edge = No box-reduction over this edge
         self.boxArray = [None] * self.arity
@@ -250,4 +250,4 @@ class TTreeAut:
                 result.rootStates.append(stateName)
         return result
 
-# End of file taClasses.py
+# End of file ta_classes.py

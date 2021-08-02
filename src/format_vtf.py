@@ -1,11 +1,11 @@
-# formatVTF.py
+# format_vtf.py
 # Functions for loading/saving tree automaton from/to VATA format (.vtf)
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
 # import sys
 # import os
-from taLib import *
+from ta_lib import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # helper functions
@@ -189,4 +189,4 @@ def exportTreeAutToVTF(ta:TTreeAut, fileName:str):
     file.close()
     return
 
-# End of file formatVTF.py
+# End of file format_vtf.py

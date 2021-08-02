@@ -1,11 +1,11 @@
-# testSuite.py
+# all_tests.py
 # Some basic testing for tree implementation and tree automata
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from testData import *
-from formatVTF import *
-from formatDOT import *
+from test_data import *
+from format_vtf import *
+from format_dot import *
 import os
 
 def main():
@@ -706,4 +706,4 @@ def dotExportFromVTFTests():
 if __name__ == '__main__':
     main()
 
-# End of file testSuite.py
+# End of file all_tests.py

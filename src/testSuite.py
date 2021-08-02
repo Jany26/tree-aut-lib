@@ -44,6 +44,7 @@ def main():
 
     print(">> UNIT TEST: DOT format export ...")
     dotExportTests()
+    dotExportFromVTFTests()
 
     print(">> UNIT TESTS DONE!")
 
@@ -672,6 +673,8 @@ def vataExportTests():
 
     printFailedTests(failures)
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 def dotExportTests():
     print(" > SUBUNIT TEST: exporting to DOT format ...")
     failures = []
@@ -684,9 +687,20 @@ def dotExportTests():
 
     printFailedTests(failures)
 
-    # testBox = importTreeAutFromVTF("../nta/A0070.vtf")
-    # testBoxDet = treeAutDeterminization(testBox, testBox.getSymbolArityDict())
-    # exportTreeAutToVTF(testBoxDet, "vtf/test.vtf")
+def dotExportFromVTFTests():
+    print(" > SUBUNIT TEST: exporting from VTF to DOT format ...")
+    failures = []
+    for subdir, dirs, files in os.walk("./"):
+        for file in files:
+            filepath = subdir + os.sep + file
+            if not filepath.endswith(".vtf"):
+                continue
+            else:
+                try:
+                    exportVTFToDOT(filepath, filepath[:-4] + ".dot")
+                except:
+                    failures.append(f"exportFromVTFtoDOT({filepath})")
+    pass
 
 
 if __name__ == '__main__':

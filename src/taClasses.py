@@ -64,6 +64,21 @@ class TTreeNode:
                 return x
         return self if (self.value == valueToFind) else None
 
+
+class TEdge:
+    # arity = len(boxArray)
+    def __init__(self, label:str, arity:int, boxArray:list):
+        self.label = label
+        self.arity = arity
+        if len(boxArray) != arity:
+            raise Exception("TEdge(): Inconsistent edge attributes")
+        self.boxArray = boxArray
+    
+    def shortenEdge(self):
+        # None = Short edge = No box-reduction over this edge
+        self.boxArray = [None] * self.arity
+
+
 ## Tree automaton class - has two attributes = dictionary of states and root state array
 #     transitions = dictionary (A) of dictionaries (B) referenced by state name
 #     inner dictionaries (B) are then referenced by transition names (arbitrary)

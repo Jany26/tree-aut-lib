@@ -68,7 +68,8 @@ def exportTreeAutToDOT(ta:TTreeAut, fileName:str):
 # -- could be easily done thru importTreeAutFromVTF() and exportTreeAutToDOT()
 # This is a more optimized version though.
 def exportVTFToDOT(fileNameVTF:str, fileNameDOT:str):
-    vtfFile = open(fileNameVTF, "r")
+    temp = importTreeAutFromVTF(fileNameVTF)
+    exportTreeAutToDOT(temp, fileNameDOT)
     pass
 
 # End of file formatDOT.py

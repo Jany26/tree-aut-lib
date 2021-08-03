@@ -69,6 +69,7 @@ def exportTreeAutToDOT(ta:TTreeAut, fileName:str):
 # This is a more optimized version though.
 def exportVTFToDOT(fileNameVTF:str, fileNameDOT:str):
     temp = importTreeAutFromVTF(fileNameVTF)
+    # temp.printTreeAut()
     exportTreeAutToDOT(temp, fileNameDOT)
     pass
 

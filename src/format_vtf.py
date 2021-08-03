@@ -72,7 +72,7 @@ def loadTransitionFromVTF(line:str) -> list:
             continue
         else:
             children.append(str(i))
-    return [state, TEdge(symbol, [None] * len(children)), children]
+    return [state, TEdge(symbol, [None] * len(children), ""), children]
 
 def consistencyCheck(data:list, allStates:list, arityDict:dict):
     if data[0] not in allStates:
@@ -81,7 +81,7 @@ def consistencyCheck(data:list, allStates:list, arityDict:dict):
     if data[1].label not in arityDict:
         print("exception E")
         raise Exception(f"symbol '{data[1]}' not in preamble")
-    if len(data[2]) != arityDict[data[1]]:
+    if len(data[2]) != arityDict[data[1].label]:
         print("exception F")
         raise Exception(f"inconsistent arity for symbol '{data[1].label}'")
     for i in data[2]:

@@ -5,3 +5,4 @@ __pycache__/
 *.tmb
 src/vtf
 src/dot
+src/vtf-to-dot

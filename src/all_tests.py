@@ -40,9 +40,7 @@ def main():
 
     print(">> UNIT TEST: VATA format parsing ...")
     vataExportTests()
-    # importing all testboxes from repo is pretty time consuming, 
-    # so usually i just skip
-    # vataImportTests()
+    # vataImportTests() # time consuming
 
     print(">> UNIT TEST: DOT format export ...")
     dotExportTests()
@@ -694,18 +692,20 @@ def dotExportTests():
 def dotExportFromVTFTests():
     print(" > SUBUNIT TEST: exporting from VTF to DOT format ...")
     failures = []
-    for subdir, dirs, files in os.walk("./"):
+    for subdir, dirs, files in os.walk("."):
         for file in files:
             filepath = subdir + os.sep + file
             if not filepath.endswith(".vtf"):
                 continue
             else:
                 try:
-                    exportVTFToDOT(filepath, filepath[:-4] + ".dot")
+                    dotFilepath = "." + os.sep + "vtf-to-dot" + os.sep + file
+                    dotFilepath = dotFilepath[:-4] + ".dot"
+                    exportVTFToDOT(filepath, dotFilepath)
                 except:
-                    failures.append(f"exportFromVTFtoDOT({filepath})")
-    pass
+                    failures.append(f"exportFromVTFtoDOT({filepath}, {dotFilepath})")
 
+    printFailedTests(failures)
 
 if __name__ == '__main__':
     main()

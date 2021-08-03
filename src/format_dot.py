@@ -21,9 +21,9 @@ def rootHandle(rootList:list, file):
 def outputEdgeHandle(edge:list, file):
     if len(edge[2]) == 0:
         file.write(f"\tnode [ label=\"\", shape=point, width=0.001, height=0.001 ];\n")
-        endName = f"{edge[0]}-{edge[1]}->"
+        endName = f"{edge[0]}-{edge[1].label}->"
         file.write(f"\t\"{endName}\"\n")
-        file.write(f"\t\"{edge[0]}\" -> \"{endName}\" [ penwidth=2.0, arrowsize=0.5, label = \"{edge[1]}\" ] \n\n")
+        file.write(f"\t\"{edge[0]}\" -> \"{endName}\" [ penwidth=2.0, arrowsize=0.5, label = \"{edge[1].label}\" ] \n\n")
         return True
     return False
 
@@ -39,14 +39,14 @@ def edgeHandle(edge:list, file):
 
     # BUG: making a nicer self-loops creates an unexpected error for Graphviz
     # in some cases - solution was to remove special treatment of self-loops
-    tempName = f"{edge[0]}-{edge[1]}->"
+    tempName = f"{edge[0]}-{edge[1].label}->"
     for i in edge[2]:
         tempName += str(i)
 
     file.write(f"\t\"{tempName}\" [ label=\"\", shape=point, width=0.05, height=0.05 ];\n")
     file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ penwidth=1.0, arrowhead = None ]\n")
     for i in range(len(edge[2])):
-        file.write(f"\t\"{tempName}\" -> \"{edge[2][i]}\" [ penwidth=1.0, arrowsize=0.5, label = \"{edge[1][i]}\" ]\n")
+        file.write(f"\t\"{tempName}\" -> \"{edge[2][i]}\" [ penwidth=1.0, arrowsize=0.5, label = \"{edge[1].label[i]}\" ]\n")
     file.write(f"\n")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

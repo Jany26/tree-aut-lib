@@ -65,7 +65,7 @@ def findPossibleTransitions(ta:TTreeAut, symbol:str, children:list) -> list:
     result = []
     for edges in ta.transitions.values():
         for data in edges.values():
-            if data[1] == symbol and data[2] == children:
+            if data[1].label == symbol and data[2] == children:
                 result.append(data[0])
     result.sort()
     return result
@@ -136,7 +136,7 @@ def matchTreeTD(ta:TTreeAut, root:TTreeNode):
 
         for stateName, edge in ta.transitions.items():
             for data in edge.values():
-                if stateName == state and node.value == data[1]:
+                if stateName == state and node.value == data[1].label:
                     descendantTuples.append(data[2])
         
         for tuple in descendantTuples:
@@ -173,7 +173,7 @@ def matchTreeBU(ta:TTreeAut, root:TTreeNode):
             for stateName, edge in ta.transitions.items():
                 for data in edge.values():
                     if (
-                        data[1] == root.value # or symbol
+                        data[1].label == root.value # or symbol
                         and len(data[2]) == 0
                         and stateName not in result
                     ):
@@ -186,7 +186,7 @@ def matchTreeBU(ta:TTreeAut, root:TTreeNode):
                 childrenSymbols.append(matchBottomUp(ta, root.children[i]))
             for stateName, edge in ta.transitions.items():
                 for data in edge.values():
-                    if data[1] == root.value: # or symbol
+                    if data[1].label == root.value: # or symbol
                         x = True
                         for i in range(len(data[2])):
                             if data[2][i] not in childrenSymbols[i]:
@@ -227,12 +227,12 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
 
     outEdges = ta.getOutputEdges()
     for symbol in outEdges:
-        doneEdges.append([outEdges[symbol], symbol, []])
+        doneEdges.append([outEdges[symbol], TEdge(symbol, [], ""), []])
         workSet.append(outEdges[symbol])
         doneSet.append(outEdges[symbol])
     for symbol in alphabet:
         if symbol not in outEdges and alphabet[symbol] == 0:
-            doneEdges.append([[], symbol, []])
+            doneEdges.append([ [], TEdge(symbol, [], ""), [] ])
             if [] not in workSet:
                 workSet.append([])
                 doneSet.append([])
@@ -243,18 +243,15 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
             arity = alphabet[symbol]
             possibileMacroStateChildren = generatePossibleMacroStates(doneSet, currentMacroState, arity)
             for x in possibileMacroStateChildren:
-                # print(f"A => {x}")
                 possibleNormalChildren = [list(i) for i in product(*x)]
                 edge = []
                 for i in possibleNormalChildren:
-                    # print(f"B => {i}")
                     reachableMacroState = findPossibleTransitions(ta, symbol, i)
-                    # print(f"{reachableMacroState}--{symbol}->{i}")
                     if reachableMacroState not in doneSet:
                         doneSet.append(reachableMacroState)
                         workSet.append(reachableMacroState)
                     if edge == []:
-                        edge = [reachableMacroState, symbol, x]
+                        edge = [reachableMacroState, TEdge(symbol, [None] * arity, ""), x]
                         if edge not in doneEdges:
                             doneEdges.append(edge)
 
@@ -267,7 +264,7 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
             newTransitions[stateName] = {}
         symbol = edge[1]
         children = [makeNameFromSet(i) for i in edge[2]]
-        key = f"{stateName}-{symbol}->[{children}]"
+        key = f"{stateName}-{symbol.label}->[{children}]"
         newTransitions[stateName][key] = [stateName, symbol, children]
 
     return TTreeAut(newRootStates, newTransitions)
@@ -425,7 +422,7 @@ def nonEmptyBU(ta:TTreeAut) -> Tuple[TTreeNode, str]:
             for stateName, content in ta.transitions.items():
                 for transition in content.values():
                     if (
-                        transition[1] != symbol
+                        transition[1].label != symbol
                         or transition[2] not in allPossibleTuples
                     ):
                         continue
@@ -477,7 +474,7 @@ def reachableBU(ta:TTreeAut) -> list:
             for stateName, content in ta.transitions.items():
                 for transition in content.values():
                     if (
-                        transition[1] != symbol
+                        transition[1].label != symbol
                         or transition[2] not in allPossibileTuples
                     ):
                         continue

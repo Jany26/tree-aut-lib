@@ -72,18 +72,18 @@ def loadTransitionFromVTF(line:str) -> list:
             continue
         else:
             children.append(str(i))
-    return [state, symbol, children]
+    return [state, TEdge(symbol, [None] * len(children)), children]
 
 def consistencyCheck(data:list, allStates:list, arityDict:dict):
     if data[0] not in allStates:
         print("exception D")
         raise Exception(f"state '{data[0]}' not in preamble")
-    if data[1] not in arityDict:
+    if data[1].label not in arityDict:
         print("exception E")
         raise Exception(f"symbol '{data[1]}' not in preamble")
     if len(data[2]) != arityDict[data[1]]:
         print("exception F")
-        raise Exception(f"inconsistent arity for symbol '{data[1]}'")
+        raise Exception(f"inconsistent arity for symbol '{data[1].label}'")
     for i in data[2]:
         if i not in allStates:
             print("exception G")
@@ -95,7 +95,7 @@ def generateKeyFromEdge(edge:list) -> str:
         children += str(i)
         children += ", "
     children.rstrip(", ")  
-    key = f"{edge[0]}-{edge[1]}-[{children}]"
+    key = f"{edge[0]}-{edge[1].label}-[{children}]"
     return key
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -181,7 +181,7 @@ def exportTreeAutToVTF(ta:TTreeAut, fileName:str):
     
     for edge in ta.transitions.values():
         for data in edge.values():
-            file.write(f"{data[0]} {data[1]} (")
+            file.write(f"{data[0]} {data[1].label} (")
             for child in data[2]:
                 file.write(f" {child}")
             file.write(" )\n")

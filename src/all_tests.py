@@ -3,48 +3,52 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
+from format_tmb import importTreeAutFromTMB
 from test_data import *
 from format_vtf import *
 from format_dot import *
 import os
 
 def main():
-    print(">> UNIT TEST: helper functions ...")
-    getOuptutStatesTests()
-    getArityDictTests()
-    removeStateTests()
-    generateTuplesTest()
+    # print(">> UNIT TEST: helper functions ...")
+    # getOuptutStatesTests()
+    # getArityDictTests()
+    # removeStateTests()
+    # generateTuplesTest()
 
-    print(">> UNIT TEST: matching trees to TAs ...")
-    matchTestsTD()
-    matchTestsBU()
+    # print(">> UNIT TEST: matching trees to TAs ...")
+    # matchTestsTD()
+    # matchTestsBU()
 
-    print(">> UNIT TEST: empty language check ...")
-    nonEmptyTDTests()
-    nonEmptyBUTests()
+    # print(">> UNIT TEST: empty language check ...")
+    # nonEmptyTDTests()
+    # nonEmptyBUTests()
 
-    print(">> UNIT TEST: basic automata operations ...")
-    determinizationTests()
-    unionTests()
-    intersectionTests()
-    complementTests()
+    # print(">> UNIT TEST: basic automata operations ...")
+    # determinizationTests()
+    # unionTests()
+    # intersectionTests()
+    # complementTests()
 
-    print(">> UNIT TEST: reachable states ...")
-    reachabilityTDTests()
-    reachabilityBUTests()
-    removeUselessStatesTests()
+    # print(">> UNIT TEST: reachable states ...")
+    # reachabilityTDTests()
+    # reachabilityBUTests()
+    # removeUselessStatesTests()
     
-    print(">> UNIT TEST: partial order finding ...")
-    suffixTests()
-    prefixTests()
+    # print(">> UNIT TEST: partial order finding ...")
+    # suffixTests()
+    # prefixTests()
 
-    print(">> UNIT TEST: VATA format parsing ...")
-    vataExportTests()
-    # vataImportTests() # time consuming
+    # print(">> UNIT TEST: VATA format parsing ...")
+    # vtfExportTests()
+    # # vtfImportTests() # time consuming
 
-    print(">> UNIT TEST: DOT format export ...")
-    dotExportTests()
-    dotExportFromVTFTests()
+    # print(">> UNIT TEST: DOT format export ...")
+    # dotExportTests()
+    # dotExportFromVTFTests()
+
+    print(">> UNIT TEST: TMB format export")
+    tmbImportTests()
 
     print(">> UNIT TESTS DONE!")
 
@@ -647,7 +651,7 @@ def prefixTests():
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def vataImportTests():
+def vtfImportTests():
     print(" > SUBUNIT TEST: importing from VATA format ...")
     failures = []
     for subdir, dirs, files in os.walk("../"):
@@ -660,10 +664,10 @@ def vataImportTests():
                     testBox = importTreeAutFromVTF(filepath)
                     # print(f"      loading from file {filepath}")
                 except:
-                    failures.append(f"importFromVTF({filepath})")
+                    failures.append(f"importFromVTF({filepath})")   
     printFailedTests(failures)
 
-def vataExportTests():
+def vtfExportTests():
     print(" > SUBUNIT TEST: exporting to VATA format ...")
     failures = []
 
@@ -672,7 +676,6 @@ def vataExportTests():
             exportTreeAutToVTF(box, f"vtf/{name}.vtf")
         except:
             failures.append(f"exportToVTF(out/{name}.vtf)")
-
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -686,7 +689,6 @@ def dotExportTests():
             exportTreeAutToDOT(box, f"dot/{name}.dot")
         except:
             failures.append(f"exportToDOT(out/{name}.dot)")
-
     printFailedTests(failures)
 
 def dotExportFromVTFTests():
@@ -694,17 +696,29 @@ def dotExportFromVTFTests():
     failures = []
     for subdir, dirs, files in os.walk("."):
         for file in files:
-            filepath = subdir + os.sep + file
-            if not filepath.endswith(".vtf"):
-                continue
-            else:
+            filePath = subdir + os.sep + file
+            if filePath.endswith(".vtf"):
                 try:
-                    dotFilepath = "." + os.sep + "vtf-to-dot" + os.sep + file
-                    dotFilepath = dotFilepath[:-4] + ".dot"
-                    exportVTFToDOT(filepath, dotFilepath)
+                    dotFilePath = "." + os.sep + "vtf-to-dot" + os.sep + file
+                    dotFilePath = dotFilePath[:-4] + ".dot"
+                    exportVTFToDOT(filePath, dotFilePath)
                 except:
-                    failures.append(f"exportFromVTFtoDOT({filepath}, {dotFilepath})")
+                    failures.append(f"exportFromVTFtoDOT({filePath}, {dotFilePath})")
+    printFailedTests(failures)
 
+def tmbImportTests():
+    print(" > SUBUNIT TEST: importing from TMB format ...")
+    failures = []
+    for subdir, dirs, files in os.walk(".."):
+        for file in files:
+            filePath = subdir + os.sep + file
+            if filePath.endswith(".tmb"):
+                try:
+                    # print(f"importing {filePath}")
+                    testBox = importTreeAutFromTMB(filePath)
+                    # testBox.printTreeAut()
+                except:
+                    failures.append(f"importTreeAutFromTMB({filePath})")
     printFailedTests(failures)
 
 if __name__ == '__main__':

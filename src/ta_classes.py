@@ -103,9 +103,10 @@ class TEdge:
 #         - this will be called "transition" dictionary (for the current state)
 #         - the transition dictionary is referenced by arbitrary keys (for now)
 class TTreeAut:
-    def __init__(self, rootStates, transitions):
+    def __init__(self, rootStates, transitions, name):
         self.rootStates = rootStates
         self.transitions = transitions
+        self.name = name
 
     def printTreeAut(self):
         print("=== Root States ===")
@@ -228,6 +229,14 @@ class TTreeAut:
 
     def createPrefix(self, additionalOutputEdges): 
         result = copy.deepcopy(self)
+        
+        result.name = f"prefix({self.name}, ["
+        for i in range(len(additionalOutputEdges)):
+            result.name += f"{additionalOutputEdges[i]}"
+            if i < len(additionalOutputEdges) - 1:
+                result.name += ","
+        result.name += "])"
+            
         for stateName, content in result.transitions.items():
             tempDict = {}
             for symbol in additionalOutputEdges:
@@ -249,6 +258,7 @@ class TTreeAut:
 
     def createSuffix(self):
         result = copy.deepcopy(self)
+        result.name = f"suffix({result.name})"
         for stateName, edges in result.transitions.items():
             check = True
             for data in edges.values():

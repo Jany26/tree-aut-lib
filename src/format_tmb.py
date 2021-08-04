@@ -112,7 +112,53 @@ def importTreeAutFromTMB(fileName:str) ->TTreeAut:
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+def writeAritiesTMB(arities, file):
+    file.write("Ops")
+    for i in arities:
+        file.write(f" {i}:{arities[i]}")
+    file.write("\n\n")
+
+def writeStatesTMB(states, file):
+    file.write("States")
+    for i in states:
+        file.write(f" {i}:0")
+    file.write("\n\n")
+
+def writeRootsTMB(states, file):
+    file.write("Final States")
+    for i in states:
+        file.write(f" {i}")
+    file.write("\n\n")
+
+def writeTransitionTMB(edge, file):
+    file.write(f"{edge[1].label}(")
+    arity = len(edge[2])
+    for i in range(arity):
+        file.write(f"{edge[2][i]}")
+        if i < arity - 1:
+            file.write(",")
+    file.write(f") -> {edge[0]}\n")
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 def exportTreeAutToTMB(ta: TTreeAut, fileName:str):
+    file = open(fileName, "w")
+    writeAritiesTMB(ta.getSymbolArityDict(), file)
+    
+    file.write("Automaton ")
+    file.write(f"{ta.name}") if ta.name != "" else file.write("Unknown_Name")
+    file.write("\n\n")
+    
+    writeStatesTMB(ta.getStates(), file)
+    writeRootsTMB(ta.rootStates, file)
+    file.write("Transitions\n")
+    
+    for transitionDict in ta.transitions.values():
+        for edge in transitionDict.values():
+            writeTransitionTMB(edge, file)
+
+    file.write("\n\n")
+    file.close()
     pass
 
 

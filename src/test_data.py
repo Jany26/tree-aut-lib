@@ -28,12 +28,12 @@ fullAlphabet = {
 }
 
 
-boxX = TTreeAut(["q0"], testTransitionsBoxX)
-boxL0 = TTreeAut(["r0"], testTransitionsBoxL0)
-boxL1 = TTreeAut(["s0"], testTransitionsBoxL1)
-boxH0 = TTreeAut(["t0"], testTransitionsBoxH0)
-boxH1 = TTreeAut(["u0"], testTransitionsBoxH1)
-boxLPort = TTreeAut(["v0"], testTransitionsBoxLPort)
+boxX = TTreeAut(["q0"], testTransitionsBoxX, "boxX")
+boxL0 = TTreeAut(["r0"], testTransitionsBoxL0, "boxL0")
+boxL1 = TTreeAut(["s0"], testTransitionsBoxL1, "boxL1")
+boxH0 = TTreeAut(["t0"], testTransitionsBoxH0, "boxH0")
+boxH1 = TTreeAut(["u0"], testTransitionsBoxH1, "boxH1")
+boxLPort = TTreeAut(["v0"], testTransitionsBoxLPort, "boxLPort")
 
 # # output edge array for createPrefix()
 
@@ -45,20 +45,20 @@ outputEdgesH1 = boxH1.getOutputSymbols()
 outputEdgesLPort = boxLPort.getOutputSymbols()
 
 # reachability and useless state removal test data
-testBox1 = TTreeAut(['q0'], unreachableTest1)
-testBox2a = TTreeAut(['q0'], unreachableTest2a)
-testBox2b = TTreeAut(['q0'], unreachableTest2b)
+testBox1 = TTreeAut(['q0'], unreachableTest1, "unreachableTest1")
+testBox2a = TTreeAut(['q0'], unreachableTest2a, "unreachableTest1")
+testBox2b = TTreeAut(['q0'], unreachableTest2b, "unreachableTest1")
 testBox3 = copy.deepcopy(boxL0)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 boxesDict = {
-    "boxX" : TTreeAut(["q0"], testTransitionsBoxX),
-    "boxL0" : TTreeAut(["r0"], testTransitionsBoxL0),
-    "boxL1" : TTreeAut(["s0"], testTransitionsBoxL1),
-    "boxH0" : TTreeAut(["t0"], testTransitionsBoxH0),
-    "boxH1" : TTreeAut(["u0"], testTransitionsBoxH1),
-    "boxLPort" : TTreeAut(["v0"], testTransitionsBoxLPort),
+    "boxX" : boxX,
+    "boxL0" : boxL0,
+    "boxL1" : boxL1,
+    "boxH0" : boxH0,
+    "boxH1" : boxH1,
+    "boxLPort" : boxLPort,
 
     "unionXL0" : treeAutUnion(boxX, boxL0),
     "unionXL1" : treeAutUnion(boxX, boxL1),

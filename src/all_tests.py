@@ -3,52 +3,53 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from format_tmb import importTreeAutFromTMB
+from format_tmb import exportTreeAutToTMB, importTreeAutFromTMB
 from test_data import *
 from format_vtf import *
 from format_dot import *
 import os
 
 def main():
-    # print(">> UNIT TEST: helper functions ...")
-    # getOuptutStatesTests()
-    # getArityDictTests()
-    # removeStateTests()
-    # generateTuplesTest()
+    print(">> UNIT TEST: helper functions ...")
+    getOuptutStatesTests()
+    getArityDictTests()
+    removeStateTests()
+    generateTuplesTest()
 
-    # print(">> UNIT TEST: matching trees to TAs ...")
-    # matchTestsTD()
-    # matchTestsBU()
+    print(">> UNIT TEST: matching trees to TAs ...")
+    matchTestsTD()
+    matchTestsBU()
 
-    # print(">> UNIT TEST: empty language check ...")
-    # nonEmptyTDTests()
-    # nonEmptyBUTests()
+    print(">> UNIT TEST: empty language check ...")
+    nonEmptyTDTests()
+    nonEmptyBUTests()
 
-    # print(">> UNIT TEST: basic automata operations ...")
-    # determinizationTests()
-    # unionTests()
-    # intersectionTests()
-    # complementTests()
+    print(">> UNIT TEST: basic automata operations ...")
+    determinizationTests()
+    unionTests()
+    intersectionTests()
+    complementTests()
 
-    # print(">> UNIT TEST: reachable states ...")
-    # reachabilityTDTests()
-    # reachabilityBUTests()
-    # removeUselessStatesTests()
+    print(">> UNIT TEST: reachable states ...")
+    reachabilityTDTests()
+    reachabilityBUTests()
+    removeUselessStatesTests()
     
-    # print(">> UNIT TEST: partial order finding ...")
-    # suffixTests()
-    # prefixTests()
+    print(">> UNIT TEST: partial order finding ...")
+    suffixTests()
+    prefixTests()
 
-    # print(">> UNIT TEST: VATA format parsing ...")
-    # vtfExportTests()
-    # # vtfImportTests() # time consuming
+    print(">> UNIT TEST: VATA format parsing ...")
+    vtfExportTests()
+    # vtfImportTests() # time consuming
 
-    # print(">> UNIT TEST: DOT format export ...")
-    # dotExportTests()
-    # dotExportFromVTFTests()
-
-    print(">> UNIT TEST: TMB format export")
-    tmbImportTests()
+    print(">> UNIT TEST: TMB format parsing ...")
+    # tmbImportTests()
+    tmbExportTests()
+    
+    print(">> UNIT TEST: DOT format export ...")
+    dotExportTests()
+    dotExportFromVTFTests()
 
     print(">> UNIT TESTS DONE!")
 
@@ -719,6 +720,17 @@ def tmbImportTests():
                     # testBox.printTreeAut()
                 except:
                     failures.append(f"importTreeAutFromTMB({filePath})")
+    printFailedTests(failures)
+
+def tmbExportTests():
+    print(" > SUBUNIT TEST: exporting to TMB format ...")
+    failures = []
+    for name, box in boxesDict.items():
+        try:
+            exportTreeAutToTMB(box, f"tmb/{name}.tmb")
+        except:
+            failures.append(f"exportTreeAutToTMB(tmb/{name}.tmb)")
+
     printFailedTests(failures)
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@
 # import sys
 # import os
 from ta_lib import *
+import os
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # helper functions
@@ -103,6 +104,9 @@ def generateKeyFromEdge(edge:list) -> str:
 def importTreeAutFromVTF(fileName) -> TTreeAut:
     file = open(fileName, "r")
 
+    length = len(fileName.split(os.sep))
+    autName = fileName.split(os.sep)[length - 1][:-4]
+
     arityDict = {}
     rootStates = []
     transitions = {}
@@ -137,6 +141,7 @@ def importTreeAutFromVTF(fileName) -> TTreeAut:
             edge = loadTransitionFromVTF(line)
             if edge == []:
                 continue
+            # checking state and arity consistency - comparing with data from "preamble"
             if arityProcessed and stateListProcessed:
                 consistencyCheck(edge, allStates, arityDict)
             key = generateKeyFromEdge(edge)
@@ -148,9 +153,7 @@ def importTreeAutFromVTF(fileName) -> TTreeAut:
         raise Exception(f"List of root states missing")
     
     file.close()
-    
-    # # checking state and arity consistency - comparing with data from "preamble"
-    return TTreeAut(rootStates, transitions)
+    return TTreeAut(rootStates, transitions, str(autName))
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -161,6 +164,7 @@ def importTreeAutFromVTF(fileName) -> TTreeAut:
 def exportTreeAutToVTF(ta:TTreeAut, fileName:str):
     file = open(fileName, "w")
     file.write("@NTA\n")
+    file.write(f"# Automaton {ta.name}\n")
 
     file.write("%Root")
     for root in ta.rootStates:

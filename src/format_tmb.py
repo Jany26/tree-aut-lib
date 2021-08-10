@@ -8,20 +8,49 @@
 from format_vtf import *
 from ta_classes import *
 
+def replaceCommasIn(line:str) -> str:
+    stack = []
+    temp = ""
+    for i in range(len(line)):
+        if line[i] == "(":
+            if len(stack) != 0:
+                temp += "("
+            stack.append("(")
+        elif line[i] == ")":
+            stack.pop()
+            if len(stack) != 0:
+                temp += ")"
+        elif line[i] == "," and len(stack) == 1:
+            temp += ";"
+        else:
+            temp += line[i]
+    if len(stack) != 0:
+        raise Exception("unbalanced parentheses")
+    return temp
+
+def loadSymbol(line:str):
+    symbol = ""
+    rest = ""
+    for i in range(len(line)):
+        if line[i] == "(":
+            symbol = line[:i]
+            rest = line[i:]
+            break
+    if symbol == "":
+        symbol = line.strip()
+        rest = ""
+    return symbol, rest
+
 def loadTransitionFromTMB(line:str) -> list:
     line = line.strip()
     transitionData = line.split("->")
     srcState = transitionData[1].strip()
     rest = transitionData[0].strip()
-    transitionData = rest.split("(", 1)
-    if len(transitionData) != 1:
-        symbol = transitionData[0].strip()
-        childStates = transitionData[1].strip()
-        childStates = childStates[:-1].split(',')
-    else:
-        symbol = transitionData[0].strip()
-        childStates = []
-    return [srcState, TEdge(symbol, [None] * len(childStates), ""), childStates]    
+    symbol, childrenString = loadSymbol(rest)
+    childStates = replaceCommasIn(childrenString.strip())
+    childStates = childStates.split(';')
+    children = [state for state in childStates if state != ""]
+    return [srcState, TEdge(symbol, [None] * len(children), ""), children]
 
 def loadArityFromTMB(line:str) -> dict:
     words = line.strip().split()
@@ -38,15 +67,21 @@ def consistencyCheckTMB(states, arities, edges) -> bool:
     # print(states)
     for stateName, edgeDict in edges.items():
         if stateName not in states:
+            print("error A")
             return False
         for edgeData in edgeDict.values():
-            if (edgeData[0] not in states
-                or edgeData[1].label not in arities
-                or len(edgeData[2]) != arities[edgeData[1].label]
-            ):
+            if (edgeData[0] not in states):
+                print("error B")
+                return False
+            if edgeData[1].label not in arities:
+                print("error C")
+                return False
+            if len(edgeData[2]) != int(arities[edgeData[1].label]):
+                print("error D")
                 return False
             for child in edgeData[2]:
                 if child not in states:
+                    print("error E")
                     return False
     return True
 
@@ -63,14 +98,15 @@ def importTreeAutFromTMB(fileName:str) ->TTreeAut:
     arityProcessed = False
     stateListProcessed = False
     transitionProcessing = False
+    name = ""
 
     for line in file:
         if transitionProcessing and not line.startswith('\n'):
             edge = loadTransitionFromTMB(line)
             if edge == []:
                 continue
-            if arityProcessed and stateListProcessed:
-                consistencyCheck(edge, allStates, arityDict)
+            # if arityProcessed and stateListProcessed:
+            #     consistencyCheckTMB(edge, allStates, arityDict)
             key = generateKeyFromEdge(edge)
             if str(edge[0]) not in transitionDict:
                 transitionDict[str(edge[0])] = {}
@@ -80,6 +116,7 @@ def importTreeAutFromTMB(fileName:str) ->TTreeAut:
         if line.startswith("#") or line.startswith("//") or line.startswith("\n"):
             continue
         elif line.startswith("Automaton"):
+            name = line.lstrip("Automaton ")
             continue
         elif line.startswith("Ops"):
             arityDict = loadArityFromTMB(line)
@@ -98,17 +135,19 @@ def importTreeAutFromTMB(fileName:str) ->TTreeAut:
         elif line.startswith("Transitions"):
             transitionProcessing = True
         else:
+            print("exception K")
             raise Exception(f"Unknown items in TMB file")
     # end for loop
 
     if arityProcessed and stateListProcessed:
         if not consistencyCheckTMB(allStates, arityDict, transitionDict):
+            print("exception L")
             raise Exception(f"Inconsistent transition data with info in preamble")
 
     if not rootsProcessed:
-        print("exception J")
+        print("exception M")
         raise Exception(f"List of root states missing")
-    return TTreeAut(rootStates, transitionDict)
+    return TTreeAut(rootStates, transitionDict, name)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

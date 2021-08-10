@@ -3,53 +3,53 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from format_tmb import exportTreeAutToTMB, importTreeAutFromTMB
 from test_data import *
+from format_tmb import *
 from format_vtf import *
 from format_dot import *
 import os
 
 def main():
-    print(">> UNIT TEST: helper functions ...")
-    getOuptutStatesTests()
-    getArityDictTests()
-    removeStateTests()
-    generateTuplesTest()
+    # print(">> UNIT TEST: helper functions ...")
+    # getOuptutStatesTests()
+    # getArityDictTests()
+    # removeStateTests()
+    # generateTuplesTest()
 
-    print(">> UNIT TEST: matching trees to TAs ...")
-    matchTestsTD()
-    matchTestsBU()
+    # print(">> UNIT TEST: matching trees to TAs ...")
+    # matchTestsTD()
+    # matchTestsBU()
 
-    print(">> UNIT TEST: empty language check ...")
-    nonEmptyTDTests()
-    nonEmptyBUTests()
+    # print(">> UNIT TEST: empty language check ...")
+    # nonEmptyTDTests()
+    # nonEmptyBUTests()
 
-    print(">> UNIT TEST: basic automata operations ...")
-    determinizationTests()
-    unionTests()
-    intersectionTests()
-    complementTests()
+    # print(">> UNIT TEST: basic automata operations ...")
+    # determinizationTests()
+    # unionTests()
+    # intersectionTests()
+    # complementTests()
 
-    print(">> UNIT TEST: reachable states ...")
-    reachabilityTDTests()
-    reachabilityBUTests()
-    removeUselessStatesTests()
+    # print(">> UNIT TEST: reachable states ...")
+    # reachabilityTDTests()
+    # reachabilityBUTests()
+    # removeUselessStatesTests()
     
-    print(">> UNIT TEST: partial order finding ...")
-    suffixTests()
-    prefixTests()
+    # print(">> UNIT TEST: partial order finding ...")
+    # suffixTests()
+    # prefixTests()
 
-    print(">> UNIT TEST: VATA format parsing ...")
-    vtfExportTests()
+    # print(">> UNIT TEST: VATA format parsing ...")
+    # vtfExportTests()
     # vtfImportTests() # time consuming
 
     print(">> UNIT TEST: TMB format parsing ...")
-    # tmbImportTests()
+    tmbImportTests()
     tmbExportTests()
     
-    print(">> UNIT TEST: DOT format export ...")
-    dotExportTests()
-    dotExportFromVTFTests()
+    # print(">> UNIT TEST: DOT format export ...")
+    # dotExportTests()
+    # dotExportFromVTFTests()
 
     print(">> UNIT TESTS DONE!")
 
@@ -710,6 +710,7 @@ def dotExportFromVTFTests():
 def tmbImportTests():
     print(" > SUBUNIT TEST: importing from TMB format ...")
     failures = []
+    
     for subdir, dirs, files in os.walk(".."):
         for file in files:
             filePath = subdir + os.sep + file
@@ -717,9 +718,14 @@ def tmbImportTests():
                 try:
                     # print(f"importing {filePath}")
                     testBox = importTreeAutFromTMB(filePath)
-                    # testBox.printTreeAut()
+                    testBox.printTreeAut()
                 except:
                     failures.append(f"importTreeAutFromTMB({filePath})")
+
+    # testBox = importTreeAutFromTMB("../nta/tmb/A0053.tmb")
+    # testBox = importTreeAutFromTMB("tmb/intersectionH0H0.tmb")
+    # testBox.printTreeAut()
+
     printFailedTests(failures)
 
 def tmbExportTests():

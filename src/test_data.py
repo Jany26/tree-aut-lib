@@ -3,8 +3,6 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from ta_lib import *
-from ta_classes import *
 from test_trees import *
 from test_boxes import *
 
@@ -88,6 +86,13 @@ boxesDict = {
     "complementH0" : treeAutComplement(boxH0, fullAlphabet),
     "complementH1" : treeAutComplement(boxH1, fullAlphabet),
     "complementLPort" : treeAutComplement(boxLPort, fullAlphabet),
+
+    "determinizedX" : treeAutDeterminization(boxX, fullAlphabet),
+    "determinizedL0" : treeAutDeterminization(boxL0, fullAlphabet),
+    "determinizedL1" : treeAutDeterminization(boxL1, fullAlphabet),
+    "determinizedH0" : treeAutDeterminization(boxH0, fullAlphabet),
+    "determinizedH1" : treeAutDeterminization(boxH1, fullAlphabet),
+    "determinizedLPort" : treeAutDeterminization(boxLPort, fullAlphabet),
     
     "Xsuffix" : boxX.createSuffix(),
     "L0suffix" : boxL0.createSuffix(),

@@ -37,8 +37,11 @@ def edgeHandle(edge:list, file):
     if outputEdgeHandle(edge, file):
         return
 
-    # BUG: making a nicer self-loops creates an unexpected error for Graphviz
-    # in some cases - solution was to remove special treatment of self-loops
+    # BUG: trying to make a nicer self-loop 
+    # (using same rank for the node and arbitrary node) 
+    # creates an unexpected error for Graphviz in some cases 
+    # - solution was to remove special treatment of self-loops
+
     tempName = f"{edge[0]}-{edge[1].label}->"
     for i in edge[2]:
         tempName += str(i)

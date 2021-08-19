@@ -8,7 +8,7 @@ from graphviz import *
 from ta_classes import *
 from ta_lib import *
 
-from dot import *
+from format_dot import *
 from format_tmb import *
 from format_vtf import *
 

@@ -1,0 +1,16 @@
+Ops LH:2 Port_H0:0 0:0
+
+Automaton boxH0
+
+States t1:0 t2:0 t0:0
+
+Final States t0
+
+Transitions
+LH(t0,t2) -> t0
+LH(t1,t2) -> t0
+Port_H0() -> t1
+LH(t2,t2) -> t2
+0() -> t2
+
+

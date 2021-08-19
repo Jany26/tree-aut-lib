@@ -1,0 +1,11 @@
+@NTA
+# Automaton boxH1
+%Root u0
+%States u1 u2 u0
+%Alphabet LH:2 Port_H1:0 1:0
+
+u0 LH ( u0 u2 )
+u0 LH ( u1 u2 )
+u1 Port_H1 ( )
+u2 LH ( u2 u2 )
+u2 1 ( )

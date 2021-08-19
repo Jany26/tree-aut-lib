@@ -9,48 +9,20 @@ from ta_lib import *
 import os
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# helper functions
+# HELPER FUNCTIONS
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def loadRootsFromVTF(line:str) -> list:
-    words = line.strip()
-    result = []
-
-    if not line.startswith("%Root"):
-        print("exception A")
-        raise Exception("unexpected preamble")
-
-    words = line.split()
-    for i in words:
-        if i.startswith("%Root"):
-            continue
-        result.append(i)
-    return result
+    return [i for i in line.strip().split() if i != "%Root"]
 
 def loadStatesFromVTF(line:str) -> list:
-    words = line.strip()
-    result = []
-
-    if not line.startswith("%States"):
-        print("exception B")
-        raise Exception("unexpected preamble")
-
-    words = line.split()
-    for i in words:
-        if i.startswith("%States"):
-            continue
-        items = i.split(":")
-        result.append(str(items[0].strip()))
-    return result
+    words = line.strip().split()
+    return [i.split(":")[0].strip() for i in words if i != "%States"]
 
 def loadArityFromVTF(line:str) -> dict:
-    words = line.strip()
+    words = line.strip().split()
     result = {}
 
-    if not line.startswith("%Alphabet"):
-        print("exception C")
-        raise Exception("unexpected preamble")
-
-    words = line.split()
     for i in words:
         if i.startswith("%Alphabet"):
             continue
@@ -77,36 +49,53 @@ def loadTransitionFromVTF(line:str) -> list:
 
 def consistencyCheck(data:list, allStates:list, arityDict:dict):
     if data[0] not in allStates:
-        print("exception D")
-        raise Exception(f"state '{data[0]}' not in preamble")
+        raise Exception(f"consistencyCheck(): src state '{data[0]}' not in preamble")
     if data[1].label not in arityDict:
-        print("exception E")
-        raise Exception(f"symbol '{data[1]}' not in preamble")
+        raise Exception(f"consistencyCheck(): symbol '{data[1]}' not in preamble")
     if len(data[2]) != arityDict[data[1].label]:
-        print("exception F")
-        raise Exception(f"inconsistent arity for symbol '{data[1].label}'")
+        raise Exception(f"consistencyCheck(): inconsistent arity for symbol '{data[1].label}'")
     for i in data[2]:
         if i not in allStates:
-            print("exception G")
-            raise Exception(f"state '{i}' not in preamble")
+            raise Exception(f"consistencyCheck(): child state '{i}' not in preamble")
+
+def consistencyCheckTMB(edges, states, arities) -> bool:
+    # print(states)
+    for stateName, edgeDict in edges.items():
+        if stateName not in states:
+            return False
+        for edgeData in edgeDict.values():
+            if (edgeData[0] not in states
+                or edgeData[1].label not in arities
+                or len(edgeData[2]) != int(arities[edgeData[1].label])
+            ):
+                return False
+            for child in edgeData[2]:
+                if child not in states:
+                    return False
+    return True
 
 def generateKeyFromEdge(edge:list) -> str:
     children = ""
     for i in edge[2]:
-        children += str(i)
-        children += ", "
-    children.rstrip(", ")  
-    key = f"{edge[0]}-{edge[1].label}-[{children}]"
-    return key
+        children += str(i) + ", "
+    children.rstrip(", ")
+    return f"{edge[0]}-{edge[1].label}-[{children}]"
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# VTF IMPORT
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def importTreeAutFromVTF(fileName) -> TTreeAut:
-    file = open(fileName, "r")
+def importTAfromVTF(source, sourceType='f') -> TTreeAut:
+    if sourceType == 'f':
+        file = open(source, "r")
+        autName = source.split(os.sep)[len(source.split(os.sep)) - 1][:-4]
+    elif sourceType == 's':
+        file = source.split('\n')
+        autName = "unnamed"
+    else:
+        Exception("importTAfromVTF(): unsupported sourceType (only 'f'/'s')")
 
-    length = len(fileName.split(os.sep))
-    autName = fileName.split(os.sep)[length - 1][:-4]
-
+    
     arityDict = {}
     rootStates = []
     transitions = {}
@@ -122,8 +111,7 @@ def importTreeAutFromVTF(fileName) -> TTreeAut:
         line = parts[0]
         if line.startswith("@"):
             if not line.startswith("@NTA"):
-                print("exception H")
-                raise Exception(f"unexpected format {line}")
+                raise Exception(f"importTAfromVTF(): unexpected structure format {line}")
         elif line.startswith("%"):
             if line.startswith("%Root"):
                 rootStates = loadRootsFromVTF(line)
@@ -135,62 +123,121 @@ def importTreeAutFromVTF(fileName) -> TTreeAut:
                 allStates = loadStatesFromVTF(line)
                 stateListProcessed = True
             else:
-                print("exception I")
-                raise Exception(f"unexpected preamble '{line}'")
+                raise Exception(f"importTAfromVTF(): unexpected preamble '{line}'")
         else:
             edge = loadTransitionFromVTF(line)
             if edge == []:
                 continue
             # checking state and arity consistency - comparing with data from "preamble"
-            if arityProcessed and stateListProcessed:
-                consistencyCheck(edge, allStates, arityDict)
             key = generateKeyFromEdge(edge)
             if str(edge[0]) not in transitions:
                 transitions[str(edge[0])] = {}
             transitions[str(edge[0])][key] = edge
     if not rootsProcessed:
-        print("exception J")
-        raise Exception(f"List of root states missing")
+        raise Exception(f"importTAfromVTF(): List of root states missing")
+    if arityProcessed and stateListProcessed:
+        if not consistencyCheckTMB(transitions, allStates, arityDict):
+            raise Exception(f"importTAfromVTF(): inconsistent data with the preamble")
     
-    file.close()
+    if sourceType == 'f':
+        file.close()
     return TTreeAut(rootStates, transitions, str(autName))
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-# helper functions
-
+# EXPORT TO VTF - HELPER FUNCTIONS (FILE)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def exportTreeAutToVTF(ta:TTreeAut, fileName:str):
-    file = open(fileName, "w")
-    file.write("@NTA\n")
-    file.write(f"# Automaton {ta.name}\n")
+def writeRootsVTFfile(roots, tgt):
+    tgt.write("%Root")
+    for root in roots:
+        tgt.write(f" {root}")
+    tgt.write("\n")
 
-    file.write("%Root")
-    for root in ta.rootStates:
-        file.write(f" {root}")
-    file.write("\n")
-    
-    states = ta.getStates()
-    file.write("%States")
+def writeStatesVTFfile(states, tgt):
+    tgt.write("%States")
     for i in states:
-        file.write(f" {i}")
-    file.write("\n")
+        tgt.write(f" {i}:0")
+    tgt.write("\n")
 
-    arityDict = ta.getSymbolArityDict()
-    file.write("%Alphabet")
-    for symbol in arityDict:
-        file.write(f" {symbol}:{arityDict[symbol]}")
-    file.write("\n\n")
-    
-    for edge in ta.transitions.values():
+def writeAritiesVTFfile(arities, tgt):
+    tgt.write("%Alphabet")
+    for symbol in arities:
+        tgt.write(f" {symbol}:{arities[symbol]}")
+    tgt.write("\n\n")
+
+def writeEdgesVTFfile(edges, tgt):
+    for edge in edges.values():
         for data in edge.values():
-            file.write(f"{data[0]} {data[1].label} (")
+            tgt.write(f"{data[0]} {data[1].label} (")
             for child in data[2]:
-                file.write(f" {child}")
-            file.write(" )\n")
-            
-    file.close()
+                tgt.write(f" {child}")
+            tgt.write(" )\n")
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# EXPORT TO VTF - HELPER FUNCTIONS (STRING)
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def writeRootsVTFstr(roots):
+    result = "%Root"
+    for i in roots:
+        result += f" {i}"
+    result += "\n"
+    return result
+
+def writeStatesVTFstr(states):
+    result = "%States"
+    for i in states:
+        result += f" {i}:0"
+    result += "\n"
+    return result
+
+def writeAritiesVTFstr(arities):
+    result = "%Alphabet"
+    for symbol in arities:
+        result += f" {symbol}:{arities[symbol]}"
+    result += "\n\n"
+    return result
+
+def writeEdgesVTFstr(edges):
+    result = "# Transitions\n\n"
+    for edge in edges.values():
+        for data in edge.values():
+            result += f"{data[0]} {data[1].label} ("
+            for i in data[2]:
+                result += f" {i}"
+            result += " )\n"
+    return result
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# EXPORT TO VTF
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def exportTAtoVTF(ta:TTreeAut, format, fileName=""):
+    if format != 'f' or format != 's':
+        Exception("exportTAtoVTF(): unsupported format")
+    
+    if format == 'f' and fileName == "":
+        Exception("exportTAtoVTF(): fileName needed")
+    
+    result = open(fileName, "w") if format == 'f' else ""
+    
+
+    if format == 'f':
+        result.write("@NTA\n")
+        result.write(f"# Automaton {ta.name}\n")
+        writeRootsVTFfile(ta.rootStates, result)
+        writeStatesVTFfile(ta.getStates(), result)
+        writeAritiesVTFfile(ta.getSymbolArityDict(), result)
+        writeEdgesVTFfile(ta.transitions, result)             
+        result.close()
+    else:
+        result += "@NTA\n"
+        result += f"# Automaton {ta.name}\n"
+        result += writeRootsVTFstr(ta.rootStates)
+        result += writeStatesVTFstr(ta.getStates())
+        result += writeAritiesVTFstr(ta.getSymbolArityDict())
+        result += writeEdgesVTFstr(ta.transitions)
+        return result
     return
 
 # End of file format_vtf.py

@@ -8,6 +8,10 @@
 from format_vtf import *
 from ta_classes import *
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# HELPER FUNCTIONS FOR TMB IMPORT
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 def replaceCommasIn(line:str) -> str:
     stack = []
     temp = ""
@@ -63,32 +67,33 @@ def loadArityFromTMB(line:str) -> dict:
         result[symbol] = arity
     return result
 
-def consistencyCheckTMB(states, arities, edges) -> bool:
+def consistencyCheckTMB(edges, states, arities) -> bool:
     # print(states)
     for stateName, edgeDict in edges.items():
         if stateName not in states:
-            print("error A")
             return False
         for edgeData in edgeDict.values():
-            if (edgeData[0] not in states):
-                print("error B")
-                return False
-            if edgeData[1].label not in arities:
-                print("error C")
-                return False
-            if len(edgeData[2]) != int(arities[edgeData[1].label]):
-                print("error D")
+            if (edgeData[0] not in states
+                or edgeData[1].label not in arities
+                or len(edgeData[2]) != int(arities[edgeData[1].label])
+            ):
                 return False
             for child in edgeData[2]:
                 if child not in states:
-                    print("error E")
                     return False
     return True
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# IMPORT TA FROM TMB FILE/STRING
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def importTreeAutFromTMB(fileName:str) ->TTreeAut:
-    file = open(fileName, "r")
+def importTAfromTMB(source:str, sourceType='f') -> TTreeAut:
+    if sourceType == 'f':
+        inputStream = open(source, "r")
+    elif sourceType == 's':
+        inputStream = source.split('\n')
+    else:
+        raise Exception(f"importTAfromTMB(): unsupported source type '{sourceType}'")
 
     arityDict = {}
     rootStates = []
@@ -100,7 +105,13 @@ def importTreeAutFromTMB(fileName:str) ->TTreeAut:
     transitionProcessing = False
     name = ""
 
-    for line in file:
+    for line in inputStream:
+        
+        # skipping comments and empty lines
+        line = line.strip()
+        if line == "" or line.startswith("#") or line.startswith("//"):
+            continue
+
         if transitionProcessing and not line.startswith('\n'):
             edge = loadTransitionFromTMB(line)
             if edge == []:
@@ -113,10 +124,8 @@ def importTreeAutFromTMB(fileName:str) ->TTreeAut:
             transitionDict[str(edge[0])][key] = edge
             continue
 
-        if line.startswith("#") or line.startswith("//") or line.startswith("\n"):
-            continue
-        elif line.startswith("Automaton"):
-            name = line.lstrip("Automaton ")
+        if line.startswith("Automaton"):
+            name = line[len("Automaton"):].strip()
             continue
         elif line.startswith("Ops"):
             arityDict = loadArityFromTMB(line)
@@ -135,14 +144,12 @@ def importTreeAutFromTMB(fileName:str) ->TTreeAut:
         elif line.startswith("Transitions"):
             transitionProcessing = True
         else:
-            print("exception K")
-            raise Exception(f"Unknown items in TMB file")
+            raise Exception(f"importTAfromTMB(): Unknown items in TMB file")
     # end for loop
 
     if arityProcessed and stateListProcessed:
-        if not consistencyCheckTMB(allStates, arityDict, transitionDict):
-            print("exception L")
-            raise Exception(f"Inconsistent transition data with info in preamble")
+        if not consistencyCheckTMB(transitionDict, allStates, arityDict):
+            raise Exception(f"importTAfromTMB(): Inconsistent transition data with info in preamble")
 
     if not rootsProcessed:
         print("exception M")
@@ -150,55 +157,111 @@ def importTreeAutFromTMB(fileName:str) ->TTreeAut:
     return TTreeAut(rootStates, transitionDict, name)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def writeAritiesTMB(arities, file):
-    file.write("Ops")
-    for i in arities:
-        file.write(f" {i}:{arities[i]}")
-    file.write("\n\n")
-
-def writeStatesTMB(states, file):
-    file.write("States")
-    for i in states:
-        file.write(f" {i}:0")
-    file.write("\n\n")
-
-def writeRootsTMB(states, file):
-    file.write("Final States")
-    for i in states:
-        file.write(f" {i}")
-    file.write("\n\n")
-
-def writeTransitionTMB(edge, file):
-    file.write(f"{edge[1].label}(")
-    arity = len(edge[2])
-    for i in range(arity):
-        file.write(f"{edge[2][i]}")
-        if i < arity - 1:
-            file.write(",")
-    file.write(f") -> {edge[0]}\n")
-
+# HELPER FUNCTIONS FOR TMB EXPORT - FILE
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def exportTreeAutToTMB(ta: TTreeAut, fileName:str):
-    file = open(fileName, "w")
-    writeAritiesTMB(ta.getSymbolArityDict(), file)
-    
-    file.write("Automaton ")
-    file.write(f"{ta.name}") if ta.name != "" else file.write("Unknown_Name")
-    file.write("\n\n")
-    
-    writeStatesTMB(ta.getStates(), file)
-    writeRootsTMB(ta.rootStates, file)
-    file.write("Transitions\n")
-    
+def writeAritiesTMBfile(arities, tgt):
+    tgt.write("Ops")
+    for i in arities:
+        tgt.write(f" {i}:{arities[i]}")
+    tgt.write("\n\n")
+
+def writeNameTMBfile(name, tgt):
+    tgt.write("Automaton ")
+    tgt.write(f"{name}") if name != "" else tgt.write("unnamed")
+    tgt.write("\n\n")
+
+def writeStatesTMBfile(states, tgt):
+    tgt.write("States")
+    for i in states:
+        tgt.write(f" {i}:0")
+    tgt.write("\n\n")
+
+def writeRootsTMBfile(states, tgt):
+    tgt.write("Final States")
+    for i in states:
+        tgt.write(f" {i}")
+    tgt.write("\n\n")
+
+def writeTransitionsTMBfile(ta, tgt):
+    tgt.write("Transitions\n")
     for transitionDict in ta.transitions.values():
         for edge in transitionDict.values():
-            writeTransitionTMB(edge, file)
+            tgt.write(f"{edge[1].label}(")
+            arity = len(edge[2])
+            for i in range(arity):
+                tgt.write(f"{edge[2][i]}")
+                tgt.write("," if i < arity - 1 else "")
+            tgt.write(f") -> {edge[0]}\n")
+    tgt.write("\n\n")
 
-    file.write("\n\n")
-    file.close()
-    pass
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# HELPER FUNCTIONS FOR TMB EXPORT - STRING
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+def writeAritiesTMBstr(arities):
+    result = "Ops"
+    for i in arities:
+        result += f" {i}:{arities[i]}" 
+    result += "\n\n"
+    return result
+
+def writeNameTMBstr(name):
+    return "Automaton " + (f"{name}" if name != "" else "unnamed") + "\n\n"
+
+def writeStatesTMBstr(states):
+    result = "States"
+    for i in states:
+        result += f" {i}:0"
+    result += "\n\n"
+    return result
+
+def writeRootsTMBstr(states):
+    result = "Final States"
+    for i in states:
+        result += f" {i}"
+    result += "\n\n"
+    return result
+
+def writeTransitionsTMBstr(ta):
+    result = "Transitions\n"
+    for transitionDict in ta.transitions.values():
+        for edge in transitionDict.values():
+            temp = f"{edge[1].label}("
+            for i in range(len(edge[2])):
+                temp += f"{edge[2][i]}"
+                temp += ", " if (i < len(edge[2]) - 1) else ""
+            temp += f") -> {edge[0]}\n"
+            result += temp
+    result += "\n\n"
+    return result
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# EXPORT TA TO TMB FILE/STRING
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def exportTAtoTMB(ta: TTreeAut, format, fileName=""):
+    if format != 'f' and format != 's':
+        raise Exception(" exportTAtoTMB(): unsupported format")
+
+    if format == 'f' and fileName == "":
+        raise Exception(" exportTAtoTMB(): no fileName")
+
+    result = open(fileName, "w") if format == 'f' else ""
+    if format == 'f':
+        writeAritiesTMBfile(ta.getSymbolArityDict(), result)
+        writeNameTMBfile(ta.name, result)
+        writeStatesTMBfile(ta.getStates(), result)
+        writeRootsTMBfile(ta.rootStates, result)
+        writeTransitionsTMBfile(ta, result)    
+        result.close()
+    else:
+        result += writeAritiesTMBstr(ta.getSymbolArityDict())
+        result += writeNameTMBstr(ta.name)
+        result += writeStatesTMBstr(ta.getStates())
+        result += writeRootsTMBstr(ta.rootStates)
+        result += writeTransitionsTMBstr(ta)
+        return result
+    return
 
 # End of file format_tmb.py

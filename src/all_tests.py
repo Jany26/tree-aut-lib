@@ -3,9 +3,10 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
+from jupyter import exportTA, importTA
 from test_data import *
-from format_tmb import *
 from format_vtf import *
+from format_tmb import *
 from format_dot import *
 import os
 
@@ -619,8 +620,7 @@ def vtfImportTests():
                 continue
             else:
                 try:
-                    testBox = importTreeAutFromVTF(filepath)
-                    # print(f"      loading from file {filepath}")
+                    testBox = importTAfromVTF(filepath, 'f')
                 except:
                     failures.append(f"importFromVTF({filepath})")   
     printFailedTests(failures)
@@ -631,7 +631,7 @@ def vtfExportTests():
 
     for name, box in boxesDict.items():
         try:
-            exportTreeAutToVTF(box, f"vtf/{name}.vtf")
+            exportTAtoVTF(box, 'f', f"vtf/{name}.vtf")
         except:
             failures.append(f"exportToVTF(out/{name}.vtf)")
     printFailedTests(failures)
@@ -659,7 +659,8 @@ def dotExportFromVTFTests():
                 try:
                     dotFilePath = "." + os.sep + "vtf-to-dot" + os.sep + file
                     dotFilePath = dotFilePath[:-4] + ".dot"
-                    exportVTFToDOT(filePath, dotFilePath)
+                    ta = importTAfromVTF(filePath, 'f')
+                    exportTreeAutToDOT(ta, dotFilePath)
                 except:
                     failures.append(f"exportFromVTFtoDOT({filePath}, {dotFilePath})")
     printFailedTests(failures)
@@ -673,9 +674,9 @@ def tmbImportTests():
             filePath = subdir + os.sep + file
             if filePath.endswith(".tmb"):
                 try:
-                    testBox = importTreeAutFromTMB(filePath)
+                    testBox = importTAfromTMB(filePath)
                 except:
-                    failures.append(f"importTreeAutFromTMB({filePath})")
+                    failures.append(f"importTAfromTMB({filePath})")
 
     printFailedTests(failures)
 
@@ -684,10 +685,59 @@ def tmbExportTests():
     failures = []
     for name, box in boxesDict.items():
         try:
-            exportTreeAutToTMB(box, f"tmb/{name}.tmb")
+            exportTAtoTMB(box, 'f', f"tmb/{name}.tmb")
         except:
             failures.append(f"exportTreeAutToTMB(tmb/{name}.tmb)")
 
     printFailedTests(failures)
+
+
+L0vtf = """
+@NTA
+# Automaton boxH0
+%Root t0
+%States t1 t2 t0
+%Alphabet LH:2 Port_H0:0 0:0
+
+t0 LH ( t0 t2 )
+t0 LH ( t1 t2 )
+t1 Port_H0 ( )
+t2 LH ( t2 t2 )
+t2 0 ( )
+"""
+
+L0tmb = """
+Ops LH:2 0:0 Port_L0:0
+
+Automaton boxL0
+
+States r0:0 r2:0 r1:0
+
+Final States r0
+
+Transitions
+LH(r1,r0) -> r0
+LH(r1,r2) -> r0
+LH(r1,r1) -> r1
+0() -> r1
+Port_L0() -> r2
+
+
+
+"""
+
+def extraTests():
+    ta1 = importTA("../nta/vtf/A0053.vtf", 'vtf')
+    ta2 = importTA("../nta/tmb/A0053.tmb", 'tmb')
+    ta3 = importTA(L0vtf, 'vtf', srcType='s')
+    ta4 = importTA(L0tmb, 'tmb', srcType='s')
+
+    ta3toVTFstr = exportTA(ta3, 'vtf', 's')
+    # print(ta3toVTFstr)
+    exportTA(ta3, 'vtf', 'f', f"vtf/temp_{ta3.name}.vtf")
+
+    ta3toTMBstr = exportTA(ta3, 'tmb', 's')
+    # print(ta3toTMBstr)
+    exportTA(ta3, 'tmb', 'f', f"tmb/temp_{ta3.name}.tmb")
 
 # End of file all_tests.py

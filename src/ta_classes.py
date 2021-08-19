@@ -109,6 +109,7 @@ class TTreeAut:
         self.name = name
 
     def printTreeAut(self):
+        print(f"Printing automaton '{self.name}'")
         print("=== Root States ===")
         print(str(self.rootStates))
 

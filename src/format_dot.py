@@ -5,8 +5,9 @@
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
 from ta_lib import *
-from format_vtf import importTreeAutFromVTF
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# DOT FORMAT IMPORT/EXPORT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def rootHandle(rootList:list, file):
@@ -64,16 +65,6 @@ def exportTreeAutToDOT(ta:TTreeAut, fileName:str):
             edgeHandle(edge, file)
     file.write("}\n")
     file.close()
-    pass
-
-# Unnecessary most probably
-## Explicitly reads all data from VATA format and creates a DOT format from it.
-# -- could be easily done thru importTreeAutFromVTF() and exportTreeAutToDOT()
-# This is a more optimized version though.
-def exportVTFToDOT(fileNameVTF:str, fileNameDOT:str):
-    temp = importTreeAutFromVTF(fileNameVTF)
-    # temp.printTreeAut()
-    exportTreeAutToDOT(temp, fileNameDOT)
     pass
 
 # End of file format_dot.py

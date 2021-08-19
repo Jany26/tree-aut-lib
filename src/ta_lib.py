@@ -26,7 +26,8 @@ import copy
 # SUBFUNCTIONS / HELPER FUNCTIONS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-# Helper function for bottom-up tree parsing
+# Helper function for bottom-up tree parsing 
+# - (determinization, reachability, nonEmptiness)
 
 ## Creates all possible variations (with repetition) of items from list of "parents" of a given length ("size"),
 # such that the variation (stored in a list) contains the "state" item at least once
@@ -37,58 +38,6 @@ def generatePossibleChildren(state:str, parents:list, size:int) -> list:
     for k in possibilites:
         if state in k:
             result.append(list(k))
-    return result
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-# Helper functions for BU-determinization
-
-## Similar function to generatePossibleChildren => instead of generating list of possible states,
-# this function generates list of possible macrostates (list of lists of states)
-def generatePossibleMacroStates(macroStateList:list, macroState:list, size:int) -> list:
-    workState = makeNameFromSet(macroState)
-    workList = [makeNameFromSet(list) for list in macroStateList]
-    possibilities = product(workList, repeat = size)
-    
-    result = []
-    for i in possibilities:
-        if workState in i:
-            temp = []
-            for j in i:
-                temp.append(makeSetFromName(j))
-            result.append(temp)
-    return result
-
-## Searches the tree automaton and returns list of states, 
-# which can produce exact combination of "children" through an edge labeled with "symbol"
-def findPossibleTransitions(ta:TTreeAut, symbol:str, children:list) -> list:
-    result = []
-    for edges in ta.transitions.values():
-        for data in edges.values():
-            if data[1].label == symbol and data[2] == children:
-                result.append(data[0])
-    result.sort()
-    return result
-
-## Produces a string from a list of states, which is used as the state label
-# example: ['a', 'b', 'c'] => '{a,b,c}'
-def makeNameFromSet(stateList:list) -> str:
-    if len(stateList) == 0:
-        return "{}"
-    stateList.sort()
-    result = "{"
-    for i in range(len(stateList)):
-        result += str(stateList[i])
-        result += ","
-    return result.rstrip(",") + "}"
-
-## Produces a list of states from a string, which is used as the state label
-# Reverse effect as makeNameFromSet
-def makeSetFromName(name:str) -> list:
-    temp = name.lstrip("{").rstrip("}").split(",")
-    result = []
-    for i in temp:
-        result.append(i.strip())
     return result
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -131,6 +80,8 @@ def generateWitnessString(transitions:dict, root:str) -> str:
 # works recursively, as all children from array have to be matched
 def matchTreeTD(ta:TTreeAut, root:TTreeNode):
 
+    ## Helper function for matchTreeTD  - - - - - - - - - - - - - - - - - - - -
+
     def matchTopDown(ta:TTreeAut, node:TTreeNode, state:str):
         descendantTuples = []
 
@@ -152,7 +103,8 @@ def matchTreeTD(ta:TTreeAut, root:TTreeNode):
             if b:
                 return True
         return False
-    # End of matchTopDown()
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     for rootPtr in ta.rootStates:
         if matchTopDown(ta, root, rootPtr) == True:
@@ -161,11 +113,12 @@ def matchTreeTD(ta:TTreeAut, root:TTreeNode):
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-
 ## Logical equivalent to function accept(DFA, string)
 # works recursively, but starts the matching process from the leaves
 # instead of starting from the root
 def matchTreeBU(ta:TTreeAut, root:TTreeNode):
+
+    ## Helper function for matchTreeBU  - - - - - - - - - - - - - - - - - - - -
 
     def matchBottomUp(ta:TTreeAut, root:TTreeNode) -> list:
         result = []
@@ -195,7 +148,7 @@ def matchTreeBU(ta:TTreeAut, root:TTreeNode):
                         if x:
                             result.append(stateName)
             return result
-    # End of matchBottomUp()
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     result = matchBottomUp(ta, root)
     temp = []
@@ -221,6 +174,59 @@ def matchTreeBU(ta:TTreeAut, root:TTreeNode):
 #       - in the final automaton the macroStates (list/set of states) will be represented by a string
 #       - this string is created using makeNameFromSet() functino
 def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
+
+    # Helper functions for BU-determinization - - - - - - - - - - - - - - - - - 
+
+    ## Similar function to generatePossibleChildren => instead of generating list of possible states,
+    # this function generates list of possible macrostates (list of lists of states)
+    def generatePossibleMacroStates(macroStateList:list, macroState:list, size:int) -> list:
+        workState = makeNameFromSet(macroState)
+        workList = [makeNameFromSet(list) for list in macroStateList]
+        possibilities = product(workList, repeat = size)
+        
+        result = []
+        for i in possibilities:
+            if workState in i:
+                temp = []
+                for j in i:
+                    temp.append(makeSetFromName(j))
+                result.append(temp)
+        return result
+
+    ## Searches the tree automaton and returns list of states, 
+    # which can produce exact combination of "children" through an edge labeled with "symbol"
+    def findPossibleTransitions(ta:TTreeAut, symbol:str, children:list) -> list:
+        result = []
+        for edges in ta.transitions.values():
+            for data in edges.values():
+                if data[1].label == symbol and data[2] == children:
+                    result.append(data[0])
+        result.sort()
+        return result
+
+    ## Produces a string from a list of states, which is used as the state label
+    # example: ['a', 'b', 'c'] => '{a,b,c}'
+    def makeNameFromSet(stateList:list) -> str:
+        if len(stateList) == 0:
+            return "{}"
+        stateList.sort()
+        result = "{"
+        for i in range(len(stateList)):
+            result += str(stateList[i])
+            result += ","
+        return result.rstrip(",") + "}"
+
+    ## Produces a list of states from a string, which is used as the state label
+    # Reverse effect as makeNameFromSet
+    def makeSetFromName(name:str) -> list:
+        temp = name.lstrip("{").rstrip("}").split(",")
+        result = []
+        for i in temp:
+            result.append(i.strip())
+        return result
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     doneSet = []
     workSet = []
     doneEdges = []
@@ -353,6 +359,45 @@ def treeAutComplement(ta:TTreeAut, alphabet) -> TTreeAut:
 # returns a trivial example of a tree generated by the tree automaton and its string representation
 # if the language is empty, None and empty string is returned
 def nonEmptyTD(ta:TTreeAut) -> Tuple[TTreeNode, str]:
+
+    ## Returns True if the state from a tree automaton can generate output (in finite amount of steps)
+    # uses top-down approach and thus backtracking, which requires a stack for remembering visited states
+    # as the tree is being parsed, edge lookup dictionary is being filled, 
+    #   - this dictionary is then used in witness generation (example of a tree generated by the TA)
+    def outputSearchTD(ta:TTreeAut, state:str, stack:list, edgeLookup:dict) -> bool:
+        if (
+            state in stack
+            or state not in ta.transitions
+            or len(ta.transitions[state]) == 0
+        ):
+            return False
+
+        stack.append(state)
+
+        # look for output edges first... at least one is needed to return
+        for transition in ta.transitions[state].values():
+            if len(transition[2]) == 0:
+                stack.pop()
+                edgeLookup[state] = transition
+                return True
+
+        # no direct  output edge detected, now trying to recursively find output edges
+        # trying to generate outputs from all children in at least one transition
+        for transition in ta.transitions[state].values():
+            b = True
+            for i in transition[2]:
+                b = outputSearchTD(ta, i, stack, edgeLookup)
+                if not b:
+                    break
+            if b:
+                stack.pop()
+                edgeLookup[state] = transition
+                return True
+        stack.pop()
+        return False
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
     for root in ta.rootStates:
         edges = {}
         stack = []
@@ -360,42 +405,6 @@ def nonEmptyTD(ta:TTreeAut) -> Tuple[TTreeNode, str]:
         if outputSearchTD(ta, root, stack, edges):
             return generateWitnessTree(edges, root), generateWitnessString(edges, root)
     return None, ""
-
-## Returns True if the state from a tree automaton can generate output (in finite amount of steps)
-# uses top-down approach and thus backtracking, which requires a stack for remembering visited states
-# as the tree is being parsed, edge lookup dictionary is being filled, 
-#   - this dictionary is then used in witness generation (example of a tree generated by the TA)
-def outputSearchTD(ta:TTreeAut, state:str, stack:list, edgeLookup:dict) -> bool:
-    if (
-        state in stack
-        or state not in ta.transitions
-        or len(ta.transitions[state]) == 0
-    ):
-        return False
-
-    stack.append(state)
-
-    # look for output edges first... at least one is needed to return
-    for transition in ta.transitions[state].values():
-        if len(transition[2]) == 0:
-            stack.pop()
-            edgeLookup[state] = transition
-            return True
-
-    # no direct  output edge detected, now trying to recursively find output edges
-    # trying to generate outputs from all children in at least one transition
-    for transition in ta.transitions[state].values():
-        b = True
-        for i in transition[2]:
-            b = outputSearchTD(ta, i, stack, edgeLookup)
-            if not b:
-                break
-        if b:
-            stack.pop()
-            edgeLookup[state] = transition
-            return True
-    stack.pop()
-    return False
 
 ## Bottom-up version of non empty language check
 # starts the mock tree generation from the leaves (states with output transitions)

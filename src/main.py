@@ -45,7 +45,9 @@ def main():
     
     print(">> UNIT TEST: DOT format export ...")
     dotExportTests()
-    # dotExportFromVTFTests() # time consuming
+    dotExportFromVTFTests()
+
+    extraTests()
 
     print(">> UNIT TESTS DONE!")
 

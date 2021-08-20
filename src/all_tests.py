@@ -3,7 +3,7 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from jupyter import exportTA, importTA
+from jupyter import convertToDOT, exportTA, importTA
 from test_data import *
 from format_vtf import *
 from format_tmb import *
@@ -727,17 +727,19 @@ Port_L0() -> r2
 """
 
 def extraTests():
-    ta1 = importTA("../nta/vtf/A0053.vtf", 'vtf')
-    ta2 = importTA("../nta/tmb/A0053.tmb", 'tmb')
-    ta3 = importTA(L0vtf, 'vtf', srcType='s')
-    ta4 = importTA(L0tmb, 'tmb', srcType='s')
+    # ta1 = importTA("../nta/vtf/A0053.vtf", 'vtf')
+    # ta2 = importTA("../nta/tmb/A0053.tmb", 'tmb')
+    # ta3 = importTA(L0vtf, 'vtf', srcType='s')
+    # ta4 = importTA(L0tmb, 'tmb', srcType='s')
 
-    ta3toVTFstr = exportTA(ta3, 'vtf', 's')
-    # print(ta3toVTFstr)
-    exportTA(ta3, 'vtf', 'f', f"vtf/temp_{ta3.name}.vtf")
+    # ta3toVTFstr = exportTA(ta3, 'vtf', 's')
+    # # print(ta3toVTFstr)
+    # exportTA(ta3, 'vtf', 'f', f"vtf/temp_{ta3.name}.vtf")
 
-    ta3toTMBstr = exportTA(ta3, 'tmb', 's')
-    # print(ta3toTMBstr)
-    exportTA(ta3, 'tmb', 'f', f"tmb/temp_{ta3.name}.tmb")
+    # ta3toTMBstr = exportTA(ta3, 'tmb', 's')
+    # # print(ta3toTMBstr)
+    # exportTA(ta3, 'tmb', 'f', f"tmb/temp_{ta3.name}.tmb")
+
+    convertToDOT(testTreeDict["treeH0test1"], 'n')
 
 # End of file all_tests.py

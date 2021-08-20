@@ -11,6 +11,45 @@ from ta_lib import *
 from format_dot import *
 from format_tmb import *
 from format_vtf import *
+from test_trees import buildTreeFromString
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# IMPORT/EXPORT INTEGRATION WITH JUPYTER
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def importTA(source:str, fmtType:str = "", srcType:str = 'f') -> TTreeAut:
+    if fmtType == "" and srcType == 'f':
+        if source.endswith(".vtf"):
+            fmtType = 'vtf'
+        elif source.endswith(".tmb"):
+            fmtType = 'tmb'
+        else:
+            raise Exception(f"importTA(): unknown fmtType")
+
+    if fmtType == 'vtf':
+        return importTAfromVTF(source, srcType)
+    elif fmtType == 'tmb':
+        return importTAfromTMB(source, srcType)
+    else:
+        raise Exception(f"importTA(): unsupported format '{fmtType}'")
+
+
+# target can be either a filePath or a string variable, where 
+def exportTA(ta: TTreeAut, fmtType:str, tgtType:str, filePath:str=""):
+    if fmtType != 'vtf' and fmtType != 'tmb':
+        raise Exception(f"exportTA(): unsupported fmtType '{fmtType}'")
+    if tgtType != 'f' and tgtType != 's':
+        raise Exception(f"exportTA(): unsupported tgtType '{tgtType}'")
+
+    if tgtType == 'f':
+        ta.name = "unnamed" if ta.name == "" else ta.name
+        filePath = f"./{ta.name}.{fmtType}" if filePath == "" else filePath
+    
+    if fmtType == 'vtf':
+        return exportTAtoVTF(ta, tgtType, filePath)
+    else:
+        return exportTAtoTMB(ta, tgtType, filePath)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # TREE AUTOMATA = GRAPHVIZ INTEGRATION WITH DOT
@@ -91,7 +130,15 @@ def DOTstateHandle(graph, state, leaves, roots):
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def convertToDOT(ta:TTreeAut) -> Digraph:
+def convertToDOT(src, type='a') -> Digraph:
+    if type == 'a':
+        return TAtoDOT(src)
+    elif type == 'n':
+        return treeToDOT(src)
+    elif type == 's':
+        return treeToDOT(buildTreeFromString(None, str(src)))
+
+def TAtoDOT(ta:TTreeAut) -> Digraph:
     dot = Digraph(comment=f"Tree Automaton {ta.name}")
     outputStates = ta.getOutputStates()
 
@@ -105,45 +152,49 @@ def convertToDOT(ta:TTreeAut) -> Digraph:
     return dot
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# IMPORT/EXPORT INTEGRATION WITH JUPYTER
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def importTA(source:str, fmtType:str, srcType:str = 'f') -> TTreeAut:
-    if fmtType == 'vtf':
-        return importTAfromVTF(source, srcType)
-    elif fmtType == 'tmb':
-        return importTAfromTMB(source, srcType)
-    else:
-        raise Exception(f"importTAfrom(): unsupported format '{fmtType}'")
-
-
-# target can be either a filePath or a string variable, where 
-def exportTA(ta: TTreeAut, fmtType:str, tgtType:str, filePath:str=""):
-    if fmtType != 'vtf' and fmtType != 'tmb':
-        raise Exception(f"exportTAto(): unsupported fmtType '{fmtType}'")
-    if tgtType != 'f' and tgtType != 's':
-        raise Exception(f"exportTAto(): unsupported tgtType '{tgtType}'")
-
-    if tgtType == 'f':
-        ta.name = "unnamed" if ta.name == "" else ta.name
-        filePath = f"./{ta.name}.{fmtType}" if filePath == "" else filePath
-    
-    if fmtType == 'vtf':
-        return exportTAtoVTF(ta, tgtType, filePath)
-    else:
-        return exportTAtoTMB(ta, tgtType, filePath)
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # TREES = INTEGRATION WITH DOT/GRAPHVIZ
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def createDOTfromTreeNode(root:TTreeNode) -> Digraph:
-    pass
+def drawChildren(graph:Digraph, root:TTreeNode, rootIdx:int) -> int:
+    nodeIdx = rootIdx + 1
+    for i in range(len(root.children)):
+        currIdx = nodeIdx
+        graph.node(str(currIdx),
+            label       = f"{root.children[i].value}",
+            style       = 'filled'
+        )
+        nodeIdx = drawChildren(graph, root.children[i], nodeIdx)
+        graph.edge(str(rootIdx), str(currIdx),
+            label       = f"{i}",
+            penwidth    = '1.0',
+            arrowsize   = '0.5',
+            arrowhead   = 'vee'
+        )
+    return nodeIdx
 
-def createDOTfromTreeString(string:str) -> Digraph:
-    pass
+def treeToDOT(root:TTreeNode) -> Digraph:
+    dot = Digraph()
 
-# G = nx.cycle_graph(4, create_using=nx.DiGraph())
-# draw(G)
+    # arbitrary root node (for extra arrow)
+    dot.node(f"->{root.value}", 
+        label   = f"->{root.value}", 
+        shape   = 'point', 
+        width   = '0.001', 
+        height  = '0.001'
+    )
+    
+    # the actual root node
+    dot.node(str(0),
+        label       = f"{root.value}",
+        style       = 'filled'
+    )
+    
+    dot.edge(f"->{root.value}", str(0),
+        penwidth    = '1.0', 
+        arrowsize   = '0.5', 
+        arrowhead   = 'vee'
+    )
+    drawChildren(dot, root, 0)
+    return dot
 
 # End of file jupyter.py

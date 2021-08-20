@@ -21,7 +21,7 @@ def getNodeFromString(string:str):
 ## Recursive function to generate a tree from a structured string
 # XYZ [...] = node with list of children following (can be nested)
 # [ node1 ; node2 [...] ; node3 ; ... ] = list of children of a previous node
-def buildTreeFromString(currentNode:TTreeNode, string:str):
+def buildTreeFromString(currentNode:TTreeNode, string:str) -> TTreeNode:
     string = string.strip() # skipping whitespaces
 
     # empty string - ending recursion

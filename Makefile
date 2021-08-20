@@ -9,11 +9,9 @@ all:
 	cd src/ && python3 main.py
 
 clean:
+	jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace src/*.ipynb
 	-cd src/ && rm -r __pycache__/
 	-cd src/ && rm *.pyc *.pyo *.pyd
-	-cd src/dot && rm *
-	-cd src/tmb && rm *
-	-cd src/vtf && rm *
-	-cd src/vtf-to-dot && rm *
+	-rm -r src/dot/ src/tmb/ src/vtf/ src/vtf-to-dot/
 
 # End of file Makefile

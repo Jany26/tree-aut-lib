@@ -78,7 +78,7 @@ def generateWitnessString(transitions:dict, root:str) -> str:
 
 ## Logical equivalent to function accept(DFA, string)
 # works recursively, as all children from array have to be matched
-def matchTreeTD(ta:TTreeAut, root:TTreeNode):
+def matchTreeTD(ta:TTreeAut, root:TTreeNode) -> bool:
 
     ## Helper function for matchTreeTD  - - - - - - - - - - - - - - - - - - - -
 
@@ -116,7 +116,7 @@ def matchTreeTD(ta:TTreeAut, root:TTreeNode):
 ## Logical equivalent to function accept(DFA, string)
 # works recursively, but starts the matching process from the leaves
 # instead of starting from the root
-def matchTreeBU(ta:TTreeAut, root:TTreeNode):
+def matchTreeBU(ta:TTreeAut, root:TTreeNode) -> bool:
 
     ## Helper function for matchTreeBU  - - - - - - - - - - - - - - - - - - - -
 

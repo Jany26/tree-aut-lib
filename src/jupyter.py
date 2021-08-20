@@ -11,7 +11,7 @@ from ta_lib import *
 from format_dot import *
 from format_tmb import *
 from format_vtf import *
-from test_trees import buildTreeFromString
+from test_trees import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # IMPORT/EXPORT INTEGRATION WITH JUPYTER
@@ -136,7 +136,7 @@ def convertToDOT(src, type='a') -> Digraph:
     elif type == 'n':
         return treeToDOT(src)
     elif type == 's':
-        return treeToDOT(buildTreeFromString(None, str(src)))
+        return treeToDOT(convertStringToTree(str(src)))
 
 def TAtoDOT(ta:TTreeAut) -> Digraph:
     dot = Digraph(comment=f"Tree Automaton {ta.name}")

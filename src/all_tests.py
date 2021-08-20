@@ -629,6 +629,9 @@ def vtfExportTests():
     print(" > SUBUNIT TEST: exporting to VATA format ...")
     failures = []
 
+    if not os.path.exists("vtf"):
+        os.makedirs("vtf")
+
     for name, box in boxesDict.items():
         try:
             exportTAtoVTF(box, 'f', f"vtf/{name}.vtf")
@@ -642,6 +645,9 @@ def dotExportTests():
     print(" > SUBUNIT TEST: exporting to DOT format ...")
     failures = []
 
+    if not os.path.exists("dot"):
+        os.makedirs("dot")
+
     for name, box in boxesDict.items():
         try:
             exportTreeAutToDOT(box, f"dot/{name}.dot")
@@ -652,6 +658,10 @@ def dotExportTests():
 def dotExportFromVTFTests():
     print(" > SUBUNIT TEST: exporting from VTF to DOT format ...")
     failures = []
+
+    if not os.path.exists("vtf-to-dot"):
+        os.makedirs("vtf-to-dot")
+
     for subdir, dirs, files in os.walk("."):
         for file in files:
             filePath = subdir + os.sep + file
@@ -682,6 +692,10 @@ def tmbImportTests():
 
 def tmbExportTests():
     print(" > SUBUNIT TEST: exporting to TMB format ...")
+
+    if not os.path.exists("tmb"):
+        os.makedirs("tmb")
+
     failures = []
     for name, box in boxesDict.items():
         try:

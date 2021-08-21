@@ -175,6 +175,8 @@ def drawChildren(graph:Digraph, root:TTreeNode, rootIdx:int) -> int:
 def treeToDOT(root:TTreeNode) -> Digraph:
     dot = Digraph()
 
+    if root == None:
+        return dot
     # arbitrary root node (for extra arrow)
     dot.node(f"->{root.value}", 
         label   = f"->{root.value}", 

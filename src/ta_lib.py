@@ -50,9 +50,9 @@ def generateWitnessTree(transitions:dict, root:str) -> TTreeNode:
     if (type(transitions) is None or type(root) is None):
         return None
     if len(transitions[root][2]) == 0:
-        return TTreeNode(transitions[root][1])
+        return TTreeNode(transitions[root][1].label)
     else:
-        tempNode = TTreeNode(transitions[root][1])
+        tempNode = TTreeNode(transitions[root][1].label)
         for i in transitions[root][2]:
             tempChild = generateWitnessTree(transitions, i)
             tempNode.connectChild(tempChild)
@@ -62,9 +62,9 @@ def generateWitnessTree(transitions:dict, root:str) -> TTreeNode:
 # uses dictionary of transitions (only 1 needed for each state)
 def generateWitnessString(transitions:dict, root:str) -> str:
     if len(transitions[root][2]) == 0:
-        return str(transitions[root][1])
+        return str(transitions[root][1].label)
     else:
-        parentString = str(transitions[root][1]) + "["
+        parentString = str(transitions[root][1].label) + "["
         for i in range(len(transitions[root][2])):
             childString = generateWitnessString(transitions, transitions[root][2][i])
             parentString += childString

@@ -319,14 +319,15 @@ def treeAutIntersection(ta1:TTreeAut, ta2:TTreeAut) -> TTreeAut:
                     # if (transition1[1] == transition2[1]) or (transition1[1].startswith("Port") and transition2[1].startswith("Port")):
                     
                     # adding new transition to the intersection if possible
-                    if transition1[1] == transition2[1]:
+                    if transition1[1].label == transition2[1].label:
 
                         # TODO: consider port adding (differentiating ports - maybe by some counter)
                         # newTransition.append("Port") if transition1[1].startswith("Port") else newTransition.append(transition1[1])
                         
                         # merge source state names -> 'q1' with 'q2' create '(q1, q2)'
                         newTransition.append("(" + transition1[0] + "," + transition2[0] + ")")
-                        newTransition.append(transition1[1])
+                        newTransitionEdge = TEdge(transition1[1].label, (None, None), "")
+                        newTransition.append(newTransitionEdge)
                         childStates = []
                         for i in range(len(transition1[2])):
                             childStates.append("(" + transition1[2][i] + "," + transition2[2][i] + ")")

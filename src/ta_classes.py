@@ -191,7 +191,7 @@ class TTreeAut:
 
         # renaming name of the state inside transitions (2nd layer)
         for edges in self.transitions.values():
-            for data in edges.items():
+            for data in edges.values():
                 if data[0] == oldName:
                     data[0] = str(newName)
                 # renaming state name inside the children array (3rd layer)

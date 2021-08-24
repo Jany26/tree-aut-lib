@@ -206,14 +206,13 @@ class TTreeAut:
         if state in self.transitions:
             self.transitions.pop(state)
 
-        resultDict = {}
-        for stateName, content in self.transitions.items():
-            tempDict = {}
+        for content in self.transitions.values():
+            keysToDelete = []
             for key, transition in content.items():
-                if state not in transition[2]:
-                    tempDict[key] = transition
-            resultDict[stateName] = tempDict
-        self.transitions = resultDict      
+                if state in transition[2]:
+                    keysToDelete.append(key)
+            for key in keysToDelete:
+                content.pop(key)
 
     ## Shrinks the tree automaton to only contain the states from list (reachable states)
     def shrinkTA(self, reachable:list):
@@ -233,7 +232,7 @@ class TTreeAut:
     
     ### Building functions ###
 
-    def createPrefix(self, additionalOutputEdges): 
+    def createPrefix(self, additionalOutputEdges):
         result = copy.deepcopy(self)
         
         result.name = f"prefix({self.name}, ["
@@ -245,6 +244,8 @@ class TTreeAut:
             
         for stateName, content in result.transitions.items():
             tempDict = {}
+            if stateName in self.rootStates:
+                continue
             for symbol in additionalOutputEdges:
                 tempString = str(stateName) + "-" + str(symbol) + "-()"
                 tempDict[tempString] = [stateName, TEdge(symbol, [], ""), []]
@@ -276,4 +277,11 @@ class TTreeAut:
                 result.rootStates.append(stateName)
         return result
 
+    def createInfix(self, additionalOutputEdges):
+        result = copy.deepcopy(self)
+        return result
+
+    def isWellDefined(self) -> bool:
+        
+        pass
 # End of file ta_classes.py

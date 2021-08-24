@@ -545,15 +545,15 @@ def removeUselessStatesTests():
     print(" > SUBUNIT TEST: testing removeUselessStates() ...")
     failures = []
 
-    removeUselessStates(testBox1)
-    removeUselessStates(testBox2a)
-    removeUselessStates(testBox2b)
+    cleanTestBox1 = removeUselessStates(testBox1)
+    cleanTestBox2a = removeUselessStates(testBox2a)
+    cleanTestBox2b = removeUselessStates(testBox2b)
 
-    if set(testBox1.getStates()) != set([]):
+    if set(cleanTestBox1.getStates()) != set([]):
         failures.append("removeUselessStates(testBox1)")
-    if set(testBox2a.getStates()) != set(['q0', 'q1', 'q2', 'q3']):
+    if set(cleanTestBox2a.getStates()) != set(['q0', 'q1', 'q2', 'q3']):
         failures.append("removeUselessStates(testBox2a)")
-    if set(testBox2b.getStates()) != set(['q0', 'q1', 'q2', 'q3']):
+    if set(cleanTestBox2b.getStates()) != set(['q0', 'q1', 'q2', 'q3']):
         failures.append("removeUselessStates(testBox2b)")
 
     # now this test will fail, as edges are not simply strings, 

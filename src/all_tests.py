@@ -741,19 +741,30 @@ Port_L0() -> r2
 """
 
 def extraTests():
-    # ta1 = importTA("../nta/vtf/A0053.vtf", 'vtf')
-    # ta2 = importTA("../nta/tmb/A0053.tmb", 'tmb')
-    # ta3 = importTA(L0vtf, 'vtf', srcType='s')
-    # ta4 = importTA(L0tmb, 'tmb', srcType='s')
+    roots = ['q', 'r', 's', 't']
+    transitions = {
+        'q': {
+            'a': ['q', TEdge('LH', [None, None], ""), ['q', 'r']],
+            'b': ['q', TEdge('LH', [None, None], ""), ['r', 'u']]
+        },
+        'r': {
+            'c': ['r', TEdge('LH', [None, None], ""), ['u', 'u']]
+        },
+        's': {
+            'd': ['s', TEdge('LH', [None, None], ""), ['v', 'v']]
+        },
+        'u': {
+            'e': ['u', TEdge('0', [], ""), []]
+        },
+        'w': {
+            'f': ['w', TEdge('1', [], ""), []]
+        }
+    }
 
-    # ta3toVTFstr = exportTA(ta3, 'vtf', 's')
-    # # print(ta3toVTFstr)
-    # exportTA(ta3, 'vtf', 'f', f"vtf/temp_{ta3.name}.vtf")
+    testBox = TTreeAut(roots, transitions, "unreachableStatesTest")
 
-    # ta3toTMBstr = exportTA(ta3, 'tmb', 's')
-    # # print(ta3toTMBstr)
-    # exportTA(ta3, 'tmb', 'f', f"tmb/temp_{ta3.name}.tmb")
-
-    convertToDOT(testTreeDict["treeH0test1"], 'n')
+    print("bottom up => " + str(reachableBU(testBox)))
+    print("top down => " + str(reachableTD(testBox)))
+    # convertToDOT(testTreeDict["treeH0test1"], 'n')
 
 # End of file all_tests.py

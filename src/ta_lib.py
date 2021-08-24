@@ -461,6 +461,8 @@ def reachableTD(ta:TTreeAut) -> list:
 
     while len(workList) > 0:
         state = workList.pop()
+        if state not in ta.transitions:
+            continue
         content = ta.transitions[state]
         for transition in content.values():
             for i in transition[2]:

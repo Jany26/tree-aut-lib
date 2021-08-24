@@ -47,7 +47,8 @@ def main():
     dotExportTests()
     dotExportFromVTFTests()
 
-    extraTests()
+    # print(">> UNIT TEST: extra tests ...")
+    # extraTests()
 
     print(">> UNIT TESTS DONE!")
 

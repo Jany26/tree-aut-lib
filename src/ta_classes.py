@@ -203,10 +203,8 @@ class TTreeAut:
         if state in self.rootStates:
             self.rootStates.remove(state)
         
-        if state not in self.transitions:
-            return
-        
-        self.transitions.pop(state)
+        if state in self.transitions:
+            self.transitions.pop(state)
 
         resultDict = {}
         for stateName, content in self.transitions.items():
@@ -219,11 +217,18 @@ class TTreeAut:
 
     ## Shrinks the tree automaton to only contain the states from list (reachable states)
     def shrinkTA(self, reachable:list):
-        toDelete = []
-        for stateName in self.transitions:
+        toDelete = [x for x in self.rootStates if x not in reachable]
+        for stateName, content in self.transitions.items():
             if stateName not in reachable:
                 toDelete.append(stateName)
-        for i in toDelete:
+            for data in content.values():
+                if data[0] not in reachable:
+                    toDelete.append(data[0])
+                for i in data[2]:
+                    if i not in reachable:
+                        toDelete.append(i)
+
+        for i in set(toDelete):
             self.removeState(i)
     
     ### Building functions ###

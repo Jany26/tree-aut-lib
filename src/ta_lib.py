@@ -160,17 +160,17 @@ def matchTreeBU(ta:TTreeAut, root:TTreeNode) -> bool:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 ## Creates a deterministic and complete version of the "ta" tree automaton with regards to the "alphabet"
-# alphabet is a dictionary -> key = "symbol", value = arity (integer)
-# doneStates = list of macrostates (macrostate = list of states/strings)
-# doneTransitions = dictionary of transitions, key is just some string created from doneStates by a function
+#  alphabet is a dictionary -> key = "symbol", value = arity (integer)
+#  doneStates = list of macrostates (macrostate = list of states/strings)
+#  doneTransitions = dictionary of transitions, key is just some string created from doneStates by a function
 #       - each key references a list/dict of all possible transitions
-# the transitions themselves look like this: [ parentMacroState, symbol, childMacroStateList ]
+#  the transitions themselves look like this: [ parentMacroState, symbol, childMacroStateList ]
 #       - parentMacroState = list of states
 #       - symbol = 
 #       - childMacroStateList = list of lists of states 
 #           - from which the states in parentMacroState can be reached through an edge labeled with the symbol
 #
-# * IMPORTANT NOTE = doneStates and doneTransitions are just placeholder structures
+#  * IMPORTANT NOTE = doneStates and doneTransitions are just placeholder structures
 #       - in the final automaton the macroStates (list/set of states) will be represented by a string
 #       - this string is created using makeNameFromSet() functino
 def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
@@ -178,7 +178,7 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
     # Helper functions for BU-determinization - - - - - - - - - - - - - - - - - 
 
     ## Similar function to generatePossibleChildren => instead of generating list of possible states,
-    # this function generates list of possible macrostates (list of lists of states)
+    #  this function generates list of possible macrostates (list of lists of states)
     def generatePossibleMacroStates(macroStateList:list, macroState:list, size:int) -> list:
         workState = makeNameFromSet(macroState)
         workList = [makeNameFromSet(list) for list in macroStateList]
@@ -194,7 +194,7 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
         return result
 
     ## Searches the tree automaton and returns list of states, 
-    # which can produce exact combination of "children" through an edge labeled with "symbol"
+    #  which can produce exact combination of "children" through an edge labeled with "symbol"
     def findPossibleTransitions(ta:TTreeAut, symbol:str, children:list) -> list:
         result = []
         for edgeDict in ta.transitions.values():
@@ -205,25 +205,22 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
         return result
 
     ## Produces a string from a list of states, which is used as the state label
-    # example: ['a', 'b', 'c'] => '{a,b,c}'
+    #  example: ['a', 'b', 'c'] => "{a,b,c}"
     def makeNameFromSet(stateList:list) -> str:
         if len(stateList) == 0:
             return "{}"
         stateList.sort()
-        result = "{"
+        result = "{" 
         for i in range(len(stateList)):
             result += str(stateList[i])
             result += ","
         return result.rstrip(",") + "}"
 
     ## Produces a list of states from a string, which is used as the state label
-    # Reverse effect as makeNameFromSet
+    #  Reverse effect as makeNameFromSet
     def makeSetFromName(name:str) -> list:
         temp = name.lstrip("{").rstrip("}").split(",")
-        result = []
-        for i in temp:
-            result.append(i.strip())
-        return result
+        return [i.strip() for i in temp]
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -248,16 +245,16 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
         for symbol in alphabet:
             arity = alphabet[symbol]
             possibileMacroStateChildren = generatePossibleMacroStates(doneSet, currentMacroState, arity)
-            for x in possibileMacroStateChildren:
-                possibleNormalChildren = [list(i) for i in product(*x)]
+            for macroState in possibileMacroStateChildren:
+                possibleNormalChildren = [list(i) for i in product(*macroState)]
                 edge = []
-                for i in possibleNormalChildren:
-                    reachableMacroState = findPossibleTransitions(ta, symbol, i)
+                for child in possibleNormalChildren:
+                    reachableMacroState = findPossibleTransitions(ta, symbol, child)
                     if reachableMacroState not in doneSet:
                         doneSet.append(reachableMacroState)
                         workSet.append(reachableMacroState)
                     if edge == []:
-                        edge = [reachableMacroState, TEdge(symbol, [None] * arity, ""), x]
+                        edge = [reachableMacroState, TEdge(symbol, [None] * arity, ""), macroState]
                         if edge not in doneEdges:
                             doneEdges.append(edge)
 
@@ -299,45 +296,52 @@ def treeAutUnion(ta1:TTreeAut, ta2:TTreeAut) -> TTreeAut:
 ## Creates a tree automaton, that only generates trees which can be generated by
 #  both its input automatons.
 def treeAutIntersection(ta1:TTreeAut, ta2:TTreeAut) -> TTreeAut:
+    
+    ## Helper function, creates a pair key, [edgeInfo] for TAinteresction()
+    #  based on the two keys and two edges from input.
+    #  If possible, adds a new transition into the result dictionary
+    def handleIntersectionEdge(key1, edge1, key2, edge2, result:TTreeAut, state:str):
+        newKey = f"({key1},{key2})" # merge transition keys 
+        newState = f"({edge1[0]},{edge2[0]})" # merge source state names
+        # e.g. states 'q1' and 'q2' create '(q1, q2)'
+        newEdge = copy.deepcopy(edge1[1]) # new edge with same info
+        newChildStates = [] # merged children
+        for i in range(len(edge1[2])):
+            newChildStates.append(f"({edge1[2][i]},{edge2[2][i]})")
+
+        if state not in result.transitions:
+            result.transitions[state] = {}
+        # add transition to transitions in a state dictionary
+        result.transitions[state][newKey] = [newState, newEdge, newChildStates]
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    # NOTE: consider how to handle not-matching ports
+    # label1 = transition1[1].label
+    # label2 = transition2[1].label
+    # if (label1.startswith("Port") and label2.startswith("Port") and label1 != label2):
+    #     doWhatever()
+    #     pass
+
+    # NOTE: consider port adding (differentiating ports - maybe by some counter)
+    # if transition1[1].startswith("Port"):
+    #     newTransition.append("Port") 
+    # else:
+    #     newTransition.append(transition1[1])
+
     result = TTreeAut([], {}, f"intersection({ta1.name},{ta2.name})")
     for stateName1, edgeDict1 in ta1.transitions.items():
         for stateName2, edgeDict2 in ta2.transitions.items():
-            newStateName = "(" + stateName1 + "," + stateName2 + ")"
+            newStateName = f"({stateName1},{stateName2})"
             if stateName1 in ta1.rootStates and stateName2 in ta2.rootStates:
                 result.rootStates.append(newStateName)
-            for key1, edge1 in edgeDict1.items():
-                for key2, edge2 in edgeDict2.items():
-                    newTransition = []
-                    # merge transition keys 
-                    newKey = "(" + key1 + "," + key2 + ")"
-
-                    # check if the arity is consistent (for now we just assume it is)
-                    if len(edge1[2]) != len(edge2[2]):
+            for k1, e1 in edgeDict1.items(): # key1, edge1
+                for k2, e2 in edgeDict2.items(): # key2, edge2
+                    if len(e1[2]) != len(e2[2]): # arity consistency
                         continue
-                    
-                    # TODO: consider how to handle not-matching ports
-                    # if (transition1[1] == transition2[1]) or (transition1[1].startswith("Port") and transition2[1].startswith("Port")):
-                    
-                    # adding new transition to the intersection if possible
-                    if edge1[1].label == edge2[1].label:
+                    if e1[1].label != e2[1].label: # symbol consistency
+                        continue
+                    handleIntersectionEdge(k1, e1, k2, e2, result, newStateName)
 
-                        # TODO: consider port adding (differentiating ports - maybe by some counter)
-                        # newTransition.append("Port") if transition1[1].startswith("Port") else newTransition.append(transition1[1])
-                        
-                        # merge source state names -> 'q1' with 'q2' create '(q1, q2)'
-                        newTransition.append("(" + edge1[0] + "," + edge2[0] + ")")
-                        newTransitionEdge = TEdge(edge1[1].label, (None, None), "")
-                        newTransition.append(newTransitionEdge)
-                        childStates = []
-                        for i in range(len(edge1[2])):
-                            childStates.append("(" + edge1[2][i] + "," + edge2[2][i] + ")")
-                        newTransition.append(childStates)
-
-                        # add state to transition dictionary 
-                        if newStateName not in result.transitions:
-                            result.transitions[newStateName] = {}
-                        # add transition to transitions in a state dictionary
-                        result.transitions[newStateName][newKey] = newTransition
     result.portArity = result.getPortArity()
     return result
 
@@ -363,9 +367,9 @@ def treeAutComplement(ta:TTreeAut, alphabet:dict) -> TTreeAut:
 def nonEmptyTD(ta:TTreeAut) -> Tuple[TTreeNode, str]:
 
     ## Returns True if the state from a tree automaton can generate output (in finite amount of steps)
-    # uses top-down approach and thus backtracking, which requires a stack for remembering visited states
-    # as the tree is being parsed, edge lookup dictionary is being filled, 
-    #   - this dictionary is then used in witness generation (example of a tree generated by the TA)
+    #  uses top-down approach and thus backtracking, which requires a stack for remembering visited states
+    #  as the tree is being parsed, edge lookup dictionary is being filled, 
+    #    - this dictionary is then used in witness generation (example of a tree generated by the TA)
     def outputSearchTD(ta:TTreeAut, state:str, stack:list, edgeLookup:dict) -> bool:
         if (
             state in stack
@@ -409,8 +413,8 @@ def nonEmptyTD(ta:TTreeAut) -> Tuple[TTreeNode, str]:
     return None, ""
 
 ## Bottom-up version of non empty language check
-# starts the mock tree generation from the leaves (states with output transitions)
-# same signature as top-down version
+#  starts the mock tree generation from the leaves (states with output transitions)
+#  same signature as top-down version
 def nonEmptyBU(ta:TTreeAut) -> Tuple[TTreeNode, str]:
     # initialization phase (finding all output )
     workList = ta.getOutputStates()
@@ -467,8 +471,8 @@ def reachableTD(ta:TTreeAut) -> list:
         if state not in ta.transitions:
             continue
         edgeDict = ta.transitions[state]
-        for transition in edgeDict.values():
-            for i in transition[2]:
+        for edge in edgeDict.values():
+            for i in edge[2]:
                 if i not in result:
                     workList.append(i)
                     result.append(i)
@@ -482,15 +486,14 @@ def reachableBU(ta:TTreeAut) -> list:
     while len(workList) > 0:
         state = workList.pop()
         for symbol, arity in arityDict.items():
-            # arity = arityDict[symbol]
             if not arity > 0:
                 continue
             allPossibileTuples = generatePossibleChildren(state, result, arity)
             for stateName, edgeDict in ta.transitions.items():
-                for transition in edgeDict.values():
+                for edge in edgeDict.values():
                     if (
-                        transition[1].label != symbol
-                        or transition[2] not in allPossibileTuples
+                        edge[1].label != symbol
+                        or edge[2] not in allPossibileTuples
                     ):
                         continue
                     if stateName not in result:
@@ -499,11 +502,11 @@ def reachableBU(ta:TTreeAut) -> list:
     return result
 
 ## One of the rule-checks for a well-defined tree automaton (box).
-# Implements bottom-up search and keeps information about all reachable port
-# combinations from a given state.
+#  Implements bottom-up search and keeps information about all reachable port
+#  combinations from a given state.
 #
-# Each root state has to be able to reach a precise amount of ports, which is
-# given by TAs port-arity.
+#  Each root state has to be able to reach a precise amount of ports, which is
+#  given by TAs port-arity.
 def portConsistencyCheck(ta:TTreeAut) -> bool:
 
     ## Helper function, creates a list of sets, 
@@ -524,7 +527,7 @@ def portConsistencyCheck(ta:TTreeAut) -> bool:
             for setList in tuple: # iterate over each list of sets:
                 unionSet = set() # create union of each small set from the setlist
                 for unitSet in setList: # iterate over each set
-                    unionSet = unionSet | unitSet 
+                    unionSet |= unitSet 
                 if unionSet not in result:
                     result.append(unionSet)
         return result
@@ -581,32 +584,32 @@ def isWellDefined(ta:TTreeAut, errDisplay=False) -> bool:
         "7-unambiguity":True,
     }
 
-    # 1) Non-emptiness
+    # 1) Non-emptiness  - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     witnessTree, witnessString = nonEmptyBU(ta)
     if witnessTree == None or witnessString == "":
         wellDefinedConditions["1-non-emptiness"] = False
 
-    # 2) Trimness
+    # 2) Trimness - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     allStates = ta.getStates()
     if set(reachableBU(ta)) != set(allStates) or set(reachableTD(ta)) != set(allStates):
         wellDefinedConditions["2-trimness"] = False
 
-    # 3) Port consistency
+    # 3) Port consistency - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     if not portConsistencyCheck(ta):
         wellDefinedConditions["3-port-consistency"] = False
 
-    # 4) Root-uniqueness
+    # 4) Root-uniqueness  - - - - - - - - - - - - - - - - - - - - - - - - - - -
     if len(ta.rootStates) != 1:
         wellDefinedConditions["4-root-uniqueness"] = False
 
-    # 5) Non-vacuity
+    # 5) Non-vacuity  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     for i in ta.rootStates:
         rootEdges = ta.transitions[i]
         for edge in rootEdges.values():
             if len(edge[2]) == 0 and edge[1].label.startswith("Port"):
                 wellDefinedConditions["5-non-vacuity"] = False
 
-    # 6) Port-uniqueness
+    # 6) Port-uniqueness  - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     outputEdges = ta.getOutputEdges()
     portCounter = 0
     for symbol in outputEdges:
@@ -617,12 +620,12 @@ def isWellDefined(ta:TTreeAut, errDisplay=False) -> bool:
     if portCounter != ta.getPortArity():
         wellDefinedConditions["6-port-uniqueness"] = False
     
-    # 7) Unambiguity TODO
+    # 7) Unambiguity TODO - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     sth = False
     if sth:
         wellDefinedConditions["7-unambiguity"] = True
 
-    # Final processing
+    # Final processing  - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     boxIsWellDefined = True
     errorMsg = f"   > isWellDefined('{ta.name}'): failed conditions = "
     for condition, value in wellDefinedConditions.items():

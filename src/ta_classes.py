@@ -151,7 +151,9 @@ class TTreeAut:
             for data in edges.values():
                 for i in data[2]:
                     result.append(i)
-        return set(result)
+        result = list(set(result))
+        result.sort()
+        return result
 
     # needed for feeding makePrefix() function
     # generates all edge symbols labeling the output edges from the tree automaton

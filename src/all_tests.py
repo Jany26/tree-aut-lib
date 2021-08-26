@@ -3,7 +3,6 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from jupyter import convertToDOT, exportTA, importTA
 from test_data import *
 from format_vtf import *
 from format_tmb import *
@@ -23,22 +22,27 @@ def printFailedTests(failedTestsArray):
         for i in failedTestsArray:
             print("      " + i)
 
-def matchTest(function:str, ta:str, tree:str, expectingMatch, failures):
+def matchTest(function:str, ta:str, tree:str, expectedResult, failures):
     func = functionPtrs[function]
     box = boxesDict[ta]
     testTree = testTreeDict[tree]
-    if (expectingMatch and not func(box, testTree)) or (not expectingMatch and func(box, testTree)):
-        failures.append(f"{function}({ta}, {tree})")
+    actualResult = func(box, testTree)
+    if expectedResult != actualResult:
+        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(f"{function}({ta}, {tree})", str(expectedResult), str(actualResult)))
 
 def nonEmptyTest(function:str, ta:str, expectedResult, failures):
     func = functionPtrs[function]
     box = boxesDict[ta]
     testTree, testString = func(box)
+    actualResult = False if (testTree is None or testString == "") else True
+    if expectedResult != actualResult:
+        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(f"{function}({ta})", str(expectedResult), str(actualResult)))
 
-    if expectedResult and (testTree is None or testString == ""):
-        failures.append(f"{function}({ta})")
-    if not expectedResult and (testTree is not None or testString != ""):
-        failures.append(f"{function}({ta})")
+def wellDefinedTest(ta:str, expectedResult, errDisplay, failures):
+    box = boxesDict[ta]
+    actualResult = isWellDefined(box, errDisplay)
+    if actualResult != expectedResult:
+        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(f"isWellDefined({ta})", str(expectedResult), str(actualResult)))
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # TESTS FOR SUBFUNCTIONS
@@ -219,18 +223,18 @@ def determinizationTests():
     boxesDict["deterministicH1"] = treeAutDeterminization(boxesDict["boxH1"], fullAlphabet)
     boxesDict["deterministicLPort"] = treeAutDeterminization(boxesDict["boxLPort"], fullAlphabet)
 
-    matchTest("matchTreeTD", "deterministicX", "treeXtest1", True, failures)
-    matchTest("matchTreeTD", "deterministicX", "treeXtest2", False, failures)
-    matchTest("matchTreeTD", "deterministicX", "treeXtest3", True, failures)
+    matchTest("matchTreeTD", "deterministicX", "treeXtest1",   True,  failures)
+    matchTest("matchTreeTD", "deterministicX", "treeXtest2",   False, failures)
+    matchTest("matchTreeTD", "deterministicX", "treeXtest3",   True,  failures)
 
-    matchTest("matchTreeTD", "deterministicL0", "treeL0test1", True, failures)
-    matchTest("matchTreeTD", "deterministicL0", "treeL0test2", True, failures)
-    matchTest("matchTreeTD", "deterministicL0", "treeL0test3", True, failures)
-    matchTest("matchTreeTD", "deterministicL0", "treeL0test4", True, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL0test1", True,  failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL0test2", True,  failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL0test3", True,  failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeL0test4", True,  failures)
 
-    matchTest("matchTreeTD", "deterministicL0", "treeXtest1", False, failures)
-    matchTest("matchTreeTD", "deterministicL0", "treeXtest2", False, failures)
-    matchTest("matchTreeTD", "deterministicL0", "treeXtest3", False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeXtest1",  False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeXtest2",  False, failures)
+    matchTest("matchTreeTD", "deterministicL0", "treeXtest3",  False, failures)
     matchTest("matchTreeTD", "deterministicL0", "treeL1test1", False, failures)
     matchTest("matchTreeTD", "deterministicL0", "treeL1test2", False, failures)
     matchTest("matchTreeTD", "deterministicL0", "treeL1test3", False, failures)
@@ -244,20 +248,20 @@ def determinizationTests():
     matchTest("matchTreeTD", "deterministicL0", "treeH1test3", False, failures)
     matchTest("matchTreeTD", "deterministicL0", "treeH1test4", False, failures)
 
-    matchTest("matchTreeTD", "deterministicL1", "treeL1test1", True, failures)
-    matchTest("matchTreeTD", "deterministicL1", "treeL1test2", True, failures)
-    matchTest("matchTreeTD", "deterministicL1", "treeL1test3", True, failures)
-    matchTest("matchTreeTD", "deterministicL1", "treeL1test4", True, failures)
+    matchTest("matchTreeTD", "deterministicL1", "treeL1test1", True,  failures)
+    matchTest("matchTreeTD", "deterministicL1", "treeL1test2", True,  failures)
+    matchTest("matchTreeTD", "deterministicL1", "treeL1test3", True,  failures)
+    matchTest("matchTreeTD", "deterministicL1", "treeL1test4", True,  failures)
 
-    matchTest("matchTreeTD", "deterministicH0", "treeH0test1", True, failures)
-    matchTest("matchTreeTD", "deterministicH0", "treeH0test2", True, failures)
-    matchTest("matchTreeTD", "deterministicH0", "treeH0test3", True, failures)
-    matchTest("matchTreeTD", "deterministicH0", "treeH0test4", True, failures)
+    matchTest("matchTreeTD", "deterministicH0", "treeH0test1", True,  failures)
+    matchTest("matchTreeTD", "deterministicH0", "treeH0test2", True,  failures)
+    matchTest("matchTreeTD", "deterministicH0", "treeH0test3", True,  failures)
+    matchTest("matchTreeTD", "deterministicH0", "treeH0test4", True,  failures)
 
-    matchTest("matchTreeTD", "deterministicH1", "treeH1test1", True, failures)
-    matchTest("matchTreeTD", "deterministicH1", "treeH1test2", True, failures)
-    matchTest("matchTreeTD", "deterministicH1", "treeH1test3", True, failures)
-    matchTest("matchTreeTD", "deterministicH1", "treeH1test4", True, failures)
+    matchTest("matchTreeTD", "deterministicH1", "treeH1test1", True,  failures)
+    matchTest("matchTreeTD", "deterministicH1", "treeH1test2", True,  failures)
+    matchTest("matchTreeTD", "deterministicH1", "treeH1test3", True,  failures)
+    matchTest("matchTreeTD", "deterministicH1", "treeH1test4", True,  failures)
 
     printFailedTests(failures)
 
@@ -274,6 +278,7 @@ def unionTests():
     matchTest("matchTreeTD", "unionL0H0", "treeH0test2", True, failures)
     matchTest("matchTreeTD", "unionL0H0", "treeH0test3", True, failures)
     matchTest("matchTreeTD", "unionL0H0", "treeH0test4", True, failures)
+
     matchTest("matchTreeTD", "unionL0H0", "treeL1test1", False, failures)
     matchTest("matchTreeTD", "unionL0H0", "treeL1test2", False, failures)
     matchTest("matchTreeTD", "unionL0H0", "treeL1test3", False, failures)
@@ -337,15 +342,6 @@ def intersectionTests():
     nonEmptyTest("nonEmptyBU", "intersectionL1L1", True, failures)
     nonEmptyTest("nonEmptyBU", "intersectionH0H0", True, failures)
     nonEmptyTest("nonEmptyBU", "intersectionH1H1", True, failures)
-
-    # boxesDict["prefixXsuffixL0"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
-    # boxesDict["prefixXsuffixL1"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
-    # boxesDict["prefixXsuffixH0"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
-    # boxesDict["prefixXsuffixH1"] = treeAutIntersection(boxesDict["XprefixForL0"], boxesDict["L0suffix"])
-    # boxesDict["prefixL0suffixX"] = treeAutIntersection(boxesDict["L0prefixForX"], boxesDict["Xsuffix"])
-    # boxesDict["prefixL1suffixX"] = treeAutIntersection(boxesDict["L1prefixForX"], boxesDict["Xsuffix"])
-    # boxesDict["prefixH0suffixX"] = treeAutIntersection(boxesDict["H0prefixForX"], boxesDict["Xsuffix"])
-    # boxesDict["prefixH1suffixX"] = treeAutIntersection(boxesDict["H1prefixForX"], boxesDict["Xsuffix"])
 
     printFailedTests(failures)
 
@@ -563,51 +559,6 @@ def removeUselessStatesTests():
     
     printFailedTests(failures)
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def suffixTests():
-    print(" > SUBUNIT TEST: testing suffix() ...")
-    failures = []
-
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-    
-    try: boxL0.createSuffix()    
-    except: failures.append("boxL0.createSuffix()")
-
-    try: boxL1.createSuffix()    
-    except: failures.append("boxL1.createSuffix()")
-
-    try: boxH0.createSuffix()    
-    except: failures.append("boxH0.createSuffix()")
-
-    try: boxH1.createSuffix()    
-    except: failures.append("boxH1.createSuffix()")
-
-    printFailedTests(failures)    
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def prefixTests():
-    print(" > SUBUNIT TEST: testing prefix() ...")
-    failures = []
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-    
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-    
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-    
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-    
-    try: boxX.createSuffix()    
-    except: failures.append("boxX.createSuffix()")
-
-    printFailedTests(failures)
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def vtfImportTests():
@@ -705,66 +656,86 @@ def tmbExportTests():
 
     printFailedTests(failures)
 
+def wellDefinedTests(errDisplay = False):
+    print(" > SUBUNIT TEST: checking if the boxes are well-defined ...")
+    failures = []
 
-L0vtf = """
-@NTA
-# Automaton boxH0
-%Root t0
-%States t1 t2 t0
-%Alphabet LH:2 Port_H0:0 0:0
+    wellDefinedTest("boxX", True,   errDisplay, failures)
+    wellDefinedTest("boxL0", True,   errDisplay, failures) 
+    wellDefinedTest("boxL1", True,   errDisplay, failures) 
+    wellDefinedTest("boxH0", True,   errDisplay, failures) 
+    wellDefinedTest("boxH1", True,   errDisplay, failures) 
+    wellDefinedTest("boxLPort", True,   errDisplay, failures) 
 
-t0 LH ( t0 t2 )
-t0 LH ( t1 t2 )
-t1 Port_H0 ( )
-t2 LH ( t2 t2 )
-t2 0 ( )
-"""
+    wellDefinedTest("unionXL0", False,   errDisplay, failures) 
+    wellDefinedTest("unionXL1", False,   errDisplay, failures) 
+    wellDefinedTest("unionXH0", False,   errDisplay, failures) 
+    wellDefinedTest("unionXH1", False,   errDisplay, failures) 
+    wellDefinedTest("unionL0H0", False,   errDisplay, failures) 
+    wellDefinedTest("unionL0H1", False,   errDisplay, failures) 
+    wellDefinedTest("unionL0L1", False,   errDisplay, failures) 
+    wellDefinedTest("unionL1H0", False,   errDisplay, failures) 
+    wellDefinedTest("unionL1H1", False,   errDisplay, failures) 
+    wellDefinedTest("unionH0H1", False,   errDisplay, failures) 
 
-L0tmb = """
-Ops LH:2 0:0 Port_L0:0
+    wellDefinedTest("intersectionXL0", False,   errDisplay, failures) 
+    wellDefinedTest("intersectionXL1", False,   errDisplay, failures) 
+    wellDefinedTest("intersectionXH0", False,   errDisplay, failures) 
+    wellDefinedTest("intersectionXH1", False,   errDisplay, failures) 
+    wellDefinedTest("intersectionL0H0", False,   errDisplay, failures) 
+    wellDefinedTest("intersectionL0H1", False,   errDisplay, failures) 
+    wellDefinedTest("intersectionL0L1", False,   errDisplay, failures) 
+    wellDefinedTest("intersectionL1H0", False,   errDisplay, failures) 
+    wellDefinedTest("intersectionL1H1", False,   errDisplay, failures) 
+    wellDefinedTest("intersectionH0H1", False,   errDisplay, failures) 
 
-Automaton boxL0
+    wellDefinedTest("complementX", False,   errDisplay, failures) 
+    wellDefinedTest("complementL0", False,   errDisplay, failures) 
+    wellDefinedTest("complementL1", False,   errDisplay, failures) 
+    wellDefinedTest("complementH0", False,   errDisplay, failures) 
+    wellDefinedTest("complementH1", False,   errDisplay, failures) 
+    wellDefinedTest("complementLPort", False,   errDisplay, failures) 
 
-States r0:0 r2:0 r1:0
+    wellDefinedTest("determinizedX", False,   errDisplay, failures) 
+    wellDefinedTest("determinizedL0", False,   errDisplay, failures) 
+    wellDefinedTest("determinizedL1", False,   errDisplay, failures) 
+    wellDefinedTest("determinizedH0", False,   errDisplay, failures) 
+    wellDefinedTest("determinizedH1", False,   errDisplay, failures) 
+    wellDefinedTest("determinizedLPort", False,   errDisplay, failures) 
+    
+    wellDefinedTest("Xsuffix", True,   errDisplay, failures) 
+    wellDefinedTest("L0suffix", False,   errDisplay, failures) 
+    wellDefinedTest("L1suffix", False,   errDisplay, failures) 
+    wellDefinedTest("H0suffix", False,   errDisplay, failures) 
+    wellDefinedTest("H1suffix", False,   errDisplay, failures) 
 
-Final States r0
+    wellDefinedTest("XprefixForL0", False,   errDisplay, failures) 
+    wellDefinedTest("XprefixForL1", False,   errDisplay, failures) 
+    wellDefinedTest("XprefixForH0", False,   errDisplay, failures) 
+    wellDefinedTest("XprefixForH1", False,   errDisplay, failures) 
+    wellDefinedTest("L0prefixForX", False,   errDisplay, failures)  
+    wellDefinedTest("L0prefixForL1", False,   errDisplay, failures) 
+    wellDefinedTest("L0prefixForH0", False,   errDisplay, failures) 
+    wellDefinedTest("L0prefixForH1", False,   errDisplay, failures) 
+    wellDefinedTest("L1prefixForX", False,   errDisplay, failures)  
+    wellDefinedTest("L1prefixForL0", False,   errDisplay, failures) 
+    wellDefinedTest("L1prefixForH0", False,   errDisplay, failures) 
+    wellDefinedTest("L1prefixForH1", False,   errDisplay, failures) 
+    wellDefinedTest("H0prefixForX", False,   errDisplay, failures)  
+    wellDefinedTest("H0prefixForL0", False,   errDisplay, failures) 
+    wellDefinedTest("H0prefixForL1", False,   errDisplay, failures) 
+    wellDefinedTest("H0prefixForH1", False,   errDisplay, failures) 
+    wellDefinedTest("H1prefixForX", False,   errDisplay, failures)  
+    wellDefinedTest("H1prefixForL0", False,   errDisplay, failures) 
+    wellDefinedTest("H1prefixForL1", False,   errDisplay, failures) 
+    wellDefinedTest("H1prefixForH0", False,   errDisplay, failures)
 
-Transitions
-LH(r1,r0) -> r0
-LH(r1,r2) -> r0
-LH(r1,r1) -> r1
-0() -> r1
-Port_L0() -> r2
-
-
-
-"""
+    printFailedTests(failures)
+    pass
 
 def extraTests():
-    roots = ['q', 'r', 's', 't']
-    transitions = {
-        'q': {
-            'a': ['q', TEdge('LH', [None, None], ""), ['q', 'r']],
-            'b': ['q', TEdge('LH', [None, None], ""), ['r', 'u']]
-        },
-        'r': {
-            'c': ['r', TEdge('LH', [None, None], ""), ['u', 'u']]
-        },
-        's': {
-            'd': ['s', TEdge('LH', [None, None], ""), ['v', 'v']]
-        },
-        'u': {
-            'e': ['u', TEdge('0', [], ""), []]
-        },
-        'w': {
-            'f': ['w', TEdge('1', [], ""), []]
-        }
-    }
+    print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
 
-    testBox = TTreeAut(roots, transitions, "unreachableStatesTest")
-
-    print("bottom up => " + str(reachableBU(testBox)))
-    print("top down => " + str(reachableTD(testBox)))
-    # convertToDOT(testTreeDict["treeH0test1"], 'n')
+    pass
 
 # End of file all_tests.py

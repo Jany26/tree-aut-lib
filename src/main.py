@@ -30,10 +30,6 @@ def main():
     reachabilityTDTests()
     reachabilityBUTests()
     removeUselessStatesTests()
-    
-    print(">> UNIT TEST: partial order finding ...")
-    suffixTests()
-    prefixTests()
 
     print(">> UNIT TEST: VATA format parsing ...")
     vtfExportTests()
@@ -47,8 +43,9 @@ def main():
     dotExportTests()
     dotExportFromVTFTests()
 
-    # print(">> UNIT TEST: extra tests ...")
-    # extraTests()
+    print(">> UNIT TEST: extra tests ...")
+    wellDefinedTests(errDisplay=False)
+    extraTests()
 
     print(">> UNIT TESTS DONE!")
 

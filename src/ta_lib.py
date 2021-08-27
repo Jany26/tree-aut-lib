@@ -636,4 +636,20 @@ def isWellDefined(ta:TTreeAut, errDisplay=False) -> bool:
         print(errorMsg)
     return boxIsWellDefined
 
+def areCommutative(ta1:TTreeAut, ta2:TTreeAut) -> bool:
+    suffix = ta1.createSuffix()
+    prefix = ta2.createPrefix(ta1.getOutputSymbols())
+    intersection = treeAutIntersection(suffix, prefix)
+    witnessT, witnessS = nonEmptyBU(intersection)
+    return witnessT == None
+
+def areComparable(ta1:TTreeAut, ta2:TTreeAut):
+    infix = ta1.createInfix(ta2.getOutputEdges())
+    language = {**ta1.getSymbolArityDict(), **ta2.getSymbolArityDict()}
+    infixComp = treeAutComplement(ta1, language)
+    intersection = treeAutIntersection(infixComp, ta2)
+    witnessT, witnessS = nonEmptyBU(intersection)
+    return witnessT == None
+
+
 # End of file ta_lib.py

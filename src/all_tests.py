@@ -28,7 +28,9 @@ def matchTest(function:str, ta:str, tree:str, expectedResult, failures):
     testTree = testTreeDict[tree]
     actualResult = func(box, testTree)
     if expectedResult != actualResult:
-        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(f"{function}({ta}, {tree})", str(expectedResult), str(actualResult)))
+        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
+            f"{function}({ta}, {tree})", str(expectedResult), str(actualResult)
+        ))
 
 def nonEmptyTest(function:str, ta:str, expectedResult, failures):
     func = functionPtrs[function]
@@ -36,13 +38,17 @@ def nonEmptyTest(function:str, ta:str, expectedResult, failures):
     testTree, testString = func(box)
     actualResult = False if (testTree is None or testString == "") else True
     if expectedResult != actualResult:
-        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(f"{function}({ta})", str(expectedResult), str(actualResult)))
+        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
+            f"{function}({ta})", str(expectedResult), str(actualResult)
+        ))
 
 def wellDefinedTest(ta:str, expectedResult, errDisplay, failures):
     box = boxesDict[ta]
     actualResult = isWellDefined(box, errDisplay)
     if actualResult != expectedResult:
-        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(f"isWellDefined({ta})", str(expectedResult), str(actualResult)))
+        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
+            f"isWellDefined({ta})", str(expectedResult), str(actualResult)
+        ))
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # TESTS FOR SUBFUNCTIONS
@@ -513,8 +519,8 @@ def reachabilityTDTests():
         failures.append("reachableTD(testBox2a")
     if set(reachableTD(testBox2b)) != set(['q0','q1','q2','q3']):
         failures.append("reachableTD(testBox2b)")
-    if set(reachableTD(testBox3)) != set(['r0','r1','r2']):
-        failures.append("reachableTD(testBox3)")
+    if set(reachableTD(copy.deepcopy(boxL0))) != set(['r0','r1','r2']):
+        failures.append("reachableTD(boxL0copy)")
   
     printFailedTests(failures)
 
@@ -530,8 +536,8 @@ def reachabilityBUTests():
         failures.append("reachableBU(testBox2a")
     if set(reachableBU(testBox2b)) != set(['q0','q1','q2','q3']):
         failures.append("reachableBU(testBox2b)")
-    if set(reachableBU(testBox3)) != set(['r0','r1','r2']):
-        failures.append("reachableBU(testBox3)")
+    if set(reachableBU(copy.deepcopy(boxL0))) != set(['r0','r1','r2']):
+        failures.append("reachableBU(boxL0copy)")
     
     printFailedTests(failures)
 
@@ -554,8 +560,8 @@ def removeUselessStatesTests():
 
     # now this test will fail, as edges are not simply strings, 
     # but objects on different adresses (even though they contain the same data)
-    # if testBox3.transitions != boxL0.transitions:
-    #     failures.append("removeUselessStates(testBox3)")
+    # if copy.deepcopy(boxL0).transitions != boxL0.transitions:
+    #     failures.append("removeUselessStates(copy.deepcopy(boxL0))")
     
     printFailedTests(failures)
 
@@ -656,82 +662,158 @@ def tmbExportTests():
 
     printFailedTests(failures)
 
-def wellDefinedTests(errDisplay = False):
+def wellDefinedTests(verbose=False):
     print(" > SUBUNIT TEST: checking if the boxes are well-defined ...")
     failures = []
 
-    wellDefinedTest("boxX", True,   errDisplay, failures)
-    wellDefinedTest("boxL0", True,   errDisplay, failures) 
-    wellDefinedTest("boxL1", True,   errDisplay, failures) 
-    wellDefinedTest("boxH0", True,   errDisplay, failures) 
-    wellDefinedTest("boxH1", True,   errDisplay, failures) 
-    wellDefinedTest("boxLPort", True,   errDisplay, failures) 
+    wellDefinedTest("boxX", True,   verbose, failures)
+    wellDefinedTest("boxL0", True,   verbose, failures) 
+    wellDefinedTest("boxL1", True,   verbose, failures) 
+    wellDefinedTest("boxH0", True,   verbose, failures) 
+    wellDefinedTest("boxH1", True,   verbose, failures) 
+    wellDefinedTest("boxLPort", True,   verbose, failures) 
 
-    wellDefinedTest("unionXL0", False,   errDisplay, failures) 
-    wellDefinedTest("unionXL1", False,   errDisplay, failures) 
-    wellDefinedTest("unionXH0", False,   errDisplay, failures) 
-    wellDefinedTest("unionXH1", False,   errDisplay, failures) 
-    wellDefinedTest("unionL0H0", False,   errDisplay, failures) 
-    wellDefinedTest("unionL0H1", False,   errDisplay, failures) 
-    wellDefinedTest("unionL0L1", False,   errDisplay, failures) 
-    wellDefinedTest("unionL1H0", False,   errDisplay, failures) 
-    wellDefinedTest("unionL1H1", False,   errDisplay, failures) 
-    wellDefinedTest("unionH0H1", False,   errDisplay, failures) 
+    wellDefinedTest("unionXL0", False,   verbose, failures) 
+    wellDefinedTest("unionXL1", False,   verbose, failures) 
+    wellDefinedTest("unionXH0", False,   verbose, failures) 
+    wellDefinedTest("unionXH1", False,   verbose, failures) 
+    wellDefinedTest("unionL0H0", False,   verbose, failures) 
+    wellDefinedTest("unionL0H1", False,   verbose, failures) 
+    wellDefinedTest("unionL0L1", False,   verbose, failures) 
+    wellDefinedTest("unionL1H0", False,   verbose, failures) 
+    wellDefinedTest("unionL1H1", False,   verbose, failures) 
+    wellDefinedTest("unionH0H1", False,   verbose, failures) 
 
-    wellDefinedTest("intersectionXL0", False,   errDisplay, failures) 
-    wellDefinedTest("intersectionXL1", False,   errDisplay, failures) 
-    wellDefinedTest("intersectionXH0", False,   errDisplay, failures) 
-    wellDefinedTest("intersectionXH1", False,   errDisplay, failures) 
-    wellDefinedTest("intersectionL0H0", False,   errDisplay, failures) 
-    wellDefinedTest("intersectionL0H1", False,   errDisplay, failures) 
-    wellDefinedTest("intersectionL0L1", False,   errDisplay, failures) 
-    wellDefinedTest("intersectionL1H0", False,   errDisplay, failures) 
-    wellDefinedTest("intersectionL1H1", False,   errDisplay, failures) 
-    wellDefinedTest("intersectionH0H1", False,   errDisplay, failures) 
+    wellDefinedTest("intersectionXL0", False,   verbose, failures) 
+    wellDefinedTest("intersectionXL1", False,   verbose, failures) 
+    wellDefinedTest("intersectionXH0", False,   verbose, failures) 
+    wellDefinedTest("intersectionXH1", False,   verbose, failures) 
+    wellDefinedTest("intersectionL0H0", False,   verbose, failures) 
+    wellDefinedTest("intersectionL0H1", False,   verbose, failures) 
+    wellDefinedTest("intersectionL0L1", False,   verbose, failures) 
+    wellDefinedTest("intersectionL1H0", False,   verbose, failures) 
+    wellDefinedTest("intersectionL1H1", False,   verbose, failures) 
+    wellDefinedTest("intersectionH0H1", False,   verbose, failures) 
 
-    wellDefinedTest("complementX", False,   errDisplay, failures) 
-    wellDefinedTest("complementL0", False,   errDisplay, failures) 
-    wellDefinedTest("complementL1", False,   errDisplay, failures) 
-    wellDefinedTest("complementH0", False,   errDisplay, failures) 
-    wellDefinedTest("complementH1", False,   errDisplay, failures) 
-    wellDefinedTest("complementLPort", False,   errDisplay, failures) 
+    wellDefinedTest("complementX", False,   verbose, failures) 
+    wellDefinedTest("complementL0", False,   verbose, failures) 
+    wellDefinedTest("complementL1", False,   verbose, failures) 
+    wellDefinedTest("complementH0", False,   verbose, failures) 
+    wellDefinedTest("complementH1", False,   verbose, failures) 
+    wellDefinedTest("complementLPort", False,   verbose, failures) 
 
-    wellDefinedTest("determinizedX", False,   errDisplay, failures) 
-    wellDefinedTest("determinizedL0", False,   errDisplay, failures) 
-    wellDefinedTest("determinizedL1", False,   errDisplay, failures) 
-    wellDefinedTest("determinizedH0", False,   errDisplay, failures) 
-    wellDefinedTest("determinizedH1", False,   errDisplay, failures) 
-    wellDefinedTest("determinizedLPort", False,   errDisplay, failures) 
+    wellDefinedTest("determinizedX", False,   verbose, failures) 
+    wellDefinedTest("determinizedL0", False,   verbose, failures) 
+    wellDefinedTest("determinizedL1", False,   verbose, failures) 
+    wellDefinedTest("determinizedH0", False,   verbose, failures) 
+    wellDefinedTest("determinizedH1", False,   verbose, failures) 
+    wellDefinedTest("determinizedLPort", False,   verbose, failures) 
     
-    wellDefinedTest("Xsuffix", True,   errDisplay, failures) 
-    wellDefinedTest("L0suffix", False,   errDisplay, failures) 
-    wellDefinedTest("L1suffix", False,   errDisplay, failures) 
-    wellDefinedTest("H0suffix", False,   errDisplay, failures) 
-    wellDefinedTest("H1suffix", False,   errDisplay, failures) 
+    wellDefinedTest("Xsuffix", True,   verbose, failures) 
+    wellDefinedTest("L0suffix", False,   verbose, failures) 
+    wellDefinedTest("L1suffix", False,   verbose, failures) 
+    wellDefinedTest("H0suffix", False,   verbose, failures) 
+    wellDefinedTest("H1suffix", False,   verbose, failures) 
 
-    wellDefinedTest("XprefixForL0", False,   errDisplay, failures) 
-    wellDefinedTest("XprefixForL1", False,   errDisplay, failures) 
-    wellDefinedTest("XprefixForH0", False,   errDisplay, failures) 
-    wellDefinedTest("XprefixForH1", False,   errDisplay, failures) 
-    wellDefinedTest("L0prefixForX", False,   errDisplay, failures)  
-    wellDefinedTest("L0prefixForL1", False,   errDisplay, failures) 
-    wellDefinedTest("L0prefixForH0", False,   errDisplay, failures) 
-    wellDefinedTest("L0prefixForH1", False,   errDisplay, failures) 
-    wellDefinedTest("L1prefixForX", False,   errDisplay, failures)  
-    wellDefinedTest("L1prefixForL0", False,   errDisplay, failures) 
-    wellDefinedTest("L1prefixForH0", False,   errDisplay, failures) 
-    wellDefinedTest("L1prefixForH1", False,   errDisplay, failures) 
-    wellDefinedTest("H0prefixForX", False,   errDisplay, failures)  
-    wellDefinedTest("H0prefixForL0", False,   errDisplay, failures) 
-    wellDefinedTest("H0prefixForL1", False,   errDisplay, failures) 
-    wellDefinedTest("H0prefixForH1", False,   errDisplay, failures) 
-    wellDefinedTest("H1prefixForX", False,   errDisplay, failures)  
-    wellDefinedTest("H1prefixForL0", False,   errDisplay, failures) 
-    wellDefinedTest("H1prefixForL1", False,   errDisplay, failures) 
-    wellDefinedTest("H1prefixForH0", False,   errDisplay, failures)
+    wellDefinedTest("XprefixForL0", False,   verbose, failures) 
+    wellDefinedTest("XprefixForL1", False,   verbose, failures) 
+    wellDefinedTest("XprefixForH0", False,   verbose, failures) 
+    wellDefinedTest("XprefixForH1", False,   verbose, failures) 
+    wellDefinedTest("L0prefixForX", False,   verbose, failures)  
+    wellDefinedTest("L0prefixForL1", False,   verbose, failures) 
+    wellDefinedTest("L0prefixForH0", False,   verbose, failures) 
+    wellDefinedTest("L0prefixForH1", False,   verbose, failures) 
+    wellDefinedTest("L1prefixForX", False,   verbose, failures)  
+    wellDefinedTest("L1prefixForL0", False,   verbose, failures) 
+    wellDefinedTest("L1prefixForH0", False,   verbose, failures) 
+    wellDefinedTest("L1prefixForH1", False,   verbose, failures) 
+    wellDefinedTest("H0prefixForX", False,   verbose, failures)  
+    wellDefinedTest("H0prefixForL0", False,   verbose, failures) 
+    wellDefinedTest("H0prefixForL1", False,   verbose, failures) 
+    wellDefinedTest("H0prefixForH1", False,   verbose, failures) 
+    wellDefinedTest("H1prefixForX", False,   verbose, failures)  
+    wellDefinedTest("H1prefixForL0", False,   verbose, failures) 
+    wellDefinedTest("H1prefixForL1", False,   verbose, failures) 
+    wellDefinedTest("H1prefixForH0", False,   verbose, failures)
 
     printFailedTests(failures)
     pass
+
+def commutativityTest(ta1:str, ta2:str, expectedResult, verbose, failures):
+    box1 = boxesDict[ta1]
+    box2 = boxesDict[ta2]
+    actualResult1 = areCommutative(box1, box2)
+    actualResult2 = areCommutative(box2, box1)
+    if expectedResult != actualResult1:
+        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
+            f"areCommutative({ta1}, {ta2})", str(expectedResult), str(actualResult1)
+        ))
+    if expectedResult != actualResult2:
+        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
+            f"areCommutative({ta2}, {ta1})", str(expectedResult), str(actualResult2)
+        ))
+    if verbose and actualResult1 != actualResult2:
+        print("WARNING: commutativity test gives inconsistent results")
+
+def commutativityTests(verbose=False):
+    print(" > SUBUNIT TEST: testing commutativity ...")
+    failures = []
+
+    commutativityTest("boxX", "boxL0",      False,  verbose, failures)
+    commutativityTest("boxX", "boxL1",      False,  verbose, failures)
+    commutativityTest("boxX", "boxH0",      False,  verbose, failures)
+    commutativityTest("boxX", "boxH1",      False,  verbose, failures)
+    commutativityTest("boxX", "boxLPort",   False,  verbose, failures)
+    commutativityTest("boxX", "boxHPort",   False,  verbose, failures)
+
+    commutativityTest("boxL0", "boxL1",     True,   verbose, failures) # True !
+    commutativityTest("boxL0", "boxH0",     False,  verbose, failures)
+    commutativityTest("boxL0", "boxH1",     False,  verbose, failures)
+    commutativityTest("boxL0", "boxLPort",  False,  verbose, failures)
+    commutativityTest("boxL0", "boxHPort",  False,  verbose, failures)
+
+    commutativityTest("boxL1", "boxH0",     False,  verbose, failures)
+    commutativityTest("boxL1", "boxH1",     False,  verbose, failures)
+    commutativityTest("boxL1", "boxLPort",  False,  verbose, failures)
+    commutativityTest("boxL1", "boxHPort",  False,  verbose, failures)
+
+    commutativityTest("boxH0", "boxH1",     True,   verbose, failures) # True !
+    commutativityTest("boxH0", "boxLPort",  False,  verbose, failures)
+    commutativityTest("boxH0", "boxHPort",  False,  verbose, failures)
+
+    commutativityTest("boxH1", "boxLPort",  False,  verbose, failures)
+    commutativityTest("boxH1", "boxHPort",  False,  verbose, failures)
+
+    commutativityTest("boxLPort", "boxHPort", False, verbose, failures)
+
+    printFailedTests(failures)
+
+def comparabilityTest(ta1, ta2, expectedResult, failures):
+    box1 = boxesDict[ta1]
+    box2 = boxesDict[ta2]
+    actualResult = areComparable(box1, box2) # is box1 < box2 ??
+    if expectedResult != actualResult:
+        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
+            f"areComparable({ta1}, {ta2})", str(expectedResult), str(actualResult)
+        ))
+
+def comparabilityTests():
+    print(" > SUBUNIT TEST: testing comparability/partial order ...")
+    failures = []
+
+    # TODO: infix does not work properly...
+    # NOTE: its needed how the comparable boxes are defined, what result is expected
+    
+    comparabilityTest("boxL0", "boxX", False, failures)
+    comparabilityTest("boxX", "boxL0", False, failures)
+    
+    comparabilityTest("boxL0", "boxH0", False, failures)
+    comparabilityTest("boxH0", "boxL0", False, failures)
+    
+    comparabilityTest("boxL0", "boxH1", False, failures)
+    comparabilityTest("boxH1", "boxL0", False, failures)
+
+    printFailedTests(failures)
 
 def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")

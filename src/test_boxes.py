@@ -89,6 +89,20 @@ testTransitionsBoxLPort = {
     }
 }
 
+testTransitionsBoxHPort = { # symmetric alternative to LPort
+    'w0': {
+        'a': ['w0', TEdge("LH", [None, None], ""), ['w1', 'w0']],
+        'b': ['w0', TEdge("LH", [None, None], ""), ['w1', 'w2']]
+        }, 
+    'w1': {
+        'c': ['w1', TEdge("Port_HPort0", [], ""), []]
+    },
+    'w2': {
+        'd': ['w2', TEdge("LH", [None, None], ""), ['w2', 'w2']],
+        'e': ['w2', TEdge("Port_HPort1", [], ""), []]
+    }
+}
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Testing boxes = with top-down/bottom-up unreachable states ...
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -143,34 +157,6 @@ unreachableTest2b = {
     },
     'q4': {
         'h': ['q4', TEdge("LH", [None, None], ""), ['q4','q3']],
-    }
-}
-
-testTransitionscomplementL0 = {
-    'sink': {
-        'a': ['sink', TEdge("LH", [None, None], ""), ['sink','q0']],
-        'b': ['sink', TEdge("LH", [None, None], ""), ['q0','sink']],
-        'c': ['sink', TEdge("LH", [None, None], ""), ['sink','q1']],
-        'd': ['sink', TEdge("LH", [None, None], ""), ['q1','sink']],
-        'e': ['sink', TEdge("LH", [None, None], ""), ['sink','q2']],
-        'f': ['sink', TEdge("LH", [None, None], ""), ['q2','sink']],
-        'g': ['sink', TEdge("LH", [None, None], ""), ['sink','sink']],
-        'h': ['sink', TEdge("1", [], ""), []],
-        'k': ['sink', TEdge("Port_X", [], ""), []],
-        'i': ['sink', TEdge("Port_L1", [], ""), []],
-        'j': ['sink', TEdge("Port_H0", [], ""), []],
-        'l': ['sink', TEdge("Port_H1", [], ""), []]
-    },
-    'q0': {
-        'm': ['q0', TEdge("LH", [None, None], ""), ['q1','q0']],
-        'n': ['q0', TEdge("LH", [None, None], ""), ['q1','q2']]
-    },
-    'q1': {
-        'o': ['q1', TEdge("0", [], ""), []]
-    },
-    'q2': {
-        'p': ['q2', TEdge("LH", [None, None], ""), ['q2','q2']],
-        'q': ['q2', TEdge("Port_L0", [], ""), []]
     }
 }
 

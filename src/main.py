@@ -5,6 +5,8 @@
 
 from all_tests import *
 
+verbose = False # printing more detailed info on output during tests
+
 def main():
     print(">> UNIT TEST: helper functions ...")
     getOuptutStatesTests()
@@ -44,7 +46,9 @@ def main():
     dotExportFromVTFTests()
 
     print(">> UNIT TEST: extra tests ...")
-    wellDefinedTests(errDisplay=False)
+    wellDefinedTests(verbose)
+    commutativityTests(verbose)
+    comparabilityTests()
     extraTests()
 
     print(">> UNIT TESTS DONE!")

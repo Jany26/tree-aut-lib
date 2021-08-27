@@ -125,7 +125,7 @@ class TTreeAut:
         self.rootStates = rootStates
         self.transitions = transitions
         self.name = name
-        self.portArity = self.getPortArity()
+        self.portArity = self.getPortArity() if portArity == 0 else portArity
 
     def printTreeAut(self):
         print(f"Printing automaton '{self.name}' (port arity = {self.portArity})")
@@ -315,5 +315,22 @@ class TTreeAut:
 
     def createInfix(self, additionalOutputEdges):
         result = copy.deepcopy(self)
+        ports = [ sym for sym in additionalOutputEdges 
+            if sym.startswith("Port") and sym not in result.getOutputSymbols() ]
+        
+        for state in result.getStates():
+            # 1) make all states rootstates
+            if state not in result.rootStates:
+                result.rootStates.append(state)
+            
+            # 2) add output ports from additionalOutputEdges to every state
+            for i in ports:
+                key = f"{state}-{i}->()"
+                edge = [state, TEdge(i, [], ""), []]
+                result.transitions[state][key] = edge
+        
+        # 2) add ports from additionalOutputEdges everywhere
+
         return result
+
 # End of file ta_classes.py

@@ -788,36 +788,102 @@ def commutativityTests(verbose=False):
 
     printFailedTests(failures)
 
-def comparabilityTest(ta1, ta2, expectedResult, failures):
+def comparabilityTest(ta1, expectedResult, ta2, failures):
     box1 = boxesDict[ta1]
     box2 = boxesDict[ta2]
-    actualResult = areComparable(box1, box2) # is box1 < box2 ??
-    if expectedResult != actualResult:
-        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
-            f"areComparable({ta1}, {ta2})", str(expectedResult), str(actualResult)
+    res1 = areComparable(box1, box2)
+    res2 = areComparable(box2, box1)
+    print(f"\t res1 = {res1}, res2 = {res2}")
+    if expectedResult == ">" and res1 == True and res2 == False:
+        return
+    if expectedResult == "<" and res1 == False and res2 == True:
+        return
+    if expectedResult == "?" and res1 == False and res2 == False:
+        return
+    failures.append("{:<50}".format(f"areComparable({ta1}, {ta2})"))
+
+def comparabilityTestSimple(ta1, ta2, exp, failures):
+    box1 = boxesDict[ta1]
+    box2 = boxesDict[ta2]
+    res = areComparable(box1, box2)
+    if res != exp:
+        failures.append("{:<50} | expected = {:>5} | got {:>5}".format(
+            f"comparing... {ta1} > {ta2} ?", str(exp), str(res)
         ))
+
 
 def comparabilityTests():
     print(" > SUBUNIT TEST: testing comparability/partial order ...")
     failures = []
+    
+    # comparabilityTest("boxL0", ">", "boxX", failures)
+    # comparabilityTest("boxL1", ">", "boxX", failures)
+    # comparabilityTest("boxH0", ">", "boxX", failures)
+    # comparabilityTest("boxH1", ">", "boxX", failures)
 
-    # TODO: infix does not work properly...
-    # NOTE: its needed how the comparable boxes are defined, what result is expected
+    # comparabilityTest("boxX", "<", "boxL0", failures)
+    # comparabilityTest("boxX", "<", "boxL1", failures)
+    # comparabilityTest("boxX", "<", "boxH0", failures)
+    # comparabilityTest("boxX", "<", "boxH1", failures)
     
-    comparabilityTest("boxL0", "boxX", False, failures)
-    comparabilityTest("boxX", "boxL0", False, failures)
-    
-    comparabilityTest("boxL0", "boxH0", False, failures)
-    comparabilityTest("boxH0", "boxL0", False, failures)
-    
-    comparabilityTest("boxL0", "boxH1", False, failures)
-    comparabilityTest("boxH1", "boxL0", False, failures)
+    # comparabilityTest("boxL0", "?", "boxH0", failures)
+    # comparabilityTest("boxL0", "?", "boxH1", failures)
 
+    comparabilityTestSimple("boxL0", "boxX", True, failures)
+    comparabilityTestSimple("boxL1", "boxX", True, failures)
+    comparabilityTestSimple("boxH0", "boxX", True, failures)
+    comparabilityTestSimple("boxH1", "boxX", True, failures)
+    comparabilityTestSimple("boxLPort", "boxX", True, failures)
+    comparabilityTestSimple("boxHPort", "boxX", True, failures)
+
+    comparabilityTestSimple("boxL0", "boxLPort", True, failures)
+    comparabilityTestSimple("boxL1", "boxLPort", True, failures)
+    comparabilityTestSimple("boxH0", "boxHPort", True, failures)
+    comparabilityTestSimple("boxH1", "boxHPort", True, failures)
+
+    comparabilityTestSimple("boxLPort", "boxL0", False, failures)
+    comparabilityTestSimple("boxLPort", "boxL1", False, failures)
+    comparabilityTestSimple("boxHPort", "boxH0", False, failures)
+    comparabilityTestSimple("boxHPort", "boxH1", False, failures)
+
+    comparabilityTestSimple("boxX", "boxL0", False, failures)
+    comparabilityTestSimple("boxX", "boxL1", False, failures)
+    comparabilityTestSimple("boxX", "boxH0", False, failures)
+    comparabilityTestSimple("boxX", "boxH1", False, failures)
+
+    comparabilityTestSimple("boxL0", "boxL1", False, failures)
+    comparabilityTestSimple("boxL0", "boxH0", False, failures)
+    comparabilityTestSimple("boxL0", "boxH1", False, failures)
+    comparabilityTestSimple("boxL1", "boxL0", False, failures)
+    comparabilityTestSimple("boxL1", "boxH0", False, failures)
+    comparabilityTestSimple("boxL1", "boxH1", False, failures)
+    comparabilityTestSimple("boxH0", "boxL0", False, failures)
+    comparabilityTestSimple("boxH0", "boxL1", False, failures)
+    comparabilityTestSimple("boxH0", "boxH1", False, failures)
+    comparabilityTestSimple("boxH1", "boxL0", False, failures)
+    comparabilityTestSimple("boxH1", "boxL1", False, failures)
+    comparabilityTestSimple("boxH1", "boxH1", False, failures)
+
+    comparabilityTestSimple("boxH0", "boxLPort", False, failures)
+    comparabilityTestSimple("boxH1", "boxLPort", False, failures)
+
+    comparabilityTestSimple("boxL0", "boxHPort", False, failures)
+    comparabilityTestSimple("boxL1", "boxHPort", False, failures)
+
+    comparabilityTestSimple("boxLPort", "boxHPort", False, failures)
+    comparabilityTestSimple("boxHPort", "boxLPort", False, failures)
+    
     printFailedTests(failures)
 
 def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
-
+    boxH0 = boxesDict["boxH0"]
+    boxX = boxesDict["boxX"]
+    result = areComparable(boxH0, boxX)
+    # print(result)
+    # boxH0.printTreeAut()
+    # boxX.printTreeAut()
+    
     pass
 
 # End of file all_tests.py

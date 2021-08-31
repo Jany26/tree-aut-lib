@@ -3,6 +3,7 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
+from re import L
 from ta_classes import *
 from itertools import product
 
@@ -50,9 +51,9 @@ def generateWitnessTree(edgeDict:dict, root:str) -> TTreeNode:
     if (type(edgeDict) is None or type(root) is None):
         return None
     if len(edgeDict[root][2]) == 0:
-        return TTreeNode(edgeDict[root][1].label)
+        return TTreeNode(f"({edgeDict[root][1].label}:{root})")
     else:
-        tempNode = TTreeNode(edgeDict[root][1].label)
+        tempNode = TTreeNode(f"({edgeDict[root][1].label}:{root})")
         for i in edgeDict[root][2]:
             tempChild = generateWitnessTree(edgeDict, i)
             tempNode.connectChild(tempChild)
@@ -175,6 +176,8 @@ def matchTreeBU(ta:TTreeAut, root:TTreeNode) -> bool:
 #       - this string is created using makeNameFromSet() functino
 def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
 
+    verbose = False
+
     # Helper functions for BU-determinization - - - - - - - - - - - - - - - - - 
 
     ## Similar function to generatePossibleChildren => instead of generating list of possible states,
@@ -221,7 +224,28 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
     def makeSetFromName(name:str) -> list:
         temp = name.lstrip("{").rstrip("}").split(",")
         return [i.strip() for i in temp]
-    
+
+    ## Hot fix -> some transitions are added to sink state even though there
+    #  already is a state that accepts the particular tuple of chidlren
+    #  TODO: add this functionality inside the main loop (for time efficiency)
+    def determinizedTrim(edgeDict:dict):
+        reachableChildren = []
+        for state, edges in edgeDict.items():
+            if state == '{}':
+                continue
+            for edge in edges.values():
+                if (
+                    edge[2] != [] 
+                    and edge[2] not in reachableChildren 
+                    and '{}' not in edge[2]
+                ):
+                    reachableChildren.append(edge[2])
+
+        tempDict = { k:e for k, e in edgeDict['{}'].items() 
+            if e[2] not in reachableChildren }
+        edgeDict['{}'] = tempDict
+        
+        return edgeDict
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     doneSet = []
@@ -242,21 +266,34 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
 
     while len(workSet) > 0:
         currentMacroState = workSet.pop()
+        
+        if verbose: print(f"> current macrostate = {currentMacroState}")
+        
         for symbol in alphabet:
             arity = alphabet[symbol]
             possibileMacroStateChildren = generatePossibleMacroStates(doneSet, currentMacroState, arity)
             for macroState in possibileMacroStateChildren:
                 possibleNormalChildren = [list(i) for i in product(*macroState)]
-                edge = []
+                
+                if verbose: print(f"  > wip macrostate = {macroState}")
+                
                 for child in possibleNormalChildren:
                     reachableMacroState = findPossibleTransitions(ta, symbol, child)
+
+                    if verbose: print(f"    > child = {child}")
+                    if verbose: print(f"    > reachable macrostate = {reachableMacroState}")
+
                     if reachableMacroState not in doneSet:
                         doneSet.append(reachableMacroState)
                         workSet.append(reachableMacroState)
-                    if edge == []:
-                        edge = [reachableMacroState, TEdge(symbol, [None] * arity, ""), macroState]
-                        if edge not in doneEdges:
-                            doneEdges.append(edge)
+
+                        if verbose: print(f"CREATING A NEW STATE {reachableMacroState}")
+
+                    edge = [reachableMacroState, TEdge(symbol, [None] * arity, ""), macroState]
+                    if edge not in doneEdges:
+                        doneEdges.append(edge)
+        
+                        if verbose: print(f"        > appended edge = {reachableMacroState} - {symbol} -> ({macroState})")
 
     newRootStates = [makeNameFromSet(q) for q in doneSet for r in ta.rootStates if r in q]
 
@@ -269,6 +306,11 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
         children = [makeNameFromSet(i) for i in edge[2]]
         key = f"{stateName}-{symbol.label}->[{children}]"
         newTransitions[stateName][key] = [stateName, symbol, children]
+        
+        if verbose: print(str([stateName, symbol.edgeDesc(), children]))
+        
+
+    newTransitions = determinizedTrim(newTransitions)
     return TTreeAut(newRootStates, newTransitions, f"determinized({ta.name})")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -349,11 +391,8 @@ def treeAutIntersection(ta1:TTreeAut, ta2:TTreeAut) -> TTreeAut:
 # uses determinization and completion of the TA beforehand
 def treeAutComplement(ta:TTreeAut, alphabet:dict) -> TTreeAut:
     result = treeAutDeterminization(ta, alphabet)
-    for stateName in result.transitions:
-        if stateName in result.rootStates:
-            result.rootStates.remove(stateName)
-        else:
-            result.rootStates.append(stateName)
+    roots = [i for i in result.getStates() if i not in result.rootStates]
+    result.rootStates = roots
     return result
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -646,8 +685,9 @@ def areCommutative(ta1:TTreeAut, ta2:TTreeAut) -> bool:
 def areComparable(ta1:TTreeAut, ta2:TTreeAut):
     infix = ta1.createInfix(ta2.getOutputEdges())
     language = {**ta1.getSymbolArityDict(), **ta2.getSymbolArityDict()}
-    infixComp = treeAutComplement(ta1, language)
-    intersection = treeAutIntersection(infixComp, ta2)
+    complement = treeAutComplement(infix, language)
+    # complement.printTreeAut()
+    intersection = treeAutIntersection(complement, ta2)
     witnessT, witnessS = nonEmptyBU(intersection)
     return witnessT == None
 

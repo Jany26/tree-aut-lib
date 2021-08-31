@@ -99,7 +99,9 @@ class TEdge:
         tempString = "<<"
         tempString += f"{self.label}, var='{self.variable}', {{"
         for i in self.boxArray:
-            tempString += "S " if i == None else "box "
+            tempString += "S," if i == None else "box,"
+        if len(self.boxArray) > 0:
+            tempString = tempString[:-1]
         tempString += "}>>"
         return tempString
 
@@ -270,12 +272,7 @@ class TTreeAut:
     def createPrefix(self, additionalOutputEdges):
         result = copy.deepcopy(self)
         
-        result.name = f"prefix({self.name}, ["
-        for i in range(len(additionalOutputEdges)):
-            result.name += f"{additionalOutputEdges[i]}"
-            if i < len(additionalOutputEdges) - 1:
-                result.name += ","
-        result.name += "])"
+        result.name = f"prefix({self.name}, {additionalOutputEdges})"
             
         for stateName, content in result.transitions.items():
             tempDict = {}
@@ -313,11 +310,51 @@ class TTreeAut:
                 result.rootStates.append(stateName)
         return result
 
+    # def createInfix(self, additionalOutputEdges):
+    #     result = copy.deepcopy(self)
+    #     # result1 = self.createPrefix(additionalOutputEdges)
+    #     # result = result1.createSuffix()
+    #     futureRoots = self.getStates()
+    #     # ports = [ sym for sym in additionalOutputEdges 
+    #     #     if sym.startswith("Port") and sym     not in result.getOutputSymbols() ]
+    #     # print(ports)
+
+    #     for state in result.getOutputStates():
+    #         for symbol, arity in result.getSymbolArityDict().items():
+    #             if arity == 0:
+    #                 continue
+    #             for root in result.rootStates:
+    #                 newKey = f"{state}- {symbol} ->({root})"
+    #                 edge = TEdge(symbol, [None] * arity, "")
+    #                 children = [root] * arity
+    #                 result.transitions[state][newKey] = [state, edge, children]
+
+    #     for state in futureRoots:
+    #     #     # 1) make all states rootstates
+    #     #     if state not in result.rootStates:
+    #     #         result.rootStates.append(state)
+            
+    #     #     # 2) add output ports from additionalOutputEdges to every state
+    #         for i in additionalOutputEdges:
+    #             # if state in self.rootStates:
+    #             #     continue
+    #             # if i.startswith("Port") and state in result.getOutputStates():
+    #             #     continue
+    #             key = f"{state}-{i}->()"
+    #             edge = [state, TEdge(i, [], ""), []]
+    #             result.transitions[state][key] = edge
+
+    #     # 2) add ports from additionalOutputEdges everywhere
+    #     result.rootStates = futureRoots
+    #     result.name = f"infix({self.name}, {additionalOutputEdges})"
+    #     result.portArity = result.getPortArity()
+    #     return result
+
     def createInfix(self, additionalOutputEdges):
         result = copy.deepcopy(self)
         ports = [ sym for sym in additionalOutputEdges 
             if sym.startswith("Port") and sym not in result.getOutputSymbols() ]
-        
+
         for state in result.getStates():
             # 1) make all states rootstates
             if state not in result.rootStates:
@@ -328,9 +365,7 @@ class TTreeAut:
                 key = f"{state}-{i}->()"
                 edge = [state, TEdge(i, [], ""), []]
                 result.transitions[state][key] = edge
-        
-        # 2) add ports from additionalOutputEdges everywhere
-
+                
         return result
 
 # End of file ta_classes.py

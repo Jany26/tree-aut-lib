@@ -788,7 +788,7 @@ def commutativityTests(verbose=False):
 
     printFailedTests(failures)
 
-def comparabilityTest(ta1, expectedResult, ta2, failures):
+def comparabilityTestAdvanced(ta1, expectedResult, ta2, failures):
     box1 = boxesDict[ta1]
     box2 = boxesDict[ta2]
     res1 = areComparable(box1, box2)
@@ -806,28 +806,29 @@ def comparabilityTestSimple(ta1, ta2, exp, failures):
     box1 = boxesDict[ta1]
     box2 = boxesDict[ta2]
     res = areComparable(box1, box2)
+    # if res != exp:
     if res != exp:
-        failures.append("{:<50} | expected = {:>5} | got {:>5}".format(
-            f"comparing... {ta1} > {ta2} ?", str(exp), str(res)
+        failures.append("{:<50} | {:>15} | {:>15}".format(
+            f"comparing... {ta1} > {ta2} ?", f"expected = {exp}", f"result = {res}"
         ))
+        # failures[len(failures)-1] += "   err"
 
 
 def comparabilityTests():
     print(" > SUBUNIT TEST: testing comparability/partial order ...")
     failures = []
-    
-    # comparabilityTest("boxL0", ">", "boxX", failures)
-    # comparabilityTest("boxL1", ">", "boxX", failures)
-    # comparabilityTest("boxH0", ">", "boxX", failures)
-    # comparabilityTest("boxH1", ">", "boxX", failures)
 
-    # comparabilityTest("boxX", "<", "boxL0", failures)
-    # comparabilityTest("boxX", "<", "boxL1", failures)
-    # comparabilityTest("boxX", "<", "boxH0", failures)
-    # comparabilityTest("boxX", "<", "boxH1", failures)
-    
-    # comparabilityTest("boxL0", "?", "boxH0", failures)
-    # comparabilityTest("boxL0", "?", "boxH1", failures)
+    # boxes = {"boxX":0, "boxLPort":1, "boxHPort":1, "boxL0":2, "boxL1":2, "boxH0":2, "boxH1":2}
+
+    # print("    {:<30} => {:>10} | {:>10}".format("comparing", "result", "expected"))
+    # print("-" * 100)
+    # for i, ival in boxes.items():
+    #     box1 = boxesDict[i]
+    #     for j, jval in boxes.items():
+    #         box2 = boxesDict[j]
+    #         result = areComparable(box1, box2)
+    #         expected = ival >= jval
+    #         print("    {:<30} => {:>10} | {:>10} | {:>5}".format(f"{box1.name} > {box2.name} ?", f"{result}", f"{expected}", f"ERR" if result != expected else ""))
 
     comparabilityTestSimple("boxL0", "boxX", True, failures)
     comparabilityTestSimple("boxL1", "boxX", True, failures)
@@ -862,14 +863,12 @@ def comparabilityTests():
     comparabilityTestSimple("boxH0", "boxH1", False, failures)
     comparabilityTestSimple("boxH1", "boxL0", False, failures)
     comparabilityTestSimple("boxH1", "boxL1", False, failures)
-    comparabilityTestSimple("boxH1", "boxH1", False, failures)
+    comparabilityTestSimple("boxH1", "boxH0", False, failures)
 
     comparabilityTestSimple("boxH0", "boxLPort", False, failures)
     comparabilityTestSimple("boxH1", "boxLPort", False, failures)
-
     comparabilityTestSimple("boxL0", "boxHPort", False, failures)
     comparabilityTestSimple("boxL1", "boxHPort", False, failures)
-
     comparabilityTestSimple("boxLPort", "boxHPort", False, failures)
     comparabilityTestSimple("boxHPort", "boxLPort", False, failures)
     
@@ -877,13 +876,11 @@ def comparabilityTests():
 
 def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
-    boxH0 = boxesDict["boxH0"]
-    boxX = boxesDict["boxX"]
-    result = areComparable(boxH0, boxX)
-    # print(result)
-    # boxH0.printTreeAut()
-    # boxX.printTreeAut()
-    
+
+    # test = boxX
+
+    # detTest = treeAutDeterminization(test, test.getSymbolArityDict())
+    # detTest.printTreeAut()
     pass
 
 # End of file all_tests.py

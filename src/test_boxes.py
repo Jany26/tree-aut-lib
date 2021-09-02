@@ -91,8 +91,8 @@ testTransitionsBoxLPort = {
 
 testTransitionsBoxHPort = { # symmetric alternative to LPort
     'w0': {
-        'a': ['w0', TEdge("LH", [None, None], ""), ['w1', 'w0']],
-        'b': ['w0', TEdge("LH", [None, None], ""), ['w1', 'w2']]
+        'a': ['w0', TEdge("LH", [None, None], ""), ['w1', 'w2']],
+        'b': ['w0', TEdge("LH", [None, None], ""), ['w0', 'w2']]
         }, 
     'w1': {
         'c': ['w1', TEdge("Port_HPort0", [], ""), []]

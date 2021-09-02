@@ -51,9 +51,9 @@ def generateWitnessTree(edgeDict:dict, root:str) -> TTreeNode:
     if (type(edgeDict) is None or type(root) is None):
         return None
     if len(edgeDict[root][2]) == 0:
-        return TTreeNode(f"({edgeDict[root][1].label}:{root})")
+        return TTreeNode(f"({edgeDict[root][1].label};{root})")
     else:
-        tempNode = TTreeNode(f"({edgeDict[root][1].label}:{root})")
+        tempNode = TTreeNode(f"({edgeDict[root][1].label};{root})")
         for i in edgeDict[root][2]:
             tempChild = generateWitnessTree(edgeDict, i)
             tempNode.connectChild(tempChild)
@@ -176,42 +176,11 @@ def matchTreeBU(ta:TTreeAut, root:TTreeNode) -> bool:
 #       - this string is created using makeNameFromSet() functino
 def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
 
-    verbose = False
-
     # Helper functions for BU-determinization - - - - - - - - - - - - - - - - - 
 
-    ## Similar function to generatePossibleChildren => instead of generating list of possible states,
-    #  this function generates list of possible macrostates (list of lists of states)
-    def generatePossibleMacroStates(macroStateList:list, macroState:list, size:int) -> list:
-        workState = makeNameFromSet(macroState)
-        workList = [makeNameFromSet(list) for list in macroStateList]
-        possibilities = product(workList, repeat = size)
-        
-        result = []
-        for i in possibilities:
-            if workState in i:
-                temp = []
-                for j in i:
-                    temp.append(makeSetFromName(j))
-                result.append(temp)
-        return result
-
-    ## Searches the tree automaton and returns list of states, 
-    #  which can produce exact combination of "children" through an edge labeled with "symbol"
-    def findPossibleTransitions(ta:TTreeAut, symbol:str, children:list) -> list:
-        result = []
-        for edgeDict in ta.transitions.values():
-            for data in edgeDict.values():
-                if data[1].label == symbol and data[2] == children:
-                    result.append(data[0])
-        result.sort()
-        return result
-
-    ## Produces a string from a list of states, which is used as the state label
-    #  example: ['a', 'b', 'c'] => "{a,b,c}"
-    def makeNameFromSet(stateList:list) -> str:
-        if len(stateList) == 0:
-            return "{}"
+    def detCreateName(stateList:list) -> str:
+        # if len(stateList) == 0:
+        #     return "{}"
         stateList.sort()
         result = "{" 
         for i in range(len(stateList)):
@@ -219,100 +188,107 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
             result += ","
         return result.rstrip(",") + "}"
 
-    ## Produces a list of states from a string, which is used as the state label
-    #  Reverse effect as makeNameFromSet
-    def makeSetFromName(name:str) -> list:
-        temp = name.lstrip("{").rstrip("}").split(",")
-        return [i.strip() for i in temp]
-
-    ## Hot fix -> some transitions are added to sink state even though there
-    #  already is a state that accepts the particular tuple of chidlren
-    #  TODO: add this functionality inside the main loop (for time efficiency)
-    def determinizedTrim(edgeDict:dict):
-        reachableChildren = []
-        for state, edges in edgeDict.items():
-            if state == '{}':
-                continue
+    def detCreateLookupDict(ta:TTreeAut, alphabet) -> dict:
+        result = {symbol:{} for symbol in alphabet}
+        for edges in ta.transitions.values():
             for edge in edges.values():
-                if (
-                    edge[2] != [] 
-                    and edge[2] not in reachableChildren 
-                    and '{}' not in edge[2]
-                ):
-                    reachableChildren.append(edge[2])
+                symbol = edge[1].label
+                
+                if str(edge[2]) not in result[symbol]:
+                    result[symbol][str(edge[2])] = []
 
-        tempDict = { k:e for k, e in edgeDict['{}'].items() 
-            if e[2] not in reachableChildren }
-        edgeDict['{}'] = tempDict
-        
-        return edgeDict
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+                if edge[0] not in result[symbol][str(edge[2])]:
+                    result[symbol][str(edge[2])].append(edge[0])
+        return result
 
-    doneSet = []
-    workSet = []
-    doneEdges = []
+    def detGenerateTuples(stateList:list, state:list, size:int) -> list:
+        cartProd = product(stateList, repeat = size)
+        return [ [j for j in i if len(i) == size] for i in cartProd if state in i ]
 
-    outEdges = ta.getOutputEdges()
-    for symbol in outEdges:
-        doneEdges.append([outEdges[symbol], TEdge(symbol, [], ""), []])
-        workSet.append(outEdges[symbol])
-        doneSet.append(outEdges[symbol])
-    for symbol in alphabet:
-        if symbol not in outEdges and alphabet[symbol] == 0:
-            doneEdges.append([ [], TEdge(symbol, [], ""), [] ])
-            if [] not in workSet:
-                workSet.append([])
-                doneSet.append([])
+    def detOutEdges(outEdges:list, doneEdges, alphabet):
+        result = []
+        for symbol in outEdges:
+            doneEdges.append([ outEdges[symbol], symbol, [] ])
+            result.append(outEdges[symbol])
 
-    while len(workSet) > 0:
-        currentMacroState = workSet.pop()
-        
-        if verbose: print(f"> current macrostate = {currentMacroState}")
-        
         for symbol in alphabet:
-            arity = alphabet[symbol]
-            possibileMacroStateChildren = generatePossibleMacroStates(doneSet, currentMacroState, arity)
-            for macroState in possibileMacroStateChildren:
-                possibleNormalChildren = [list(i) for i in product(*macroState)]
-                
-                if verbose: print(f"  > wip macrostate = {macroState}")
-                
-                for child in possibleNormalChildren:
-                    reachableMacroState = findPossibleTransitions(ta, symbol, child)
+            if symbol not in outEdges and alphabet[symbol] == 0:
+                doneEdges.append([ [], symbol, [] ])
+                if [] not in result:
+                    result.append([])
+        return result, copy.deepcopy(result)
 
-                    if verbose: print(f"    > child = {child}")
-                    if verbose: print(f"    > reachable macrostate = {reachableMacroState}")
+    def detChildHandle(tuple:list, lookup:dict, symbol:str, edges:list) -> list:
+        children = [list(i) for i in product(*tuple)]
+        # result = [ j for i in children if str(i) in lookup[symbol] 
+        #     for j in lookup[symbol][str(i)] ]
+        result = []
+        for i in children:
+            if str(i) not in lookup[symbol]:
+                continue
+            for j in lookup[symbol][str(i)]:
+                if j not in result:
+                    result.append(j)
+        result.sort()
+        return result
 
-                    if reachableMacroState not in doneSet:
-                        doneSet.append(reachableMacroState)
-                        workSet.append(reachableMacroState)
+    def detCreateRelation(edgeList:list, alphabet:dict) -> dict:
+        edgeDict = {}
+        # print(f"> ALPHABET\n{alphabet}")
+        for edge in edgeList:
+            # print(f"  > EDGE = {edge}")
+            source = detCreateName(edge[0])
+            symbol = TEdge(edge[1], [None] * alphabet[str(edge[1])], "") 
+            # print(f"    > SRC = {source}")
+            # print(f"    > SYM = {edge[1]}")
+            # print(f"    > CHI = {edge[2]}")
+            children = [detCreateName(i) for i in edge[2]]
+            key = f"{source}-{edge[1]}->({children})"
+            if source not in edgeDict:
+                edgeDict[source] = {}
+            edgeDict[source][key] = [source, symbol, children]
+        return edgeDict
 
-                        if verbose: print(f"CREATING A NEW STATE {reachableMacroState}")
+    def detCreateRoots(doneStates:list, roots:list) -> list:
+        result = []
+        for doneSet in doneStates:
+            for root in roots:
+                if root in doneSet:
+                    temp = detCreateName(doneSet)
+                    if temp not in result:
+                        result.append(temp)
+        return result
+    parentLookup = detCreateLookupDict(ta, alphabet)
+    doneTuples = {symbol:[] for symbol in alphabet}
+    doneEdges = []
+    workSet, doneSet = detOutEdges(ta.getOutputEdges(), doneEdges, alphabet)
+    
+    # print("{:<40} {:<20} {:<20} {:<20}".format("children", "symbol", "current", "statesLeft"))
+    # print("-" * 100)
+    while workSet != []:
+        state = workSet.pop()
+        doneSet.append(state)
+        for symbol, arity in alphabet.items():
+            lookup = parentLookup[symbol]
+            if lookup == {}:
+                # TODO: HANDLE UNUSED SYMBOL
+                pass
+            combinations = detGenerateTuples(doneSet, state, arity)
+            for tuple in combinations:
+                if tuple not in doneTuples[symbol]:
+                    doneTuples[symbol].append(tuple)
+                    # print("{:<40} {:<20} {:<20} {:<20}".format(f"{tuple}", symbol, str(state), len(workSet)))
+                    parents = detChildHandle(tuple, parentLookup, symbol, doneEdges)
+                    if parents not in workSet:
+                        workSet.append(parents)
+                    doneEdges.append([ parents, symbol, tuple ])
+    # newRoots = [detCreateName(q) for q in doneSet for r in ta.rootStates if r in q and q not in newRoots]
+    newRoots = detCreateRoots(doneSet, ta.rootStates)
+    newEdges = detCreateRelation(doneEdges, alphabet)
 
-                    edge = [reachableMacroState, TEdge(symbol, [None] * arity, ""), macroState]
-                    if edge not in doneEdges:
-                        doneEdges.append(edge)
-        
-                        if verbose: print(f"        > appended edge = {reachableMacroState} - {symbol} -> ({macroState})")
-
-    newRootStates = [makeNameFromSet(q) for q in doneSet for r in ta.rootStates if r in q]
-
-    newTransitions = {}
-    for edge in doneEdges:
-        stateName = makeNameFromSet(edge[0])
-        if stateName not in newTransitions:
-            newTransitions[stateName] = {}
-        symbol = edge[1]
-        children = [makeNameFromSet(i) for i in edge[2]]
-        key = f"{stateName}-{symbol.label}->[{children}]"
-        newTransitions[stateName][key] = [stateName, symbol, children]
-        
-        if verbose: print(str([stateName, symbol.edgeDesc(), children]))
-        
-
-    newTransitions = determinizedTrim(newTransitions)
-    return TTreeAut(newRootStates, newTransitions, f"determinized({ta.name})")
-
+    result = TTreeAut(newRoots, newEdges, f"determinized({ta.name})")
+    result.portArity = result.getPortArity()
+    return result
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 ## Creates a tree automaton, that generates trees which can be generated by 

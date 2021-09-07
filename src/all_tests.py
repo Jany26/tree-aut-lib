@@ -269,6 +269,43 @@ def determinizationTests():
     matchTest("matchTreeTD", "deterministicH1", "treeH1test3", True,  failures)
     matchTest("matchTreeTD", "deterministicH1", "treeH1test4", True,  failures)
 
+    # determinizationSanityTest("boxX", failures)
+    # determinizationSanityTest("boxL0", failures)
+    # determinizationSanityTest("boxL1", failures)
+    # determinizationSanityTest("boxH0", failures)
+    # determinizationSanityTest("boxH1", failures)
+    # determinizationSanityTest("boxLPort", failures)
+    # determinizationSanityTest("boxHPort", failures)
+
+    printFailedTests(failures)
+
+# def determinizationSanityTest():
+#     complement = treeAutComplement(box, box.getSymbolArityDict())
+#     intersection = treeAutIntersection(box, complement)
+#     witnessT, witnessS = nonEmptyTD(intersection)
+#     if witnessT != None:
+#         failures.append(f"sanity test failed for box '{box.name}'")
+
+def sanityUnitTest(box:TTreeAut, failures:list):
+    comp = treeAutComplement(box, box.getSymbolArityDict())
+    inter = treeAutIntersection(box, comp)
+    witnessT, witnessS = nonEmptyBU(inter)
+    if witnessT != None:
+        failures.append(f"sanityTest({str(box.name)})")
+    
+def sanityTests():
+    print(" > SUBUNIT TEST: testing determinization() with sanity tests ...")
+    failures = []
+    for subdir, dirs, files in os.walk("../nta/"):
+        for file in files:
+            filepath = subdir + os.sep + file
+            if not filepath.endswith(".vtf"):
+                continue
+            print(f"    > 1 importing {filepath} ...")
+            testBox = importTAfromVTF(filepath, 'f')
+            print(f"    > 2 testing {testBox.name} ...")
+            sanityUnitTest(testBox, failures)  
+
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -560,6 +597,7 @@ def removeUselessStatesTests():
 
     # now this test will fail, as edges are not simply strings, 
     # but objects on different adresses (even though they contain the same data)
+    
     # if copy.deepcopy(boxL0).transitions != boxL0.transitions:
     #     failures.append("removeUselessStates(copy.deepcopy(boxL0))")
     
@@ -874,13 +912,16 @@ def comparabilityTests():
     
     printFailedTests(failures)
 
+def sanityTest():
+    pass
+
 def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
-
-    # test = boxX
-
-    # detTest = treeAutDeterminization(test, test.getSymbolArityDict())
-    # detTest.printTreeAut()
-    pass
+    
+    test = importTAfromVTF("../nta/vtf/A0054.vtf")
+    complement = treeAutComplement(test, test.getSymbolArityDict())
+    intersection = treeAutIntersection(test, complement)
+    witnessT, witnessS = nonEmptyTD(intersection)
+    print("nonempty" if witnessT != None else "empty")
 
 # End of file all_tests.py

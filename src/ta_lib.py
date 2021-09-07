@@ -3,6 +3,7 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
+from os import stat
 from re import L
 from ta_classes import *
 from itertools import product
@@ -160,6 +161,85 @@ def matchTreeBU(ta:TTreeAut, root:TTreeNode) -> bool:
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+# Helper functions for BU-determinization - - - - - - - - - - - - - - - - - 
+
+def detCreateName(stateList:list) -> str:
+    stateList.sort()
+    result = "{"
+    for i in stateList:
+        result += str(i) + ","
+    return result.rstrip(",") + "}"
+
+def detCreateLookupDict(ta:TTreeAut, alphabet) -> dict:
+    result = {symbol:{} for symbol in alphabet}
+    for edges in ta.transitions.values():
+        for edge in edges.values():
+            symbol = edge[1].label
+            
+            if str(edge[2]) not in result[symbol]:
+                result[symbol][str(edge[2])] = []
+
+            if edge[0] not in result[symbol][str(edge[2])]:
+                result[symbol][str(edge[2])].append(edge[0])
+    return result
+
+def detGenerateTuples(stateList:list, state:list, size:int) -> list:
+    cartProd = product(stateList, repeat = size)
+    return [ [j for j in i if len(i) == size] for i in cartProd if state in i ]
+
+def detOutEdges(outEdges:list, doneEdges, alphabet):
+    result = []
+    for symbol in outEdges:
+        doneEdges.append([ outEdges[symbol], symbol, [] ])
+        result.append(outEdges[symbol])
+
+    for symbol in alphabet:
+        if symbol not in outEdges and alphabet[symbol] == 0:
+            doneEdges.append([ [], symbol, [] ])
+            if [] not in result:
+                result.append([])
+    return result, copy.deepcopy(result)
+
+def detChildHandle(tuple:list, lookup:dict) -> list:
+    children = [list(i) for i in product(*tuple)]
+    result = []
+    for i in children:
+        if str(i) not in lookup: 
+            continue
+        for j in lookup[str(i)]:
+            if j in result: 
+                continue
+            result.append(j)
+    result.sort()
+    return result
+
+def detCreateRelation(edgeList:list, alphabet:dict) -> dict:
+    edgeDict = {}
+    # print(f"> ALPHABET\n{alphabet}")
+    for edge in edgeList:
+        # print(f"  > EDGE = {edge}")
+        source = detCreateName(edge[0])
+        symbol = TEdge(edge[1], [None] * alphabet[str(edge[1])], "") 
+        # print(f"    > SRC = {source}")
+        # print(f"    > SYM = {edge[1]}")
+        # print(f"    > CHI = {edge[2]}")
+        children = [detCreateName(i) for i in edge[2]]
+        key = f"{source}-{edge[1]}->({children})"
+        if source not in edgeDict:
+            edgeDict[source] = {}
+        edgeDict[source][key] = [source, symbol, children]
+    return edgeDict
+
+def detCreateRoots(doneStates:list, roots:list) -> list:
+    result = []
+    for doneSet in doneStates:
+        for root in roots:
+            if root in doneSet:
+                temp = detCreateName(doneSet)
+                if temp not in result:
+                    result.append(temp)
+    return result
+
 ## Creates a deterministic and complete version of the "ta" tree automaton with regards to the "alphabet"
 #  alphabet is a dictionary -> key = "symbol", value = arity (integer)
 #  doneStates = list of macrostates (macrostate = list of states/strings)
@@ -174,99 +254,23 @@ def matchTreeBU(ta:TTreeAut, root:TTreeNode) -> bool:
 #  * IMPORTANT NOTE = doneStates and doneTransitions are just placeholder structures
 #       - in the final automaton the macroStates (list/set of states) will be represented by a string
 #       - this string is created using makeNameFromSet() functino
-def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
+def treeAutDeterminization(ta:TTreeAut, alphabet:dict, verbose=False) -> TTreeAut:
 
-    # Helper functions for BU-determinization - - - - - - - - - - - - - - - - - 
-
-    def detCreateName(stateList:list) -> str:
-        # if len(stateList) == 0:
-        #     return "{}"
-        stateList.sort()
-        result = "{" 
-        for i in range(len(stateList)):
-            result += str(stateList[i])
-            result += ","
-        return result.rstrip(",") + "}"
-
-    def detCreateLookupDict(ta:TTreeAut, alphabet) -> dict:
-        result = {symbol:{} for symbol in alphabet}
-        for edges in ta.transitions.values():
-            for edge in edges.values():
-                symbol = edge[1].label
-                
-                if str(edge[2]) not in result[symbol]:
-                    result[symbol][str(edge[2])] = []
-
-                if edge[0] not in result[symbol][str(edge[2])]:
-                    result[symbol][str(edge[2])].append(edge[0])
-        return result
-
-    def detGenerateTuples(stateList:list, state:list, size:int) -> list:
-        cartProd = product(stateList, repeat = size)
-        return [ [j for j in i if len(i) == size] for i in cartProd if state in i ]
-
-    def detOutEdges(outEdges:list, doneEdges, alphabet):
-        result = []
-        for symbol in outEdges:
-            doneEdges.append([ outEdges[symbol], symbol, [] ])
-            result.append(outEdges[symbol])
-
-        for symbol in alphabet:
-            if symbol not in outEdges and alphabet[symbol] == 0:
-                doneEdges.append([ [], symbol, [] ])
-                if [] not in result:
-                    result.append([])
-        return result, copy.deepcopy(result)
-
-    def detChildHandle(tuple:list, lookup:dict, symbol:str, edges:list) -> list:
-        children = [list(i) for i in product(*tuple)]
-        # result = [ j for i in children if str(i) in lookup[symbol] 
-        #     for j in lookup[symbol][str(i)] ]
-        result = []
-        for i in children:
-            if str(i) not in lookup[symbol]:
-                continue
-            for j in lookup[symbol][str(i)]:
-                if j not in result:
-                    result.append(j)
-        result.sort()
-        return result
-
-    def detCreateRelation(edgeList:list, alphabet:dict) -> dict:
-        edgeDict = {}
-        # print(f"> ALPHABET\n{alphabet}")
-        for edge in edgeList:
-            # print(f"  > EDGE = {edge}")
-            source = detCreateName(edge[0])
-            symbol = TEdge(edge[1], [None] * alphabet[str(edge[1])], "") 
-            # print(f"    > SRC = {source}")
-            # print(f"    > SYM = {edge[1]}")
-            # print(f"    > CHI = {edge[2]}")
-            children = [detCreateName(i) for i in edge[2]]
-            key = f"{source}-{edge[1]}->({children})"
-            if source not in edgeDict:
-                edgeDict[source] = {}
-            edgeDict[source][key] = [source, symbol, children]
-        return edgeDict
-
-    def detCreateRoots(doneStates:list, roots:list) -> list:
-        result = []
-        for doneSet in doneStates:
-            for root in roots:
-                if root in doneSet:
-                    temp = detCreateName(doneSet)
-                    if temp not in result:
-                        result.append(temp)
-        return result
     parentLookup = detCreateLookupDict(ta, alphabet)
-    doneTuples = {symbol:[] for symbol in alphabet}
+    doneTuples = {symbol:{} for symbol in alphabet}
     doneEdges = []
     workSet, doneSet = detOutEdges(ta.getOutputEdges(), doneEdges, alphabet)
     
-    # print("{:<40} {:<20} {:<20} {:<20}".format("children", "symbol", "current", "statesLeft"))
-    # print("-" * 100)
+    if verbose:
+        print("workset   = {workSet}")
+        print("doneset   = {doneSet}")
+        print("doneedges = {doneEdges}")
+        print("{:<120} {:<20} {:<60} {:<5} {:<5}".format("children", "symbol", "current", "work", "done"))
+        print("-" * 214)
+        counter = 0
     while workSet != []:
-        state = workSet.pop()
+        state = workSet[0]
+        workSet.remove(state)
         doneSet.append(state)
         for symbol, arity in alphabet.items():
             lookup = parentLookup[symbol]
@@ -275,19 +279,27 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict) -> TTreeAut:
                 pass
             combinations = detGenerateTuples(doneSet, state, arity)
             for tuple in combinations:
-                if tuple not in doneTuples[symbol]:
-                    doneTuples[symbol].append(tuple)
-                    # print("{:<40} {:<20} {:<20} {:<20}".format(f"{tuple}", symbol, str(state), len(workSet)))
-                    parents = detChildHandle(tuple, parentLookup, symbol, doneEdges)
-                    if parents not in workSet:
-                        workSet.append(parents)
-                    doneEdges.append([ parents, symbol, tuple ])
-    # newRoots = [detCreateName(q) for q in doneSet for r in ta.rootStates if r in q and q not in newRoots]
+                # print(combinations)
+                if str(tuple) in doneTuples[symbol]:
+                    continue
+                if verbose: 
+                    counter += 1
+                    print("{:<120} {:<20} {:<60} {:<5} {:<5}".format(
+                        f"{counter}) {tuple}"[:120], symbol[:20], str(state)[:60], len(workSet), len(doneSet)
+                    ))
+                parents = detChildHandle(tuple, lookup)
+                doneTuples[symbol][str(tuple)] = parents
+                if parents not in workSet:
+                    workSet.append(parents)
+                doneEdges.append([ parents, symbol, tuple ])
+    
     newRoots = detCreateRoots(doneSet, ta.rootStates)
     newEdges = detCreateRelation(doneEdges, alphabet)
-
     result = TTreeAut(newRoots, newEdges, f"determinized({ta.name})")
     result.portArity = result.getPortArity()
+    
+    if verbose: print(f"determinization of {ta.name} done")
+    
     return result
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -369,6 +381,7 @@ def treeAutComplement(ta:TTreeAut, alphabet:dict) -> TTreeAut:
     result = treeAutDeterminization(ta, alphabet)
     roots = [i for i in result.getStates() if i not in result.rootStates]
     result.rootStates = roots
+    result.name = f"complement({ta.name})"
     return result
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -379,78 +392,148 @@ def treeAutComplement(ta:TTreeAut, alphabet:dict) -> TTreeAut:
 # meaning the tree automaton can generate at least one tree
 # returns a trivial example of a tree generated by the tree automaton and its string representation
 # if the language is empty, None and empty string is returned
-def nonEmptyTD(ta:TTreeAut) -> Tuple[TTreeNode, str]:
+def nonEmptyTD(ta:TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
+        
+    def nonEmptyTDinitFunc(ta:TTreeAut) -> Tuple[dict, dict]:
+        edgeLookup = {}
+        outDict = {}
+        for outSymbol, stateList in ta.getOutputEdges().items():
+            for state in stateList:
+                if state in edgeLookup:
+                    continue
+                outDict[state] = True
+                edgeLookup[state] = [ state, TEdge(outSymbol, [], ""), [] ]
+
+        return edgeLookup, outDict
+    
+    def debugOutput(outDict, edgeLookup):
+        trueList = []
+        falseList = []
+        for state, value in outDict.items():
+            trueList.append(state) if value else falseList.append(state)
+        print(f"  TRUE -> {trueList}")
+        print(f"  FALSE -> {falseList}")
+        for state, edge in edgeLookup.items():
+            print(f"  {state} -> {edge}")
 
     ## Returns True if the state from a tree automaton can generate output (in finite amount of steps)
     #  uses top-down approach and thus backtracking, which requires a stack for remembering visited states
     #  as the tree is being parsed, edge lookup dictionary is being filled, 
     #    - this dictionary is then used in witness generation (example of a tree generated by the TA)
-    def outputSearchTD(ta:TTreeAut, state:str, stack:list, edgeLookup:dict) -> bool:
-        if (
-            state in stack
-            or state not in ta.transitions
-            or len(ta.transitions[state]) == 0
+    def outputSearchTD(ta:TTreeAut, state:str, callStack:list, outDict:dict, edgeLookup:dict, debug, total) -> bool:
+        if ( 
+            state in callStack # breaking endless recursion
+            or state not in ta.transitions # skipping if state has no entry
+            or len(ta.transitions[state]) == 0 # skipping if state has an empty entry
         ):
+            # if debug: print("    > FALSE ... self-loop or invalid state")
+            if debug: print("{:<80} {:<10} {}".format(f"checking {state}", "-> SKIP", f"breaking endless loop or necessary data missing"))
             return False
-
-        stack.append(state)
-
-        # look for output edges first... at least one is needed to return
+        
+        if debug: 
+            print("{:<60} {:<120} {}".format(f"state " + "-" * 54, f"callStack " + "-" * 108, f"done"))
+            print("{:<60} {:<120} {}".format(f"{state}"[:60], f"{callStack}"[:120], f"{len(outDict)}/{total}"))
+        
         for edge in ta.transitions[state].values():
-            if len(edge[2]) == 0:
-                stack.pop()
-                edgeLookup[state] = edge
-                return True
-
-        # no direct  output edge detected, now trying to recursively find output edges
-        # trying to generate outputs from all children in at least one transition
-        for edge in ta.transitions[state].values():
-            b = True
-            for i in edge[2]:
-                b = outputSearchTD(ta, i, stack, edgeLookup)
-                if not b:
+            # skipping self-looping transitions
+            if state in edge[2]:
+                continue
+            outputReachable = True
+            for child in edge[2]:
+                # checking if the state has been already visited and we know if its OK
+                if child in outDict:
+                    if outDict[child]:
+                        if debug: print("{:<80} {:<10} {}".format(f"checking {state}", "-> TRUE", f"direct | parent = {state}"))
+                        continue
+                    else:
+                        if debug: print("{:<80} {:<10} {}".format(f"checking {state}", "-> FALSE", f"direct | parent = {state}"))
+                        outputReachable = False
+                        break
+                # we dont know anything about the state = 
+                callStack.append(state)
+                # print(f"checking {child} -> ??? GOING DEEPER")
+                outputReachable = outputSearchTD(ta, child, callStack, outDict, edgeLookup, debug, total)
+                callStack.remove(state)
+                # skipping NOT OK transition
+                if not outputReachable:
                     break
-            if b:
-                stack.pop()
+            
+            # found an OK transition
+            if outputReachable:
+                if debug:
+                    print("{:<80} {:<10} {}".format(f"checking {state}", "-> TRUE", 
+                        f"recursion | parent = {callStack[len(callStack)-1]}" if len(callStack) > 0 else "root"))
+                outDict[state] = True
                 edgeLookup[state] = edge
+                # callStack.remove(state)
                 return True
-        stack.pop()
+        
+        if debug:
+            print("{:<80} {:<10} {}".format(f"checking {state}", "-> FALSE", 
+                f"recursion | parent = {callStack[len(callStack)-1]}" if len(callStack) > 0 else "root"))
+        outDict[state] = False
+        
+        # callStack.remove(state)
         return False
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
+    
+    total = len(ta.getStates()) # for debug
+    edgeLookup, outDict = nonEmptyTDinitFunc(ta)
     for root in ta.rootStates:
-        edgeDict = {}
-        stack = []
-        # trying to find an output for each root state (either directly or through children)
-        if outputSearchTD(ta, root, stack, edgeDict):
-            return generateWitnessTree(edgeDict, root), generateWitnessString(edgeDict, root)
+        if outputSearchTD(ta, root, [], outDict, edgeLookup, verbose, total):
+            if verbose: print(f"{ta.name} has non-empty lang")
+            return generateWitnessTree(edgeLookup, root), generateWitnessString(edgeLookup, root)
+    if verbose: print(f"{ta.name} has empty lang")
     return None, ""
+
 
 ## Bottom-up version of non empty language check
 #  starts the mock tree generation from the leaves (states with output transitions)
 #  same signature as top-down version
-def nonEmptyBU(ta:TTreeAut) -> Tuple[TTreeNode, str]:
+def nonEmptyBU(ta:TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
+    if verbose:
+        print(ta.name)
+        print("{:<60} {:<20} {:<20} {:<20} {:<20}".format("state", "symbol", "workset", "doneset", "allstates"))
+        print("-" * 150)
+        counter = 0
+
     # initialization phase (finding all output )
     workList = ta.getOutputStates()
+    size = len(ta.getStates())
     done = {}
+    doneSet = ta.getOutputStates()
     arityDict = ta.getSymbolArityDict()
     for state in workList:
         for edge in ta.transitions[state].values():
             if len(edge[2]) == 0:
                 done[state] = edge
 
+    def doneEdgePrint(doneEdges:dict):
+        result = []
+        for i in doneEdges.values():
+            result.append( [ i[0], i[1].label, i[2] ] )
+        for j in result:
+            print(j)
+        print()
+
     # tree automaton bottom-up parsing phase
     while len(workList) != 0:
-        state = workList.pop()
+        state = workList[0]
+        workList.remove(workList[0])
+        if state not in doneSet: 
+            doneSet.append(state)
         if state in ta.rootStates:
-            # return generateTrivialTree(done, state)
+            if verbose: print(f">> {ta.name} has non-empty lang")
             return generateWitnessTree(done, state), generateWitnessString(done, state)
         for symbol in arityDict:
             arity = arityDict[symbol]
             if arity == 0:
                 continue
             allPossibleTuples = generatePossibleChildren(state, list(done), arity)
+            if verbose: 
+                counter += 1
+                print("{:<60} {:<20} {:<20} {:<20} {:<20}".format(f"{counter}) {state}", f"{symbol}", f"{len(workList)}", f"{len(doneSet)}", f"{size}"))
             for stateName, edgeDict in ta.transitions.items():
                 for edge in edgeDict.values():
                     if (
@@ -461,6 +544,8 @@ def nonEmptyBU(ta:TTreeAut) -> Tuple[TTreeNode, str]:
                     if stateName not in done:
                         workList.append(stateName)
                         done[stateName] = edge
+
+    if verbose: print(f">> {ta.name} has empty lang")
     return None, ""
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -501,7 +586,7 @@ def reachableBU(ta:TTreeAut) -> list:
     while len(workList) > 0:
         state = workList.pop()
         for symbol, arity in arityDict.items():
-            if not arity > 0:
+            if arity <= 0:
                 continue
             allPossibileTuples = generatePossibleChildren(state, result, arity)
             for stateName, edgeDict in ta.transitions.items():
@@ -666,6 +751,5 @@ def areComparable(ta1:TTreeAut, ta2:TTreeAut):
     intersection = treeAutIntersection(complement, ta2)
     witnessT, witnessS = nonEmptyBU(intersection)
     return witnessT == None
-
 
 # End of file ta_lib.py

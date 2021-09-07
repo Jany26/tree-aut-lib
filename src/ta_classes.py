@@ -28,19 +28,24 @@ class TTreeNode:
         for i in self.children:
             i.printNode()
 
+    def actualizeDepth(self, newRootDepth:int):
+        self.depth = newRootDepth
+        for i in self.children:
+            i.actualizeDepth(newRootDepth + 1)
+
     ## Creates a child node with a specific value.
     # Connects the created node to the current node/parent.
     def addChild(self, value):
         childPtr = TTreeNode(value)
-        childPtr.depth = self.depth + 1
         childPtr.parent = self
+        childPtr.actualizeDepth(self.depth + 1)
         self.children.append(childPtr)
     
     ## Connects a specific node to current node
     def connectChild(self, node): 
         self.children.append(node)
         node.parent = self
-        node.depth = self.depth + 1
+        node.actualizeDepth(self.depth + 1)
     
     ## removes the "leftest" 1 child with specified value.
     def removeChild(self, value): 
@@ -98,12 +103,7 @@ class TEdge:
         self.variable = variable
         self.boxArray = boxArray
 
-    # makes the hyper-edge 'short' (all parts of the edge)
-    def shortenEdge(self):
-        arity = len(self.boxArray)
-        self.boxArray = [None] * arity
-
-    def edgeDesc(self) -> str:
+    def __repr__(self):
         tempString = "<<"
         tempString += f"{self.label}, var='{self.variable}', {{"
         for i in self.boxArray:
@@ -112,6 +112,20 @@ class TEdge:
             tempString = tempString[:-1]
         tempString += "}>>"
         return tempString
+    # makes the hyper-edge 'short' (all parts of the edge)
+    def shortenEdge(self):
+        arity = len(self.boxArray)
+        self.boxArray = [None] * arity
+
+    # def edgeDesc(self) -> str:
+    #     tempString = "<<"
+    #     tempString += f"{self.label}, var='{self.variable}', {{"
+    #     for i in self.boxArray:
+    #         tempString += "S," if i == None else "box,"
+    #     if len(self.boxArray) > 0:
+    #         tempString = tempString[:-1]
+    #     tempString += "}>>"
+    #     return tempString
 
 
 
@@ -145,7 +159,7 @@ class TTreeAut:
         for stateName, content in self.transitions.items():
             print("=== State " + stateName + " ===")
             for edge in content.values():
-                print(edge[0] + " -- " + edge[1].edgeDesc() + " --> " + str(edge[2]))
+                print(edge[0] + " -- " + str(edge[1]) + " --> " + str(edge[2]))
         print("")
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -319,25 +333,23 @@ class TTreeAut:
         return result
 
     def createInfix(self, additionalOutputEdges):
-        # result = copy.deepcopy(self)
-        # result = result.createPrefix(additionalOutputEdges)
-        # result = result.createSuffix()
         result = copy.deepcopy(self)
         ports = [ sym for sym in additionalOutputEdges 
             if sym.startswith("Port") and sym not in result.getOutputSymbols() ]
+        result.name = f"infix({self.name}, {ports})"
 
         for state in result.getStates():
             # A) make all states rootstates
-            if state not in result.rootStates:
-                # continue
-                result.rootStates.append(state)
+            if state in result.rootStates:
+                continue
+            result.rootStates.append(state)
             
             # B) add output ports from additionalOutputEdges to every state
             for i in ports:
                 key = f"{state}-{i}->()"
                 edge = [state, TEdge(i, [], ""), []]
                 result.transitions[state][key] = edge
-
+        result.portArity = result.getPortArity()
         return result
 
 # End of file ta_classes.py

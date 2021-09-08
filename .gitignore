@@ -7,4 +7,4 @@ src/dot
 src/vtf-to-dot
 src/tmb
 notes.md
-src/0-adHocTests.ipynb
+0-adHocTests.ipynb

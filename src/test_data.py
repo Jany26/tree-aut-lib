@@ -4,7 +4,7 @@
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
 from test_trees import *
-from test_boxes import *
+from format_vtf import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -28,13 +28,13 @@ fullAlphabet = {
 }
 
 
-boxX = TTreeAut(["q0"], testTransitionsBoxX, "boxX")
-boxL0 = TTreeAut(["r0"], testTransitionsBoxL0, "boxL0")
-boxL1 = TTreeAut(["s0"], testTransitionsBoxL1, "boxL1")
-boxH0 = TTreeAut(["t0"], testTransitionsBoxH0, "boxH0")
-boxH1 = TTreeAut(["u0"], testTransitionsBoxH1, "boxH1")
-boxLPort = TTreeAut(["v0"], testTransitionsBoxLPort, "boxLPort")
-boxHPort = TTreeAut(['w0'], testTransitionsBoxHPort, "boxHPort")
+boxX = importTAfromVTF("tests/boxX.vtf")
+boxL0 = importTAfromVTF("tests/boxL0.vtf")
+boxL1 = importTAfromVTF("tests/boxL1.vtf")
+boxH0 = importTAfromVTF("tests/boxH0.vtf")
+boxH1 = importTAfromVTF("tests/boxH1.vtf")
+boxLPort = importTAfromVTF("tests/boxLPort.vtf")
+boxHPort = importTAfromVTF("tests/boxHPort.vtf")
 
 # # output edge array for createPrefix()
 
@@ -47,9 +47,11 @@ outputEdgesLPort = boxLPort.getOutputSymbols()
 outputEdgesHPort = boxHPort.getOutputSymbols()
 
 # reachability and useless state removal test data
-testBox1 = TTreeAut(['q0'], unreachableTest1, "unreachableTest1")
-testBox2a = TTreeAut(['q0'], unreachableTest2a, "unreachableTest1")
-testBox2b = TTreeAut(['q0'], unreachableTest2b, "unreachableTest1")
+testUnreachable1 = importTAfromVTF("tests/testUnreachable1.vtf")
+testUnreachable2 = importTAfromVTF("tests/testUnreachable2.vtf")
+testUnreachable3 = importTAfromVTF("tests/testUnreachable3.vtf")
+
+testNonEmpty1    = importTAfromVTF("tests/testNonEmpty1.vtf")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

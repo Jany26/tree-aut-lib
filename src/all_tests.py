@@ -550,12 +550,12 @@ def reachabilityTDTests():
     print(" > SUBUNIT TEST: testing top-down reachability() ...")
     failures = []
     
-    if set(reachableTD(testBox1)) != set(['q0','q1']):
-        failures.append("reachableTD(testBox1)")
-    if set(reachableTD(testBox2a)) != set(['q0','q1','q2','q3']):
-        failures.append("reachableTD(testBox2a")
-    if set(reachableTD(testBox2b)) != set(['q0','q1','q2','q3']):
-        failures.append("reachableTD(testBox2b)")
+    if set(reachableTD(testUnreachable1)) != set(['q0','q1']):
+        failures.append("reachableTD(testUnreachable1)")
+    if set(reachableTD(testUnreachable2)) != set(['q0','q1','q2','q3']):
+        failures.append("reachableTD(testUnreachable2")
+    if set(reachableTD(testUnreachable3)) != set(['q0','q1','q2','q3']):
+        failures.append("reachableTD(testUnreachable3)")
     if set(reachableTD(copy.deepcopy(boxL0))) != set(['r0','r1','r2']):
         failures.append("reachableTD(boxL0copy)")
   
@@ -567,12 +567,12 @@ def reachabilityBUTests():
     print(" > SUBUNIT TEST: testing bottom-up reachability() ...")
     failures = []
     
-    if set(reachableBU(testBox1)) != set(['q1']):
-        failures.append("reachableBU(testBox1)")
-    if set(reachableBU(testBox2a)) != set(['q0','q1','q2','q3']):
-        failures.append("reachableBU(testBox2a")
-    if set(reachableBU(testBox2b)) != set(['q0','q1','q2','q3']):
-        failures.append("reachableBU(testBox2b)")
+    if set(reachableBU(testUnreachable1)) != set(['q1']):
+        failures.append("reachableBU(testUnreachable1)")
+    if set(reachableBU(testUnreachable2)) != set(['q0','q1','q2','q3']):
+        failures.append("reachableBU(testUnreachable2")
+    if set(reachableBU(testUnreachable3)) != set(['q0','q1','q2','q3']):
+        failures.append("reachableBU(testUnreachable3)")
     if set(reachableBU(copy.deepcopy(boxL0))) != set(['r0','r1','r2']):
         failures.append("reachableBU(boxL0copy)")
     
@@ -584,16 +584,16 @@ def removeUselessStatesTests():
     print(" > SUBUNIT TEST: testing removeUselessStates() ...")
     failures = []
 
-    cleanTestBox1 = removeUselessStates(testBox1)
-    cleanTestBox2a = removeUselessStates(testBox2a)
-    cleanTestBox2b = removeUselessStates(testBox2b)
+    cleanTestBox1 = removeUselessStates(testUnreachable1)
+    cleanTestBox2a = removeUselessStates(testUnreachable2)
+    cleanTestBox2b = removeUselessStates(testUnreachable3)
 
     if set(cleanTestBox1.getStates()) != set([]):
-        failures.append("removeUselessStates(testBox1)")
+        failures.append("removeUselessStates(testUnreachable1)")
     if set(cleanTestBox2a.getStates()) != set(['q0', 'q1', 'q2', 'q3']):
-        failures.append("removeUselessStates(testBox2a)")
+        failures.append("removeUselessStates(testUnreachable2)")
     if set(cleanTestBox2b.getStates()) != set(['q0', 'q1', 'q2', 'q3']):
-        failures.append("removeUselessStates(testBox2b)")
+        failures.append("removeUselessStates(testUnreachable3)")
 
     # now this test will fail, as edges are not simply strings, 
     # but objects on different adresses (even though they contain the same data)

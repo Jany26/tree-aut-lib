@@ -1,9 +1,0 @@
-@NTA
-# Automaton boxX
-%Root q0
-%States q1 q0
-%Alphabet LH:2 Port_X:0
-
-q0 LH ( q0 q0 )
-q0 LH ( q1 q1 )
-q1 Port_X ( )

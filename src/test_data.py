@@ -3,6 +3,7 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
+from ta_functions import *
 from test_trees import *
 from format_vtf import *
 

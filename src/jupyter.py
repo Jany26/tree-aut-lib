@@ -6,7 +6,7 @@
 from graphviz import *
 
 from ta_classes import *
-from ta_lib import *
+from ta_functions import *
 
 from format_dot import *
 from format_tmb import *

@@ -4,7 +4,7 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from ta_lib import *
+from ta_functions import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # DOT FORMAT IMPORT/EXPORT

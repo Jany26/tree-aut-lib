@@ -269,44 +269,31 @@ def determinizationTests():
     matchTest("matchTreeTD", "deterministicH1", "treeH1test3", True,  failures)
     matchTest("matchTreeTD", "deterministicH1", "treeH1test4", True,  failures)
 
-    # determinizationSanityTest("boxX", failures)
-    # determinizationSanityTest("boxL0", failures)
-    # determinizationSanityTest("boxL1", failures)
-    # determinizationSanityTest("boxH0", failures)
-    # determinizationSanityTest("boxH1", failures)
-    # determinizationSanityTest("boxLPort", failures)
-    # determinizationSanityTest("boxHPort", failures)
-
     printFailedTests(failures)
 
-# def determinizationSanityTest():
-#     complement = treeAutComplement(box, box.getSymbolArityDict())
-#     intersection = treeAutIntersection(box, complement)
-#     witnessT, witnessS = nonEmptyTD(intersection)
-#     if witnessT != None:
-#         failures.append(f"sanity test failed for box '{box.name}'")
-
-def sanityUnitTest(box:TTreeAut, failures:list):
-    comp = treeAutComplement(box, box.getSymbolArityDict())
-    inter = treeAutIntersection(box, comp)
-    witnessT, witnessS = nonEmptyBU(inter)
-    if witnessT != None:
-        failures.append(f"sanityTest({str(box.name)})")
+def sanityUnitTest(box:TTreeAut, file):
+    comp = treeAutComplement(box, box.getSymbolArityDict(), verbose=True)
+    inter = treeAutIntersection(box, comp, verbose=True)
+    witnessT, witnessS = nonEmptyTD(inter, verbose=True)
+    file.write(f"sanityTest({str(box.name)}) done ... ")
+    file.write("OK\n" if witnessT == None else "ERROR\n")
     
 def sanityTests():
     print(" > SUBUNIT TEST: testing determinization() with sanity tests ...")
-    failures = []
+    f = open("sanityTestsReport.txt", "a")
+    f.write("\n ---- SANITY TESTS START --- \n")
     for subdir, dirs, files in os.walk("../nta/"):
         for file in files:
             filepath = subdir + os.sep + file
             if not filepath.endswith(".vtf"):
                 continue
-            print(f"    > 1 importing {filepath} ...")
+            print(f"    > 1 importing {file} ...")
             testBox = importTAfromVTF(filepath, 'f')
+            if testBox.name != "A0054":
+                continue
             print(f"    > 2 testing {testBox.name} ...")
-            sanityUnitTest(testBox, failures)  
-
-    printFailedTests(failures)
+            sanityUnitTest(testBox, f)
+    f.write("\n ---- SANITY TESTS END --- \n")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -918,10 +905,15 @@ def sanityTest():
 def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
     
+    verbose = True
     test = importTAfromVTF("../nta/vtf/A0054.vtf")
-    complement = treeAutComplement(test, test.getSymbolArityDict())
-    intersection = treeAutIntersection(test, complement)
-    witnessT, witnessS = nonEmptyTD(intersection)
+    # for state, content in test.transitions.items():
+    #     for i,j in content.items():
+    #         print(f"{i} ------ {j}")
+    complement = treeAutComplement(test, test.getSymbolArityDict(), verbose)
+    intersection = treeAutIntersection(test, complement, verbose)
+    witnessT, witnessS = nonEmptyTD(intersection, verbose)
+    # sanityUnitTest()
     print("nonempty" if witnessT != None else "empty")
 
 # End of file all_tests.py

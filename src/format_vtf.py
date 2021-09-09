@@ -5,7 +5,7 @@
 
 # import sys
 # import os
-from ta_lib import *
+from ta_functions import *
 import os
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -76,9 +76,11 @@ def consistencyCheckTMB(edges, states, arities) -> bool:
 
 def generateKeyFromEdge(edge:list) -> str:
     children = ""
-    for i in edge[2]:
-        children += str(i) + ", "
-    children.rstrip(", ")
+    for i in range(len(edge[2])):
+        children += str(edge[2][i])
+        if i < len(edge[2])-1:
+            children += ","
+    # children.rstrip(",")
     return f"{edge[0]}-{edge[1].label}-[{children}]"
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

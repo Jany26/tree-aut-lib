@@ -3,12 +3,14 @@
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
+# from _typeshed import FileDescriptor
+from io import TextIOWrapper
 from test_data import *
 from format_vtf import *
 from format_tmb import *
 from format_dot import *
 import os
-
+import gc
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS FOR TEST SUITES
@@ -271,29 +273,49 @@ def determinizationTests():
 
     printFailedTests(failures)
 
-def sanityUnitTest(box:TTreeAut, file):
-    comp = treeAutComplement(box, box.getSymbolArityDict(), verbose=True)
-    inter = treeAutIntersection(box, comp, verbose=True)
-    witnessT, witnessS = nonEmptyTD(inter, verbose=True)
-    file.write(f"sanityTest({str(box.name)}) done ... ")
-    file.write("OK\n" if witnessT == None else "ERROR\n")
+def sanityUnitTest(box:TTreeAut, f:TextIOWrapper):
+    f.write(f"\ncomplement({box.name}) ... ")
+    f.flush()
+    print(f"complement({box.name}) ... ", flush=True)
+    
+    comp = treeAutComplement(box, box.getSymbolArityDict(), verbose=False)
+    
+    f.write(f"\nintersection({box.name}, {comp.name}) ... ")
+    f.flush()
+    print(f"intersection({box.name}, {comp.name}) ... ", flush=True)
+    
+    inter = treeAutIntersection(box, comp, verbose=False)
+    
+    f.write(f"\nnonEmptiness({inter.name}) ... ")
+    f.flush()
+    print(f"nonEmptiness({inter.name}) ... ", flush=True)
+    
+    witnessT, witnessS = nonEmptyTD(inter, verbose=False)
+    
+    f.write(f"\nsanityTest({str(box.name)}) result = ")
+    f.write("OK" if witnessT == None else "ERROR")
+    f.write("\n")
+    f.flush()
     
 def sanityTests():
     print(" > SUBUNIT TEST: testing determinization() with sanity tests ...")
-    f = open("sanityTestsReport.txt", "a")
-    f.write("\n ---- SANITY TESTS START --- \n")
+    fileArray = []
+    f = open("../progress.txt", "w")
+    f.write("---- SANITY TESTS START ----\n")
     for subdir, dirs, files in os.walk("../nta/"):
         for file in files:
             filepath = subdir + os.sep + file
             if not filepath.endswith(".vtf"):
                 continue
-            print(f"    > 1 importing {file} ...")
-            testBox = importTAfromVTF(filepath, 'f')
-            if testBox.name != "A0054":
-                continue
-            print(f"    > 2 testing {testBox.name} ...")
-            sanityUnitTest(testBox, f)
-    f.write("\n ---- SANITY TESTS END --- \n")
+            fileArray.append(filepath)
+    fileArray.sort()
+    for i in fileArray:
+        testBox = importTAfromVTF(i)
+        sanityUnitTest(testBox, f)
+        fileArray.remove(i)
+        gc.collect()
+    f.write("\n---- SANITY TESTS END ----\n")
+    f.close()
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -899,14 +921,11 @@ def comparabilityTests():
     
     printFailedTests(failures)
 
-def sanityTest():
-    pass
-
 def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
     
     verbose = True
-    test = importTAfromVTF("../nta/vtf/A0054.vtf")
+    test = importTAfromVTF("../nta/vtf/A0063.vtf")
     # for state, content in test.transitions.items():
     #     for i,j in content.items():
     #         print(f"{i} ------ {j}")

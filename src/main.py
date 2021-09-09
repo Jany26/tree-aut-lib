@@ -49,8 +49,8 @@ def main():
     # wellDefinedTests(verbose)
     # commutativityTests(verbose)
     # comparabilityTests()
-    # extraTests()
-    sanityTests()
+    extraTests()
+    # sanityTests()
     print(">> UNIT TESTS DONE!")
 
 

@@ -1,0 +1,11 @@
+@NTA
+# Automaton topDownDetBoxLPort
+%Root v0
+%States v0:0 v1:0 v2:0
+%Alphabet LH:2 Port_LPort0:0 Port_LPort1:0
+
+v0 LH ( v1 v2 )
+v1 LH ( v1 v1 )
+v2 LH ( v1 v2 )
+v1 Port_LPort0 ( )
+v2 Port_LPort1 ( )

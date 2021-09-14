@@ -921,18 +921,78 @@ def comparabilityTests():
     
     printFailedTests(failures)
 
+def productTests():
+    def productUnitTest(ta1, ta2, expect, failures):
+        result = treeAutProduct(ta1, ta2)
+        witnessT, witnessS = nonEmptyTD(result)
+        actual = (witnessT != None) # actual = can witness be produced?
+        if expect != actual:
+            failures.append("{:<50} {:<20} {:<15} {:<15}".format(
+                f"product({ta1.name},{ta2.name})", 
+                f"has witness?",
+                f"exp = {expect}",  
+                f"got = {actual}"
+            ))
+    
+    X = importTAfromVTF("tests/tddetX.vtf")
+    LPort = importTAfromVTF("tests/tddetLPort.vtf")
+    HPort = importTAfromVTF("tests/tddetHPort.vtf")
+    L0 = importTAfromVTF("tests/tddetL0.vtf")
+    L1 = importTAfromVTF("tests/tddetL1.vtf")
+    H0 = importTAfromVTF("tests/tddetH0.vtf")
+    H1 = importTAfromVTF("tests/tddetH1.vtf")
+
+    failures = []
+    
+    productUnitTest(X,     LPort, True,  failures)
+    productUnitTest(X,     HPort, True,  failures)
+    productUnitTest(X,     L0,    True,  failures)
+    productUnitTest(X,     L1,    True,  failures)
+    productUnitTest(X,     H0,    True,  failures)
+    productUnitTest(X,     H1,    True,  failures)
+    productUnitTest(LPort, X,     False, failures)
+    productUnitTest(HPort, X,     False, failures)
+    productUnitTest(L0,    X,     False, failures)
+    productUnitTest(L1,    X,     False, failures)
+    productUnitTest(H0,    X,     False, failures)
+    productUnitTest(H1,    X,     False, failures)
+
+    productUnitTest(LPort, L0,    True,  failures)
+    productUnitTest(LPort, L1,    True,  failures)
+    productUnitTest(HPort, H0,    True,  failures)
+    productUnitTest(HPort, H1,    True,  failures)
+    
+    productUnitTest(LPort, H0,    False, failures)
+    productUnitTest(LPort, H1,    False, failures)
+    productUnitTest(HPort, L0,    False, failures)
+    productUnitTest(HPort, L1,    False, failures)
+    productUnitTest(LPort, HPort, False, failures)    
+
+    productUnitTest(L0,    L1,    False, failures)
+    productUnitTest(L1,    L1,    True,  failures)
+    productUnitTest(H0,    L1,    False, failures)
+    productUnitTest(H1,    L1,    False, failures)
+    productUnitTest(L1,    L0,    False, failures)
+    productUnitTest(L1,    H0,    False, failures)
+    productUnitTest(L1,    H1,    False, failures)
+    printFailedTests(failures)
+
+
 def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
+
+    productTests()
     
-    verbose = True
-    test = importTAfromVTF("../nta/vtf/A0063.vtf")
-    # for state, content in test.transitions.items():
-    #     for i,j in content.items():
-    #         print(f"{i} ------ {j}")
-    complement = treeAutComplement(test, test.getSymbolArityDict(), verbose)
-    intersection = treeAutIntersection(test, complement, verbose)
-    witnessT, witnessS = nonEmptyTD(intersection, verbose)
-    # sanityUnitTest()
-    print("nonempty" if witnessT != None else "empty")
+    # for subdir, dirs, files in os.walk("./tests/"):
+    #     for file in files:
+    #         filePath = subdir + os.sep + file
+    #         if filePath.endswith(".vtf"):
+    #             # try:
+    #             # print(filePath)
+    #             box = importTAfromVTF(filePath)
+    #             print("{:<30} {:20} {}".format(f"{file}", "TD determinisim = ", f"{box.isTDdeterministic()}"))
+    #             # except:
+    #             #     print(f"error")
+
 
 # End of file all_tests.py

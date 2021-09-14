@@ -230,7 +230,17 @@ class TTreeAut:
                     portArray.append(data[1].label)
         return len(portArray)
     
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+    def isTDdeterministic(self) -> bool:
+        for edgeDict in self.transitions.values():
+            usedSymbols = []
+            for edge in edgeDict.values():
+                if edge[1].label not in usedSymbols:
+                    usedSymbols.append(edge[1].label)
+                else:
+                    return False
+        return True
+
+    # - - - - - - - - - - - - 1- - - - - - - - - - - - - - - - - - - - - - - - - 
     ### Modifying functions ### - - - - - - - - - - - - - - - - - - - - - - - -
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     

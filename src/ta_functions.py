@@ -263,11 +263,13 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict, verbose=False) -> TTreeAu
     workSet, doneSet = detOutEdges(ta.getOutputEdges(), doneEdges, alphabet)
     
     if verbose:
-        print("workset   = {workSet}")
-        print("doneset   = {doneSet}")
-        print("doneedges = {doneEdges}")
-        print("{:<120} {:<20} {:<60} {:<5} {:<5} {:<30}".format("children", "symbol", "current", "work", "done", "function"))
-        print("-" * 214)
+        # print("workset   = {workSet}")
+        # print("doneset   = {doneSet}")
+        # print("doneedges = {doneEdges}")
+        print("{:<60} {:<20} {:<60} {:<5} {:<5}".format(
+            "currentState", "symbol", "children", "work", "done"
+        ))
+        print("-" * 160)
         counter = 0
     while workSet != []:
         state = workSet[0]
@@ -285,8 +287,12 @@ def treeAutDeterminization(ta:TTreeAut, alphabet:dict, verbose=False) -> TTreeAu
                     continue
                 if verbose: 
                     counter += 1
-                    print("{:<120} {:<20} {:<60} {:<5} {:<5} {:<30}".format(
-                        f"{counter}) {tuple}"[:120], symbol[:20], str(state)[:60], len(workSet), len(doneSet), f"det({ta.name})"
+                    print("{:<60} {:<20} {:<60} {:<5} {:<5}".format(
+                        f"{counter}) {state}"[:60], 
+                        symbol[:20], 
+                        str(tuple)[:60], 
+                        len(workSet), 
+                        len(doneSet)
                     ))
                 parents = detChildHandle(tuple, lookup)
                 doneTuples[symbol][str(tuple)] = parents
@@ -331,23 +337,17 @@ def treeAutIntersection(ta1:TTreeAut, ta2:TTreeAut, verbose=False) -> TTreeAut:
     #  based on the two keys and two edges from input.
     #  If possible, adds a new transition into the result dictionary
     counter = 0
-    def handleIntersectionEdge(k1, e1, k2, e2, result:TTreeAut, state:str, counter):
+    def handleIntersectionEdge(k1, e1, k2, e2, result:TTreeAut, state:str):
         newKey = f"({k1},{k2})" # merge transition keys 
         newState = f"({e1[0]},{e2[0]})" # merge source state names
         # e.g. states 'q1' and 'q2' create '(q1, q2)'
         newEdge = copy.deepcopy(e1[1]) # new edge with same info
-        newChildStates = [] # merged children
-        for i in range(len(e1[2])):
-            newChildStates.append(f"({e1[2][i]},{e2[2][i]})")
-
+        newChildStates = [f"({e1[2][i]},{e2[2][i]})" for i in range(len(e1[2]))] # merged children
         if verbose:
-            print("{:<60} {:<40} {:<40}   |   {:<40}".format(
-                f"{counter}) handling state {state}"[:60],
+            print("{:<60} {:<40} {:<40}".format(
+                f"{counter}) {state}"[:60],
                 f"{k1}"[:40],
-                # f"{e1}"[:20],
-                f"{k2}"[:40],
-                # f"{e2}"[:20],
-                f"{result.name}"
+                f"{k2}"[:40]
             ))
 
         if state not in result.transitions:
@@ -383,7 +383,7 @@ def treeAutIntersection(ta1:TTreeAut, ta2:TTreeAut, verbose=False) -> TTreeAut:
                     if e1[1].label != e2[1].label: # symbol consistency
                         continue
                     counter += 1
-                    handleIntersectionEdge(k1, e1, k2, e2, result, newStateName, counter)
+                    handleIntersectionEdge(k1, e1, k2, e2, result, newStateName)
 
     result.portArity = result.getPortArity()
     result.name = f"intersection({ta1.name},{ta2.name})"
@@ -397,6 +397,75 @@ def treeAutComplement(ta:TTreeAut, alphabet:dict, verbose=False) -> TTreeAut:
     result.rootStates = roots
     result.name = f"complement({ta.name})"
     return result
+
+def treeAutProduct(ta1:TTreeAut, ta2:TTreeAut) -> TTreeAut:
+    
+    def makeNameFromList(stateList:list) -> str:
+        result = "("
+        for i in range(len(stateList)):
+            result += stateList[i]
+            if i < len(stateList)-1:
+                result += ","
+        result += ")"
+        return result
+    
+    def createRoots(ta1:TTreeAut, ta2:TTreeAut) -> list:
+        rootsMerge = []
+        rootsMerge.append(ta1.rootStates)
+        rootsMerge.append(ta2.rootStates)
+        roots = product(*rootsMerge)
+        return [list(i) for i in roots]
+
+
+    def productify(state1, state2, ta1, ta2, edgeDict, done):
+        if [state1, state2] in done:
+            return
+        done.append([state1, state2])
+        for edge1 in ta1.transitions[state1].values():
+            for edge2 in ta2.transitions[state2].values():
+                srcState = [edge1[0], edge2[0]]
+                symbol1 = edge1[1].label
+                symbol2 = edge2[1].label
+                if len(edge1[2]) == 0 and len(edge2[2]) == 0:
+                    # handle output symbols
+                    if symbol1 == symbol2 or symbol1.startswith("Port"):
+                        edgeDict.append([srcState, symbol1, []])
+
+                if symbol1 == symbol2 and len(edge1[2]) > 0:
+                    children = []
+                    for i in range(len(edge1[2])):
+                        children.append([edge1[2][i], edge2[2][i]])
+                    edgeDict.append([srcState, symbol1, children])
+                    for i in children:
+                        if [i[0], i[1]] not in done:
+                            productify(i[0], i[1], ta1, ta2, edgeDict, done)
+    
+    def createProductRelation(edgeList:list, alphabet:dict) -> dict:
+        edgeDict = {}
+        for edge in edgeList:
+            srcState = makeNameFromList(edge[0])
+            if srcState not in edgeDict:
+                edgeDict[srcState] = {}
+            edgeObj = TEdge(edge[1], [None] * alphabet[edge[1]], "")
+            children = [makeNameFromList(edge[2][i]) for i in range(len(edge[2]))]
+            key = f"{srcState}-{edge[1]}-{children}"
+            edgeDict[srcState][key] = [srcState, edgeObj, children]
+        return edgeDict
+
+    alphabet = {**ta1.getSymbolArityDict(), **ta2.getSymbolArityDict()}
+    roots = createRoots(ta1, ta2)
+    edgeList = []
+    done = []
+    for root in roots:
+        productify(root[0], root[1], ta1, ta2, edgeList, done)
+        
+    newRoots = [makeNameFromList(i) for i in roots]
+    edgeDict = createProductRelation(edgeList, alphabet)
+    result = TTreeAut(newRoots, edgeDict, f"product({ta1.name},{ta2.name})", 0)
+    result.portArity = result.getPortArity()
+
+    return result
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -441,21 +510,20 @@ def nonEmptyTD(ta:TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
             or len(ta.transitions[state]) == 0 # skipping if state has an empty entry
         ):
             # if debug: print("    > FALSE ... self-loop or invalid state")
-            if debug: print("{:<80} {:<10} {:<50} {:<20}".format(
-                f"checking {state}", 
-                f"-> SKIP", 
-                f"loop-break or missing data", 
-                f"neTD({ta.name})"
+            if debug: print("{:<40} {:<5} {:<30}".format(
+                f"{state}"[:40], 
+                f"SKIP", 
+                f"" 
             ))
             return False
         
         if debug: 
-            print("{:<60} {:<120} {:<12} {:<20}".format(
+            print("{:<60} {:<120} {:<12}".format(
                 f"state " + "-" * 54, f"callStack " + "-" * 108, f"done", f"function"
             ))
-            print("{:<60} {:<120} {:<12} {:<20}".format(
-                f"{state}"[:60], 
-                f"{callStack}"[:120], 
+            print("{:<60} {:<120} {:<12}".format(
+                f"{state}"[:60],
+                f"{callStack}"[:120],
                 f"{len(outDict)}/{total}", 
                 f"neTD({ta.name})"
             ))
@@ -470,20 +538,18 @@ def nonEmptyTD(ta:TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
                 if child in outDict:
                     if outDict[child]:
                         if debug: 
-                            print("{:<80} {:<10} {:<50} {:<20}".format(
-                                f"checking {state}", 
-                                f"-> TRUE", 
-                                f"direct | parent = {state}", 
-                                f"neTD({ta.name})"
+                            print("{:<40} {:<5} {:<50}".format(
+                                f"{state}"[:40], 
+                                f"TRUE", 
+                                f"direct | {state}"
                             ))
                         continue
                     else:
                         if debug: 
-                            print("{:<80} {:<10} {:<50} {:<20}".format(
-                                f"checking {state}", 
-                                f"-> FALSE", 
-                                f"direct | parent = {state}", 
-                                f"neTD({ta.name})"
+                            print("{:<40} {:<5} {:<50}".format(
+                                f"{state}"[:40], 
+                                f"FALSE", 
+                                f"direct | {state}"
                             ))
                         outputReachable = False
                         break
@@ -500,11 +566,10 @@ def nonEmptyTD(ta:TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
             if outputReachable:
                 if debug:
                     l = len(callStack)
-                    print("{:<80} {:<10} {:<50} {:<20}".format(
-                        f"checking {state}", 
-                        f"-> TRUE", 
-                        f"recursion | parent = {callStack[l-1]}" if l > 0 else "root",
-                        f"neTD({ta.name})"
+                    print("{:<40} {:<5} {:<30}".format(
+                        f"{state}"[:40], 
+                        f"TRUE", 
+                        f"recursion | {callStack[l-1]}" if l > 0 else "root"[:30]
                     ))
                 outDict[state] = True
                 edgeLookup[state] = edge
@@ -513,11 +578,10 @@ def nonEmptyTD(ta:TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
         
         if debug:
             l = len(callStack)
-            print("{:<80} {:<10} {:<50} {:<20}".format(
-                f"checking {state}", 
-                f"-> FALSE", 
-                f"recursion | parent = {callStack[l-1]}" if l > 0 else "root",
-                f"neTD({ta.name})"
+            print("{:<40} {:<5} {:<30}".format(
+                f"{state}"[:40], 
+                f"FALSE", 
+                f"recursion | {callStack[l-1]}" if l > 0 else "root"[:30]
             ))
         outDict[state] = False
         

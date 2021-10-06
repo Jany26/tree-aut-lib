@@ -104,14 +104,15 @@ class TEdge:
         self.boxArray = boxArray
 
     def __repr__(self):
-        tempString = "<<"
-        tempString += f"{self.label}, var='{self.variable}', {{"
-        for i in self.boxArray:
-            tempString += "S," if i == None else "box,"
-        if len(self.boxArray) > 0:
-            tempString = tempString[:-1]
-        tempString += "}>>"
-        return tempString
+        # tempString = "<<"
+        # tempString += f"{self.label}, var='{self.variable}', {{"
+        # for i in self.boxArray:
+        #     tempString += "S," if i == None else "box,"
+        # if len(self.boxArray) > 0:
+        #     tempString = tempString[:-1]
+        # tempString += "}>>"
+        # return tempString
+        return self.label
     # makes the hyper-edge 'short' (all parts of the edge)
     def shortenEdge(self):
         arity = len(self.boxArray)
@@ -192,14 +193,19 @@ class TTreeAut:
     # needed for feeding treeAutDeterminize() function
     # generates a dictionary of all output edge symbols which correspond to a list of states,
     # from which the transitions with the specific symbol originate
-    def getOutputEdges(self) -> dict:
+    def getOutputEdges(self, inverse=False) -> dict:
         result = {}
         for transition in self.transitions.values():
             for data in transition.values():
                 if len(data[2]) == 0:
-                    if data[1].label not in result:
-                        result[data[1].label] = []
-                    result[data[1].label].append(data[0])
+                    if inverse:
+                        if data[0] not in result:
+                            result[data[0]] = []
+                        result[data[0]].append(data[1].label)
+                    else:
+                        if data[1].label not in result:
+                            result[data[1].label] = []
+                        result[data[1].label].append(data[0])
         for item in result.values():
             item.sort()
         return result
@@ -240,7 +246,7 @@ class TTreeAut:
                     return False
         return True
 
-    # - - - - - - - - - - - - 1- - - - - - - - - - - - - - - - - - - - - - - - - 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     ### Modifying functions ### - - - - - - - - - - - - - - - - - - - - - - - -
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     

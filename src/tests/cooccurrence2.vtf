@@ -1,0 +1,10 @@
+@NTA
+# Automaton cooccurrence2
+%Root q0
+%States q0:0 q1:0 q2:0
+%Alphabet LH:2 0:0 1:0
+
+q0 LH ( q1 q1 )
+q0 LH ( q2 q2 )
+q1 0 ( )
+q2 1 ( )

@@ -12,6 +12,8 @@ from format_dot import *
 import os
 import gc
 
+from coocurrence import *
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS FOR TEST SUITES
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -966,7 +968,7 @@ def productTests():
     productUnitTest(LPort, H1,    False, failures)
     productUnitTest(HPort, L0,    False, failures)
     productUnitTest(HPort, L1,    False, failures)
-    productUnitTest(LPort, HPort, False, failures)    
+    productUnitTest(LPort, HPort, False, failures)
 
     productUnitTest(L0,    L1,    False, failures)
     productUnitTest(L1,    L1,    True,  failures)
@@ -982,6 +984,14 @@ def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
 
     productTests()
+
+    # coocurrenceTests
+
+    ta1 = importTAfromVTF("tests/cooccurrence1.vtf")
+    ta2 = importTAfromVTF("tests/cooccurrence2.vtf")
+
+    r1 = getCoOccurrentStatesTD(ta2)
+    # r2 = getCoOccurrentStatesTD(ta2)
     
     # for subdir, dirs, files in os.walk("./tests/"):
     #     for file in files:
@@ -994,5 +1004,6 @@ def extraTests():
     #             # except:
     #             #     print(f"error")
 
+    # print(ta1.getOutputEdges(inverse=True))
 
 # End of file all_tests.py

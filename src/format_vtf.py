@@ -143,7 +143,9 @@ def importTAfromVTF(source, sourceType='f') -> TTreeAut:
     
     if sourceType == 'f':
         file.close()
-    return TTreeAut(rootStates, transitions, str(autName))
+    result = TTreeAut(rootStates, transitions, str(autName))
+    result.portArity = result.getPortArity()
+    return result
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # EXPORT TO VTF - HELPER FUNCTIONS (FILE)

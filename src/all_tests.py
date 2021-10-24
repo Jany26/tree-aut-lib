@@ -980,17 +980,92 @@ def productTests():
     printFailedTests(failures)
 
 
+def extensionTests():
+
+    def extensionUnitTest(ta1, ta2, expect, failures):
+        actual = isExtension(ta1, ta2)
+        if expect != actual:
+            failures.append("{:<50} {:<20} {:<15} {:<15}".format(
+                f"extension({ta1.name},{ta2.name})", 
+                f"has witness?",
+                f"exp = {expect}",  
+                f"got = {actual}"
+            ))
+
+    X = importTAfromVTF("tests/tddetX.vtf")
+    LPort = importTAfromVTF("tests/tddetLPort.vtf")
+    HPort = importTAfromVTF("tests/tddetHPort.vtf")
+    L0 = importTAfromVTF("tests/tddetL0.vtf")
+    L1 = importTAfromVTF("tests/tddetL1.vtf")
+    H0 = importTAfromVTF("tests/tddetH0.vtf")
+    H1 = importTAfromVTF("tests/tddetH1.vtf")
+
+    failures = []
+    
+    extensionUnitTest(X,     LPort, False,  failures)
+    extensionUnitTest(X,     HPort, False,  failures)
+    extensionUnitTest(X,     L0,    True,  failures)
+    extensionUnitTest(X,     L1,    True,  failures)
+    extensionUnitTest(X,     H0,    True,  failures)
+    extensionUnitTest(X,     H1,    True,  failures)
+    extensionUnitTest(LPort, X,     True, failures)
+    extensionUnitTest(HPort, X,     True, failures)
+    extensionUnitTest(L0,    X,     False, failures)
+    extensionUnitTest(L1,    X,     False, failures)
+    extensionUnitTest(H0,    X,     False, failures)
+    extensionUnitTest(H1,    X,     False, failures)
+
+    extensionUnitTest(LPort, L0,    True,  failures)
+    extensionUnitTest(LPort, L1,    True,  failures)
+    extensionUnitTest(HPort, H0,    True,  failures)
+    extensionUnitTest(HPort, H1,    True,  failures)
+    
+    extensionUnitTest(LPort, H0,    False, failures)
+    extensionUnitTest(LPort, H1,    False, failures)
+    extensionUnitTest(HPort, L0,    False, failures)
+    extensionUnitTest(HPort, L1,    False, failures)
+    extensionUnitTest(LPort, HPort, False, failures)
+
+    extensionUnitTest(L0,    L1,    False, failures)
+    extensionUnitTest(L1,    L1,    True,  failures)
+    extensionUnitTest(H0,    L1,    False, failures)
+    extensionUnitTest(H1,    L1,    False, failures)
+    extensionUnitTest(L1,    L0,    False, failures)
+    extensionUnitTest(L1,    H0,    False, failures)
+    extensionUnitTest(L1,    H1,    False, failures)
+    printFailedTests(failures)
+
+
 def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
 
     productTests()
+    extensionTests()
 
     # coocurrenceTests
 
     ta1 = importTAfromVTF("tests/cooccurrence1.vtf")
     ta2 = importTAfromVTF("tests/cooccurrence2.vtf")
+    ta3 = importTAfromVTF("tests/cooccurrence3.vtf")
 
-    r1 = getCoOccurrentStatesTD(ta2)
+    H0 = importTAfromVTF("tests/tddetH0.vtf")
+    LPort = importTAfromVTF("tests/tddetLPort.vtf")
+    L0 = importTAfromVTF("tests/tddetL0.vtf")
+
+
+    boxX = boxesDict["boxX"]
+    boxH0 = boxesDict["boxH0"]
+    # r1 = getCoOccurrentStatesTD(ta3)
+    isExtension(boxX, boxH0)
+    
+    product = treeAutProduct(LPort, L0)
+    product.printTreeAut()
+    cooccurr = getCoOccurrentStatesTD(product)
+    for i in cooccurr:
+        print(i)
+
+    extension = isExtension(LPort, L0)
+    print(extension)
     # r2 = getCoOccurrentStatesTD(ta2)
     
     # for subdir, dirs, files in os.walk("./tests/"):

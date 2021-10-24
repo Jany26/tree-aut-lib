@@ -370,6 +370,12 @@ def treeAutIntersection(ta1:TTreeAut, ta2:TTreeAut, verbose=False) -> TTreeAut:
     # else:
     #     newTransition.append(transition1[1])
 
+
+    if ta2 == None:
+        return ta1
+    if ta1 == None:
+        return ta2
+
     result = TTreeAut([], {}, f"int({ta1.name},{ta2.name})")
     for stateName1, edgeDict1 in ta1.transitions.items():
         for stateName2, edgeDict2 in ta2.transitions.items():

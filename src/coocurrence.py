@@ -3,8 +3,8 @@ from ta_classes import *
 from ta_functions import *
 
 from itertools import product
-from typing import Tuple
-import copy
+# from typing import Tuple
+# import copy
 
 def getCoOccurrentStatesTD(ta:TTreeAut) -> list:
     
@@ -37,12 +37,57 @@ def getCoOccurrentStatesTD(ta:TTreeAut) -> list:
     
     # -------------------------------------
 
-    result = []
+    temp = []
     for i in ta.rootStates:
-        result.append(process(i, ta, []))
+        temp.extend(process(i, ta, []))
+    return temp
 
-    print("RESULT ----")
-    for j in result:
-        for k in j:
-            print(k)
-    return result
+
+def isExtension(ta1:TTreeAut, ta2:TTreeAut) -> bool:
+    product = treeAutProduct(ta1, ta2)
+    product = removeUselessStates(product)
+    setList = getCoOccurrentStatesTD(product)
+
+    outEdges = product.getOutputEdges(inverse=True)
+    # print(outEdges)
+    fullList = []
+    for stateSet in setList:
+        tupleList = []
+        for state in stateSet:
+            symbols = outEdges[state] if state in outEdges else []
+            # print(symbols)
+            tupleList.append((state, symbols))
+            # print(tupleList)
+        fullList.append(tupleList)
+
+    checkList = []
+    for tupleList in fullList:
+        check = {}
+        for item in tupleList:
+            for symbol in item[1]:
+                if symbol.startswith("Port"):
+                    if symbol not in check:
+                        check[symbol] = []
+                    check[symbol].append(item[0])
+        checkList.append(check)
+    # print(checkList)
+    
+    # print(checkList)
+    for listSet in checkList:
+        # print(">  ", listSet)
+        for stateList in listSet.values():
+            # print(">>>  ", stateList)
+            intersection = None
+            for state in stateList:
+                product.rootStates = [state]
+                intersection = treeAutIntersection(product, intersection)
+            witnessTree, witnessStr = nonEmptyTD(intersection)
+            # intersection.printTreeAut()
+            if witnessTree != None:
+                # witnessTree.printNode()
+                # print("False")
+                return True
+    # print("True")1
+    return False
+
+# End of cooccurrence.py

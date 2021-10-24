@@ -5,12 +5,11 @@
 %Alphabet LH:2 0:0 1:0 Port_0:0 Port_1:0
 
 q0 LH ( q1 q2 )
+q0 LH ( q4 q2 )
 q0 LH ( q3 q4 )
 q1 LH ( q1 q3 )
 q1 Port_0 ( )
-# q2 1 ( )
-q2 LH ( q5 q5 )
+q2 0 ( )
 q3 LH ( q3 q3 )
 q3 0 ( )
 q4 Port_1 ( )
-q5 0 ( )

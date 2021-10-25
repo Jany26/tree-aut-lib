@@ -1002,14 +1002,14 @@ def extensionTests():
 
     failures = []
     
-    extensionUnitTest(X,     LPort, False,  failures)
-    extensionUnitTest(X,     HPort, False,  failures)
+    extensionUnitTest(X,     LPort, True,  failures)
+    extensionUnitTest(X,     HPort, True,  failures)
     extensionUnitTest(X,     L0,    True,  failures)
     extensionUnitTest(X,     L1,    True,  failures)
     extensionUnitTest(X,     H0,    True,  failures)
     extensionUnitTest(X,     H1,    True,  failures)
-    extensionUnitTest(LPort, X,     True, failures)
-    extensionUnitTest(HPort, X,     True, failures)
+    extensionUnitTest(LPort, X,     False, failures)
+    extensionUnitTest(HPort, X,     False, failures)
     extensionUnitTest(L0,    X,     False, failures)
     extensionUnitTest(L1,    X,     False, failures)
     extensionUnitTest(H0,    X,     False, failures)
@@ -1039,9 +1039,6 @@ def extensionTests():
 def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
 
-    productTests()
-    extensionTests()
-
     # coocurrenceTests
 
     ta1 = importTAfromVTF("tests/cooccurrence1.vtf")
@@ -1051,21 +1048,22 @@ def extraTests():
     H0 = importTAfromVTF("tests/tddetH0.vtf")
     LPort = importTAfromVTF("tests/tddetLPort.vtf")
     L0 = importTAfromVTF("tests/tddetL0.vtf")
+    X = importTAfromVTF("tests/tddetX.vtf")
 
-
-    boxX = boxesDict["boxX"]
-    boxH0 = boxesDict["boxH0"]
+    # boxX = boxesDict["boxX"]
+    # boxH0 = boxesDict["boxH0"]
     # r1 = getCoOccurrentStatesTD(ta3)
-    isExtension(boxX, boxH0)
+    # isExtension(boxLPort, boxH0)
     
-    product = treeAutProduct(LPort, L0)
-    product.printTreeAut()
-    cooccurr = getCoOccurrentStatesTD(product)
-    for i in cooccurr:
-        print(i)
+    # product = treeAutProduct(LPort, H0)
+    # product.printTreeAut()
+    # cooccurr = getCoOccurrentStatesTD(product)
+    # produceOutputTuples(LPort, H0)
+    # for i in cooccurr:
+    #     print(i)
 
-    extension = isExtension(LPort, L0)
-    print(extension)
+    extension = isExtension(X, H0)
+    # print(extension)
     # r2 = getCoOccurrentStatesTD(ta2)
     
     # for subdir, dirs, files in os.walk("./tests/"):

@@ -13,6 +13,7 @@ import os
 import gc
 
 from coocurrence import *
+from unfolding import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS FOR TEST SUITES
@@ -1001,7 +1002,7 @@ def extensionTests():
     H1 = importTAfromVTF("tests/tddetH1.vtf")
 
     failures = []
-    
+    # extension je specializovanejsi // mal by byt
     extensionUnitTest(X,     LPort, True,  failures)
     extensionUnitTest(X,     HPort, True,  failures)
     extensionUnitTest(X,     L0,    True,  failures)
@@ -1039,44 +1040,8 @@ def extensionTests():
 def extraTests():
     print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
 
-    # coocurrenceTests
-
-    ta1 = importTAfromVTF("tests/cooccurrence1.vtf")
-    ta2 = importTAfromVTF("tests/cooccurrence2.vtf")
-    ta3 = importTAfromVTF("tests/cooccurrence3.vtf")
-
-    H0 = importTAfromVTF("tests/tddetH0.vtf")
-    LPort = importTAfromVTF("tests/tddetLPort.vtf")
-    L0 = importTAfromVTF("tests/tddetL0.vtf")
-    X = importTAfromVTF("tests/tddetX.vtf")
-
-    # boxX = boxesDict["boxX"]
-    # boxH0 = boxesDict["boxH0"]
-    # r1 = getCoOccurrentStatesTD(ta3)
-    # isExtension(boxLPort, boxH0)
-    
-    # product = treeAutProduct(LPort, H0)
-    # product.printTreeAut()
-    # cooccurr = getCoOccurrentStatesTD(product)
-    # produceOutputTuples(LPort, H0)
-    # for i in cooccurr:
-    #     print(i)
-
-    extension = isExtension(X, H0)
-    # print(extension)
-    # r2 = getCoOccurrentStatesTD(ta2)
-    
-    # for subdir, dirs, files in os.walk("./tests/"):
-    #     for file in files:
-    #         filePath = subdir + os.sep + file
-    #         if filePath.endswith(".vtf"):
-    #             # try:
-    #             # print(filePath)
-    #             box = importTAfromVTF(filePath)
-    #             print("{:<30} {:20} {}".format(f"{file}", "TD determinisim = ", f"{box.isTDdeterministic()}"))
-    #             # except:
-    #             #     print(f"error")
-
-    # print(ta1.getOutputEdges(inverse=True))
+    ta = importTAfromVTF("tests/unfoldingTest2.vtf", taType='abdd')
+    ta.printTreeAut()
+    unfold(ta)
 
 # End of file all_tests.py

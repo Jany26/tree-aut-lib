@@ -12,6 +12,7 @@ from format_dot import *
 from format_tmb import *
 from format_vtf import *
 from test_trees import *
+from test_data import boxCatalogue
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # IMPORT/EXPORT INTEGRATION WITH JUPYTER
@@ -75,6 +76,106 @@ def DOTtransitionHandle(graph, edge):
         return
     
     # case 2 : regular edge (connector node needed)
+    for current_child in edge[2]:
+        name += str(current_child)
+    
+    # NODE: middle/connector node
+    graph.node(name, 
+        label   = '',
+        shape   = 'point', 
+        width   = '0.05', 
+        height  = '0.05'
+    )
+
+    # EDGE: srcState -> connector node
+    connectorLabel = ""
+    if edge[1].variable != "":
+        connectorLabel += f"[{edge[1].variable}] "
+    connectorLabel += f"{edge[1].label}"
+
+    graph.edge(edge[0], name, 
+        label       = connectorLabel,
+        splines     = 'true', 
+        overlap     = 'false', 
+        penwidth    = '1.0', 
+        arrowhead   = 'empty'
+    )
+
+    # EDGE: connector node -> children
+    current_child = 0
+    current_box = 0
+    while current_child < len(edge[2]):
+        edgeLabel = f"{current_box}"
+        hasBox = False;
+        if edge[1].boxArray != [] and edge[1].boxArray[current_box] is not None:
+            hasBox = True;
+            edgeLabel += f": {edge[1].boxArray[current_box]}"
+
+        # box handling (mapping more child states to one edge (portArity can be > 1))
+        if hasBox:
+            boxName = edge[1].boxArray[current_box]
+            arity = boxCatalogue[boxName].portArity
+            if arity > 1:
+                temp = f"{name}_{current_child}_{current_box}"
+                graph.node(temp, 
+                    label   = '',
+                    shape   = 'point', 
+                    width   = '0.05', 
+                    height  = '0.05'
+                )
+                graph.edge(name, temp, 
+                    label       = edgeLabel,
+                    penwidth    = '1.0', 
+                    arrowsize   = '0.5', 
+                    arrowhead   = 'vee' 
+                )
+                for j in range(arity):
+                    graph.edge(temp, edge[2][current_child], 
+                        label       = f"⊕{j}",
+                        penwidth    = '1.0', 
+                        arrowsize   = '0.5', 
+                        arrowhead   = 'vee' 
+                    ) 
+                    current_child += 1
+            else:
+                graph.edge(name, edge[2][current_child], 
+                    label       = edgeLabel,
+                    penwidth    = '1.0', 
+                    arrowsize   = '0.5', 
+                    arrowhead   = 'vee' 
+                )
+                current_child += 1
+            current_box += 1
+
+        else:
+            graph.edge(name, edge[2][current_child], 
+                label       = f"{current_child}",
+                penwidth    = '1.0', 
+                arrowsize   = '0.5', 
+                arrowhead   = 'vee' 
+            )
+            current_child += 1
+
+def wipDOTtransitionHandle(graph, edge):
+    name = f"{edge[0]}-{edge[1].label}->"
+    
+    # case 1 : output edge
+    if len(edge[2]) == 0:
+        # NODE: arbitrary output point
+        graph.node(name, 
+            shape='point', 
+            width='0.001', 
+            height='0.001'
+        )
+        # EDGE: outputState -> arbitrary output point
+        graph.edge(edge[0], name,
+            penwidth    = '2.0', 
+            arrowsize   = '0.5', 
+            label       = f"<<B>[{edge[1].label}]</B>>"
+        )
+        return
+    
+    # case 2 : regular edge (connector node needed)
     for i in edge[2]:
         name += str(i)
     
@@ -87,8 +188,12 @@ def DOTtransitionHandle(graph, edge):
     )
 
     # EDGE: srcState -> connector node
+    connectorLabel = ""
+    if edge[1].variable != "":
+        connectorLabel += f"<{edge[1].variable}>, "
+    connectorLabel += f"{edge[1].label}"
     graph.edge(edge[0], name, 
-        label       = f"{edge[1].label}",
+        label       = connectorLabel,
         splines     = 'true', 
         overlap     = 'false', 
         penwidth    = '1.0', 
@@ -97,8 +202,13 @@ def DOTtransitionHandle(graph, edge):
 
     # EDGE: connector node -> children
     for i in range(len(edge[2])):
+        edgeLabel = f"{i}"
+        hasBox = False;
+        if edge[1].boxArray != [] and edge[1].boxArray[i] is not None:
+            hasBox = True;
+            edgeLabel += f":{edge[1].boxArray[i]}"
         graph.edge(name, edge[2][i], 
-            label       = f"{i}",
+            label       = edgeLabel,
             penwidth    = '1.0', 
             arrowsize   = '0.5', 
             arrowhead   = 'vee' 

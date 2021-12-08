@@ -1,0 +1,9 @@
+@NTA
+# Automaton unfoldingTest1
+%Root q0
+# %States q0:0 q1:0 q2:0
+# %Alphabet LH:2 Port_H0:0 0:0
+
+q0 LH ( q1 q2 q2 ) [ LPort _ ]
+q1 0 ( )
+q2 1 ( )

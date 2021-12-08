@@ -32,20 +32,32 @@ def loadArityFromVTF(line:str) -> dict:
         result[symbol] = arity
     return result
 
-def loadTransitionFromVTF(line:str) -> list:
+def loadTransitionFromVTF(line:str, taType='ta') -> list:
     line = line.strip()
     if line == "":
         return []
     words = line.split()
-    state = words[0]
-    symbol = words[1]
+    state = words.pop(0)
+    symbol = words.pop(0)
+    
     children = []
-    for i in words[2:]:
-        if i == "(" or i == ")":
-            continue
-        else:
-            children.append(str(i))
-    return [state, TEdge(symbol, [None] * len(children), ""), children]
+    for i in words[0:]:
+        temp = words.pop(0)
+        if i == "(": continue
+        if i == ")": break
+        children.append(str(temp))
+    
+    boxes = []
+    if words != [] and words[0] == "[":
+        for i in words[0:]:
+            temp = words.pop(0)
+            if i == "[": continue
+            if i == "]": break
+            boxes.append(str(temp)) if i != "_" else boxes.append(None)
+
+    var = str(words.pop()) if words != [] else ""
+    # print([state, TEdge(symbol, boxes, var), children])
+    return [state, TEdge(symbol, boxes, var), children]
 
 def consistencyCheck(data:list, allStates:list, arityDict:dict):
     if data[0] not in allStates:
@@ -87,7 +99,7 @@ def generateKeyFromEdge(edge:list) -> str:
 # VTF IMPORT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def importTAfromVTF(source, sourceType='f') -> TTreeAut:
+def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
     if sourceType == 'f':
         file = open(source, "r")
         autName = source.split(os.sep)[len(source.split(os.sep)) - 1][:-4]
@@ -127,7 +139,7 @@ def importTAfromVTF(source, sourceType='f') -> TTreeAut:
             else:
                 raise Exception(f"importTAfromVTF(): unexpected preamble '{line}'")
         else:
-            edge = loadTransitionFromVTF(line)
+            edge = loadTransitionFromVTF(line, taType)
             if edge == []:
                 continue
             # checking state and arity consistency - comparing with data from "preamble"

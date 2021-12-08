@@ -98,35 +98,48 @@ class TTreeNode:
 #
 #   * note: length of the boxArray = arity of the edge
 class TEdge:
-    def __init__(self, label:str, boxArray:list, variable:str, ):
+    def __init__(self, label:str, boxArray:list, variable:str):
         self.label = label
         self.variable = variable
         self.boxArray = boxArray
 
     def __repr__(self):
-        # tempString = "<<"
-        # tempString += f"{self.label}, var='{self.variable}', {{"
+        result = f"{self.label}"
+        if self.variable != "":
+            result += f" <{self.variable}>"
+        if self.boxArray != []:
+            result += f" {self.boxArray}"
+        return result
+        # tempString = f"{self.label} {{var='{self.variable}'}} , {{"
         # for i in self.boxArray:
-        #     tempString += "S," if i == None else "box,"
+        #     tempString += "_," if i == None else str(i + ",")
+        #     tempString += " "
         # if len(self.boxArray) > 0:
-        #     tempString = tempString[:-1]
-        # tempString += "}>>"
+        #     tempString = tempString[:-2]
+        # tempString += "} >"
         # return tempString
-        return self.label
+        # # return self.label
     # makes the hyper-edge 'short' (all parts of the edge)
     def shortenEdge(self):
         arity = len(self.boxArray)
         self.boxArray = [None] * arity
 
-    # def edgeDesc(self) -> str:
-    #     tempString = "<<"
-    #     tempString += f"{self.label}, var='{self.variable}', {{"
-    #     for i in self.boxArray:
-    #         tempString += "S," if i == None else "box,"
-    #     if len(self.boxArray) > 0:
-    #         tempString = tempString[:-1]
-    #     tempString += "}>>"
-    #     return tempString
+
+
+class TTransition:
+    def __init__(self, srcState:str, edge:TEdge, children:list):
+        self.srcState = srcState
+        self.edge = edge
+        self.children = children
+    def __repr__(self):
+        return f"  > {self.srcState} -- {self.edge} --> {self.children}"
+
+class TState:
+    def __init__(self, stateName:str, transDict:dict):
+        self.stateName = stateName
+        self.transitions = transDict
+    def __repr__(self):
+        return self.stateName
 
 
 
@@ -151,6 +164,15 @@ class TTreeAut:
         self.transitions = transitions
         self.name = name
         self.portArity = self.getPortArity() if portArity == 0 else portArity
+
+    def __repr__(self):
+        result = f"  == Name = '{self.name}' (port arity = {self.portArity})\n"
+        result += f"  == Root States = {self.rootStates}\n"
+        for content in self.transitions.values():
+            # result += "  >"
+            for edge in content.values():
+                result += f"  > {edge[0]} -- {edge[1]} --> {edge[2]}\n"
+        return result
 
     def printTreeAut(self):
         print(f"Printing automaton '{self.name}' (port arity = {self.portArity})")

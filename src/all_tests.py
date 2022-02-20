@@ -1048,8 +1048,8 @@ def extraTests():
     # convertToDOT(ta, type='a', verbose=False)
 
     ta = importTAfromVTF("tests/unfoldingTest1.vtf", 'f')
-    ta1 = unfold(ta)
-    exportTreeAutToDOT(ta1, "vtf-to-dot/unfoldingTest1.dot")
+    # ta = unfold(ta)
+    exportTreeAutToDOT(ta, "vtf-to-dot/unfoldingTest1.dot")
 
 
 # End of file all_tests.py

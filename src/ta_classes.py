@@ -100,8 +100,8 @@ class TTreeNode:
 class TEdge:
     def __init__(self, label:str, boxArray:list, variable:str):
         self.label = label
-        self.variable = variable
         self.boxArray = boxArray
+        self.variable = variable
 
     def __repr__(self):
         result = f"{self.label}"
@@ -172,7 +172,7 @@ class TTreeAut:
             # result += "  >"
             for edge in content.values():
                 result += f"  > {edge[0]} -- {edge[1]} --> {edge[2]}\n"
-        return result
+        return result[:-1] # trim the last '\n'
 
     def printTreeAut(self):
         print(f"Printing automaton '{self.name}' (port arity = {self.portArity})")

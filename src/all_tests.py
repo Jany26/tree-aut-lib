@@ -5,6 +5,7 @@
 
 # from _typeshed import FileDescriptor
 from io import TextIOWrapper
+from jupyter import convertToDOT
 from test_data import *
 from format_vtf import *
 from format_tmb import *
@@ -1038,10 +1039,17 @@ def extensionTests():
 
 
 def extraTests():
-    print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
+    # print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
 
-    ta = importTAfromVTF("tests/unfoldingTest2.vtf", taType='abdd')
-    ta.printTreeAut()
-    unfold(ta)
+    # ta = importTAfromVTF("tests/unfoldingTest2.vtf", taType='abdd')
+
+    # # print(ta)
+    # ta = unfold(ta)
+    # convertToDOT(ta, type='a', verbose=False)
+
+    ta = importTAfromVTF("tests/unfoldingTest1.vtf", 'f')
+    ta1 = unfold(ta)
+    exportTreeAutToDOT(ta1, "vtf-to-dot/unfoldingTest1.dot")
+
 
 # End of file all_tests.py

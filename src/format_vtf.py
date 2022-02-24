@@ -6,7 +6,7 @@
 # import sys
 # import os
 from ta_functions import *
-import os
+import re, os
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS
@@ -32,6 +32,55 @@ def loadArityFromVTF(line:str) -> dict:
         result[symbol] = arity
     return result
 
+# def loadTransitionFromVTF(line:str, taType='ta') -> list:
+#     line = line.strip()
+#     if line == "":
+#         return []
+#     words = line.split()
+#     state = words.pop(0)
+#     symbol = words.pop(0)
+    
+#     children = []
+#     for i in words[0:]:
+#         temp = words.pop(0)
+#         if i == "(": continue
+#         if i == ")": break
+#         children.append(str(temp))
+    
+#     boxes = []
+#     if words != [] and words[0] == "[":
+#         for i in words[0:]:
+#             temp = words.pop(0)
+#             if i == "[": continue
+#             if i == "]": break
+#             boxes.append(str(temp)) if i != "_" else boxes.append(None)
+
+#     var = str(words.pop()) if words != [] else ""
+#     # print([state, TEdge(symbol, boxes, var), children])
+#     return [state, TEdge(symbol, boxes, var), children]
+
+def processEdge(edgeInfo: list) -> Tuple[list, str]:
+    if len(edgeInfo) == 0:
+        return [], ""
+    
+    string = " ".join(edgeInfo)
+    string = string.lstrip("<").lstrip().rstrip(">").rstrip()
+    boxesMatch = re.search("\[.*\]", string)
+
+    boxes = []
+    varString = ""
+    
+    if boxesMatch:
+        matchString = boxesMatch.group(0)
+        boxArrayString = matchString.lstrip("[").rstrip("]")
+        varString = string.replace(matchString, "")
+        boxArray = boxArrayString.lstrip().rstrip().split()
+        
+        varString = varString.lstrip().rstrip()
+        boxes = [str(box) if box != "_" else None for box in boxArray]
+
+    return boxes, varString
+
 def loadTransitionFromVTF(line:str, taType='ta') -> list:
     line = line.strip()
     if line == "":
@@ -40,23 +89,19 @@ def loadTransitionFromVTF(line:str, taType='ta') -> list:
     state = words.pop(0)
     symbol = words.pop(0)
     
+    edgeInfo = []
+    for i in words[0:]:
+        if i.startswith("("): break
+        edgeInfo.append(i)
+        words.pop(0)
+    boxes, var = processEdge(edgeInfo)
+
     children = []
     for i in words[0:]:
         temp = words.pop(0)
         if i == "(": continue
         if i == ")": break
         children.append(str(temp))
-    
-    boxes = []
-    if words != [] and words[0] == "[":
-        for i in words[0:]:
-            temp = words.pop(0)
-            if i == "[": continue
-            if i == "]": break
-            boxes.append(str(temp)) if i != "_" else boxes.append(None)
-
-    var = str(words.pop()) if words != [] else ""
-    # print([state, TEdge(symbol, boxes, var), children])
     return [state, TEdge(symbol, boxes, var), children]
 
 def consistencyCheck(data:list, allStates:list, arityDict:dict):

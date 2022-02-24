@@ -4,9 +4,9 @@
 # %States q0:0 q1:0 q2:0 q3:0 q4:0
 # %Alphabet LH:2 Port_H0:0 0:0
 
-x1 LH ( x4 x7 ) [ H0 H0 ]
-x4 LH ( x6 x5 ) [ H0 X ]
-x7 LH ( x5 x8 ) [ X _ ]
-x8 LH ( x5 x6 ) [ X L0 ]
+x1 LH <[ H0 H0 ]> ( x4 x7 )
+x4 LH <[ H0 X ]>  ( x6 x5 )
+x7 LH <[ X _ ]>   ( x5 x8 )
+x8 LH <[ X L0 ]>  ( x5 x6 )
 x5 0 ( )
 x6 1 ( )

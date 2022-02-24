@@ -11,21 +11,28 @@ from test_data import boxCatalogue
 # DOT FORMAT IMPORT/EXPORT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
+helpPoint = "shape=point, width=0.001, height=0.001"
+smallPoint = "shape=point, width=0.05, height=0.05"
+connEdge = "splines=true, overlap=false, penwidth=1.0, arrowhead=empty"
+outEdge = "penwidth=2.0, arrowsize=0.5"
+innerEdge = "penwidth=1.0, arrowsize=0.5, arrowhead=vee"
+
 def rootHandle(rootList:list, file):
-    file.write("\tnode [ label=\"\", shape=point, width=0.001, height=0.001 ];\n")
+    file.write(f"\tnode [ label=\"\", {helpPoint} ];\n")
     for root in rootList:
         file.write(f"\t\"->{root}\"\n")
     file.write("\n\tnode [ shape=circle ];\n")
     for root in rootList:
-        file.write(f"\t\"->{root}\" -> \"{root}\" [ penwidth=2.0, arrowsize=0.5 ] ;\n")
+        file.write(f"\t\"->{root}\" -> \"{root}\" [ {outEdge} ] ;\n")
     file.write("\n")
 
 def outputEdgeHandle(edge:list, file):
     if len(edge[2]) == 0:
-        file.write(f"\tnode [ label=\"\", shape=point, width=0.001, height=0.001 ];\n")
+        file.write(f"\tnode [ label=\"\", {helpPoint} ];\n")
         endName = f"{edge[0]}-{edge[1].label}->"
         file.write(f"\t\"{endName}\"\n")
-        file.write(f"\t\"{edge[0]}\" -> \"{endName}\" [ penwidth=2.0, arrowsize=0.5, label = \"{edge[1].label}\" ] \n\n")
+        file.write(f"\t\"{edge[0]}\" -> \"{endName}\" [ {outEdge}, label = \"{edge[1].label}\" ] \n\n")
         return True
     return False
 
@@ -48,8 +55,8 @@ def edgeHandle(edge:list, file):
 
     # case 1 : output edge
     if len(edge[2]) == 0:
-        file.write(f"\t\"{tempName}\" [ shape=point, width=0.001, height=0.001 ];\n")
-        file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ label=<<B>[{edge[1].label}]</B>>, penwidth=2.0, arrowsize=0.5 ]\n")
+        file.write(f"\t\"{tempName}\" [ {helpPoint} ];\n")
+        file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ label=<<B>[{edge[1].label}]</B>>, {outEdge} ]\n")
         return
 
     # case 2 : regular edge (connector node needed)
@@ -58,7 +65,7 @@ def edgeHandle(edge:list, file):
     tempName = tempName[:-1]
 
     # connector node
-    file.write(f"\t\"{tempName}\" [ shape=point, width=0.05, height=0.05 ];\n")
+    file.write(f"\t\"{tempName}\" [ {smallPoint} ];\n")
     
     connectorLabel = "\""
     if edge[1].variable != "":
@@ -66,7 +73,7 @@ def edgeHandle(edge:list, file):
     connectorLabel += f"{edge[1].label}\""
     
     # edge: srcState -> connector node
-    file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ label={connectorLabel}, splines=true, overlap=false, penwidth=1.0, arrowhead=empty ]\n")
+    file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ label={connectorLabel}, {connEdge} ]\n")
     
     # edge: connector node -> children
     current_child = 0
@@ -86,24 +93,27 @@ def edgeHandle(edge:list, file):
             if arity > 1:
                 temp = f"{tempName}_{current_child}_{current_box}"
                 
-                file.write(f"\t\"{temp}\" [ shape=point, width=0.05, height=0.05 ];\n")
-                file.write(f"\t\"{tempName}\" -> \"{temp}\" [ label={edgeLabel}, penwidth=1.0, arrowsize=0.5, arrowhead=vee ]\n")
+                file.write(f"\t\"{temp}\" [ {smallPoint} ];\n")
+                file.write(f"\t\"{tempName}\" -> \"{temp}\" [ label={edgeLabel}, {innerEdge} ]\n")
+                
                 
                 for j in range(arity):
-                    file.write(f"\t\"{temp}\" -> \"{edge[2][current_child]}\" [ label=⊕{j}, penwidth=1.0, arrowsize=0.5, arrowhead=vee ]\n")
+                    file.write(f"\t\"{temp}\" -> \"{edge[2][current_child]}\" [ label=⊕{j}, {innerEdge} ]\n")
                     current_child += 1
             else:
-                file.write(f"\t\"{tempName}\" -> \"{edge[2][current_child]}\" [ label={edgeLabel}, penwidth=1.0, arrowsize=0.5, arrowhead=vee ]\n")
+                file.write(f"\t\"{tempName}\" -> \"{edge[2][current_child]}\" [ label={edgeLabel}, {innerEdge} ]\n")
                 current_child += 1
-            current_box += 1
-
         else:
-            file.write(f"\t\"{tempName}\" -> \"{edge[2][current_child]}\" [ label={current_child}, penwidth=1.0, arrowsize=0.5, arrowhead=vee ]\n")
+            print(current_box)
+            file.write(f"\t\"{tempName}\" -> \"{edge[2][current_child]}\" [ label={current_box}, {innerEdge} ]\n")
             current_child += 1
+        
+        current_box += 1
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def exportTreeAutToDOT(ta:TTreeAut, fileName:str):
+    print(ta)
     file = open(fileName, "w")
     file.write("digraph G {\n")
     allStatesHandle(ta.getStates(), file)

@@ -15,6 +15,7 @@ import gc
 
 from coocurrence import *
 from unfolding import *
+from normalization import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS FOR TEST SUITES
@@ -1039,17 +1040,10 @@ def extensionTests():
 
 
 def extraTests():
-    # print(" > SUBUNIT TEST: other additional ad-hoc tests ...")
-
-    # ta = importTAfromVTF("tests/unfoldingTest2.vtf", taType='abdd')
-
-    # # print(ta)
-    # ta = unfold(ta)
-    # convertToDOT(ta, type='a', verbose=False)
-
-    ta = importTAfromVTF("tests/unfoldingTest1.vtf", 'f')
-    # ta = unfold(ta)
-    exportTreeAutToDOT(ta, "vtf-to-dot/unfoldingTest1.dot")
+    ta = importTAfromVTF("tests/normalizationTest1.vtf", 'f')
+    # ta = importTAfromVTF("tests/unfoldingTest4.vtf", 'f')
+    # exportTreeAutToDOT(ta, "vtf-to-dot/unfoldingTest4.dot")    
+    print(ta)
 
 
 # End of file all_tests.py

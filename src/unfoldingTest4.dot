@@ -1,0 +1,35 @@
+digraph G {
+	node [ shape = circle ];
+	"q1"
+	"q2"
+	"q3"
+	"q4"
+	"q5"
+
+	node [ label="", shape=point, width=0.001, height=0.001 ];
+	"->q1"
+
+	node [ shape=circle ];
+	"->q1" -> "q1" [ penwidth=2.0, arrowsize=0.5 ] ;
+
+	"q1-LH->q3_q5" [ shape=point, width=0.05, height=0.05 ];
+	"q1" -> "q1-LH->q3_q5" [ label="LH", splines=true, overlap=false, penwidth=1.0, arrowhead=empty ]
+	"q1-LH->q3_q5" -> "q3" [ label="0: L0", penwidth=1.0, arrowsize=0.5, arrowhead=vee ]
+	"q1-LH->q3_q5" -> "q5" [ label="1: H0", penwidth=1.0, arrowsize=0.5, arrowhead=vee ]
+	"q1-LH->q2_q4" [ shape=point, width=0.05, height=0.05 ];
+	"q1" -> "q1-LH->q2_q4" [ label="LH", splines=true, overlap=false, penwidth=1.0, arrowhead=empty ]
+	"q1-LH->q2_q4" -> "q2" [ label=0, penwidth=1.0, arrowsize=0.5, arrowhead=vee ]
+	"q1-LH->q2_q4" -> "q4" [ label=1, penwidth=1.0, arrowsize=0.5, arrowhead=vee ]
+	"q2-LH->q4_q5" [ shape=point, width=0.05, height=0.05 ];
+	"q2" -> "q2-LH->q4_q5" [ label="LH", splines=true, overlap=false, penwidth=1.0, arrowhead=empty ]
+	"q2-LH->q4_q5" -> "q4" [ label="0: H0", penwidth=1.0, arrowsize=0.5, arrowhead=vee ]
+	"q2-LH->q4_q5" -> "q5" [ label="1: X", penwidth=1.0, arrowsize=0.5, arrowhead=vee ]
+	"q3-LH->q4_q5" [ shape=point, width=0.05, height=0.05 ];
+	"q3" -> "q3-LH->q4_q5" [ label="LH", splines=true, overlap=false, penwidth=1.0, arrowhead=empty ]
+	"q3-LH->q4_q5" -> "q4" [ label=0, penwidth=1.0, arrowsize=0.5, arrowhead=vee ]
+	"q3-LH->q4_q5" -> "q5" [ label=1, penwidth=1.0, arrowsize=0.5, arrowhead=vee ]
+	"q4-0->" [ shape=point, width=0.001, height=0.001 ];
+	"q4" -> "q4-0->" [ label=<<B>[0]</B>>, penwidth=2.0, arrowsize=0.5 ]
+	"q5-1->" [ shape=point, width=0.001, height=0.001 ];
+	"q5" -> "q5-1->" [ label=<<B>[1]</B>>, penwidth=2.0, arrowsize=0.5 ]
+}

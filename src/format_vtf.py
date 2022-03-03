@@ -78,6 +78,8 @@ def processEdge(edgeInfo: list) -> Tuple[list, str]:
         
         varString = varString.lstrip().rstrip()
         boxes = [str(box) if box != "_" else None for box in boxArray]
+    else:
+        varString = string
 
     return boxes, varString
 
@@ -96,12 +98,16 @@ def loadTransitionFromVTF(line:str, taType='ta') -> list:
         words.pop(0)
     boxes, var = processEdge(edgeInfo)
 
-    children = []
-    for i in words[0:]:
-        temp = words.pop(0)
-        if i == "(": continue
-        if i == ")": break
-        children.append(str(temp))
+    restOfString = " ".join(words[0:])
+    # print(restOfString)
+    restOfString = restOfString.rstrip().lstrip("(").rstrip(")")
+    children = restOfString.split()
+    # for i in words[0:]:
+    #     temp = words.pop(0)
+    #     if i == "(": continue
+    #     if i == ")": break
+    #     children.append(str(temp))
+
     return [state, TEdge(symbol, boxes, var), children]
 
 def consistencyCheck(data:list, allStates:list, arityDict:dict):
@@ -115,19 +121,33 @@ def consistencyCheck(data:list, allStates:list, arityDict:dict):
         if i not in allStates:
             raise Exception(f"consistencyCheck(): child state '{i}' not in preamble")
 
-def consistencyCheckTMB(edges, states, arities) -> bool:
+def consistencyCheckTMB(edges, states, arities, verbose=False) -> bool:
     # print(states)
     for stateName, edgeDict in edges.items():
+        
         if stateName not in states:
+            if verbose: print(f"{stateName} not in states = {states}")
             return False
+        
         for edgeData in edgeDict.values():
             if (edgeData[0] not in states
                 or edgeData[1].label not in arities
                 or len(edgeData[2]) != int(arities[edgeData[1].label])
             ):
+                if verbose: 
+                    if edgeData[0] not in states:
+                        print(f"edge[0] = {edgeData[0]} not in states = [{states}]")
+                    elif edgeData[1].label not in arities:
+                        print(f"edge[1].label = {edgeData[1].label} not in arities = [{arities}]")
+                    else:
+                        print(f"children = {edgeData[2]} inconsistent with arity of {edgeData[1].label} = {int(arities[edgeData[1].label])}")
+                    print(f"EDGE = {edgeData}")
                 return False
             for child in edgeData[2]:
                 if child not in states:
+                    if verbose: 
+                        print(f"child {child} not in states = {states}")
+                        print(f"EDGE = {edgeData}")
                     return False
     return True
 
@@ -195,7 +215,7 @@ def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
     if not rootsProcessed:
         raise Exception(f"importTAfromVTF(): List of root states missing")
     if arityProcessed and stateListProcessed:
-        if not consistencyCheckTMB(transitions, allStates, arityDict):
+        if not consistencyCheckTMB(transitions, allStates, arityDict, verbose=True):
             raise Exception(f"importTAfromVTF(): inconsistent data with the preamble")
     
     if sourceType == 'f':

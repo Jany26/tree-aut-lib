@@ -244,10 +244,13 @@ class TTreeAut:
     
     def getSymbolArityDict(self) -> dict:
         symbolDict = {}
-        for edge in self.transitions.values():
-            for data in edge.values():
-                if data[1].label not in symbolDict:
-                    symbolDict[data[1].label] = len(data[2])
+        for edges in self.transitions.values():
+            for edge in edges.values():
+                if edge[1].label not in symbolDict:
+                    if edge[1].boxArray == []:
+                        symbolDict[edge[1].label] = len(edge[2])
+                    else:
+                        symbolDict[edge[1].label] = len(edge[1].boxArray)
         return symbolDict
 
     def getPortArity(self) -> int:
@@ -267,6 +270,16 @@ class TTreeAut:
                 else:
                     return False
         return True
+    
+    def getVariableOrder(self) -> list:
+        vars = []
+        for edgeDict in self.transitions.values():
+            for edge in edgeDict.values():
+                if edge[1].variable != "":
+                    vars.append(edge[1].variable)
+        vars.sort()
+        return vars
+
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     ### Modifying functions ### - - - - - - - - - - - - - - - - - - - - - - - -

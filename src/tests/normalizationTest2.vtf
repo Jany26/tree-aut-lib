@@ -1,0 +1,17 @@
+@NTA
+# Automaton normalizationTest2
+%Root a
+%States a:0 b:0 c:0 d:0 e:0 f:0
+%Alphabet LH:2 0:0 1:0
+
+a LH <x1> ( b c )
+b LH <x3> ( b d )
+c LH ( d b )
+e LH ( f e )
+c LH ( e f )
+c LH <x5> ( e f )
+c LH <x4> ( d e )
+c LH <x4> ( c e )
+d 0 ( )
+e 1 ( )
+f 0 ( )

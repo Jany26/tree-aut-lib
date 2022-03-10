@@ -5,7 +5,7 @@
 %Alphabet LH:2 0:0 1:0
 
 a LH <x1> ( b c )
-b LH <x3> ( b d )
+b LH <x3> ( c d )
 c LH ( d b )
 e LH ( f e )
 c LH ( e f )

@@ -4,6 +4,7 @@ from test_data import *
 
 boxes = boxCatalogue
 
+
 def findPortStates(ta: TTreeAut):
     # {portName: stateName}
     result = {}
@@ -21,19 +22,19 @@ def unfoldEdge(result: TTreeAut, foldedEdge: TEdge, counter: int, subTable: dict
     newEdge = [foldedEdge[0], newEdgeInfo, []]
     edge = copy.deepcopy(foldedEdge)
     unfolded = 0
-    
+
     while edge[1].boxArray != []:
         srcState = edge[0]
         boxName = edge[1].boxArray[0]
         edge[1].boxArray.pop(0)
-        box = None 
-        
+        box = None
+
         if boxName == None:
             newEdge[2].append(edge[2][0])
             edge[2].pop(0)
             continue
         box = copy.deepcopy(boxes[boxName])
-   
+
         children = edge[2][:box.portArity]
         edge[2] = edge[2][box.portArity:]
 
@@ -52,13 +53,14 @@ def unfoldEdge(result: TTreeAut, foldedEdge: TEdge, counter: int, subTable: dict
 
         unfolded += 1
     return unfolded, newEdge
-    
+
+
 def unfold(ta:TTreeAut) -> TTreeAut:
     # print(ta)
     result = TTreeAut(
-        ta.rootStates, 
-        {s:{} for s in ta.rootStates}, 
-        ta.name + "_unfolded", 
+        ta.rootStates,
+        {s:{} for s in ta.rootStates},
+        ta.name + "_unfolded",
         ta.portArity
     )
 
@@ -88,6 +90,7 @@ def unfold(ta:TTreeAut) -> TTreeAut:
         result.transitions[placeState] = newDict
 
     return removeUselessStates(result)
+
 
 # possibly not needed
 def fixKeys(ta:TTreeAut):

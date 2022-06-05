@@ -39,14 +39,14 @@ def loadArityFromVTF(line:str) -> dict:
 #     words = line.split()
 #     state = words.pop(0)
 #     symbol = words.pop(0)
-    
+
 #     children = []
 #     for i in words[0:]:
 #         temp = words.pop(0)
 #         if i == "(": continue
 #         if i == ")": break
 #         children.append(str(temp))
-    
+
 #     boxes = []
 #     if words != [] and words[0] == "[":
 #         for i in words[0:]:
@@ -62,20 +62,20 @@ def loadArityFromVTF(line:str) -> dict:
 def processEdge(edgeInfo: list) -> Tuple[list, str]:
     if len(edgeInfo) == 0:
         return [], ""
-    
+
     string = " ".join(edgeInfo)
     string = string.lstrip("<").lstrip().rstrip(">").rstrip()
     boxesMatch = re.search("\[.*\]", string)
 
     boxes = []
     varString = ""
-    
+
     if boxesMatch:
         matchString = boxesMatch.group(0)
         boxArrayString = matchString.lstrip("[").rstrip("]")
         varString = string.replace(matchString, "")
         boxArray = boxArrayString.lstrip().rstrip().split()
-        
+
         varString = varString.lstrip().rstrip()
         boxes = [str(box) if box != "_" else None for box in boxArray]
     else:
@@ -90,7 +90,7 @@ def loadTransitionFromVTF(line:str, taType='ta') -> list:
     words = line.split()
     state = words.pop(0)
     symbol = words.pop(0)
-    
+
     edgeInfo = []
     for i in words[0:]:
         if i.startswith("("): break
@@ -124,17 +124,17 @@ def consistencyCheck(data:list, allStates:list, arityDict:dict):
 def consistencyCheckTMB(edges, states, arities, verbose=False) -> bool:
     # print(states)
     for stateName, edgeDict in edges.items():
-        
+
         if stateName not in states:
             if verbose: print(f"{stateName} not in states = {states}")
             return False
-        
+
         for edgeData in edgeDict.values():
             if (edgeData[0] not in states
                 or edgeData[1].label not in arities
                 or len(edgeData[2]) != int(arities[edgeData[1].label])
             ):
-                if verbose: 
+                if verbose:
                     if edgeData[0] not in states:
                         print(f"edge[0] = {edgeData[0]} not in states = [{states}]")
                     elif edgeData[1].label not in arities:
@@ -145,7 +145,7 @@ def consistencyCheckTMB(edges, states, arities, verbose=False) -> bool:
                 return False
             for child in edgeData[2]:
                 if child not in states:
-                    if verbose: 
+                    if verbose:
                         print(f"child {child} not in states = {states}")
                         print(f"EDGE = {edgeData}")
                     return False
@@ -174,7 +174,7 @@ def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
     else:
         Exception("importTAfromVTF(): unsupported sourceType (only 'f'/'s')")
 
-    
+
     arityDict = {}
     rootStates = []
     transitions = {}
@@ -217,7 +217,7 @@ def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
     if arityProcessed and stateListProcessed:
         if not consistencyCheckTMB(transitions, allStates, arityDict, verbose=True):
             raise Exception(f"importTAfromVTF(): inconsistent data with the preamble")
-    
+
     if sourceType == 'f':
         file.close()
     result = TTreeAut(rootStates, transitions, str(autName))
@@ -296,12 +296,12 @@ def writeEdgesVTFstr(edges):
 def exportTAtoVTF(ta:TTreeAut, format, fileName=""):
     if format != 'f' or format != 's':
         Exception("exportTAtoVTF(): unsupported format")
-    
+
     if format == 'f' and fileName == "":
         Exception("exportTAtoVTF(): fileName needed")
-    
+
     result = open(fileName, "w") if format == 'f' else ""
-    
+
 
     if format == 'f':
         result.write("@NTA\n")
@@ -309,7 +309,7 @@ def exportTAtoVTF(ta:TTreeAut, format, fileName=""):
         writeRootsVTFfile(ta.rootStates, result)
         writeStatesVTFfile(ta.getStates(), result)
         writeAritiesVTFfile(ta.getSymbolArityDict(), result)
-        writeEdgesVTFfile(ta.transitions, result)             
+        writeEdgesVTFfile(ta.transitions, result)
         result.close()
     else:
         result += "@NTA\n"

@@ -6,8 +6,9 @@ from itertools import product
 # from typing import Tuple
 # import copy
 
-def getCoOccurrentStatesTD(ta:TTreeAut) -> list:
-    
+
+def getCoOccurrentStatesTD(ta: TTreeAut) -> list:
+
     def merge(state, macroList):
         # print(f"> merging {state} with {macroList}")
         result = [state]
@@ -31,16 +32,16 @@ def getCoOccurrentStatesTD(ta:TTreeAut) -> list:
                 process_results.append(process(child, ta, queue[:]))
 
             if edge[2] == [] or process_results != []:
-                # print( f"process_results {state}: {process_results}")
-                result.extend( [ merge(state, macroList) for macroList in product(*process_results) ])
+                # print(f"process_results {state}: {process_results}")
+                result.extend([merge(state, macroList) for macroList in product(*process_results)])
         return result
-    
+
     # -------------------------------------
 
     temp = []
     for i in ta.rootStates:
         temp.extend(process(i, ta, []))
-    
+
     result = []
     for i in temp:
         x = list(i)
@@ -49,7 +50,8 @@ def getCoOccurrentStatesTD(ta:TTreeAut) -> list:
             result.append(x)
     return result
 
-def produceOutputTuples(ta1:TTreeAut, ta2:TTreeAut) -> dict:
+
+def produceOutputTuples(ta1: TTreeAut, ta2: TTreeAut) -> dict:
     outEdges1 = ta1.getOutputEdges(inverse=True)
     outEdges2 = ta2.getOutputEdges(inverse=True)
     result = {}
@@ -61,7 +63,8 @@ def produceOutputTuples(ta1:TTreeAut, ta2:TTreeAut) -> dict:
             result[key] = (entry1, entry2)
     return result
 
-def isExtension(ta1:TTreeAut, ta2:TTreeAut) -> bool:
+
+def isExtension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
     debug = False
     product = removeUselessStates(treeAutProduct(ta1, ta2))
     cooccurrentList = getCoOccurrentStatesTD(product)
@@ -78,7 +81,7 @@ def isExtension(ta1:TTreeAut, ta2:TTreeAut) -> bool:
         for j in i:
             tempList.append((j, outputTuples[j]))
         fullList.append(tempList)
-    
+
     if debug:
         for i in fullList:
             for j in i:
@@ -91,7 +94,7 @@ def isExtension(ta1:TTreeAut, ta2:TTreeAut) -> bool:
         for state, edgeTuple in coocurrence:
             edges1, edges2 = edgeTuple
 
-            # TODO: GENERALISATION NEEDED 
+            # TODO: GENERALISATION NEEDED
             # e.g. going over all possible leaf-transitions in 1 state
 
             # for symbol1 in edges1:
@@ -111,8 +114,6 @@ def isExtension(ta1:TTreeAut, ta2:TTreeAut) -> bool:
             if len(possibleLeafEdges) != 1:
                 # print("False")
                 return False
-            
-
 
     # print(outEdges)
     fullList = []
@@ -126,7 +127,7 @@ def isExtension(ta1:TTreeAut, ta2:TTreeAut) -> bool:
             # print(tupleList)
         if tupleList not in fullList:
             fullList.append(tupleList)
-    
+
     # print(fullList)
     checkList = []
     for tupleList in fullList:
@@ -138,7 +139,7 @@ def isExtension(ta1:TTreeAut, ta2:TTreeAut) -> bool:
                         check[symbol] = []
                     check[symbol].append(item[0])
         checkList.append(check)
-    
+
     # print(checkList)
     for listSet in checkList:
         # print(">  ", listSet)
@@ -150,7 +151,7 @@ def isExtension(ta1:TTreeAut, ta2:TTreeAut) -> bool:
                 intersection = treeAutIntersection(product, intersection)
             witnessTree, witnessStr = nonEmptyTD(intersection)
             # intersection.printTreeAut()
-            if witnessTree != None:
+            if witnessTree is not None:
                 # witnessTree.printNode()
                 # print("True")
                 return True

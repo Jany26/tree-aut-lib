@@ -21,15 +21,17 @@ from normalization import *
 # HELPER FUNCTIONS FOR TEST SUITES
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 def printFailedTests(failedTestsArray):
     try:
         assert failedTestsArray == []
-    except:
+    except AssertionError:
         print("   ## Tests failed (" + str(len(failedTestsArray)) + "):")
         for i in failedTestsArray:
             print("      " + i)
 
-def matchTest(function:str, ta:str, tree:str, expectedResult, failures):
+
+def matchTest(function: str, ta: str, tree: str, expectedResult, failures):
     func = functionPtrs[function]
     box = boxesDict[ta]
     testTree = testTreeDict[tree]
@@ -39,7 +41,8 @@ def matchTest(function:str, ta:str, tree:str, expectedResult, failures):
             f"{function}({ta}, {tree})", str(expectedResult), str(actualResult)
         ))
 
-def nonEmptyTest(function:str, ta:str, expectedResult, failures):
+
+def nonEmptyTest(function: str, ta: str, expectedResult, failures):
     func = functionPtrs[function]
     box = boxesDict[ta]
     testTree, testString = func(box)
@@ -49,7 +52,8 @@ def nonEmptyTest(function:str, ta:str, expectedResult, failures):
             f"{function}({ta})", str(expectedResult), str(actualResult)
         ))
 
-def wellDefinedTest(ta:str, expectedResult, errDisplay, failures):
+
+def wellDefinedTest(ta: str, expectedResult, errDisplay, failures):
     box = boxesDict[ta]
     actualResult = isWellDefined(box, errDisplay)
     if actualResult != expectedResult:
@@ -61,6 +65,7 @@ def wellDefinedTest(ta:str, expectedResult, errDisplay, failures):
 # TESTS FOR SUBFUNCTIONS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 def getOuptutStatesTests():
     print(" > SUBUNIT TEST: testing getOutputStates() ...")
     failures = []
@@ -69,8 +74,9 @@ def getOuptutStatesTests():
         failures.append("boxX.getOutputStates()")
     if not boxH1.getOutputStates() == ['u1', 'u2']:
         failures.append("boxH1.getOutputStates()")
-    
+
     printFailedTests(failures)
+
 
 def getArityDictTests():
     print(" > SUBUNIT TEST: testing getArityDict() ...")
@@ -91,10 +97,11 @@ def getArityDictTests():
 
     printFailedTests(failures)
 
+
 def removeStateTests():
     print(" > SUBUNIT TEST: testing removeState() ...")
     failures = []
-       
+
     boxL0withoutR2 = copy.deepcopy(boxL0)
     boxL0withoutR2.removeState('r2')
     boxesDict["boxL0withoutR2"] = boxL0withoutR2
@@ -111,27 +118,29 @@ def removeStateTests():
     matchTest("matchTreeTD", "boxL1withoutS0", "treeL1test2", False, failures)
     matchTest("matchTreeTD", "boxL1withoutS0", "treeL1test3", False, failures)
     matchTest("matchTreeTD", "boxL1withoutS0", "treeL1test4", False, failures)
-    
+
     printFailedTests(failures)
+
 
 def generateTuplesTest():
     print(" > SUBUNIT TEST: testing generator of possibleChildrenTuples ...")
     failures = []
 
-    if len(generatePossibleChildren('q0', ['q0','q1','q2'], 3)) != 19:
-        failures.append("generatePossibleChildren('q0', ['q0','q1','q2'], 3)")
-    if len(generatePossibleChildren('q0', ['q0','q1'], 3)) != 7:
-        failures.append("generatePossibleChildren('q0', ['q0','q1'], 3)")
-    if len(generatePossibleChildren('q0', ['q0','q1'], 2)) != 3:
-        failures.append("generatePossibleChildren('q0', ['q0','q1'], 2)")
-    if len(generatePossibleChildren('q0', ['q0','q1','q2','q3','q4'], 3)) != 61:
-        failures.append("generatePossibleChildren('q0', ['q0','q1','q2','q3','q4'], 3)")
-    if len(generatePossibleChildren('q0', ['q0','q1'], 4)) != 15:
-        failures.append("generatePossibleChildren('q0', ['q0','q1'], 4)")
+    if len(generatePossibleChildren('q0', ['q0', 'q1', 'q2'], 3)) != 19:
+        failures.append("generatePossibleChildren('q0', ['q0', 'q1', 'q2'], 3)")
+    if len(generatePossibleChildren('q0', ['q0', 'q1'], 3)) != 7:
+        failures.append("generatePossibleChildren('q0', ['q0', 'q1'], 3)")
+    if len(generatePossibleChildren('q0', ['q0', 'q1'], 2)) != 3:
+        failures.append("generatePossibleChildren('q0', ['q0', 'q1'], 2)")
+    if len(generatePossibleChildren('q0', ['q0', 'q1', 'q2', 'q3', 'q4'], 3)) != 61:
+        failures.append("generatePossibleChildren('q0', ['q0', 'q1', 'q2', 'q3', 'q4'], 3)")
+    if len(generatePossibleChildren('q0', ['q0', 'q1'], 4)) != 15:
+        failures.append("generatePossibleChildren('q0', ['q0', 'q1'], 4)")
 
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def matchTestsTD():
     print(" > SUBUNIT TEST: testing top-down match() ...")
@@ -140,7 +149,7 @@ def matchTestsTD():
     matchTest("matchTreeTD", "boxX", "treeXtest1", True, failures)
     matchTest("matchTreeTD", "boxX", "treeXtest2", False, failures)
     matchTest("matchTreeTD", "boxX", "treeXtest3", True, failures)
-    
+
     matchTest("matchTreeTD", "boxL0", "treeL0test1", True, failures)
     matchTest("matchTreeTD", "boxL0", "treeL0test2", True, failures)
     matchTest("matchTreeTD", "boxL0", "treeL0test3", True, failures)
@@ -181,6 +190,7 @@ def matchTestsTD():
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 def matchTestsBU():
     print(" > SUBUNIT TEST: testing bottom-up match() ...")
     failures = []
@@ -188,7 +198,7 @@ def matchTestsBU():
     matchTest("matchTreeBU", "boxX", "treeXtest1", True, failures)
     matchTest("matchTreeBU", "boxX", "treeXtest2", False, failures)
     matchTest("matchTreeBU", "boxX", "treeXtest3", True, failures)
-    
+
     matchTest("matchTreeBU", "boxL0", "treeL0test1", True, failures)
     matchTest("matchTreeBU", "boxL0", "treeL0test2", True, failures)
     matchTest("matchTreeBU", "boxL0", "treeL0test3", True, failures)
@@ -225,6 +235,7 @@ def matchTestsBU():
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def determinizationTests():
     print(" > SUBUNIT TEST: testing determinization() ...")
@@ -278,30 +289,32 @@ def determinizationTests():
 
     printFailedTests(failures)
 
-def sanityUnitTest(box:TTreeAut, f:TextIOWrapper):
+
+def sanityUnitTest(box: TTreeAut, f: TextIOWrapper):
     f.write(f"\ncomplement({box.name}) ... ")
     f.flush()
     print(f"complement({box.name}) ... ", flush=True)
-    
+
     comp = treeAutComplement(box, box.getSymbolArityDict(), verbose=False)
-    
+
     f.write(f"\nintersection({box.name}, {comp.name}) ... ")
     f.flush()
     print(f"intersection({box.name}, {comp.name}) ... ", flush=True)
-    
+
     inter = treeAutIntersection(box, comp, verbose=False)
-    
+
     f.write(f"\nnonEmptiness({inter.name}) ... ")
     f.flush()
     print(f"nonEmptiness({inter.name}) ... ", flush=True)
-    
+
     witnessT, witnessS = nonEmptyTD(inter, verbose=False)
-    
+
     f.write(f"\nsanityTest({str(box.name)}) result = ")
-    f.write("OK" if witnessT == None else "ERROR")
+    f.write("OK" if witnessT is None else "ERROR")
     f.write("\n")
     f.flush()
-    
+
+
 def sanityTests():
     print(" > SUBUNIT TEST: testing determinization() with sanity tests ...")
     fileArray = []
@@ -323,6 +336,7 @@ def sanityTests():
     f.close()
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def unionTests():
     print(" > SUBUNIT TEST: testing union() ...")
@@ -361,10 +375,11 @@ def unionTests():
     matchTest("matchTreeTD", "unionXL1", "treeL1test2", True, failures)
     matchTest("matchTreeTD", "unionXL1", "treeL1test3", True, failures)
     matchTest("matchTreeTD", "unionXL1", "treeL1test4", True, failures)
-    
+
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def intersectionTests():
     print(" > SUBUNIT TEST: testing intersection() ...")
@@ -403,6 +418,7 @@ def intersectionTests():
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def complementTests():
     print(" > SUBUNIT TEST: testing complement() ...")
@@ -512,6 +528,7 @@ def complementTests():
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 def nonEmptyTDTests():
     print(" > SUBUNIT TEST: testing top-down witnessGeneration() ...")
     failures = []
@@ -533,8 +550,9 @@ def nonEmptyTDTests():
     nonEmptyTest("nonEmptyTD", "intersectionH0H1", False, failures)
 
     printFailedTests(failures)
-    
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def nonEmptyBUTests():
     print(" > SUBUNIT TEST: testing bottom-up witnessGeneration() ...")
@@ -555,44 +573,47 @@ def nonEmptyBUTests():
     nonEmptyTest("nonEmptyBU", "intersectionL1H0", False, failures)
     nonEmptyTest("nonEmptyBU", "intersectionL1H1", False, failures)
     nonEmptyTest("nonEmptyBU", "intersectionH0H1", False, failures)
-    
+
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def reachabilityTDTests():
     print(" > SUBUNIT TEST: testing top-down reachability() ...")
     failures = []
-    
-    if set(reachableTD(testUnreachable1)) != set(['q0','q1']):
+
+    if set(reachableTD(testUnreachable1)) != set(['q0', 'q1']):
         failures.append("reachableTD(testUnreachable1)")
-    if set(reachableTD(testUnreachable2)) != set(['q0','q1','q2','q3']):
+    if set(reachableTD(testUnreachable2)) != set(['q0', 'q1', 'q2', 'q3']):
         failures.append("reachableTD(testUnreachable2")
-    if set(reachableTD(testUnreachable3)) != set(['q0','q1','q2','q3']):
+    if set(reachableTD(testUnreachable3)) != set(['q0', 'q1', 'q2', 'q3']):
         failures.append("reachableTD(testUnreachable3)")
-    if set(reachableTD(copy.deepcopy(boxL0))) != set(['r0','r1','r2']):
+    if set(reachableTD(copy.deepcopy(boxL0))) != set(['r0', 'r1', 'r2']):
         failures.append("reachableTD(boxL0copy)")
-  
+
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def reachabilityBUTests():
     print(" > SUBUNIT TEST: testing bottom-up reachability() ...")
     failures = []
-    
+
     if set(reachableBU(testUnreachable1)) != set(['q1']):
         failures.append("reachableBU(testUnreachable1)")
-    if set(reachableBU(testUnreachable2)) != set(['q0','q1','q2','q3']):
+    if set(reachableBU(testUnreachable2)) != set(['q0', 'q1', 'q2', 'q3']):
         failures.append("reachableBU(testUnreachable2")
-    if set(reachableBU(testUnreachable3)) != set(['q0','q1','q2','q3']):
+    if set(reachableBU(testUnreachable3)) != set(['q0', 'q1', 'q2', 'q3']):
         failures.append("reachableBU(testUnreachable3)")
-    if set(reachableBU(copy.deepcopy(boxL0))) != set(['r0','r1','r2']):
+    if set(reachableBU(copy.deepcopy(boxL0))) != set(['r0', 'r1', 'r2']):
         failures.append("reachableBU(boxL0copy)")
-    
+
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def removeUselessStatesTests():
     print(" > SUBUNIT TEST: testing removeUselessStates() ...")
@@ -609,15 +630,16 @@ def removeUselessStatesTests():
     if set(cleanTestBox2b.getStates()) != set(['q0', 'q1', 'q2', 'q3']):
         failures.append("removeUselessStates(testUnreachable3)")
 
-    # now this test will fail, as edges are not simply strings, 
+    # now this test will fail, as edges are not simply strings,
     # but objects on different adresses (even though they contain the same data)
-    
+
     # if copy.deepcopy(boxL0).transitions != boxL0.transitions:
     #     failures.append("removeUselessStates(copy.deepcopy(boxL0))")
-    
+
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def vtfImportTests():
     print(" > SUBUNIT TEST: importing from VATA format ...")
@@ -630,9 +652,10 @@ def vtfImportTests():
             else:
                 try:
                     testBox = importTAfromVTF(filepath, 'f')
-                except:
-                    failures.append(f"importFromVTF({filepath})")   
+                except Exception as e:
+                    failures.append(f"importFromVTF({filepath})")
     printFailedTests(failures)
+
 
 def vtfExportTests():
     print(" > SUBUNIT TEST: exporting to VATA format ...")
@@ -644,11 +667,12 @@ def vtfExportTests():
     for name, box in boxesDict.items():
         try:
             exportTAtoVTF(box, 'f', f"vtf/{name}.vtf")
-        except:
+        except Exception as e:
             failures.append(f"exportToVTF(out/{name}.vtf)")
     printFailedTests(failures)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def dotExportTests():
     print(" > SUBUNIT TEST: exporting to DOT format ...")
@@ -660,9 +684,10 @@ def dotExportTests():
     for name, box in boxesDict.items():
         try:
             exportTreeAutToDOT(box, f"dot/{name}.dot")
-        except:
+        except Exception as e:
             failures.append(f"exportToDOT(out/{name}.dot)")
     printFailedTests(failures)
+
 
 def dotExportFromVTFTests():
     print(" > SUBUNIT TEST: exporting from VTF to DOT format ...")
@@ -680,24 +705,26 @@ def dotExportFromVTFTests():
                     dotFilePath = dotFilePath[:-4] + ".dot"
                     ta = importTAfromVTF(filePath, 'f')
                     exportTreeAutToDOT(ta, dotFilePath)
-                except:
+                except Exception as e:
                     failures.append(f"exportFromVTFtoDOT({filePath}, {dotFilePath})")
     printFailedTests(failures)
+
 
 def tmbImportTests():
     print(" > SUBUNIT TEST: importing from TMB format ...")
     failures = []
-    
+
     for subdir, dirs, files in os.walk(".."):
         for file in files:
             filePath = subdir + os.sep + file
             if filePath.endswith(".tmb"):
                 try:
                     testBox = importTAfromTMB(filePath)
-                except:
+                except Exception as e:
                     failures.append(f"importTAfromTMB({filePath})")
 
     printFailedTests(failures)
+
 
 def tmbExportTests():
     print(" > SUBUNIT TEST: exporting to TMB format ...")
@@ -709,89 +736,91 @@ def tmbExportTests():
     for name, box in boxesDict.items():
         try:
             exportTAtoTMB(box, 'f', f"tmb/{name}.tmb")
-        except:
+        except Exception as e:
             failures.append(f"exportTreeAutToTMB(tmb/{name}.tmb)")
 
     printFailedTests(failures)
+
 
 def wellDefinedTests(verbose=False):
     print(" > SUBUNIT TEST: checking if the boxes are well-defined ...")
     failures = []
 
     wellDefinedTest("boxX", True,   verbose, failures)
-    wellDefinedTest("boxL0", True,   verbose, failures) 
-    wellDefinedTest("boxL1", True,   verbose, failures) 
-    wellDefinedTest("boxH0", True,   verbose, failures) 
-    wellDefinedTest("boxH1", True,   verbose, failures) 
-    wellDefinedTest("boxLPort", True,   verbose, failures) 
+    wellDefinedTest("boxL0", True,   verbose, failures)
+    wellDefinedTest("boxL1", True,   verbose, failures)
+    wellDefinedTest("boxH0", True,   verbose, failures)
+    wellDefinedTest("boxH1", True,   verbose, failures)
+    wellDefinedTest("boxLPort", True,   verbose, failures)
 
-    wellDefinedTest("unionXL0", False,   verbose, failures) 
-    wellDefinedTest("unionXL1", False,   verbose, failures) 
-    wellDefinedTest("unionXH0", False,   verbose, failures) 
-    wellDefinedTest("unionXH1", False,   verbose, failures) 
-    wellDefinedTest("unionL0H0", False,   verbose, failures) 
-    wellDefinedTest("unionL0H1", False,   verbose, failures) 
-    wellDefinedTest("unionL0L1", False,   verbose, failures) 
-    wellDefinedTest("unionL1H0", False,   verbose, failures) 
-    wellDefinedTest("unionL1H1", False,   verbose, failures) 
-    wellDefinedTest("unionH0H1", False,   verbose, failures) 
+    wellDefinedTest("unionXL0", False,   verbose, failures)
+    wellDefinedTest("unionXL1", False,   verbose, failures)
+    wellDefinedTest("unionXH0", False,   verbose, failures)
+    wellDefinedTest("unionXH1", False,   verbose, failures)
+    wellDefinedTest("unionL0H0", False,   verbose, failures)
+    wellDefinedTest("unionL0H1", False,   verbose, failures)
+    wellDefinedTest("unionL0L1", False,   verbose, failures)
+    wellDefinedTest("unionL1H0", False,   verbose, failures)
+    wellDefinedTest("unionL1H1", False,   verbose, failures)
+    wellDefinedTest("unionH0H1", False,   verbose, failures)
 
-    wellDefinedTest("intersectionXL0", False,   verbose, failures) 
-    wellDefinedTest("intersectionXL1", False,   verbose, failures) 
-    wellDefinedTest("intersectionXH0", False,   verbose, failures) 
-    wellDefinedTest("intersectionXH1", False,   verbose, failures) 
-    wellDefinedTest("intersectionL0H0", False,   verbose, failures) 
-    wellDefinedTest("intersectionL0H1", False,   verbose, failures) 
-    wellDefinedTest("intersectionL0L1", False,   verbose, failures) 
-    wellDefinedTest("intersectionL1H0", False,   verbose, failures) 
-    wellDefinedTest("intersectionL1H1", False,   verbose, failures) 
-    wellDefinedTest("intersectionH0H1", False,   verbose, failures) 
+    wellDefinedTest("intersectionXL0", False,   verbose, failures)
+    wellDefinedTest("intersectionXL1", False,   verbose, failures)
+    wellDefinedTest("intersectionXH0", False,   verbose, failures)
+    wellDefinedTest("intersectionXH1", False,   verbose, failures)
+    wellDefinedTest("intersectionL0H0", False,   verbose, failures)
+    wellDefinedTest("intersectionL0H1", False,   verbose, failures)
+    wellDefinedTest("intersectionL0L1", False,   verbose, failures)
+    wellDefinedTest("intersectionL1H0", False,   verbose, failures)
+    wellDefinedTest("intersectionL1H1", False,   verbose, failures)
+    wellDefinedTest("intersectionH0H1", False,   verbose, failures)
 
-    wellDefinedTest("complementX", False,   verbose, failures) 
-    wellDefinedTest("complementL0", False,   verbose, failures) 
-    wellDefinedTest("complementL1", False,   verbose, failures) 
-    wellDefinedTest("complementH0", False,   verbose, failures) 
-    wellDefinedTest("complementH1", False,   verbose, failures) 
-    wellDefinedTest("complementLPort", False,   verbose, failures) 
+    wellDefinedTest("complementX", False,   verbose, failures)
+    wellDefinedTest("complementL0", False,   verbose, failures)
+    wellDefinedTest("complementL1", False,   verbose, failures)
+    wellDefinedTest("complementH0", False,   verbose, failures)
+    wellDefinedTest("complementH1", False,   verbose, failures)
+    wellDefinedTest("complementLPort", False,   verbose, failures)
 
-    wellDefinedTest("determinizedX", False,   verbose, failures) 
-    wellDefinedTest("determinizedL0", False,   verbose, failures) 
-    wellDefinedTest("determinizedL1", False,   verbose, failures) 
-    wellDefinedTest("determinizedH0", False,   verbose, failures) 
-    wellDefinedTest("determinizedH1", False,   verbose, failures) 
-    wellDefinedTest("determinizedLPort", False,   verbose, failures) 
-    
-    wellDefinedTest("Xsuffix", True,   verbose, failures) 
-    wellDefinedTest("L0suffix", False,   verbose, failures) 
-    wellDefinedTest("L1suffix", False,   verbose, failures) 
-    wellDefinedTest("H0suffix", False,   verbose, failures) 
-    wellDefinedTest("H1suffix", False,   verbose, failures) 
+    wellDefinedTest("determinizedX", False,   verbose, failures)
+    wellDefinedTest("determinizedL0", False,   verbose, failures)
+    wellDefinedTest("determinizedL1", False,   verbose, failures)
+    wellDefinedTest("determinizedH0", False,   verbose, failures)
+    wellDefinedTest("determinizedH1", False,   verbose, failures)
+    wellDefinedTest("determinizedLPort", False,   verbose, failures)
 
-    wellDefinedTest("XprefixForL0", False,   verbose, failures) 
-    wellDefinedTest("XprefixForL1", False,   verbose, failures) 
-    wellDefinedTest("XprefixForH0", False,   verbose, failures) 
-    wellDefinedTest("XprefixForH1", False,   verbose, failures) 
-    wellDefinedTest("L0prefixForX", False,   verbose, failures)  
-    wellDefinedTest("L0prefixForL1", False,   verbose, failures) 
-    wellDefinedTest("L0prefixForH0", False,   verbose, failures) 
-    wellDefinedTest("L0prefixForH1", False,   verbose, failures) 
-    wellDefinedTest("L1prefixForX", False,   verbose, failures)  
-    wellDefinedTest("L1prefixForL0", False,   verbose, failures) 
-    wellDefinedTest("L1prefixForH0", False,   verbose, failures) 
-    wellDefinedTest("L1prefixForH1", False,   verbose, failures) 
-    wellDefinedTest("H0prefixForX", False,   verbose, failures)  
-    wellDefinedTest("H0prefixForL0", False,   verbose, failures) 
-    wellDefinedTest("H0prefixForL1", False,   verbose, failures) 
-    wellDefinedTest("H0prefixForH1", False,   verbose, failures) 
-    wellDefinedTest("H1prefixForX", False,   verbose, failures)  
-    wellDefinedTest("H1prefixForL0", False,   verbose, failures) 
-    wellDefinedTest("H1prefixForL1", False,   verbose, failures) 
+    wellDefinedTest("Xsuffix", True,   verbose, failures)
+    wellDefinedTest("L0suffix", False,   verbose, failures)
+    wellDefinedTest("L1suffix", False,   verbose, failures)
+    wellDefinedTest("H0suffix", False,   verbose, failures)
+    wellDefinedTest("H1suffix", False,   verbose, failures)
+
+    wellDefinedTest("XprefixForL0", False,   verbose, failures)
+    wellDefinedTest("XprefixForL1", False,   verbose, failures)
+    wellDefinedTest("XprefixForH0", False,   verbose, failures)
+    wellDefinedTest("XprefixForH1", False,   verbose, failures)
+    wellDefinedTest("L0prefixForX", False,   verbose, failures)
+    wellDefinedTest("L0prefixForL1", False,   verbose, failures)
+    wellDefinedTest("L0prefixForH0", False,   verbose, failures)
+    wellDefinedTest("L0prefixForH1", False,   verbose, failures)
+    wellDefinedTest("L1prefixForX", False,   verbose, failures)
+    wellDefinedTest("L1prefixForL0", False,   verbose, failures)
+    wellDefinedTest("L1prefixForH0", False,   verbose, failures)
+    wellDefinedTest("L1prefixForH1", False,   verbose, failures)
+    wellDefinedTest("H0prefixForX", False,   verbose, failures)
+    wellDefinedTest("H0prefixForL0", False,   verbose, failures)
+    wellDefinedTest("H0prefixForL1", False,   verbose, failures)
+    wellDefinedTest("H0prefixForH1", False,   verbose, failures)
+    wellDefinedTest("H1prefixForX", False,   verbose, failures)
+    wellDefinedTest("H1prefixForL0", False,   verbose, failures)
+    wellDefinedTest("H1prefixForL1", False,   verbose, failures)
     wellDefinedTest("H1prefixForH0", False,   verbose, failures)
 
     printFailedTests(failures)
     pass
 
-def commutativityTest(ta1:str, ta2:str, expectedResult, verbose, failures):
+
+def commutativityTest(ta1: str, ta2: str, expectedResult, verbose, failures):
     box1 = boxesDict[ta1]
     box2 = boxesDict[ta2]
     actualResult1 = areCommutative(box1, box2)
@@ -807,6 +836,7 @@ def commutativityTest(ta1:str, ta2:str, expectedResult, verbose, failures):
     if verbose and actualResult1 != actualResult2:
         print("WARNING: commutativity test gives inconsistent results")
 
+
 def commutativityTests(verbose=False):
     print(" > SUBUNIT TEST: testing commutativity ...")
     failures = []
@@ -818,7 +848,7 @@ def commutativityTests(verbose=False):
     commutativityTest("boxX", "boxLPort",   False,  verbose, failures)
     commutativityTest("boxX", "boxHPort",   False,  verbose, failures)
 
-    commutativityTest("boxL0", "boxL1",     True,   verbose, failures) # True !
+    commutativityTest("boxL0", "boxL1",     True,   verbose, failures)  # True !
     commutativityTest("boxL0", "boxH0",     False,  verbose, failures)
     commutativityTest("boxL0", "boxH1",     False,  verbose, failures)
     commutativityTest("boxL0", "boxLPort",  False,  verbose, failures)
@@ -829,7 +859,7 @@ def commutativityTests(verbose=False):
     commutativityTest("boxL1", "boxLPort",  False,  verbose, failures)
     commutativityTest("boxL1", "boxHPort",  False,  verbose, failures)
 
-    commutativityTest("boxH0", "boxH1",     True,   verbose, failures) # True !
+    commutativityTest("boxH0", "boxH1",     True,   verbose, failures)  # True !
     commutativityTest("boxH0", "boxLPort",  False,  verbose, failures)
     commutativityTest("boxH0", "boxHPort",  False,  verbose, failures)
 
@@ -840,19 +870,21 @@ def commutativityTests(verbose=False):
 
     printFailedTests(failures)
 
+
 def comparabilityTestAdvanced(ta1, expectedResult, ta2, failures):
     box1 = boxesDict[ta1]
     box2 = boxesDict[ta2]
     res1 = areComparable(box1, box2)
     res2 = areComparable(box2, box1)
     print(f"\t res1 = {res1}, res2 = {res2}")
-    if expectedResult == ">" and res1 == True and res2 == False:
+    if expectedResult == ">" and res1 is True and res2 is False:
         return
-    if expectedResult == "<" and res1 == False and res2 == True:
+    if expectedResult == "<" and res1 is False and res2 is True:
         return
-    if expectedResult == "?" and res1 == False and res2 == False:
+    if expectedResult == "?" and res1 is False and res2 is False:
         return
     failures.append("{:<50}".format(f"areComparable({ta1}, {ta2})"))
+
 
 def comparabilityTestSimple(ta1, ta2, exp, failures):
     box1 = boxesDict[ta1]
@@ -923,22 +955,23 @@ def comparabilityTests():
     comparabilityTestSimple("boxL1", "boxHPort", False, failures)
     comparabilityTestSimple("boxLPort", "boxHPort", False, failures)
     comparabilityTestSimple("boxHPort", "boxLPort", False, failures)
-    
+
     printFailedTests(failures)
+
 
 def productTests():
     def productUnitTest(ta1, ta2, expect, failures):
         result = treeAutProduct(ta1, ta2)
         witnessT, witnessS = nonEmptyTD(result)
-        actual = (witnessT != None) # actual = can witness be produced?
+        actual = (witnessT is not None)  # actual = can witness be produced?
         if expect != actual:
             failures.append("{:<50} {:<20} {:<15} {:<15}".format(
-                f"product({ta1.name},{ta2.name})", 
+                f"product({ta1.name},{ta2.name})",
                 f"has witness?",
-                f"exp = {expect}",  
+                f"exp = {expect}",
                 f"got = {actual}"
             ))
-    
+
     X = importTAfromVTF("tests/tddetX.vtf")
     LPort = importTAfromVTF("tests/tddetLPort.vtf")
     HPort = importTAfromVTF("tests/tddetHPort.vtf")
@@ -948,7 +981,7 @@ def productTests():
     H1 = importTAfromVTF("tests/tddetH1.vtf")
 
     failures = []
-    
+
     productUnitTest(X,     LPort, True,  failures)
     productUnitTest(X,     HPort, True,  failures)
     productUnitTest(X,     L0,    True,  failures)
@@ -966,7 +999,7 @@ def productTests():
     productUnitTest(LPort, L1,    True,  failures)
     productUnitTest(HPort, H0,    True,  failures)
     productUnitTest(HPort, H1,    True,  failures)
-    
+
     productUnitTest(LPort, H0,    False, failures)
     productUnitTest(LPort, H1,    False, failures)
     productUnitTest(HPort, L0,    False, failures)
@@ -984,14 +1017,13 @@ def productTests():
 
 
 def extensionTests():
-
     def extensionUnitTest(ta1, ta2, expect, failures):
         actual = isExtension(ta1, ta2)
         if expect != actual:
             failures.append("{:<50} {:<20} {:<15} {:<15}".format(
-                f"extension({ta1.name},{ta2.name})", 
+                f"extension({ta1.name},{ta2.name})",
                 f"has witness?",
-                f"exp = {expect}",  
+                f"exp = {expect}",
                 f"got = {actual}"
             ))
 
@@ -1022,7 +1054,7 @@ def extensionTests():
     extensionUnitTest(LPort, L1,    True,  failures)
     extensionUnitTest(HPort, H0,    True,  failures)
     extensionUnitTest(HPort, H1,    True,  failures)
-    
+
     extensionUnitTest(LPort, H0,    False, failures)
     extensionUnitTest(LPort, H1,    False, failures)
     extensionUnitTest(HPort, L0,    False, failures)
@@ -1042,7 +1074,7 @@ def extensionTests():
 def extraTests():
     ta = importTAfromVTF("tests/normalizationTest1.vtf", 'f')
     # ta = importTAfromVTF("tests/unfoldingTest4.vtf", 'f')
-    # exportTreeAutToDOT(ta, "vtf-to-dot/unfoldingTest4.dot")    
+    # exportTreeAutToDOT(ta, "vtf-to-dot/unfoldingTest4.dot")
     print(ta)
 
 

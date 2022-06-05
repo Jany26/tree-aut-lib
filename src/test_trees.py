@@ -28,10 +28,10 @@ def convertStringToTree(string:str) -> TTreeNode:
         # empty string - ending recursion
         if len(string) == 0:
             return currentNode
-        
+
         # starting children generation (down a level)
         if string.startswith("["):
-            node, string = getNodeFromString(string[1:]) 
+            node, string = getNodeFromString(string[1:])
             currentNode.connectChild(node)
             return buildTreeFromString(node, string)
 
@@ -49,8 +49,8 @@ def convertStringToTree(string:str) -> TTreeNode:
         else:
             root, string = getNodeFromString(string)
             return buildTreeFromString(root, string)
-    
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     return buildTreeFromString(None, string)
 
@@ -63,7 +63,7 @@ def convertTreeToString(currentNode:TTreeNode) -> str:
         temp = currentNode.value + "["
         for i in range(len(currentNode.children)):
             temp += str(convertTreeToString(currentNode.children[i]))
-            if i < len(currentNode.children) - 1: 
+            if i < len(currentNode.children) - 1:
                 temp += ";"
         temp += "]"
         return temp
@@ -97,29 +97,29 @@ H1TreeExample3 = "LH[LH[LH[Port_H1;1];LH[1;1]];LH[LH[1;1];LH[1;1]]]"
 H1TreeExample4 = "LH[Port_H1;1]"
 
 testTreeDict = {
-    "treeXtest1" : convertStringToTree(XTreeExample1),
-    "treeXtest2" : convertStringToTree(XTreeExample2),
-    "treeXtest3" : convertStringToTree(XTreeExample3),
+    "treeXtest1": convertStringToTree(XTreeExample1),
+    "treeXtest2": convertStringToTree(XTreeExample2),
+    "treeXtest3": convertStringToTree(XTreeExample3),
 
-    "treeL0test1" : convertStringToTree(L0TreeExample1),
-    "treeL0test2" : convertStringToTree(L0TreeExample2),
-    "treeL0test3" : convertStringToTree(L0TreeExample3),
-    "treeL0test4" : convertStringToTree(L0TreeExample4),
+    "treeL0test1": convertStringToTree(L0TreeExample1),
+    "treeL0test2": convertStringToTree(L0TreeExample2),
+    "treeL0test3": convertStringToTree(L0TreeExample3),
+    "treeL0test4": convertStringToTree(L0TreeExample4),
 
-    "treeL1test1" : convertStringToTree(L1TreeExample1),
-    "treeL1test2" : convertStringToTree(L1TreeExample2),
-    "treeL1test3" : convertStringToTree(L1TreeExample3),
-    "treeL1test4" : convertStringToTree(L1TreeExample4),
+    "treeL1test1": convertStringToTree(L1TreeExample1),
+    "treeL1test2": convertStringToTree(L1TreeExample2),
+    "treeL1test3": convertStringToTree(L1TreeExample3),
+    "treeL1test4": convertStringToTree(L1TreeExample4),
 
-    "treeH0test1" : convertStringToTree(H0TreeExample1),
-    "treeH0test2" : convertStringToTree(H0TreeExample2),
-    "treeH0test3" : convertStringToTree(H0TreeExample3),
-    "treeH0test4" : convertStringToTree(H0TreeExample4),
+    "treeH0test1": convertStringToTree(H0TreeExample1),
+    "treeH0test2": convertStringToTree(H0TreeExample2),
+    "treeH0test3": convertStringToTree(H0TreeExample3),
+    "treeH0test4": convertStringToTree(H0TreeExample4),
 
-    "treeH1test1" : convertStringToTree(H1TreeExample1),
-    "treeH1test2" : convertStringToTree(H1TreeExample2),
-    "treeH1test3" : convertStringToTree(H1TreeExample3),
-    "treeH1test4" : convertStringToTree(H1TreeExample4)
+    "treeH1test1": convertStringToTree(H1TreeExample1),
+    "treeH1test2": convertStringToTree(H1TreeExample2),
+    "treeH1test3": convertStringToTree(H1TreeExample3),
+    "treeH1test4": convertStringToTree(H1TreeExample4)
 }
 
 # End of file test_trees.py

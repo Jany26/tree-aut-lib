@@ -1,5 +1,5 @@
 # format_tmb.py
-# Functions for exporting tree automaton into TMB format (.tmb) 
+# Functions for exporting tree automaton into TMB format (.tmb)
 # for generating a graphical representation of the TA.
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
@@ -58,7 +58,7 @@ def loadTransitionFromTMB(line:str) -> list:
 
 def loadArityFromTMB(line:str) -> dict:
     words = line.strip().split()
-    
+
     result = {}
     for i in words[1:]:
         items = i.split(":")
@@ -106,7 +106,7 @@ def importTAfromTMB(source:str, sourceType='f') -> TTreeAut:
     name = ""
 
     for line in inputStream:
-        
+
         # skipping comments and empty lines
         line = line.strip()
         if line == "" or line.startswith("#") or line.startswith("//"):
@@ -202,7 +202,7 @@ def writeTransitionsTMBfile(ta, tgt):
 def writeAritiesTMBstr(arities):
     result = "Ops"
     for i in arities:
-        result += f" {i}:{arities[i]}" 
+        result += f" {i}:{arities[i]}"
     result += "\n\n"
     return result
 
@@ -253,7 +253,7 @@ def exportTAtoTMB(ta: TTreeAut, format, fileName=""):
         writeNameTMBfile(ta.name, result)
         writeStatesTMBfile(ta.getStates(), result)
         writeRootsTMBfile(ta.rootStates, result)
-        writeTransitionsTMBfile(ta, result)    
+        writeTransitionsTMBfile(ta, result)
         result.close()
     else:
         result += writeAritiesTMBstr(ta.getSymbolArityDict())

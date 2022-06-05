@@ -40,7 +40,7 @@ def main():
     print(">> UNIT TEST: TMB format parsing ...")
     tmbExportTests()
     # tmbImportTests() # time consuming
-    
+
     print(">> UNIT TEST: DOT format export ...")
     dotExportTests()
     dotExportFromVTFTests()
@@ -58,7 +58,7 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
+    main()
     extraTests()
 
 # End of file main.py

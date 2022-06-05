@@ -7,7 +7,8 @@
 
 all:
 	cd src/ && python3 main.py
-
+test:
+	cd src/ && python3 test.py
 clean:
 #	jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace *.ipynb
 	-cd src/ && rm -r __pycache__/

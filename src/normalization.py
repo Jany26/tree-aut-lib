@@ -25,22 +25,21 @@ class NormalizationHelper:
         return result
 
 def normalize(ta:TTreeAut, alphabet:dict, varOrder:list) -> TTreeAut:
-    
+
     # if not isWellDefined(ta, errDisplay=False):
     #     raise Exception("Can not normalize TA, that is not well defined.")
-
+    
     # list of temporary arrays representing transitions = array of 4 elements:
-    #   source state list, 
-    #   edge symbol/label, 
-    #   edge variable, 
+    #   source state list,
+    #   edge symbol/label,
+    #   edge variable,
     #   list of children states
     transitions = []
-    
+
     roots = []
     states = []
     worklist = []
-    outputSymbols = ta.getOutputEdges()
-    for symbol, stateList in outputSymbols.items():
+    for symbol, stateList in ta.getOutputEdges().items():
         # stateName = detCreateName(stateList)
         transitions.append([stateList, symbol, "", []])
         states.append(stateList)
@@ -51,15 +50,18 @@ def normalize(ta:TTreeAut, alphabet:dict, varOrder:list) -> TTreeAut:
     norm = NormalizationHelper(ta, transitions, roots, states, worklist, varOrder)
 
     processed = []
-    # print(worklist)
     while worklist != []:
         for sym in symbols:
             ms = worklist.pop() # macrostate
+            # print(ms)
             tuples = generatePossibleChildren(ms, states, symbols[sym])
+            # for i in tuples:
+                # print(f"  > {i}")
             for t in tuples:
                 if t in processed:
                     continue
                 processed.append(t)
+                # print(f"procTransitions({t})")
                 procTransitions(norm, t)
     for statelist in states:
         for root in ta.rootStates:
@@ -68,7 +70,7 @@ def normalize(ta:TTreeAut, alphabet:dict, varOrder:list) -> TTreeAut:
     newRoots = [detCreateName(i) for i in norm.roots]
     newName = f"normalized({ta.name})"
     newTransitions = normalizationGetTransitions(norm.transitions)
-    result = TTreeAut(newRoots, newTransitions, newName, portArity=ta.portArity)
+    result = TTreeAut(newRoots, newTransitions, newName, ta.portArity)
     # print(result)
     return result
 
@@ -89,54 +91,48 @@ def normalizationGetTransitions(transitions:list) -> dict:
 
 
 def procTransitions(data: NormalizationHelper, childrenStates:list):
-    # print(childrenStates)
-    varEdges = []
-    plainEdges = []
-    for edgeDict in data.treeaut.transitions.values():
-        for edge in edgeDict.values():
-            if len(edge[2]) != len(childrenStates):
-                continue
-            childsAreInMacroStates = True
-            for i in range(len(edge[2])):
-                if edge[2][i] not in childrenStates[i]:
-                    childsAreInMacroStates = False
-            if childsAreInMacroStates:
-                temp = [edge[0], edge[1].label, edge[1].variable, edge[2]]
-                if edge[1].variable != "":
-                    varEdges.append(temp)
-                else:
-                    plainEdges.append(temp)
-
-    edgesToAdd = []
-    # print("var:", varEdges)
-    # print("plain:", plainEdges)
-    if (varEdges != []) ^ (plainEdges != []):
-        edges = varEdges if varEdges != [] else plainEdges
-        for edge in edges:
-            childrenFromEdgeCorrespondToParameters = True
-            for i in range(len(edge[3])):
-                if edge[3][i] not in childrenStates[i]:
-                    childrenFromEdgeCorrespondToParameters = False
-                    break
-            if childrenFromEdgeCorrespondToParameters:
-                temp = [[edge[0]], edge[1], edge[2], childrenStates]
-                edgesToAdd.append(temp)
-
-    for vEdge in varEdges:
-        for pEdge in plainEdges:
-            # note: discussed with Ondrej 
-            # -> this prevents unnecessary edge duplication in some cases
-            if vEdge[0] == pEdge[0]:
-                continue 
-            
-            for var in data.variables:
-                srcState = [vEdge[0]]
-                if vEdge[2] == var:
-                    srcState.extend([pEdge[0]])
-                symbol = vEdge[1]
-                children = pEdge[2]
-                edgesToAdd.append([srcState, symbol, var, children])
-
+    tr = []
+    for edge in transitions(data.treeaut):
+        if len(edge[2]) != len(childrenStates):
+            continue
+        childsAreInMacroStates = True
+        for i in range(len(edge[2])):
+            if edge[2][i] not in childrenStates[i]:
+                childsAreInMacroStates = False
+        if childsAreInMacroStates:
+            tr.append([edge[0], edge[1].label, edge[1].variable, edge[2]])
+    
+    varEdge = False
+    novarEdge = False
+    for i in tr:
+        if i[2] == "": novarEdge = True
+        if i[2] != "": 
+            varEdge = True
+            # if i[2] not in data.variables:
+            #     raise Exception("insufficient variable ordering for TA")
+        
+    if varEdge and novarEdge:
+        edgesToAdd = normalizeEdges(tr, data.variables)
+    else:
+        edgesToAdd = createEdgeList(tr)
+        
+    edgevars = [i[2] for i in edgesToAdd]
+    stateset = []
+    for i in edgesToAdd:
+        stateset.extend(i[0])
+    stateset = set(stateset)
+    # print("vars =", edgevars)
+    # print("states =", stateset)
+    if edgevars == ['x1', 'x2', 'x3', 'x4', 'x5']:
+        if len(stateset) == 1:
+            print("ERROR")
+            print("edgesToAdd")
+            for i in edgesToAdd:
+                print(i)
+            print("varEdge =", varEdge)
+            print("novarEdge =", novarEdge)
+            print("tr =", tr)
+            print(childrenStates)
     for edge in edgesToAdd:
         stateList = edge[0]
         stateList.sort()
@@ -144,6 +140,37 @@ def procTransitions(data: NormalizationHelper, childrenStates:list):
         if stateList not in data.states:
             data.states.append(stateList)
             data.worklist.append(stateList)
+
+def createEdgeList(tr: list) -> list:
+    if tr == []:
+        return []
+    helpDict = {}
+    for i in tr:
+        if i[2] not in helpDict:
+            helpDict[i[2]] = {}
+        if i[1] not in helpDict[i[2]]:
+            helpDict[i[2]][i[1]] = set()
+        helpDict[i[2]][i[1]].add(i[0])
+    result = []
+    for var, cont in helpDict.items():
+        for sym, states in cont.items():
+            result.append([list(states), sym, var])
+    return result
+
+def normalizeEdges(tr: list, vars: list) -> list:
+    helpDict = {i:{} for i in vars}
+    for var in vars:
+        for e in tr:
+            if e[2] != "" and e[2] != var:
+                continue
+            if e[1] not in helpDict[var]:
+                helpDict[var][e[1]] = set()
+            helpDict[var][e[1]].add(e[0])
+    result = []
+    for var, cont in helpDict.items():
+        for sym, states in cont.items():
+            result.append([list(states), sym, var])
+    return result
 
 
 def compressVariables(ta:TTreeAut) -> TTreeAut:
@@ -155,7 +182,7 @@ def compressVariables(ta:TTreeAut) -> TTreeAut:
                 temp[tempKey] = [[], []]
             temp[tempKey][0] = [edge[0], edge[1].label, edge[2]]
             temp[tempKey][1].append(edge[1].variable)
-    
+
     transitions = {}
     for key, edgeData in temp.items():
         src = edgeData[0][0]

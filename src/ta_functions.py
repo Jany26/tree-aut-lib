@@ -5,6 +5,7 @@
 
 # from os import stat
 # from re import L
+from decimal import ExtendedContext
 from ta_classes import *
 from itertools import product
 
@@ -775,20 +776,52 @@ def reachableTD(ta: TTreeAut) -> list:
 
 # Generates a list of states reachable from the leaf states
 def reachableBU(ta: TTreeAut) -> list:
+
+    # this is needed for some longer children arrays
+    # {'symbol1' : {'state1': 2, 'state2': 1}, 'symbol2': ...}
+    def createStateArityDict(ta) -> dict:
+        result = {}
+        arities = ta.getSymbolArityDict()
+        for symbol, arity in arities.items():
+            if arity == 0:
+                continue
+            if symbol not in result:
+                result[symbol] = {}
+            for state in ta.getStates():
+                if state not in result[symbol]:
+                    result[symbol][state] = []
+
+        for edge in transitions(ta):
+            childSet = set(edge[2])
+            symbol = edge[1].label
+            if arities[symbol] == 0:
+                continue
+            length = len(edge[2])
+            for state in childSet:
+                if length not in result[symbol][state]:
+                    result[symbol][state].append(length)
+        return result
+
     workList = ta.getOutputStates()
     result = ta.getOutputStates()
     arityDict = ta.getSymbolArityDict()
+    extendedArityDict = createStateArityDict(ta)
     while len(workList) > 0:
         state = workList.pop()
         for symbol, arity in arityDict.items():
             if arity <= 0:
                 continue
-            allPossibileTuples = generatePossibleChildren(state, result, arity)
+
+            arities = extendedArityDict[symbol][state]
+            tuples = []
+            for a in arities:
+                tuples.extend(generatePossibleChildren(state, result, a))
+
             for stateName, edgeDict in ta.transitions.items():
                 for edge in edgeDict.values():
                     if (
                         edge[1].label != symbol
-                        or edge[2] not in allPossibileTuples
+                        or edge[2] not in tuples
                     ):
                         continue
                     if stateName not in result:

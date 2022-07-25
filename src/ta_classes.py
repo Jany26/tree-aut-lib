@@ -184,9 +184,10 @@ class TTreeAut:
     def __repr__(self):
         result = f"  == Name = '{self.name}' (port arity = {self.portArity})\n"
         result += f"  == Root States = {self.rootStates}\n"
-        for content in self.transitions.values():
+        # for content in self.transitions.values():
+        for state in iterateBFS(self):
             # result += "  >"
-            for e in content.values():
+            for e in self.transitions[state].values():
                 comment = " <<< LEAF TRANSITION >>>" if e[2] == [] else ""
                 result += f"  > {e[0]} -- {e[1]} --> {e[2]}{comment}\n"
         return result[:-1]  # trim the last '\n'
@@ -498,4 +499,35 @@ def transitions(obj):
         else:
             yield innerObj
 
+
+# Depth-first search iterator over states of a tree automaton
+def iterateDFS(ta: TTreeAut):
+    stack = [root for root in ta.rootStates]
+    visited = set()
+    while stack:
+        state = stack.pop()
+        if state in visited:
+            continue
+        visited.add(state)
+        yield state
+        for edge in ta.transitions[state].values():
+            for child in edge[2]:
+                if child not in visited:
+                    stack.append(child)
+
+
+# Breadth-first search iterator over states of a tree automaton
+def iterateBFS(ta: TTreeAut):
+    stack = [root for root in ta.rootStates]
+    visited = set()
+    while stack:
+        state = stack.pop(0)
+        if state in visited:
+            continue
+        visited.add(state)
+        yield state
+        for edge in ta.transitions[state].values():
+            for child in edge[2]:
+                if child not in visited:
+                    stack.append(child)
 # End of file ta_classes.py

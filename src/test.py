@@ -6,6 +6,10 @@ from all_tests import *
 from ta_functions import *
 from test_data import fullAlphabet, boxCatalogue
 
+
+boxOrder = ['LPort', 'HPort', 'L0', 'L1', 'H0', 'H1', 'X']
+
+
 def noSameChildrenEdgeCheck(ta: TTreeAut) -> bool:
     result = {}
     for edge in transitions(ta):
@@ -18,7 +22,7 @@ def noSameChildrenEdgeCheck(ta: TTreeAut) -> bool:
         if child1 not in result[child0]:
             result[child0][child1] = 0
         result[child0][child1] += 1
-    
+
     for i, j in result.items():
         for k, l in j.items():
             if l > 1:
@@ -39,27 +43,37 @@ def testNormalization():
     print(noSameChildrenEdgeCheck(ta))
 
 
-def testBoxFinding():
-    ta = importTAfromVTF("tests/normalizationTest4.vtf", 'f')
-    boxFinding(ta, boxCatalogue['L0'], ta.rootStates[0])
+def testFold():
+    # ta = importTAfromVTF("tests/normalizationTest5.vtf", 'f')
+    ta = importTAfromVTF("tests/unfoldingTest5.vtf", 'f')
+    symbols = ta.getSymbolArityDict()
+    variables = [f"x" + f"{i+1}" for i in range(8)]
+    ta = unfold(ta)
+    ta = normalize(ta, symbols, variables)
+
+    i = 0
+    ta1 = copy.deepcopy(ta)
+    for state in iterateBFS(ta1):
+        ta.renameState(state, f"q{i}")
+        i += 1
+
+    print(ta)
+    fold(ta, boxOrder)
 
 
 def testHelpers():
-    ...
+    ta = importTAfromVTF("tests/unfoldingTest3.vtf", 'f')
+    for i in iterateDFS(ta):
+        print(i)
 
 
 if __name__ == '__main__':
-    testNormalization()
-    # ta = importTAfromVTF("tests/normalizationTest5.vtf", 'f')
-    # symbols = ta.getSymbolArityDict()
-    # variables = [f"x" + f"{i+1}" for i in range(5)]
+    ta = importTAfromVTF("tests/foldingTest1.vtf", 'f')
+    ta = unfold(ta)
+    symbols = ta.getSymbolArityDict()
+    variables = [f"x" + f"{i+1}" for i in range(8)]
+    ta = normalize(ta, symbols, variables)
     # print(ta)
-    # ta = normalize(ta, symbols, variables)
-
-
-    # ta1 = importTAfromVTF("tests/normalizationTest1.vtf", 'f')
-    # ta2 = importTAfromVTF("tests/tddetX.vtf", 'f')
-    # print(ta1)
-    # print(ta2)
-    # boxFinding(ta1, ta2, ta1.rootStates[0])
+    xy = fold(ta, boxOrder)
+    # print(xy)
 # End of file main.py

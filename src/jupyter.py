@@ -18,7 +18,8 @@ from test_data import boxCatalogue
 # IMPORT/EXPORT INTEGRATION WITH JUPYTER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def importTA(source:str, fmtType:str = "", srcType:str = 'f') -> TTreeAut:
+
+def importTA(source: str, fmtType: str = "", srcType: str = 'f') -> TTreeAut:
     if fmtType == "" and srcType == 'f':
         if source.endswith(".vtf"):
             fmtType = 'vtf'
@@ -36,7 +37,7 @@ def importTA(source:str, fmtType:str = "", srcType:str = 'f') -> TTreeAut:
 
 
 # target can be either a filePath or a string variable, where
-def exportTA(ta: TTreeAut, fmtType:str, tgtType:str, filePath:str=""):
+def exportTA(ta: TTreeAut, fmtType: str, tgtType: str, filePath: str = ""):
     if fmtType != 'vtf' and fmtType != 'tmb':
         raise Exception(f"exportTA(): unsupported fmtType '{fmtType}'")
     if tgtType != 'f' and tgtType != 's':
@@ -67,13 +68,21 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
     # case 1 : output edge
     if len(edge[2]) == 0:
         # NODE: arbitrary output point
-        graph.node(name, shape='point', width='0.001', height='0.001')
+        graph.node(name,
+                   shape='point',
+                   width='0.001',
+                   height='0.001'
+                   )
         # EDGE: outputState -> arbitrary output point
-        graph.edge(edge[0], name, penwidth='2.0', arrowsize='0.5',
+        graph.edge(edge[0], name,
+                   penwidth='2.0',
+                   arrowsize='0.5',
                    label=f"<<B>[{edge[1].label}]</B>>")
 
-        if verbose: print(" > arbitrary output point", name)
-        if verbose: print(" > arbitrary output edge", edge[0], "->", name)
+        if verbose:
+            print(" > arbitrary output point", name)
+        if verbose:
+            print(" > arbitrary output edge", edge[0], "->", name)
         return
 
     # case 2 : regular edge (connector node needed)
@@ -82,8 +91,14 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
     name = name[:-3]
 
     # NODE: middle/connector node
-    graph.node(name, label='', shape='point', width='0.05', height='0.05')
-    if verbose: print("middle/connector node", name)
+    graph.node(name,
+               label='',
+               shape='point',
+               width='0.05',
+               height='0.05'
+               )
+    if verbose:
+        print("middle/connector node", name)
 
     # EDGE: srcState -> connector node
     connectorLabel = ""
@@ -91,141 +106,113 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
         connectorLabel += f"[{edge[1].variable}] "
     connectorLabel += f"{edge[1].label}"
 
-    graph.edge(edge[0], name, splines='true', overlap='false', penwidth='1.0',
-               arrowhead='empty', label=connectorLabel)
+    graph.edge(edge[0], name,
+               splines='true',
+               overlap='false',
+               penwidth='1.0',
+               arrowhead='empty',
+               label=connectorLabel
+               )
 
-    if verbose: print("connector edge", edge[0], "->", name)
+    if verbose:
+        print("connector edge", edge[0], "->", name)
 
     # EDGE: connector node -> children
     curr_child = 0
     curr_box = 0
     while curr_child < len(edge[2]):
         edgeLabel = f"{curr_box}"
-        hasBox = False;
+        hasBox = False
         if edge[1].boxArray != [] and edge[1].boxArray[curr_box] is not None:
-            hasBox = True;
+            hasBox = True
             edgeLabel += f": {edge[1].boxArray[curr_box]}"
 
-        # box handling (mapping more child states to one edge (portArity can be > 1))
+        # box handling (mapping more children to one edge (portArity > 1))
         if hasBox:
             boxName = edge[1].boxArray[curr_box]
             arity = boxCatalogue[boxName].portArity
             if arity > 1:
                 temp = f"{name}_{curr_child}_{curr_box}"
 
-                graph.node(temp, label='', shape='point', width='0.05', height='0.05')
-                graph.edge(name, temp, penwidth='1.0', arrowsize='0.5',
-                           arrowhead='vee', label=edgeLabel)
+                graph.node(temp,
+                           label='',
+                           shape='point',
+                           width='0.05',
+                           height='0.05'
+                           )
+                graph.edge(name, temp,
+                           penwidth='1.0',
+                           arrowsize='0.5',
+                           arrowhead='vee',
+                           label=edgeLabel
+                           )
 
-                if verbose: print(" > > box handling node", temp)
-                if verbose: print(" > > box handling edge", name, "->", temp, f"label={edgeLabel}")
+                if verbose:
+                    print(f" > > box handling node {temp}")
+                if verbose:
+                    print(f" > > box handling edge {name}->{temp} label={edgeLabel}")
 
                 for j in range(arity):
-                    graph.edge(temp, edge[2][curr_child], label= f"⊕{j}",
-                               penwidth='1.0', arrowsize='0.5', arrowhead='vee')
+                    graph.edge(temp, edge[2][curr_child],
+                               label=f"⊕{j}",
+                               penwidth='1.0',
+                               arrowsize='0.5',
+                               arrowhead='vee'
+                               )
 
-                    if verbose: print(" > > > arity handling edge", temp, "->", edge[2][curr_child], f"label=port{j}")
+                    if verbose:
+                        print(" > > > arity handling edge", temp, "->", edge[2][curr_child], f"label=port{j}")
                     curr_child += 1
             else:
-                graph.edge(name, edge[2][curr_child], label=edgeLabel,
-                    penwidth    = '1.0', arrowsize='0.5', arrowhead='vee')
-                if verbose: print(" > > nobox handling edge", name, "->", edge[2][curr_child], f"label={edgeLabel}")
+                graph.edge(name, edge[2][curr_child],
+                           label=edgeLabel,
+                           penwidth='1.0',
+                           arrowsize='0.5',
+                           arrowhead='vee'
+                           )
+                if verbose:
+                    print(" > > nobox handling edge", name, "->", edge[2][curr_child], f"label={edgeLabel}")
                 curr_child += 1
 
         else:
             graph.edge(name, edge[2][curr_child],
-                label       = f"{curr_box}",
-                penwidth    = '1.0',
-                arrowsize   = '0.5',
-                arrowhead   = 'vee'
-            )
-            if verbose: print(" > normal edge", name, "->", edge[2][curr_child], f"label={curr_box}")
+                       label=f"{curr_box}",
+                       penwidth='1.0',
+                       arrowsize='0.5',
+                       arrowhead='vee'
+                       )
+            if verbose:
+                print(f" > normal edge {name} ->", {edge[2][curr_child]}, f"label={curr_box}")
             curr_child += 1
         curr_box += 1
 
-# def wipDOTtransitionHandle(graph, edge):
-#     name = f"{edge[0]}-{edge[1].label}->"
-
-#     # case 1 : output edge
-#     if len(edge[2]) == 0:
-#         # NODE: arbitrary output point
-#         graph.node(name,
-#             shape='point',
-#             width='0.001',
-#             height='0.001'
-#         )
-#         # EDGE: outputState -> arbitrary output point
-#         graph.edge(edge[0], name,
-#             penwidth    = '2.0',
-#             arrowsize   = '0.5',
-#             label       = f"<<B>[{edge[1].label}]</B>>"
-#         )
-#         return
-
-#     # case 2 : regular edge (connector node needed)
-#     for i in edge[2]:
-#         name += str(i)
-
-#     # NODE: middle/connector node
-#     graph.node(name,
-#         label   = '',
-#         shape   = 'point',
-#         width   = '0.05',
-#         height  = '0.05'
-#     )
-
-#     # EDGE: srcState -> connector node
-#     connectorLabel = ""
-#     if edge[1].variable != "":
-#         connectorLabel += f"<{edge[1].variable}>, "
-#     connectorLabel += f"{edge[1].label}"
-#     graph.edge(edge[0], name,
-#         label       = connectorLabel,
-#         splines     = 'true',
-#         overlap     = 'false',
-#         penwidth    = '1.0',
-#         arrowhead   = 'empty'
-#     )
-
-#     # EDGE: connector node -> children
-#     for i in range(len(edge[2])):
-#         edgeLabel = f"{i}"
-#         hasBox = False;
-#         if edge[1].boxArray != [] and edge[1].boxArray[i] is not None:
-#             hasBox = True;
-#             edgeLabel += f":{edge[1].boxArray[i]}"
-#         graph.edge(name, edge[2][i],
-#             label       = edgeLabel,
-#             penwidth    = '1.0',
-#             arrowsize   = '0.5',
-#             arrowhead   = 'vee'
-#         )
 
 def DOTstateHandle(graph, state, leaves, roots):
     # NODE: inner node (state of TA)
     graph.node(f"{state}",
-        shape       = 'circle',
-        style       = 'filled',
-        fillcolor   = 'khaki' if state in leaves else 'bisque'
-    )
+               shape='circle',
+               style='filled',
+               fillcolor='khaki' if state in leaves else 'bisque'
+               )
 
     if state in roots:
         # NODE: arbitrary root point
         graph.node(f"->{state}",
-            label   = '',
-            shape   = 'point',
-            width   = '0.001',
-            height  = '0.001'
-        )
+                   label='',
+                   shape='point',
+                   width='0.001',
+                   height='0.001'
+                   )
         # EDGE: arbitrary root point -> root node
         graph.edge(f"->{state}", f"{state}",
-            label       = '',
-            penwidth    = '2.0',
-            arrowsize   = '0.5'
-        )
+                   label='',
+                   penwidth='2.0',
+                   arrowsize='0.5'
+                   )
     return
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def convertToDOT(src, type='a', verbose=False) -> Digraph:
     if type == 'a':
@@ -235,7 +222,8 @@ def convertToDOT(src, type='a', verbose=False) -> Digraph:
     elif type == 's':
         return treeToDOT(convertStringToTree(str(src)))
 
-def TAtoDOT(ta:TTreeAut, verbose=False) -> Digraph:
+
+def TAtoDOT(ta: TTreeAut, verbose=False) -> Digraph:
     dot = Digraph(comment=f"Tree Automaton {ta.name}")
     outputStates = ta.getOutputStates()
 
@@ -252,47 +240,49 @@ def TAtoDOT(ta:TTreeAut, verbose=False) -> Digraph:
 # TREES = INTEGRATION WITH DOT/GRAPHVIZ
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def drawChildren(graph:Digraph, root:TTreeNode, rootIdx:int) -> int:
+
+def drawChildren(graph: Digraph, root: TTreeNode, rootIdx: int) -> int:
     nodeIdx = rootIdx + 1
     for i in range(len(root.children)):
         currIdx = nodeIdx
         graph.node(str(currIdx),
-            label       = f"{root.children[i].value}",
-            style       = 'filled'
-        )
+                   label=f"{root.children[i].value}",
+                   style='filled'
+                   )
         nodeIdx = drawChildren(graph, root.children[i], nodeIdx)
         graph.edge(str(rootIdx), str(currIdx),
-            label       = f"{i}",
-            penwidth    = '1.0',
-            arrowsize   = '0.5',
-            arrowhead   = 'vee'
-        )
+                   label=f"{i}",
+                   penwidth='1.0',
+                   arrowsize='0.5',
+                   arrowhead='vee'
+                   )
     return nodeIdx
 
-def treeToDOT(root:TTreeNode) -> Digraph:
+
+def treeToDOT(root: TTreeNode) -> Digraph:
     dot = Digraph()
 
-    if root == None:
+    if root is None:
         return dot
     # arbitrary root node (for extra arrow)
     dot.node(f"->{root.value}",
-        label   = f"->{root.value}",
-        shape   = 'point',
-        width   = '0.001',
-        height  = '0.001'
-    )
+             label=f"->{root.value}",
+             shape='point',
+             width='0.001',
+             height='0.001'
+             )
 
     # the actual root node
     dot.node(str(0),
-        label       = f"{root.value}",
-        style       = 'filled'
-    )
+             label=f"{root.value}",
+             style='filled'
+             )
 
     dot.edge(f"->{root.value}", str(0),
-        penwidth    = '1.0',
-        arrowsize   = '0.5',
-        arrowhead   = 'vee'
-    )
+             penwidth='1.0',
+             arrowsize='0.5',
+             arrowhead='vee'
+             )
     drawChildren(dot, root, 0)
     return dot
 

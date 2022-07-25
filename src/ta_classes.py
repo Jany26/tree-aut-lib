@@ -27,10 +27,8 @@ class TTreeNode:
     # # Recursively rpints the whole node in somehow structured manner.
     # If called on root node, prints the whole tree
     def printNode(self):
-        print(2 * self.depth * ' ' +
-              str(self.value) +
-              "   --> lv " +
-              str(self.depth))
+        temp = 2 * self.depth * ' ' + str(self.value)
+        print(temp + "   --> lv " + str(self.depth))
         for i in self.children:
             i.printNode()
 
@@ -120,7 +118,7 @@ class TEdge:
         if not boxArrayEmpty:
             result += " ["
             for i in self.boxArray:
-                result += f"{i}, " if i is not None else f"_, "
+                result += f"{i.name}, " if i is not None else f"_, "
             result = result[:-2]
             result += "]"
         return result
@@ -151,13 +149,13 @@ class TTransition:
         return f"  > {self.srcState} -- {self.edge} --> {self.children}{comment}"
 
 
-class TState:
-    def __init__(self, stateName: str, transDict: dict):
-        self.stateName = stateName
-        self.transitions = transDict
+# class TState:
+#     def __init__(self, stateName: str, transDict: dict):
+#         self.stateName = stateName
+#         self.transitions = transDict
 
-    def __repr__(self):
-        return self.stateName
+#     def __repr__(self):
+#         return self.stateName
 
 
 # # Tree automaton class
@@ -362,11 +360,11 @@ class TTreeAut:
 
     # Returns a list of all states that can be reached through 1 transition
     # from a specific state (only one directional)
-    def reachableFrom(self, state:str) -> list:
+    def reachableFrom(self, state: str) -> list:
         if state not in self.transitions:
             return []
         result = set()
-        
+
         for edge in self.transitions[state].values():
             for child in edge[2]:
                 if child not in result:
@@ -374,14 +372,14 @@ class TTreeAut:
         return list(result)
 
     # Calculates the smallest "hop" distance to the specified state from root
-    # Works similarly to BFS but uses helping list to stop an iteration after 
+    # Works similarly to BFS but uses helping list to stop an iteration after
     # initial stack is exhausted and increases the distance counter
-    def getRootDistance(self, state:str) -> int:
+    def getRootDistance(self, state: str) -> int:
         distance = 0
         visited = set()  # cuts looping (BFS)
         workList = [i for i in self.rootStates]  # work list =>
         stateCount = len(self.getStates())
-        
+
         while len(visited) != stateCount:
             nextIteration = []
             while workList != []:
@@ -394,13 +392,11 @@ class TTreeAut:
                         nextIteration.append(i)
             workList = [i for i in nextIteration]
             distance += 1
-        
-        raise Exception(f"getRootDistance(): {state} not found in {self.name}")
-           
 
+        raise Exception(f"getRootDistance(): {state} not found in {self.name}")
 
     # Calculates all possible paths through the TA.
-    # Path must begin with a root state and end with a leaf 
+    # Path must begin with a root state and end with a leaf
     # note: based on DFS
     # result is a list of paths, path is a lists of states
     def calculatePaths(self) -> list:
@@ -419,7 +415,6 @@ class TTreeAut:
         for root in self.rootStates:
             preOrderDFS(root, [], result)
         return result
-
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Building functions #  - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -470,8 +465,8 @@ class TTreeAut:
     def createInfix(self, additionalOutputEdges):
         result = copy.deepcopy(self)
         ports = [sym for sym in additionalOutputEdges
-                 if sym.startswith("Port") and
-                 sym not in result.getOutputSymbols()]
+                 if (sym.startswith("Port")
+                     and sym not in result.getOutputSymbols())]
         result.name = f"infix({self.name}, {ports})"
 
         for state in result.getStates():

@@ -5,7 +5,8 @@
 
 from all_tests import *
 
-verbose = False # printing more detailed info on output during tests
+verbose = False  # printing more detailed info on output during tests
+
 
 def main():
     print(">> UNIT TEST: helper functions ...")

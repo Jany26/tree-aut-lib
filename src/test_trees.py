@@ -10,20 +10,22 @@ import re
 # FUNCTIONS FOR TESTING PURPOSES
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def convertStringToTree(string:str) -> TTreeNode:
-    ## Does not cover edge cases! (e.g. wrong string structure)
-    def getNodeFromString(string:str):
+
+def convertStringToTree(string: str) -> TTreeNode:
+
+    # Does not cover edge cases! (e.g. wrong string structure)
+    def getNodeFromString(string: str):
         string = string.strip()
         nodeName = re.match("^[\w]+", string).group()
         string = string.lstrip(str(nodeName))
         node = TTreeNode(nodeName)
         return node, string
 
-    ## Recursive function to generate a tree from a structured string
+    # Recursive function to generate a tree from a structured string
     # XYZ [...] = node with list of children following (can be nested)
     # [ node1 ; node2 [...] ; node3 ; ... ] = list of children of a previous node
-    def buildTreeFromString(currentNode:TTreeNode, string:str) -> TTreeNode:
-        string = string.strip() # skipping whitespaces
+    def buildTreeFromString(currentNode: TTreeNode, string: str) -> TTreeNode:
+        string = string.strip()  # skipping whitespaces
 
         # empty string - ending recursion
         if len(string) == 0:
@@ -54,9 +56,10 @@ def convertStringToTree(string:str) -> TTreeNode:
 
     return buildTreeFromString(None, string)
 
-## Reverse of the buildTreeFromString function
+
+# Reverse of the buildTreeFromString function
 # Creates a concise (string) representation of a tree from its structure
-def convertTreeToString(currentNode:TTreeNode) -> str:
+def convertTreeToString(currentNode: TTreeNode) -> str:
     if len(currentNode.children) == 0:
         return str(currentNode.value)
     else:
@@ -67,6 +70,7 @@ def convertTreeToString(currentNode:TTreeNode) -> str:
                 temp += ";"
         temp += "]"
         return temp
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # TESTING DATA - TREES (represented by structured strings)

@@ -29,7 +29,7 @@ def unfoldEdge(result: TTreeAut, foldedEdge: TEdge, counter: int, subTable: dict
         edge[1].boxArray.pop(0)
         box = None
 
-        if boxName == None:
+        if boxName is None:
             newEdge[2].append(edge[2][0])
             edge[2].pop(0)
             continue
@@ -50,17 +50,16 @@ def unfoldEdge(result: TTreeAut, foldedEdge: TEdge, counter: int, subTable: dict
         for index, state in enumerate(connectorList):
             subTable[state] = children[index]
 
-
         unfolded += 1
     return unfolded, newEdge
 
 
-def unfold(ta:TTreeAut) -> TTreeAut:
+def unfold(ta: TTreeAut) -> TTreeAut:
     # print(ta)
     result = TTreeAut(
         ta.rootStates,
-        {s:{} for s in ta.rootStates},
-        ta.name + "_unfolded",
+        {s: {} for s in ta.rootStates},
+        "unfolded(" + ta.name + ")",
         ta.portArity
     )
 
@@ -93,9 +92,9 @@ def unfold(ta:TTreeAut) -> TTreeAut:
 
 
 # possibly not needed
-def fixKeys(ta:TTreeAut):
+def fixKeys(ta: TTreeAut):
     for state, edgeDict in ta.transitions.items():
-        newEdgeDict={}
+        newEdgeDict = {}
         for edge in edgeDict.values():
             newKey = f"{edge[0]}-{edge[1].label}-{edge[2]}"
             newEdgeDict[newKey] = edge

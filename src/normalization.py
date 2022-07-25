@@ -4,16 +4,19 @@ from test_data import *
 
 boxes = boxCatalogue
 
+
 class NormalizationHelper:
-    def __init__(self, treeaut, transitions, roots, states, worklist, variables):
+    def __init__(self, treeaut, transitions, roots,
+                 states, worklist, variables):
         self.treeaut = treeaut
         self.roots = roots
         self.states = states
         self.transitions = transitions
         self.worklist = worklist
         self.variables = variables
+
     def __repr__(self):
-        result =  f"roots     = {self.roots}\n"
+        result = f"roots     = {self.roots}\n"
         result += f"edges     = {self.states}\n"
         result += f"worklist  = {self.worklist}\n"
         result += f"variables = {self.variables}\n"
@@ -24,11 +27,13 @@ class NormalizationHelper:
             result += f" -- {i[3]}\n"
         return result
 
-def normalize(ta:TTreeAut, alphabet:dict, varOrder:list) -> TTreeAut:
 
+def normalize(ta: TTreeAut, alphabet: dict, varOrder: list) -> TTreeAut:
+
+    # NOTE: wellDefined might be different here
     # if not isWellDefined(ta, errDisplay=False):
     #     raise Exception("Can not normalize TA, that is not well defined.")
-    
+
     # list of temporary arrays representing transitions = array of 4 elements:
     #   source state list,
     #   edge symbol/label,
@@ -52,11 +57,11 @@ def normalize(ta:TTreeAut, alphabet:dict, varOrder:list) -> TTreeAut:
     processed = []
     while worklist != []:
         for sym in symbols:
-            ms = worklist.pop() # macrostate
+            ms = worklist.pop()  # macrostate
             # print(ms)
             tuples = generatePossibleChildren(ms, states, symbols[sym])
             # for i in tuples:
-                # print(f"  > {i}")
+            #     print(f"  > {i}")
             for t in tuples:
                 if t in processed:
                     continue
@@ -75,7 +80,7 @@ def normalize(ta:TTreeAut, alphabet:dict, varOrder:list) -> TTreeAut:
     return result
 
 
-def normalizationGetTransitions(transitions:list) -> dict:
+def normalizationGetTransitions(transitions: list) -> dict:
     result = {}
     for i in transitions:
         srcState = detCreateName(i[0])
@@ -90,7 +95,7 @@ def normalizationGetTransitions(transitions:list) -> dict:
     return result
 
 
-def procTransitions(data: NormalizationHelper, childrenStates:list):
+def procTransitions(data: NormalizationHelper, childrenStates: list):
     tr = []
     for edge in transitions(data.treeaut):
         if len(edge[2]) != len(childrenStates):
@@ -101,21 +106,22 @@ def procTransitions(data: NormalizationHelper, childrenStates:list):
                 childsAreInMacroStates = False
         if childsAreInMacroStates:
             tr.append([edge[0], edge[1].label, edge[1].variable, edge[2]])
-    
+
     varEdge = False
     novarEdge = False
     for i in tr:
-        if i[2] == "": novarEdge = True
-        if i[2] != "": 
+        if i[2] == "":
+            novarEdge = True
+        if i[2] != "":
             varEdge = True
             # if i[2] not in data.variables:
             #     raise Exception("insufficient variable ordering for TA")
-        
+
     if varEdge and novarEdge:
         edgesToAdd = normalizeEdges(tr, data.variables)
     else:
         edgesToAdd = createEdgeList(tr)
-        
+
     edgevars = [i[2] for i in edgesToAdd]
     stateset = []
     for i in edgesToAdd:
@@ -141,6 +147,7 @@ def procTransitions(data: NormalizationHelper, childrenStates:list):
             data.states.append(stateList)
             data.worklist.append(stateList)
 
+
 def createEdgeList(tr: list) -> list:
     if tr == []:
         return []
@@ -157,8 +164,9 @@ def createEdgeList(tr: list) -> list:
             result.append([list(states), sym, var])
     return result
 
+
 def normalizeEdges(tr: list, vars: list) -> list:
-    helpDict = {i:{} for i in vars}
+    helpDict = {i: {} for i in vars}
     for var in vars:
         for e in tr:
             if e[2] != "" and e[2] != var:
@@ -173,7 +181,7 @@ def normalizeEdges(tr: list, vars: list) -> list:
     return result
 
 
-def compressVariables(ta:TTreeAut) -> TTreeAut:
+def compressVariables(ta: TTreeAut) -> TTreeAut:
     temp = {}
     for edgeDict in ta.transitions.values():
         for edge in edgeDict.values():

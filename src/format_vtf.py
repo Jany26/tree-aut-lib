@@ -6,20 +6,24 @@
 # import sys
 # import os
 from ta_functions import *
-import re, os
+import re
+import os
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def loadRootsFromVTF(line:str) -> list:
+
+def loadRootsFromVTF(line: str) -> list:
     return [i for i in line.strip().split() if i != "%Root"]
 
-def loadStatesFromVTF(line:str) -> list:
+
+def loadStatesFromVTF(line: str) -> list:
     words = line.strip().split()
     return [i.split(":")[0].strip() for i in words if i != "%States"]
 
-def loadArityFromVTF(line:str) -> dict:
+
+def loadArityFromVTF(line: str) -> dict:
     words = line.strip().split()
     result = {}
 
@@ -59,6 +63,7 @@ def loadArityFromVTF(line:str) -> dict:
 #     # print([state, TEdge(symbol, boxes, var), children])
 #     return [state, TEdge(symbol, boxes, var), children]
 
+
 def processEdge(edgeInfo: list) -> Tuple[list, str]:
     if len(edgeInfo) == 0:
         return [], ""
@@ -83,7 +88,8 @@ def processEdge(edgeInfo: list) -> Tuple[list, str]:
 
     return boxes, varString
 
-def loadTransitionFromVTF(line:str, taType='ta') -> list:
+
+def loadTransitionFromVTF(line: str, taType='ta') -> list:
     line = line.strip()
     if line == "":
         return []
@@ -93,7 +99,8 @@ def loadTransitionFromVTF(line:str, taType='ta') -> list:
 
     edgeInfo = []
     for i in words[0:]:
-        if i.startswith("("): break
+        if i.startswith("("):
+            break
         edgeInfo.append(i)
         words.pop(0)
     boxes, var = processEdge(edgeInfo)
@@ -110,7 +117,8 @@ def loadTransitionFromVTF(line:str, taType='ta') -> list:
 
     return [state, TEdge(symbol, boxes, var), children]
 
-def consistencyCheck(data:list, allStates:list, arityDict:dict):
+
+def consistencyCheck(data: list, allStates: list, arityDict: dict):
     if data[0] not in allStates:
         raise Exception(f"consistencyCheck(): src state '{data[0]}' not in preamble")
     if data[1].label not in arityDict:
@@ -121,19 +129,21 @@ def consistencyCheck(data:list, allStates:list, arityDict:dict):
         if i not in allStates:
             raise Exception(f"consistencyCheck(): child state '{i}' not in preamble")
 
+
 def consistencyCheckTMB(edges, states, arities, verbose=False) -> bool:
     # print(states)
     for stateName, edgeDict in edges.items():
 
         if stateName not in states:
-            if verbose: print(f"{stateName} not in states = {states}")
+            if verbose:
+                print(f"{stateName} not in states = {states}")
             return False
 
         for edgeData in edgeDict.values():
             if (edgeData[0] not in states
                 or edgeData[1].label not in arities
                 or len(edgeData[2]) != int(arities[edgeData[1].label])
-            ):
+                ):
                 if verbose:
                     if edgeData[0] not in states:
                         print(f"edge[0] = {edgeData[0]} not in states = [{states}]")
@@ -151,7 +161,8 @@ def consistencyCheckTMB(edges, states, arities, verbose=False) -> bool:
                     return False
     return True
 
-def generateKeyFromEdge(edge:list) -> str:
+
+def generateKeyFromEdge(edge: list) -> str:
     children = ""
     for i in range(len(edge[2])):
         children += str(edge[2][i])
@@ -164,6 +175,7 @@ def generateKeyFromEdge(edge:list) -> str:
 # VTF IMPORT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
     if sourceType == 'f':
         file = open(source, "r")
@@ -173,7 +185,6 @@ def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
         autName = "unnamed"
     else:
         Exception("importTAfromVTF(): unsupported sourceType (only 'f'/'s')")
-
 
     arityDict = {}
     rootStates = []
@@ -228,11 +239,13 @@ def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
 # EXPORT TO VTF - HELPER FUNCTIONS (FILE)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 def writeRootsVTFfile(roots, tgt):
     tgt.write("%Root")
     for root in roots:
         tgt.write(f" {root}")
     tgt.write("\n")
+
 
 def writeStatesVTFfile(states, tgt):
     tgt.write("%States")
@@ -240,11 +253,13 @@ def writeStatesVTFfile(states, tgt):
         tgt.write(f" {i}:0")
     tgt.write("\n")
 
+
 def writeAritiesVTFfile(arities, tgt):
     tgt.write("%Alphabet")
     for symbol in arities:
         tgt.write(f" {symbol}:{arities[symbol]}")
     tgt.write("\n\n")
+
 
 def writeEdgesVTFfile(edges, tgt):
     for edge in edges.values():
@@ -258,12 +273,14 @@ def writeEdgesVTFfile(edges, tgt):
 # EXPORT TO VTF - HELPER FUNCTIONS (STRING)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 def writeRootsVTFstr(roots):
     result = "%Root"
     for i in roots:
         result += f" {i}"
     result += "\n"
     return result
+
 
 def writeStatesVTFstr(states):
     result = "%States"
@@ -272,12 +289,14 @@ def writeStatesVTFstr(states):
     result += "\n"
     return result
 
+
 def writeAritiesVTFstr(arities):
     result = "%Alphabet"
     for symbol in arities:
         result += f" {symbol}:{arities[symbol]}"
     result += "\n\n"
     return result
+
 
 def writeEdgesVTFstr(edges):
     result = "# Transitions\n\n"
@@ -293,7 +312,8 @@ def writeEdgesVTFstr(edges):
 # EXPORT TO VTF
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def exportTAtoVTF(ta:TTreeAut, format, fileName=""):
+
+def exportTAtoVTF(ta: TTreeAut, format, fileName=""):
     if format != 'f' or format != 's':
         Exception("exportTAtoVTF(): unsupported format")
 
@@ -301,7 +321,6 @@ def exportTAtoVTF(ta:TTreeAut, format, fileName=""):
         Exception("exportTAtoVTF(): fileName needed")
 
     result = open(fileName, "w") if format == 'f' else ""
-
 
     if format == 'f':
         result.write("@NTA\n")

@@ -12,7 +12,8 @@ from ta_classes import *
 # HELPER FUNCTIONS FOR TMB IMPORT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def replaceCommasIn(line:str) -> str:
+
+def replaceCommasIn(line: str) -> str:
     stack = []
     temp = ""
     for i in range(len(line)):
@@ -32,7 +33,8 @@ def replaceCommasIn(line:str) -> str:
         raise Exception("unbalanced parentheses")
     return temp
 
-def loadSymbol(line:str):
+
+def loadSymbol(line: str):
     symbol = ""
     rest = ""
     for i in range(len(line)):
@@ -45,7 +47,8 @@ def loadSymbol(line:str):
         rest = ""
     return symbol, rest
 
-def loadTransitionFromTMB(line:str) -> list:
+
+def loadTransitionFromTMB(line: str) -> list:
     line = line.strip()
     transitionData = line.split("->")
     srcState = transitionData[1].strip()
@@ -56,7 +59,8 @@ def loadTransitionFromTMB(line:str) -> list:
     children = [state for state in childStates if state != ""]
     return [srcState, TEdge(symbol, [None] * len(children), ""), children]
 
-def loadArityFromTMB(line:str) -> dict:
+
+def loadArityFromTMB(line: str) -> dict:
     words = line.strip().split()
 
     result = {}
@@ -67,13 +71,15 @@ def loadArityFromTMB(line:str) -> dict:
         result[symbol] = arity
     return result
 
+
 def consistencyCheckTMB(edges, states, arities) -> bool:
     # print(states)
     for stateName, edgeDict in edges.items():
         if stateName not in states:
             return False
         for edgeData in edgeDict.values():
-            if (edgeData[0] not in states
+            if (
+                edgeData[0] not in states
                 or edgeData[1].label not in arities
                 or len(edgeData[2]) != int(arities[edgeData[1].label])
             ):
@@ -87,7 +93,8 @@ def consistencyCheckTMB(edges, states, arities) -> bool:
 # IMPORT TA FROM TMB FILE/STRING
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def importTAfromTMB(source:str, sourceType='f') -> TTreeAut:
+
+def importTAfromTMB(source: str, sourceType='f') -> TTreeAut:
     if sourceType == 'f':
         inputStream = open(source, "r")
     elif sourceType == 's':
@@ -160,16 +167,19 @@ def importTAfromTMB(source:str, sourceType='f') -> TTreeAut:
 # HELPER FUNCTIONS FOR TMB EXPORT - FILE
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 def writeAritiesTMBfile(arities, tgt):
     tgt.write("Ops")
     for i in arities:
         tgt.write(f" {i}:{arities[i]}")
     tgt.write("\n\n")
 
+
 def writeNameTMBfile(name, tgt):
     tgt.write("Automaton ")
     tgt.write(f"{name}") if name != "" else tgt.write("unnamed")
     tgt.write("\n\n")
+
 
 def writeStatesTMBfile(states, tgt):
     tgt.write("States")
@@ -177,11 +187,13 @@ def writeStatesTMBfile(states, tgt):
         tgt.write(f" {i}:0")
     tgt.write("\n\n")
 
+
 def writeRootsTMBfile(states, tgt):
     tgt.write("Final States")
     for i in states:
         tgt.write(f" {i}")
     tgt.write("\n\n")
+
 
 def writeTransitionsTMBfile(ta, tgt):
     tgt.write("Transitions\n")
@@ -199,6 +211,7 @@ def writeTransitionsTMBfile(ta, tgt):
 # HELPER FUNCTIONS FOR TMB EXPORT - STRING
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+
 def writeAritiesTMBstr(arities):
     result = "Ops"
     for i in arities:
@@ -206,8 +219,10 @@ def writeAritiesTMBstr(arities):
     result += "\n\n"
     return result
 
+
 def writeNameTMBstr(name):
     return "Automaton " + (f"{name}" if name != "" else "unnamed") + "\n\n"
+
 
 def writeStatesTMBstr(states):
     result = "States"
@@ -216,12 +231,14 @@ def writeStatesTMBstr(states):
     result += "\n\n"
     return result
 
+
 def writeRootsTMBstr(states):
     result = "Final States"
     for i in states:
         result += f" {i}"
     result += "\n\n"
     return result
+
 
 def writeTransitionsTMBstr(ta):
     result = "Transitions\n"
@@ -239,6 +256,7 @@ def writeTransitionsTMBstr(ta):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # EXPORT TA TO TMB FILE/STRING
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 
 def exportTAtoTMB(ta: TTreeAut, format, fileName=""):
     if format != 'f' and format != 's':

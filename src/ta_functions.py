@@ -115,7 +115,7 @@ def matchTreeTD(ta: TTreeAut, root: TTreeNode) -> bool:
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     for rootPtr in ta.rootStates:
-        if matchTopDown(ta, root, rootPtr) == True:
+        if matchTopDown(ta, root, rootPtr) is True:
             return True
     return False
 
@@ -212,7 +212,7 @@ def detOutEdges(outEdges: list, doneEdges, alphabet):
 
     for symbol in alphabet:
         if symbol not in outEdges and alphabet[symbol] == 0:
-            doneEdges.append([ [], symbol, [] ])
+            doneEdges.append([[], symbol, []])
             if [] not in result:
                 result.append([])
     return result
@@ -221,7 +221,7 @@ def detOutEdges(outEdges: list, doneEdges, alphabet):
 # Finds all possible source states (parents) for a set of given
 #  macrostates (lists of states) - parameter 'tuple'.
 #  For this, a lookup dictionary is created at the start of determinization.
-#  Function tries to perform a bottom-up step: 
+#  Function tries to perform a bottom-up step:
 #  trying to find a feasible transition from a given children tuple
 def detChildHandle(tuple: list, lookup: dict) -> list:
     children = [list(i) for i in product(*tuple)]
@@ -339,7 +339,8 @@ def treeAutDeterminization(ta: TTreeAut,
     result = TTreeAut(newRoots, newEdges, f"determinized({ta.name})")
     result.portArity = result.getPortArity()
 
-    if verbose: print(f"determinization of {ta.name} done")
+    if verbose:
+        print(f"determinization of {ta.name} done")
 
     return result
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -375,6 +376,7 @@ def treeAutIntersection(ta1: TTreeAut,
     #  based on the two keys and two edges from input.
     #  If possible, adds a new transition into the result dictionary
     counter = 0
+
     def handleIntersectionEdge(k1: str, e1: list, k2: str, e2: list,
                                result: TTreeAut, state: str):
         newKey = f"({k1},{k2})"  # merge transition keys
@@ -412,9 +414,9 @@ def treeAutIntersection(ta1: TTreeAut,
     # else:
     #     newTransition.append(transition1[1])
 
-    if ta2 == None:
+    if ta2 is None:
         return ta1
-    if ta1 == None:
+    if ta1 is None:
         return ta2
 
     result = TTreeAut([], {}, f"int({ta1.name},{ta2.name})")
@@ -456,7 +458,7 @@ def treeAutProduct(ta1: TTreeAut, ta2: TTreeAut) -> TTreeAut:
         result = "("
         for i in range(len(stateList)):
             result += stateList[i]
-            if i < len(stateList)-1:
+            if i < len(stateList) - 1:
                 result += ","
         result += ")"
         return result
@@ -467,7 +469,6 @@ def treeAutProduct(ta1: TTreeAut, ta2: TTreeAut) -> TTreeAut:
         rootsMerge.append(ta2.rootStates)
         roots = product(*rootsMerge)
         return [list(i) for i in roots]
-
 
     def productify(state1, state2, ta1, ta2, edgeDict, done):
         if [state1, state2] in done:
@@ -570,17 +571,17 @@ def nonEmptyTD(ta: TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
             or len(ta.transitions[state]) == 0  # or an empty entry
         ):
             # if debug: print("    > FALSE ... self-loop or invalid state")
-            if debug: print("{:<40} {:<5} {:<30}".format(
-                f"{state}"[:40],
-                f"SKIP",
-                f""
-            ))
+            if debug:
+                print("{:<40} {:<5} {:<30}".format(
+                      f"{state}"[:40], f"SKIP", f""))
             return False
 
         if debug:
             print("{:<60} {:<120} {:<12}".format(
-                f"state " + "-" * 54, f"callStack "
-                + "-" * 108, f"done", f"function"
+                f"state " + "-" * 54,
+                f"callStack " + "-" * 108,
+                f"done",
+                f"function"
             ))
             print("{:<60} {:<120} {:<12}".format(
                 f"{state}"[:60],
@@ -657,11 +658,13 @@ def nonEmptyTD(ta: TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
     edgeLookup, outDict = nonEmptyTDinitFunc(ta)
     for root in ta.rootStates:
         if outputSearchTD(ta, root, [], outDict, edgeLookup, verbose, total):
-            if verbose: print(f"{ta.name} has non-empty lang")
+            if verbose:
+                print(f"{ta.name} has non-empty lang")
             witnessTree = generateWitnessTree(edgeLookup, root)
             witnessString = generateWitnessString(edgeLookup, root)
             return witnessTree, witnessString
-    if verbose: print(f"{ta.name} has empty lang")
+    if verbose:
+        print(f"{ta.name} has empty lang")
     return None, ""
 
 
@@ -691,7 +694,7 @@ def nonEmptyBU(ta: TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
     def doneEdgePrint(doneEdges: dict):
         result = []
         for i in doneEdges.values():
-            result.append( [ i[0], i[1].label, i[2] ] )
+            result.append([i[0], i[1].label, i[2]])
         for j in result:
             print(j)
         print()
@@ -703,7 +706,8 @@ def nonEmptyBU(ta: TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
         if state not in doneSet:
             doneSet.append(state)
         if state in ta.rootStates:
-            if verbose: print(f">> {ta.name} has non-empty lang")
+            if verbose:
+                print(f">> {ta.name} has non-empty lang")
             witnessTree = generateWitnessTree(done, state)
             witnessString = generateWitnessString(done, state)
             return witnessTree, witnessString
@@ -725,16 +729,14 @@ def nonEmptyBU(ta: TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
                 ))
             for stateName, edgeDict in ta.transitions.items():
                 for edge in edgeDict.values():
-                    if (
-                        edge[1].label != symbol
-                        or edge[2] not in tuples
-                    ):
+                    if (edge[1].label != symbol or edge[2] not in tuples):
                         continue
                     if stateName not in done:
                         workList.append(stateName)
                         done[stateName] = edge
 
-    if verbose: print(f">> {ta.name} has empty lang")
+    if verbose:
+        print(f">> {ta.name} has empty lang")
     return None, ""
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -854,10 +856,7 @@ def portConsistencyCheck(ta: TTreeAut) -> bool:
             tuples = generatePossibleChildren(state, list(done), arity)
             for stateName, edgeDict in ta.transitions.items():
                 for edge in edgeDict.values():
-                    if (
-                        edge[1].label != symbol
-                        or edge[2] not in tuples
-                    ):
+                    if (edge[1].label != symbol or edge[2] not in tuples):
                         continue
                     if stateName not in done:
                         done[stateName] = []
@@ -883,13 +882,13 @@ def isWellDefined(ta: TTreeAut, errDisplay=False) -> bool:
 
     # 1) Non-emptiness  - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     witnessTree, witnessString = nonEmptyBU(ta)
-    if witnessTree == None or witnessString == "":
+    if witnessTree is None or witnessString == "":
         wellDefinedConditions["1-non-emptiness"] = False
 
     # 2) Trimness - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     allStates = ta.getStates()
-    if (set(reachableBU(ta)) != set(allStates)
-        or set(reachableTD(ta)) != set(allStates)):
+    if (set(reachableBU(ta)) != set(allStates) or set(reachableTD(ta)) != set(allStates)
+    ):
         wellDefinedConditions["2-trimness"] = False
 
     # 3) Port consistency - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -927,7 +926,7 @@ def isWellDefined(ta: TTreeAut, errDisplay=False) -> bool:
     boxIsWellDefined = True
     errorMsg = f"   > isWellDefined('{ta.name}'): failed conditions = "
     for condition, value in wellDefinedConditions.items():
-        if value == False:
+        if value is False:
             errorMsg += f"{condition} "
             boxIsWellDefined = False
     if not boxIsWellDefined and errDisplay:
@@ -940,7 +939,7 @@ def areCommutative(ta1: TTreeAut, ta2: TTreeAut) -> bool:
     prefix = ta2.createPrefix(ta1.getOutputSymbols())
     intersection = treeAutIntersection(suffix, prefix)
     witnessT, witnessS = nonEmptyBU(intersection)
-    return witnessT == None
+    return witnessT is None
 
 
 def areComparable(ta1: TTreeAut, ta2: TTreeAut):
@@ -950,6 +949,6 @@ def areComparable(ta1: TTreeAut, ta2: TTreeAut):
     # complement.printTreeAut()
     intersection = treeAutIntersection(complement, ta2)
     witnessT, witnessS = nonEmptyBU(intersection)
-    return witnessT == None
+    return witnessT is None
 
 # End of file ta_functions.py

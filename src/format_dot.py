@@ -18,7 +18,8 @@ connEdge = "splines=true, overlap=false, penwidth=1.0, arrowhead=empty"
 outEdge = "penwidth=2.0, arrowsize=0.5"
 innerEdge = "penwidth=1.0, arrowsize=0.5, arrowhead=vee"
 
-def rootHandle(rootList:list, file):
+
+def rootHandle(rootList: list, file):
     file.write(f"\tnode [ label=\"\", {helpPoint} ];\n")
     for root in rootList:
         file.write(f"\t\"->{root}\"\n")
@@ -27,7 +28,8 @@ def rootHandle(rootList:list, file):
         file.write(f"\t\"->{root}\" -> \"{root}\" [ {outEdge} ] ;\n")
     file.write("\n")
 
-def outputEdgeHandle(edge:list, file, debug=False):
+
+def outputEdgeHandle(edge: list, file, debug=False):
     if len(edge[2]) == 0:
         file.write(f"\tnode [ label=\"\", {helpPoint} ];\n")
         endName = f"{edge[0]}-{edge[1].label}->"
@@ -36,9 +38,10 @@ def outputEdgeHandle(edge:list, file, debug=False):
         return True
     return False
 
+
 def allStatesHandle(ta: TTreeAut, file):
     stateList = ta.getStates()
-    leaves = {state:None for state in ta.getOutputStates()}
+    leaves = {state: None for state in ta.getOutputStates()}
     file.write("\tnode [ shape=circle, style=filled ];\n")
 
     for state in stateList:
@@ -46,8 +49,10 @@ def allStatesHandle(ta: TTreeAut, file):
         file.write(f"\t\"{state}\" [fillcolor={color}];\n")
     file.write("\n")
 
-def edgeHandle(edge:list, file, debug=False):
-    if debug: print(f"- - edgeHandle {edge} - -")
+
+def edgeHandle(edge: list, file, debug=False):
+    if debug:
+        print(f"- - edgeHandle {edge} - -")
     # if outputEdgeHandle(edge, file, debug):
         # return
 
@@ -61,9 +66,11 @@ def edgeHandle(edge:list, file, debug=False):
     # case 1 : output edge
     if len(edge[2]) == 0:
         file.write(f"\t\"{tempName}\" [ {helpPoint} ];\n")
-        if debug: print(f"helpPOINT {tempName}")
+        if debug:
+            print(f"helpPOINT {tempName}")
         file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ label=<<B>[{edge[1].label}]</B>>, {outEdge} ]\n")
-        if debug: print(f"[{edge[0]}] -- {edge[1].label} --> [{tempName}]", "outEdge")
+        if debug:
+            print(f"[{edge[0]}] -- {edge[1].label} --> [{tempName}]", "outEdge")
         return
 
     # case 2 : regular edge (connector node needed)
@@ -73,7 +80,8 @@ def edgeHandle(edge:list, file, debug=False):
 
     # connector node
     file.write(f"\t\"{tempName}\" [ {smallPoint} ];\n")
-    if debug: print(f"NODE {tempName}")
+    if debug:
+        print(f"NODE {tempName}")
 
     connectorLabel = "\""
     if edge[1].variable != "":
@@ -82,16 +90,17 @@ def edgeHandle(edge:list, file, debug=False):
 
     # edge: srcState -> connector node
     file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ label={connectorLabel}, {connEdge} ]\n")
-    if debug: print(f"[{edge[0]}] -> [{tempName}]", "connEdge")
+    if debug:
+        print(f"[{edge[0]}] -> [{tempName}]", "connEdge")
 
     # edge: connector node -> children
     current_child = 0
     current_box = 0
     while current_child < len(edge[2]):
         edgeLabel = f"\"{current_box}"
-        hasBox = False;
+        hasBox = False
         if edge[1].boxArray != [] and edge[1].boxArray[current_box] is not None:
-            hasBox = True;
+            hasBox = True
             edgeLabel += f": {edge[1].boxArray[current_box]}"
         edgeLabel += f"\""
 
@@ -103,29 +112,34 @@ def edgeHandle(edge:list, file, debug=False):
                 temp = f"{tempName}_{current_child}_{current_box}"
 
                 file.write(f"\t\"{temp}\" [ {smallPoint} ];\n")
-                if debug: print(f"NODE {temp}")
+                if debug:
+                    print(f"NODE {temp}")
                 file.write(f"\t\"{tempName}\" -> \"{temp}\" [ label={edgeLabel}, {innerEdge} ]\n")
-                if debug: print(f"[{tempName}] -> [{temp}]")
-
+                if debug:
+                    print(f"[{tempName}] -> [{temp}]")
 
                 for j in range(arity):
                     file.write(f"\t\"{temp}\" -> \"{edge[2][current_child]}\" [ label=⊕{j}, {innerEdge} ]\n")
-                    if debug: print(f"[{temp}] -> [{edge[2][current_child]}]", f"curr_child = {current_child}")
+                    if debug:
+                        print(f"[{temp}] -> [{edge[2][current_child]}]", f"curr_child = {current_child}")
                     current_child += 1
             else:
                 file.write(f"\t\"{tempName}\" -> \"{edge[2][current_child]}\" [ label={edgeLabel}, {innerEdge} ]\n")
-                if debug: print(f"[{tempName}] -> [{edge[2][current_child]}]", f"curr_child = {current_child}")
+                if debug:
+                    print(f"[{tempName}] -> [{edge[2][current_child]}]", f"curr_child = {current_child}")
                 current_child += 1
         else:
             file.write(f"\t\"{tempName}\" -> \"{edge[2][current_child]}\" [ label={current_box}, {innerEdge} ]\n")
-            if debug: print(f"[{tempName}] -> [{edge[2][current_child]}]", f"curr_child = {current_box}")
+            if debug:
+                print(f"[{tempName}] -> [{edge[2][current_child]}]", f"curr_child = {current_box}")
             current_child += 1
 
         current_box += 1
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-         
-def exportTreeAutToDOT(ta:TTreeAut, fileName:str):
+
+
+def exportTreeAutToDOT(ta: TTreeAut, fileName: str):
     file = open(fileName, "w")
     file.write("digraph G {\n")
     allStatesHandle(ta, file)

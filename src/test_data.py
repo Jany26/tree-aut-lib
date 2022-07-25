@@ -36,6 +36,14 @@ boxCatalogue = {
     "H1": importTAfromVTF("tests/boxH1.vtf"),
     "LPort": importTAfromVTF("tests/boxLPort.vtf"),
     "HPort": importTAfromVTF("tests/boxHPort.vtf"),
+    
+    "boxX": importTAfromVTF("tests/boxX.vtf"),
+    "boxL0": importTAfromVTF("tests/boxL0.vtf"),
+    "boxL1": importTAfromVTF("tests/boxL1.vtf"),
+    "boxH0": importTAfromVTF("tests/boxH0.vtf"),
+    "boxH1": importTAfromVTF("tests/boxH1.vtf"),
+    "boxLPort": importTAfromVTF("tests/boxLPort.vtf"),
+    "boxHPort": importTAfromVTF("tests/boxHPort.vtf"),
 }
 
 boxX = boxCatalogue["X"]
@@ -61,7 +69,7 @@ testUnreachable1 = importTAfromVTF("tests/testUnreachable1.vtf")
 testUnreachable2 = importTAfromVTF("tests/testUnreachable2.vtf")
 testUnreachable3 = importTAfromVTF("tests/testUnreachable3.vtf")
 
-testNonEmpty1    = importTAfromVTF("tests/testNonEmpty1.vtf")
+testNonEmpty1 = importTAfromVTF("tests/testNonEmpty1.vtf")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

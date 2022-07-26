@@ -5,8 +5,6 @@
 
 # from _typeshed import FileDescriptor
 from io import TextIOWrapper
-from jupyter import convertToDOT
-from regex import B
 from bdd import *
 from test_data import *
 from format_vtf import *
@@ -1089,7 +1087,8 @@ def bddTests():
     c.attach(d, e)
     d.attach(f, f)
 
-    print(BDD('test1', a))
+    # print(BDD('test1', a))
+    # (BDD('test1', a)).printBDD()
 
 def extraTests():
     bddTests()

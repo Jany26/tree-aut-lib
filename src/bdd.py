@@ -52,7 +52,7 @@ class BDDnode:
 
     # may be obsolete => originally used in iterateBFS()
     def getNodesFromLevel(self, level: int) -> list:
-        
+
         def getNodesFromLevelHelper(node, level, result):
             if self is None:
                 return
@@ -61,7 +61,7 @@ class BDDnode:
             elif level > 1:
                 getNodesFromLevelHelper(node.low, level - 1, result)
                 getNodesFromLevelHelper(node.high, level - 1, result)
-        
+
         result = []
         getNodesFromLevelHelper(self, level, result)
         return result
@@ -73,11 +73,27 @@ class BDD:
         self.name = name
         self.root = root
 
+    # List-like output format for a BDD
     def __repr__(self):
         result = ""
         for i in self.iterateDFS(allowRepeats=True):
             result += f"{i} [{i.height()}] -> [{i.low}, {i.high}]\n"
         return result
+
+    # Tree-like format of outputting/printing a BDD
+    def printBDD(self):
+        def printBDDNode(node: BDDnode, lvl: int, prefix: str):
+            if node is None:
+                return
+            spaces = " " * 2 * lvl
+            isLeaf = "LEAF" if node.low is None or node.high is None else ""
+            print(f"{spaces}{prefix} {node.name} <{node.value}> {isLeaf}")
+            newPrefixLow = f"[{node.name}-L->]"
+            newPrefixHigh = f"[{node.name}-H->]"
+            printBDDNode(node.low, lvl + 1, newPrefixLow)
+            printBDDNode(node.high, lvl + 1, newPrefixHigh)
+
+        printBDDNode(self.root, 0, "[root]")
 
     # Breadth first traversal of BDD nodes (iterator)
     # if allowRepeats=False: each node is only visited once (leaf nodes etc.)
@@ -86,7 +102,7 @@ class BDD:
         node = self.root
         if node is None:
             return
-        
+
         visited = set()
         queue = [node]
 
@@ -99,10 +115,10 @@ class BDD:
                 visited.add(node)
 
             yield node
-            
+
             if node.low is not None:
                 queue.append(node.low)
-            
+
             if node.high is not None:
                 queue.append(node.high)
 
@@ -114,18 +130,18 @@ class BDD:
                 if node in visited:
                     return
                 visited.add(node)
-            
+
             yield node
-            
+
             if node.low is not None:
                 yield from DFS(node.low, visited, allowRepeats)
-            
+
             if node.high is not None:
                 yield from DFS(node.high, visited, allowRepeats)
 
         visited = set()
         return DFS(self.root, visited, allowRepeats)
-    
+
 
 # Creates a new BDD by applying some logic function on two BDDs.
 def applyFunction(bdd1: BDD, bdd2: BDD, func) -> BDD:

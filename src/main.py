@@ -53,7 +53,6 @@ def main():
     # productTests()
     # extensionTests()
 
-    extraTests()
     # sanityTests()
     print(">> UNIT TESTS DONE!")
 

@@ -7,7 +7,7 @@ from ta_functions import *
 from test_data import fullAlphabet, boxCatalogue
 
 
-boxOrder = ['LPort', 'HPort', 'L0', 'L1', 'H0', 'H1', 'X']
+boxOrder = ['X', 'LPort', 'HPort', 'L0', 'L1', 'H0', 'H1']
 
 
 def noSameChildrenEdgeCheck(ta: TTreeAut) -> bool:
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     symbols = ta.getSymbolArityDict()
     variables = [f"x" + f"{i+1}" for i in range(8)]
     ta = normalize(ta, symbols, variables)
-    # print(ta)
+    print(ta)
     xy = fold(ta, boxOrder)
-    # print(xy)
+    print(xy)
 # End of file main.py

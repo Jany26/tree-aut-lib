@@ -6,6 +6,8 @@
 # from _typeshed import FileDescriptor
 from io import TextIOWrapper
 from jupyter import convertToDOT
+from regex import B
+from bdd import *
 from test_data import *
 from format_vtf import *
 from format_tmb import *
@@ -1071,11 +1073,25 @@ def extensionTests():
     printFailedTests(failures)
 
 
-def extraTests():
-    ta = importTAfromVTF("tests/normalizationTest1.vtf", 'f')
-    # ta = importTAfromVTF("tests/unfoldingTest4.vtf", 'f')
-    # exportTreeAutToDOT(ta, "vtf-to-dot/unfoldingTest4.dot")
-    print(ta)
+def bddTests():
+    
+    failures = []
+    
+    a = BDDnode('a', 'x1')
+    b = BDDnode('b', 'x2')
+    c = BDDnode('c', 'x3')
+    d = BDDnode('d', 'x4')
+    e = BDDnode('0', 'x5')
+    f = BDDnode('1', 'x6')
 
+    a.attach(b, c)
+    b.attach(e, f)
+    c.attach(d, e)
+    d.attach(f, f)
+
+    print(BDD('test1', a))
+
+def extraTests():
+    bddTests()
 
 # End of file all_tests.py

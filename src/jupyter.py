@@ -125,11 +125,14 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
         hasBox = False
         if edge[1].boxArray != [] and edge[1].boxArray[curr_box] is not None:
             hasBox = True
-            edgeLabel += f": {edge[1].boxArray[curr_box]}"
+            edgeLabel += f": {edge[1].boxArray[curr_box].name}"
 
         # box handling (mapping more children to one edge (portArity > 1))
         if hasBox:
-            boxName = edge[1].boxArray[curr_box]
+            if type(edge[1].boxArray[curr_box]) == type(str):
+                boxName = edge[1].boxArray[curr_box]
+            else:
+                boxName = edge[1].boxArray[curr_box].name
             arity = boxCatalogue[boxName].portArity
             if arity > 1:
                 temp = f"{name}_{curr_child}_{curr_box}"

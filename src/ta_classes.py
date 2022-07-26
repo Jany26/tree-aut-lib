@@ -32,24 +32,24 @@ class TTreeNode:
         for i in self.children:
             i.printNode()
 
-    def actualizeDepth(self, newRootDepth: int):
+    def updateDepth(self, newRootDepth: int):
         self.depth = newRootDepth
         for i in self.children:
-            i.actualizeDepth(newRootDepth + 1)
+            i.updateDepth(newRootDepth + 1)
 
     # # Creates a child node with a specific value.
     # Connects the created node to the current node/parent.
     def addChild(self, value):
         childPtr = TTreeNode(value)
         childPtr.parent = self
-        childPtr.actualizeDepth(self.depth + 1)
+        childPtr.updateDepth(self.depth + 1)
         self.children.append(childPtr)
 
     # # Connects a specific node to current node
     def connectChild(self, node):
         self.children.append(node)
         node.parent = self
-        node.actualizeDepth(self.depth + 1)
+        node.updateDepth(self.depth + 1)
 
     # # removes the "leftest" 1 child with specified value.
     def removeChild(self, value):
@@ -518,10 +518,10 @@ def iterateDFS(ta: TTreeAut):
 
 # Breadth-first search iterator over states of a tree automaton
 def iterateBFS(ta: TTreeAut):
-    stack = [root for root in ta.rootStates]
+    queue = [root for root in ta.rootStates]
     visited = set()
-    while stack:
-        state = stack.pop(0)
+    while queue:
+        state = queue.pop(0)
         if state in visited:
             continue
         visited.add(state)
@@ -529,5 +529,5 @@ def iterateBFS(ta: TTreeAut):
         for edge in ta.transitions[state].values():
             for child in edge[2]:
                 if child not in visited:
-                    stack.append(child)
+                    queue.append(child)
 # End of file ta_classes.py

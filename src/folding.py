@@ -120,8 +120,9 @@ def getMaximalMapping(ta: TTreeAut, ports: dict) -> dict:
 #   - if no mapping is found, empty dictionary {} is returned
 def boxFinding(ta: TTreeAut, box: TTreeAut, root: str) -> dict:
     A = createIntersectoid(ta, box, root)
-    # print(A)
     A = trim(A)  # additional functionality maybe needed?
+    # print("intersectoid")
+    # print(A)
     tree, string = nonEmptyBU(A)
     # ^^ this is based on the rootDistances of nodes from "ports"
     if tree is None:
@@ -142,22 +143,19 @@ def boxFinding(ta: TTreeAut, box: TTreeAut, root: str) -> dict:
 # output: (folded) UBDA with applied reductions (same language as the input)
 def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
     result = copy.deepcopy(ta)
-    print(result)
-    fillBoxArrays(result)
+    fillBoxArrays(result)  # in case of [None, None] and [] discrepancies
     reductions = 0
-    # boxes.reverse()
     for boxName in boxes:
         box = boxCatalogue[boxName]
-        # print(box.name)
         for state in iterateDFS(result):
             edgesToChildren = prepareEdgeInfo(result, state)
             for edge in edgesToChildren:
-                # edge = [key, child-index, child]
+                # edge contains three items: [key, child-index, child]
 
                 if isAlreadyReduced(result, state, edge):
                     continue
                 mapping = boxFinding(result, box, edge[2])
-                # print(f"boxFinding({box.name}, {state}, {edge[2]}[{edge[1]}]) = {mapping}")
+                # print(f"boxFinding({box.name}, {edge[2]}) = {mapping}")
 
                 # applying reduction HERE
                 if mapping != {}:
@@ -174,14 +172,21 @@ def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
                     e[2].pop(idx)
                     for i, mapState in enumerate(mapping.values()):
                         e[2].insert(idx + i, mapState)
-                    # print(e[2])
-                    print(result)
-    for i in result.transitions.values():
-        for e in i.values():
-            print(e)
     result = removeUselessStates(result)
-    print(result)
+    stringifyBoxes(result)
     return result
+
+
+def stringifyBoxes(ta:TTreeAut):
+    for edge in transitions(ta):
+        newBoxArray = []
+        for box in edge[1].boxArray:
+            if type(box) == type(TTreeAut):
+                newBoxArray.append(box.name)
+            else:
+                newBoxArray.append(box)
+        edge[1].boxArray = newBoxArray
+            
 
 
 def getStateIndexFromBoxIndex(edge: list, idx: int) -> int:

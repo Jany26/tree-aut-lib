@@ -139,14 +139,14 @@ class TEdge:
 
 
 class TTransition:
-    def __init__(self, srcState: str, edge: TEdge, children: list):
-        self.srcState = srcState
-        self.edge = edge
+    def __init__(self, src: str, info: TEdge, children: list):
+        self.src = src
+        self.info = info  # edge info (symbol, boxes, variable)
         self.children = children
 
     def __repr__(self):
         comment = " <<< LEAF TRANSITION >>>" if self.children == [] else ""
-        return f"  > {self.srcState} -- {self.edge} --> {self.children}{comment}"
+        return f"  > {self.src} -- {self.info} --> {self.children}{comment}"
 
 
 # class TState:
@@ -175,7 +175,7 @@ class TTransition:
 #         - this will be called "transition" dictionary (for the current state)
 #         - the transition dictionary is referenced by arbitrary keys (for now)
 class TTreeAut:
-    def __init__(self, rootStates, transitions, name, portArity=0):
+    def __init__(self, rootStates: list, transitions: dict, name: str, portArity: int=0):
         self.rootStates = rootStates
         self.transitions = transitions
         self.name = name
@@ -188,8 +188,8 @@ class TTreeAut:
         for state in iterateBFS(self):
             # result += "  >"
             for e in self.transitions[state].values():
-                comment = " <<< LEAF TRANSITION >>>" if e[2] == [] else ""
-                result += f"  > {e[0]} -- {e[1]} --> {e[2]}{comment}\n"
+                comment = " <<< LEAF TRANSITION >>>" if e.children == [] else ""
+                result += f"  > {e.src} -- {e.info} --> {e.children}{comment}\n"
         return result[:-1]  # trim the last '\n'
 
     def printTreeAut(self):
@@ -200,7 +200,7 @@ class TTreeAut:
         for stateName, content in self.transitions.items():
             print("=== State " + stateName + " ===")
             for edge in content.values():
-                print(edge[0] + " -- " + str(edge[1]) + " --> " + str(edge[2]))
+                print(edge.src + " -- " + str(edge.info) + " --> " + str(edge.children))
         print("")
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -214,7 +214,7 @@ class TTreeAut:
         for stateName, edges in self.transitions.items():
             result.append(stateName)
             for data in edges.values():
-                for i in data[2]:
+                for i in data.children:
                     result.append(i)
         result = list(set(result))
         result.sort()
@@ -224,10 +224,10 @@ class TTreeAut:
     # generates all edge symbols labeling the output edges from the TA
     def getOutputSymbols(self) -> list:
         outputEdgeList = []
-        for transition in self.transitions.values():
-            for data in transition.values():
-                if len(data[2]) == 0:
-                    outputEdgeList.append(data[1].label)
+        for edgeDict in self.transitions.values():
+            for edge in edgeDict.values():
+                if len(edge.children) == 0:
+                    outputEdgeList.append(edge.info.label)
         return outputEdgeList
 
     # needed for feeding treeAutDeterminize() function
@@ -236,17 +236,16 @@ class TTreeAut:
     # from which the transitions with the specific symbol originate
     def getOutputEdges(self, inverse=False) -> dict:
         result = {}
-        for transition in self.transitions.values():
-            for data in transition.values():
-                if len(data[2]) == 0:
-                    if inverse:
-                        if data[0] not in result:
-                            result[data[0]] = []
-                        result[data[0]].append(data[1].label)
-                    else:
-                        if data[1].label not in result:
-                            result[data[1].label] = []
-                        result[data[1].label].append(data[0])
+        for edge in transitions(self):
+            if len(edge.children) == 0:
+                if inverse:
+                    if edge.src not in result:
+                        result[edge.src] = []
+                    result[edge.src].append(edge.info.label)
+                else:
+                    if edge.info.label not in result:
+                        result[edge.info.label] = []
+                    result[edge.info.label].append(edge.src)
         for item in result.values():
             item.sort()
         return result
@@ -256,7 +255,7 @@ class TTreeAut:
         outputStateList = []
         for stateName, edges in self.transitions.items():
             for data in edges.values():
-                if len(data[2]) == 0:
+                if len(data.children) == 0:
                     outputStateList.append(stateName)
                     break
         return outputStateList
@@ -265,18 +264,18 @@ class TTreeAut:
         symbolDict = {}
         for edges in self.transitions.values():
             for edge in edges.values():
-                if edge[1].label not in symbolDict:
-                    if edge[1].boxArray == []:
-                        symbolDict[edge[1].label] = len(edge[2])
+                if edge.info.label not in symbolDict:
+                    if edge.info.boxArray == []:
+                        symbolDict[edge.info.label] = len(edge.children)
                     else:
-                        symbolDict[edge[1].label] = len(edge[1].boxArray)
+                        symbolDict[edge.info.label] = len(edge.info.boxArray)
         return symbolDict
 
     def getPortArity(self) -> int:
         portArray = []
-        for edge in self.transitions.values():
-            for data in edge.values():
-                sym = data[1].label
+        for edgeDict in self.transitions.values():
+            for edge in edgeDict.values():
+                sym = edge.info.label
                 if sym.startswith("Port") and sym not in portArray:
                     portArray.append(sym)
         return len(portArray)
@@ -285,8 +284,8 @@ class TTreeAut:
         for edgeDict in self.transitions.values():
             usedSymbols = []
             for edge in edgeDict.values():
-                if edge[1].label not in usedSymbols:
-                    usedSymbols.append(edge[1].label)
+                if edge.info.label not in usedSymbols:
+                    usedSymbols.append(edge.info.label)
                 else:
                     return False
         return True
@@ -295,8 +294,8 @@ class TTreeAut:
         vars = []
         for edgeDict in self.transitions.values():
             for edge in edgeDict.values():
-                if edge[1].variable != "":
-                    vars.append(edge[1].variable)
+                if edge.info.variable != "":
+                    vars.append(edge.info.variable)
         vars.sort()
         return vars
 
@@ -318,14 +317,13 @@ class TTreeAut:
         self.transitions[newName] = self.transitions.pop(oldName)
 
         # renaming name of the state inside transitions (2nd layer)
-        for edges in self.transitions.values():
-            for data in edges.values():
-                if data[0] == oldName:
-                    data[0] = str(newName)
-                # renaming state name inside the children array (3rd layer)
-                for i in range(len(data[2])):
-                    if data[2][i] == oldName:
-                        data[2][i] = newName
+        for edge in transitions(self):
+            if edge.src == oldName:
+                edge.src = str(newName)
+            # renaming state name inside the children array (3rd layer)
+            for i in range(len(edge.children)):
+                if edge.children[i] == oldName:
+                    edge.children[i] = newName
 
     def removeState(self, state: str):
         if state in self.rootStates:
@@ -336,8 +334,8 @@ class TTreeAut:
 
         for content in self.transitions.values():
             keysToDelete = []
-            for key, transition in content.items():
-                if state in transition[2]:
+            for key, edge in content.items():
+                if state in edge.children:
                     keysToDelete.append(key)
             for key in keysToDelete:
                 content.pop(key)
@@ -349,10 +347,10 @@ class TTreeAut:
         for stateName, content in self.transitions.items():
             if stateName not in reachable:
                 toDelete.append(stateName)
-            for data in content.values():
-                if data[0] not in reachable:
-                    toDelete.append(data[0])
-                for i in data[2]:
+            for edge in content.values():
+                if edge.src not in reachable:
+                    toDelete.append(edge.src)
+                for i in edge.children:
                     if i not in reachable:
                         toDelete.append(i)
 
@@ -367,7 +365,7 @@ class TTreeAut:
         result = set()
 
         for edge in self.transitions[state].values():
-            for child in edge[2]:
+            for child in edge.children:
                 if child not in result:
                     result.add(child)
         return list(result)
@@ -432,17 +430,17 @@ class TTreeAut:
                 continue
             for symbol in additionalOutputEdges:
                 tempString = str(stateName) + "-" + str(symbol) + "-()"
-                tempDict[tempString] = [stateName, TEdge(symbol, [], ""), []]
+                tempDict[tempString] = TTransition(stateName, TEdge(symbol, [], ""), [])
             for tempName, tempEdge in tempDict.items():
                 # checking for non-port output edge
                 nonPortOutput = False
                 for edge in content.values():
-                    label = edge[1].label
-                    if not label.startswith('Port') and len(edge[2]) == 0:
+                    label = edge.info.label
+                    if not label.startswith('Port') and len(edge.children) == 0:
                         nonPortOutput = True
                 # skip adding non-port output edge
                 # if another non-port output present
-                if not tempEdge[1].label.startswith('Port') and nonPortOutput:
+                if not tempEdge.info.label.startswith('Port') and nonPortOutput:
                     continue
                 else:
                     content[tempName] = tempEdge
@@ -452,10 +450,10 @@ class TTreeAut:
     def createSuffix(self):
         result = copy.deepcopy(self)
         result.name = f"suffix({result.name})"
-        for stateName, edges in result.transitions.items():
+        for stateName, edgeDict in result.transitions.items():
             check = True
-            for data in edges.values():
-                edgeLabel = data[1].label
+            for edge in edgeDict.values():
+                edgeLabel = edge.info.label
                 if (edgeLabel.startswith("Port")):
                     check = False
                     break
@@ -511,7 +509,7 @@ def iterateDFS(ta: TTreeAut):
         visited.add(state)
         yield state
         for edge in ta.transitions[state].values():
-            for child in edge[2]:
+            for child in edge.children:
                 if child not in visited:
                     stack.append(child)
 
@@ -527,7 +525,7 @@ def iterateBFS(ta: TTreeAut):
         visited.add(state)
         yield state
         for edge in ta.transitions[state].values():
-            for child in edge[2]:
+            for child in edge.children:
                 if child not in visited:
                     queue.append(child)
 # End of file ta_classes.py

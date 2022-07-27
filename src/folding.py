@@ -19,13 +19,13 @@ def trim(ta: TTreeAut) -> TTreeAut:
 
 
 def intersectoidEdgeKey(e1: list, e2: list) -> str:
-    state = f"({e1[0]}, {e2[0]})"
-    symb = e2[1].label
-    var = f",{e1[1].variable}" if e1[1].variable != "" else ""
+    state = f"({e1.src}, {e2.src})"
+    symb = e2.info.label
+    var = f",{e1.info.variable}" if e1.info.variable != "" else ""
 
     children = f""
-    for i in range(len(e1[2])):
-        children += f"({e1[2][i]},{e2[2][i]}),"
+    for i in range(len(e1.children)):
+        children += f"({e1.children[i]},{e2.children[i]}),"
     children = children[:-1]
 
     key = f"{state}-<{symb}{var}>-({children})"
@@ -39,32 +39,32 @@ def createIntersectoid(ta: TTreeAut, box: TTreeAut, root: str) -> TTreeAut:
     resultTransitions = {}
     for boxEdge in transitions(box):
         for taEdge in transitions(ta):
-            if len(taEdge[2]) != len(boxEdge[2]):
+            if len(taEdge.children) != len(boxEdge.children):
                 continue
 
             # skipping edges with already applied reductions
             skip = False
-            for b in taEdge[1].boxArray:
+            for b in taEdge.info.boxArray:
                 if b is not None:
                     skip = True
             if skip:
                 continue
 
             # skipping different labeled edges (except the output port edges)
-            aSymb = taEdge[1].label
-            bSymb = boxEdge[1].label
-            aVar = taEdge[1].variable
+            aSymb = taEdge.info.label
+            bSymb = boxEdge.info.label
+            aVar = taEdge.info.variable
             if aSymb != bSymb and not bSymb.startswith("Port"):
                 continue
 
-            state = (taEdge[0], boxEdge[0])
+            state = (taEdge.src, boxEdge.src)
             key = intersectoidEdgeKey(taEdge, boxEdge)
             if state not in resultTransitions:
                 resultTransitions[state] = {}
 
-            children = [(taEdge[2][i], boxEdge[2][i])
-                        for i in range(len(taEdge[2]))]
-            edge = [state, TEdge(bSymb, [], aVar), children]
+            children = [(taEdge.children[i], boxEdge.children[i])
+                        for i in range(len(taEdge.children))]
+            edge = TTransition(state, TEdge(bSymb, [], aVar), children)
             resultTransitions[state][key] = edge
     resultRootstates = [(root, b) for b in box.rootStates]
     resultName = f"intersectoid({ta.name}, {box.name}, {root})"
@@ -78,14 +78,14 @@ def createIntersectoid(ta: TTreeAut, box: TTreeAut, root: str) -> TTreeAut:
 # input:
 # output:
 def portToStateMapping(ta: TTreeAut) -> dict:
-    result = {e[1].label: []
+    result = {e.info.label: []
               for e in transitions(ta)
-              if e[1].label.startswith("Port")}
+              if e.info.label.startswith("Port")}
     for edge in transitions(ta):
-        symb = edge[1].label
+        symb = edge.info.label
         if not symb.startswith("Port"):
             continue
-        result[symb].append(edge[0])
+        result[symb].append(edge.src)
     return result
 
 
@@ -149,29 +149,29 @@ def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
         box = boxCatalogue[boxName]
         for state in iterateDFS(result):
             edgesToChildren = prepareEdgeInfo(result, state)
-            for edge in edgesToChildren:
-                # edge contains three items: [key, child-index, child]
+            for edgeInfo in edgesToChildren:
+                # edgeInfo contains three items: [key, child-index, child]
 
-                if isAlreadyReduced(result, state, edge):
+                if isAlreadyReduced(result, state, edgeInfo):
                     continue
-                mapping = boxFinding(result, box, edge[2])
-                # print(f"boxFinding({box.name}, {edge[2]}) = {mapping}")
+                mapping = boxFinding(result, box, edgeInfo[2])
+                # print(f"boxFinding({box.name}, {edgeInfo[2]}) = {mapping}")
 
                 # applying reduction HERE
                 if mapping != {}:
                     reductions += 1
-                    e = result.transitions[state][edge[0]]
-                    boxList = e[1].boxArray
-                    symbol = e[1].label
+                    e = result.transitions[state][edgeInfo[0]]
+                    boxList = e.info.boxArray
+                    symbol = e.info.label
                     tempBoxArray = [None] * ta.getSymbolArityDict()[symbol]
                     for idx in range(len(boxList)):
                         tempBoxArray[idx] = boxList[idx]
-                    tempBoxArray[edge[1]] = box
-                    e[1].boxArray = tempBoxArray
-                    idx = getStateIndexFromBoxIndex(e, edge[1])
-                    e[2].pop(idx)
+                    tempBoxArray[edgeInfo[1]] = box
+                    e.info.boxArray = tempBoxArray
+                    idx = getStateIndexFromBoxIndex(e, edgeInfo[1])
+                    e.children.pop(idx)
                     for i, mapState in enumerate(mapping.values()):
-                        e[2].insert(idx + i, mapState)
+                        e.children.insert(idx + i, mapState)
     result = removeUselessStates(result)
     stringifyBoxes(result)
     return result
@@ -180,20 +180,20 @@ def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
 def stringifyBoxes(ta:TTreeAut):
     for edge in transitions(ta):
         newBoxArray = []
-        for box in edge[1].boxArray:
+        for box in edge.info.boxArray:
             if type(box) == type(TTreeAut):
                 newBoxArray.append(box.name)
             else:
                 newBoxArray.append(box)
-        edge[1].boxArray = newBoxArray
+        edge.info.boxArray = newBoxArray
             
 
 
 def getStateIndexFromBoxIndex(edge: list, idx: int) -> int:
-    if idx >= len(edge[1].boxArray):
+    if idx >= len(edge.info.boxArray):
         raise Exception("getStateIndexFromBoxIndex(): idx out of range")
     result = 0
-    for i, box in enumerate(edge[1].boxArray):
+    for i, box in enumerate(edge.info.boxArray):
         if i == idx:
             return result
         result += box.portArity
@@ -203,43 +203,43 @@ def getStateIndexFromBoxIndex(edge: list, idx: int) -> int:
 def fillBoxArrays(ta: TTreeAut):
     arities = ta.getSymbolArityDict()
     for edge in transitions(ta):
-        if edge[1].boxArray == []:
-            edge[1].boxArray = [None] * len(edge[2])
+        if edge.info.boxArray == []:
+            edge.info.boxArray = [None] * len(edge.children)
         else:
-            boxlen = len(edge[1].boxArray)
-            symlen = arities[edge[1].label]
+            boxlen = len(edge.info.boxArray)
+            symlen = arities[edge.info.label]
             if boxlen != symlen:
-                edge[1].boxArray.extend([None] * (symlen - boxlen))
+                edge.info.boxArray.extend([None] * (symlen - boxlen))
 
 
 # NOTE: might be buggy (consider different index in edgeInfo and boxes with
 # different port arities)
 def isAlreadyReduced(ta: TTreeAut, state: str, edgeInfo: list) -> bool:
     edge = ta.transitions[state][edgeInfo[0]]  # edgeInfo[0] = key
-    idx = edge[2].index(edgeInfo[2])
+    idx = edge.children.index(edgeInfo[2])
     # if box is None => short edge => arity = 1 (1 target state)
-    arities = [(box, box.portArity) if box is not None else (None, 1) for box in edge[1].boxArray]
+    arities = [(box, box.portArity) if box is not None else (None, 1) for box in edge.info.boxArray]
 
     i = 0
     for tuple in arities:
         if idx < i + tuple[1]:
             if tuple[0] is not None:
-                # print(f"TRUE : st = {state}, tgt = {edgeInfo[2]} [{edgeInfo[1]}], edgeChildren = {edge[2]}, arities = {[i[1] for i in arities]}")
+                # print(f"TRUE : st = {state}, tgt = {edgeInfo[2]} [{edgeInfo[1]}], edgeChildren = {edge.children}, arities = {[i[1] for i in arities]}")
                 return True
             else:
-                # print(f"FALSE: st = {state}, tgt = {edgeInfo[2]} [{edgeInfo[1]}], edgeChildren = {edge[2]}, arities = {[i[1] for i in arities]}")
+                # print(f"FALSE: st = {state}, tgt = {edgeInfo[2]} [{edgeInfo[1]}], edgeChildren = {edge.children}, arities = {[i[1] for i in arities]}")
                 return False
         i += tuple[1]
 
-    # print(f"FALSE: st = {state}, tgt = {edgeInfo[2]} [{edgeInfo[1]}], edgeChildren = {edge[2]}, arities = {[i[1] for i in arities]}")
+    # print(f"FALSE: st = {state}, tgt = {edgeInfo[2]} [{edgeInfo[1]}], edgeChildren = {edge.children}, arities = {[i[1] for i in arities]}")
     return False
 
 
 def prepareEdgeInfo(ta: TTreeAut, state: str) -> list:
     result = []
     for key, edge in ta.transitions[state].items():
-        for i in range(len(edge[2])):
-            result.append([key, i, edge[2][i]])
+        for i in range(len(edge.children)):
+            result.append([key, i, edge.children[i]])
     return result
 
 # End of folding.py

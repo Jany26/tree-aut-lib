@@ -89,7 +89,7 @@ def processEdge(edgeInfo: list) -> Tuple[list, str]:
     return boxes, varString
 
 
-def loadTransitionFromVTF(line: str, taType='ta') -> list:
+def loadTransitionFromVTF(line: str, taType='ta') -> TTransition:
     line = line.strip()
     if line == "":
         return []
@@ -115,22 +115,22 @@ def loadTransitionFromVTF(line: str, taType='ta') -> list:
     #     if i == ")": break
     #     children.append(str(temp))
 
-    return [state, TEdge(symbol, boxes, var), children]
+    return TTransition(state, TEdge(symbol, boxes, var), children)
 
 
 def consistencyCheck(data: list, allStates: list, arityDict: dict):
-    if data[0] not in allStates:
-        raise Exception(f"consistencyCheck(): src state '{data[0]}' not in preamble")
-    if data[1].label not in arityDict:
-        raise Exception(f"consistencyCheck(): symbol '{data[1]}' not in preamble")
-    if len(data[2]) != arityDict[data[1].label]:
-        raise Exception(f"consistencyCheck(): inconsistent arity for symbol '{data[1].label}'")
-    for i in data[2]:
+    if data.src not in allStates:
+        raise Exception(f"consistencyCheck(): src state '{data.src}' not in preamble")
+    if data.info.label not in arityDict:
+        raise Exception(f"consistencyCheck(): symbol '{data.info}' not in preamble")
+    if len(data.children) != arityDict[data.info.label]:
+        raise Exception(f"consistencyCheck(): inconsistent arity for symbol '{data.info.label}'")
+    for i in data.children:
         if i not in allStates:
             raise Exception(f"consistencyCheck(): child state '{i}' not in preamble")
 
 
-def consistencyCheckTMB(edges, states, arities, verbose=False) -> bool:
+def consistencyCheckVTF(edges, states, arities, verbose=False) -> bool:
     # print(states)
     for stateName, edgeDict in edges.items():
 
@@ -139,37 +139,37 @@ def consistencyCheckTMB(edges, states, arities, verbose=False) -> bool:
                 print(f"{stateName} not in states = {states}")
             return False
 
-        for edgeData in edgeDict.values():
-            if (edgeData[0] not in states
-                or edgeData[1].label not in arities
-                or len(edgeData[2]) != int(arities[edgeData[1].label])
+        for edge in edgeDict.values():
+            if (edge.src not in states
+                or edge.info.label not in arities
+                or len(edge.children) != int(arities[edge.info.label])
                 ):
                 if verbose:
-                    if edgeData[0] not in states:
-                        print(f"edge[0] = {edgeData[0]} not in states = [{states}]")
-                    elif edgeData[1].label not in arities:
-                        print(f"edge[1].label = {edgeData[1].label} not in arities = [{arities}]")
+                    if edge.src not in states:
+                        print(f"edge.src = {edge.src} not in states = [{states}]")
+                    elif edge.info.label not in arities:
+                        print(f"edge.info.label = {edge.info.label} not in arities = [{arities}]")
                     else:
-                        print(f"children = {edgeData[2]} inconsistent with arity of {edgeData[1].label} = {int(arities[edgeData[1].label])}")
-                    print(f"EDGE = {edgeData}")
+                        print(f"children = {edge.children} inconsistent with arity of {edge.info.label} = {int(arities[edge.info.label])}")
+                    print(f"EDGE = {edge}")
                 return False
-            for child in edgeData[2]:
+            for child in edge.children:
                 if child not in states:
                     if verbose:
                         print(f"child {child} not in states = {states}")
-                        print(f"EDGE = {edgeData}")
+                        print(f"EDGE = {edge}")
                     return False
     return True
 
 
 def generateKeyFromEdge(edge: list) -> str:
     children = ""
-    for i in range(len(edge[2])):
-        children += str(edge[2][i])
-        if i < len(edge[2])-1:
+    for i in range(len(edge.children)):
+        children += str(edge.children[i])
+        if i < len(edge.children)-1:
             children += ","
     # children.rstrip(",")
-    return f"{edge[0]}-{edge[1].label}-[{children}]"
+    return f"{edge.src}-{edge.info.label}-[{children}]"
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # VTF IMPORT
@@ -220,13 +220,13 @@ def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
                 continue
             # checking state and arity consistency - comparing with data from "preamble"
             key = generateKeyFromEdge(edge)
-            if str(edge[0]) not in transitions:
-                transitions[str(edge[0])] = {}
-            transitions[str(edge[0])][key] = edge
+            if str(edge.src) not in transitions:
+                transitions[str(edge.src)] = {}
+            transitions[str(edge.src)][key] = edge
     if not rootsProcessed:
         raise Exception(f"importTAfromVTF(): List of root states missing")
     if arityProcessed and stateListProcessed:
-        if not consistencyCheckTMB(transitions, allStates, arityDict, verbose=True):
+        if not consistencyCheckVTF(transitions, allStates, arityDict, verbose=True):
             raise Exception(f"importTAfromVTF(): inconsistent data with the preamble")
 
     if sourceType == 'f':
@@ -264,8 +264,8 @@ def writeAritiesVTFfile(arities, tgt):
 def writeEdgesVTFfile(edges, tgt):
     for edge in edges.values():
         for data in edge.values():
-            tgt.write(f"{data[0]} {data[1].label} (")
-            for child in data[2]:
+            tgt.write(f"{data.src} {data.info.label} (")
+            for child in data.children:
                 tgt.write(f" {child}")
             tgt.write(" )\n")
 
@@ -302,8 +302,8 @@ def writeEdgesVTFstr(edges):
     result = "# Transitions\n\n"
     for edge in edges.values():
         for data in edge.values():
-            result += f"{data[0]} {data[1].label} ("
-            for i in data[2]:
+            result += f"{data.src} {data.info.label} ("
+            for i in data.children:
                 result += f" {i}"
             result += " )\n"
     return result

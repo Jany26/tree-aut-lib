@@ -56,11 +56,11 @@ def generatePossibleChildren(state: str, parents: list, size: int) -> list:
 def generateWitnessTree(edgeDict: dict, root: str) -> TTreeNode:
     if (type(edgeDict) is None or type(root) is None):
         return None
-    if len(edgeDict[root][2]) == 0:
-        return TTreeNode(f"({edgeDict[root][1].label};{root})")
+    if len(edgeDict[root].children) == 0:
+        return TTreeNode(f"({edgeDict[root].info.label};{root})")
     else:
-        tempNode = TTreeNode(f"({edgeDict[root][1].label};{root})")
-        for i in edgeDict[root][2]:
+        tempNode = TTreeNode(f"({edgeDict[root].info.label};{root})")
+        for i in edgeDict[root].children:
             tempChild = generateWitnessTree(edgeDict, i)
             tempNode.connectChild(tempChild)
         return tempNode
@@ -69,14 +69,14 @@ def generateWitnessTree(edgeDict: dict, root: str) -> TTreeNode:
 # # Helper function for generating a string that represents a tree, top-down,
 #   uses dictionary of transitions (only 1 needed for each state)
 def generateWitnessString(edgeDict: dict, root: str) -> str:
-    if len(edgeDict[root][2]) == 0:
-        return str(edgeDict[root][1].label)
+    if len(edgeDict[root].children) == 0:
+        return str(edgeDict[root].info.label)
     else:
-        parentString = str(edgeDict[root][1].label) + "["
-        for i in range(len(edgeDict[root][2])):
-            childString = generateWitnessString(edgeDict, edgeDict[root][2][i])
+        parentString = str(edgeDict[root].info.label) + "["
+        for i in range(len(edgeDict[root].children)):
+            childString = generateWitnessString(edgeDict, edgeDict[root].children[i])
             parentString += childString
-            if i < len(edgeDict[root][2]) - 1:
+            if i < len(edgeDict[root].children) - 1:
                 parentString += ";"
         return parentString + "]"
 
@@ -96,8 +96,8 @@ def matchTreeTD(ta: TTreeAut, root: TTreeNode) -> bool:
 
         for stateName, edge in ta.transitions.items():
             for data in edge.values():
-                if stateName == state and node.value == data[1].label:
-                    descendantTuples.append(data[2])
+                if stateName == state and node.value == data.info.label:
+                    descendantTuples.append(data.children)
 
         for tuple in descendantTuples:
             b = True
@@ -134,8 +134,8 @@ def matchTreeBU(ta: TTreeAut, root: TTreeNode) -> bool:
             for stateName, edge in ta.transitions.items():
                 for data in edge.values():
                     if (
-                        data[1].label == root.value  # or symbol
-                        and len(data[2]) == 0
+                        data.info.label == root.value  # or symbol
+                        and len(data.children) == 0
                         and stateName not in result
                     ):
                         result.append(stateName)
@@ -147,10 +147,10 @@ def matchTreeBU(ta: TTreeAut, root: TTreeNode) -> bool:
                 childrenSymbols.append(matchBottomUp(ta, root.children[i]))
             for stateName, edge in ta.transitions.items():
                 for data in edge.values():
-                    if data[1].label == root.value:  # or symbol
+                    if data.info.label == root.value:  # or symbol
                         x = True
-                        for i in range(len(data[2])):
-                            if data[2][i] not in childrenSymbols[i]:
+                        for i in range(len(data.children)):
+                            if data.children[i] not in childrenSymbols[i]:
                                 x = False
                                 break
                         if x:
@@ -186,13 +186,13 @@ def detCreateLookupDict(ta: TTreeAut, alphabet) -> dict:
     result = {symbol: {} for symbol in alphabet}
     for edges in ta.transitions.values():
         for edge in edges.values():
-            symbol = edge[1].label
+            symbol = edge.info.label
 
-            if str(edge[2]) not in result[symbol]:
-                result[symbol][str(edge[2])] = []
+            if str(edge.children) not in result[symbol]:
+                result[symbol][str(edge.children)] = []
 
-            if edge[0] not in result[symbol][str(edge[2])]:
-                result[symbol][str(edge[2])].append(edge[0])
+            if edge.src not in result[symbol][str(edge.children)]:
+                result[symbol][str(edge.children)].append(edge.src)
     return result
 
 
@@ -255,7 +255,7 @@ def detCreateRelation(edgeList: list, alphabet: dict) -> dict:
         key = f"{source}-{edge[1]}->({children})"
         if source not in edgeDict:
             edgeDict[source] = {}
-        edgeDict[source][key] = [source, symbol, children]
+        edgeDict[source][key] = TTransition(source, symbol, children)
     return edgeDict
 
 
@@ -381,11 +381,11 @@ def treeAutIntersection(ta1: TTreeAut,
     def handleIntersectionEdge(k1: str, e1: list, k2: str, e2: list,
                                result: TTreeAut, state: str):
         newKey = f"({k1},{k2})"  # merge transition keys
-        newState = f"({e1[0]},{e2[0]})"  # merge source state names
+        newState = f"({e1.src},{e2.src})"  # merge source state names
         # e.g. states 'q1' and 'q2' create '(q1, q2)'
-        newEdge = copy.deepcopy(e1[1])  # new edge with same info
+        newEdge = copy.deepcopy(e1.info)  # new edge with same info
         # merged children
-        newChildren = [f"({e1[2][i]},{e2[2][i]})" for i in range(len(e1[2]))]
+        newChildren = [f"({e1.children[i]},{e2.children[i]})" for i in range(len(e1.children))]
         if verbose:
             print("{:<60} {:<40} {:<40}".format(
                 f"{counter}) {state}"[:60],
@@ -397,12 +397,12 @@ def treeAutIntersection(ta1: TTreeAut,
             result.transitions[state] = {}
         # add transition to transitions in a state dictionary
         # if verbose: print(newKey)
-        result.transitions[state][newKey] = [newState, newEdge, newChildren]
+        result.transitions[state][newKey] = TTransition(newState, newEdge, newChildren)
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     # NOTE: consider how to handle not-matching ports
-    # label1 = transition1[1].label
-    # label2 = transition2[1].label
+    # label1 = transition1.info.label
+    # label2 = transition2.info.label
     # if ((label1.startswith("Port")
     #     and label2.startswith("Port")
     #     and label1 != label2)):
@@ -410,10 +410,10 @@ def treeAutIntersection(ta1: TTreeAut,
     #     pass
 
     # NOTE: consider port adding (differentiating ports maybe by a counter)
-    # if transition1[1].startswith("Port"):
+    # if transition1.info.startswith("Port"):
     #     newTransition.append("Port")
     # else:
-    #     newTransition.append(transition1[1])
+    #     newTransition.append(transition1.info)
 
     if ta2 is None:
         return ta1
@@ -428,9 +428,9 @@ def treeAutIntersection(ta1: TTreeAut,
                 result.rootStates.append(newStateName)
             for k1, e1 in edgeDict1.items():  # key1, edge1
                 for k2, e2 in edgeDict2.items():  # key2, edge2
-                    if len(e1[2]) != len(e2[2]):  # arity consistency
+                    if len(e1.children) != len(e2.children):  # arity consistency
                         continue
-                    if e1[1].label != e2[1].label:  # symbol consistency
+                    if e1.info.label != e2.info.label:  # symbol consistency
                         continue
                     counter += 1
                     handleIntersectionEdge(k1, e1, k2, e2,
@@ -477,22 +477,22 @@ def treeAutProduct(ta1: TTreeAut, ta2: TTreeAut) -> TTreeAut:
         done.append([state1, state2])
         for edge1 in ta1.transitions[state1].values():
             for edge2 in ta2.transitions[state2].values():
-                srcState = [edge1[0], edge2[0]]
-                symbol1 = edge1[1].label
-                symbol2 = edge2[1].label
-                if len(edge1[2]) == 0 and len(edge2[2]) == 0:
+                srcState = [edge1.src, edge2.src]
+                symbol1 = edge1.info.label
+                symbol2 = edge2.info.label
+                if len(edge1.children) == 0 and len(edge2.children) == 0:
                     # handle output symbols
                     if symbol1 == symbol2 or symbol1.startswith("Port"):
                         edgeDict.append([srcState, symbol1, []])
 
-                if symbol1 == symbol2 and len(edge1[2]) > 0:
+                if symbol1 == symbol2 and len(edge1.children) > 0:
                     children = []
-                    for i in range(len(edge1[2])):
-                        children.append([edge1[2][i], edge2[2][i]])
+                    for i in range(len(edge1.children)):
+                        children.append([edge1.children[i], edge2.children[i]])
                     edgeDict.append([srcState, symbol1, children])
                     for i in children:
-                        if [i[0], i[1]] not in done:
-                            productify(i[0], i[1], ta1, ta2, edgeDict, done)
+                        if [i.src, i.info] not in done:
+                            productify(i.src, i.info, ta1, ta2, edgeDict, done)
 
     def createProductRelation(edgeList: list, alphabet: dict) -> dict:
         edgeDict = {}
@@ -543,7 +543,7 @@ def nonEmptyTD(ta: TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
                 if state in edgeLookup:
                     continue
                 outDict[state] = True
-                edgeLookup[state] = [state, TEdge(outSymbol, [], ""), []]
+                edgeLookup[state] = TTransition(state, TEdge(outSymbol, [], ""), [])
 
         return edgeLookup, outDict
 
@@ -593,10 +593,10 @@ def nonEmptyTD(ta: TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
 
         for edge in ta.transitions[state].values():
             # skipping self-looping transitions
-            if state in edge[2]:
+            if state in edge.children:
                 continue
             outputReachable = True
-            for child in edge[2]:
+            for child in edge.children:
                 # checking if the state has been already visited
                 # and we know if its OK
                 if child in outDict:
@@ -689,7 +689,7 @@ def nonEmptyBU(ta: TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
     arityDict = ta.getSymbolArityDict()
     for state in workList:
         for edge in ta.transitions[state].values():
-            if len(edge[2]) == 0:
+            if len(edge.children) == 0:
                 done[state] = edge
 
     def doneEdgePrint(doneEdges: dict):
@@ -730,7 +730,7 @@ def nonEmptyBU(ta: TTreeAut, verbose=False) -> Tuple[TTreeNode, str]:
                 ))
             for stateName, edgeDict in ta.transitions.items():
                 for edge in edgeDict.values():
-                    if (edge[1].label != symbol or edge[2] not in tuples):
+                    if (edge.info.label != symbol or edge.children not in tuples):
                         continue
                     if stateName not in done:
                         workList.append(stateName)
@@ -767,7 +767,7 @@ def reachableTD(ta: TTreeAut) -> list:
             continue
         edgeDict = ta.transitions[state]
         for edge in edgeDict.values():
-            for i in edge[2]:
+            for i in edge.children:
                 if i not in result:
                     workList.append(i)
                     result.append(i)
@@ -792,11 +792,11 @@ def reachableBU(ta: TTreeAut) -> list:
                     result[symbol][state] = []
 
         for edge in transitions(ta):
-            childSet = set(edge[2])
-            symbol = edge[1].label
+            childSet = set(edge.children)
+            symbol = edge.info.label
             if arities[symbol] == 0:
                 continue
-            length = len(edge[2])
+            length = len(edge.children)
             for state in childSet:
                 if length not in result[symbol][state]:
                     result[symbol][state].append(length)
@@ -820,8 +820,8 @@ def reachableBU(ta: TTreeAut) -> list:
             for stateName, edgeDict in ta.transitions.items():
                 for edge in edgeDict.values():
                     if (
-                        edge[1].label != symbol
-                        or edge[2] not in tuples
+                        edge.info.label != symbol
+                        or edge.children not in tuples
                     ):
                         continue
                     if stateName not in result:
@@ -889,12 +889,12 @@ def portConsistencyCheck(ta: TTreeAut) -> bool:
             tuples = generatePossibleChildren(state, list(done), arity)
             for stateName, edgeDict in ta.transitions.items():
                 for edge in edgeDict.values():
-                    if (edge[1].label != symbol or edge[2] not in tuples):
+                    if (edge.info.label != symbol or edge.children not in tuples):
                         continue
                     if stateName not in done:
                         done[stateName] = []
                         worklist.append(stateName)
-                    portSet = createPortSet(done, edge[2])
+                    portSet = createPortSet(done, edge.children)
                     for i in portSet:
                         if i not in done[stateName]:
                             done[stateName].append(i)
@@ -936,7 +936,7 @@ def isWellDefined(ta: TTreeAut, errDisplay=False) -> bool:
     for i in ta.rootStates:
         rootEdges = ta.transitions[i]
         for edge in rootEdges.values():
-            if len(edge[2]) == 0 and edge[1].label.startswith("Port"):
+            if len(edge.children) == 0 and edge.info.label.startswith("Port"):
                 wellDefinedConditions["5-non-vacuity"] = False
 
     # 6) Port-uniqueness  - - - - - - - - - - - - - - - - - - - - - - - - - - -

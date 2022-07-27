@@ -29,12 +29,12 @@ def rootHandle(rootList: list, file):
     file.write("\n")
 
 
-def outputEdgeHandle(edge: list, file, debug=False):
-    if len(edge[2]) == 0:
+def outputEdgeHandle(edge: TTransition, file, debug=False):
+    if len(edge.children) == 0:
         file.write(f"\tnode [ label=\"\", {helpPoint} ];\n")
-        endName = f"{edge[0]}-{edge[1].label}->"
+        endName = f"{edge.src}-{edge.info.label}->"
         file.write(f"\t\"{endName}\"\n")
-        file.write(f"\t\"{edge[0]}\" -> \"{endName}\" [ {outEdge}, label = \"{edge[1].label}\" ] \n\n")
+        file.write(f"\t\"{edge.src}\" -> \"{endName}\" [ {outEdge}, label = \"{edge.info.label}\" ] \n\n")
         return True
     return False
 
@@ -50,7 +50,7 @@ def allStatesHandle(ta: TTreeAut, file):
     file.write("\n")
 
 
-def edgeHandle(edge: list, file, debug=False):
+def edgeHandle(edge: TTransition, file, debug=False):
     if debug:
         print(f"- - edgeHandle {edge} - -")
     # if outputEdgeHandle(edge, file, debug):
@@ -61,20 +61,20 @@ def edgeHandle(edge: list, file, debug=False):
     # creates an unexpected error for Graphviz in some cases
     # - solution was to remove special treatment of self-loops
 
-    tempName = f"{edge[0]}-{edge[1].label}->"
+    tempName = f"{edge.src}-{edge.info.label}->"
 
     # case 1 : output edge
-    if len(edge[2]) == 0:
+    if len(edge.children) == 0:
         file.write(f"\t\"{tempName}\" [ {helpPoint} ];\n")
         if debug:
             print(f"helpPOINT {tempName}")
-        file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ label=<<B>[{edge[1].label}]</B>>, {outEdge} ]\n")
+        file.write(f"\t\"{edge.src}\" -> \"{tempName}\" [ label=<<B>[{edge.info.label}]</B>>, {outEdge} ]\n")
         if debug:
-            print(f"[{edge[0]}] -- {edge[1].label} --> [{tempName}]", "outEdge")
+            print(f"[{edge.src}] -- {edge.info.label} --> [{tempName}]", "outEdge")
         return
 
     # case 2 : regular edge (connector node needed)
-    for i in edge[2]:
+    for i in edge.children:
         tempName += str(i) + "_"
     tempName = tempName[:-1]
 
@@ -84,29 +84,29 @@ def edgeHandle(edge: list, file, debug=False):
         print(f"NODE {tempName}")
 
     connectorLabel = "\""
-    if edge[1].variable != "":
-        connectorLabel += f"[{edge[1].variable}] "
-    connectorLabel += f"{edge[1].label}\""
+    if edge.info.variable != "":
+        connectorLabel += f"[{edge.info.variable}] "
+    connectorLabel += f"{edge.info.label}\""
 
     # edge: srcState -> connector node
-    file.write(f"\t\"{edge[0]}\" -> \"{tempName}\" [ label={connectorLabel}, {connEdge} ]\n")
+    file.write(f"\t\"{edge.src}\" -> \"{tempName}\" [ label={connectorLabel}, {connEdge} ]\n")
     if debug:
-        print(f"[{edge[0]}] -> [{tempName}]", "connEdge")
+        print(f"[{edge.src}] -> [{tempName}]", "connEdge")
 
     # edge: connector node -> children
     current_child = 0
     current_box = 0
-    while current_child < len(edge[2]):
+    while current_child < len(edge.children):
         edgeLabel = f"\"{current_box}"
         hasBox = False
-        if edge[1].boxArray != [] and edge[1].boxArray[current_box] is not None:
+        if edge.info.boxArray != [] and edge.info.boxArray[current_box] is not None:
             hasBox = True
-            edgeLabel += f": {edge[1].boxArray[current_box]}"
+            edgeLabel += f": {edge.info.boxArray[current_box]}"
         edgeLabel += f"\""
 
         # box handling (mapping more child states to one edge (portArity can be > 1))
         if hasBox:
-            boxName = edge[1].boxArray[current_box]
+            boxName = edge.info.boxArray[current_box]
             arity = boxCatalogue[boxName].portArity
             if arity > 1:
                 temp = f"{tempName}_{current_child}_{current_box}"
@@ -119,19 +119,19 @@ def edgeHandle(edge: list, file, debug=False):
                     print(f"[{tempName}] -> [{temp}]")
 
                 for j in range(arity):
-                    file.write(f"\t\"{temp}\" -> \"{edge[2][current_child]}\" [ label=⊕{j}, {innerEdge} ]\n")
+                    file.write(f"\t\"{temp}\" -> \"{edge.children[current_child]}\" [ label=⊕{j}, {innerEdge} ]\n")
                     if debug:
-                        print(f"[{temp}] -> [{edge[2][current_child]}]", f"curr_child = {current_child}")
+                        print(f"[{temp}] -> [{edge.children[current_child]}]", f"curr_child = {current_child}")
                     current_child += 1
             else:
-                file.write(f"\t\"{tempName}\" -> \"{edge[2][current_child]}\" [ label={edgeLabel}, {innerEdge} ]\n")
+                file.write(f"\t\"{tempName}\" -> \"{edge.children[current_child]}\" [ label={edgeLabel}, {innerEdge} ]\n")
                 if debug:
-                    print(f"[{tempName}] -> [{edge[2][current_child]}]", f"curr_child = {current_child}")
+                    print(f"[{tempName}] -> [{edge.children[current_child]}]", f"curr_child = {current_child}")
                 current_child += 1
         else:
-            file.write(f"\t\"{tempName}\" -> \"{edge[2][current_child]}\" [ label={current_box}, {innerEdge} ]\n")
+            file.write(f"\t\"{tempName}\" -> \"{edge.children[current_child]}\" [ label={current_box}, {innerEdge} ]\n")
             if debug:
-                print(f"[{tempName}] -> [{edge[2][current_child]}]", f"curr_child = {current_box}")
+                print(f"[{tempName}] -> [{edge.children[current_child]}]", f"curr_child = {current_box}")
             current_child += 1
 
         current_box += 1

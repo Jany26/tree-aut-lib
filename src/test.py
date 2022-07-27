@@ -13,10 +13,10 @@ boxOrder = ['X', 'LPort', 'HPort', 'L0', 'L1', 'H0', 'H1']
 def noSameChildrenEdgeCheck(ta: TTreeAut) -> bool:
     result = {}
     for edge in transitions(ta):
-        if edge[2] == []:
+        if edge.childen == []:
             continue
-        child0 = edge[2][0]
-        child1 = edge[2][1]
+        child0 = edge.childen[0]
+        child1 = edge.childen[1]
         if child0 not in result:
             result[child0] = {}
         if child1 not in result[child0]:

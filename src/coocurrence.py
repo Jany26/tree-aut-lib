@@ -23,7 +23,7 @@ def getCoOccurrentStatesTD(ta: TTreeAut) -> list:
         result = []
         for edge in ta.transitions[state].values():
             process_results = []
-            for child in edge[2]:
+            for child in edge.children:
                 if child == state:
                     continue
                 if child in queue:
@@ -31,7 +31,7 @@ def getCoOccurrentStatesTD(ta: TTreeAut) -> list:
                 # print(f" adding {state}->{child}")
                 process_results.append(process(child, ta, queue[:]))
 
-            if edge[2] == [] or process_results != []:
+            if edge.children == [] or process_results != []:
                 # print(f"process_results {state}: {process_results}")
                 result.extend([merge(state, macroList) for macroList in product(*process_results)])
         return result

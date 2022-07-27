@@ -10,33 +10,33 @@ def findPortStates(ta: TTreeAut):
     result = {}
     for edgeList in ta.transitions.values():
         for edge in edgeList.values():
-            label: str = edge[1].label
+            label: str = edge.info.label
             if label.startswith("Port") and label not in result:
                 result[label] = edge[0]
     # print([result[key] for key in sorted(result.keys())])
     return [result[key] for key in sorted(result.keys())]
 
 
-def unfoldEdge(result: TTreeAut, foldedEdge: TEdge, counter: int, subTable: dict):
-    newEdgeInfo = TEdge(foldedEdge[1].label, [], foldedEdge[1].variable)
-    newEdge = [foldedEdge[0], newEdgeInfo, []]
+def unfoldEdge(result: TTreeAut, foldedEdge: TTransition, counter: int, subTable: dict):
+    newEdgeInfo = TEdge(foldedEdge.info.label, [], foldedEdge.info.variable)
+    newEdge = TTransition(foldedEdge.src, newEdgeInfo, [])
     edge = copy.deepcopy(foldedEdge)
     unfolded = 0
 
-    while edge[1].boxArray != []:
-        srcState = edge[0]
-        boxName = edge[1].boxArray[0]
-        edge[1].boxArray.pop(0)
+    while edge.info.boxArray != []:
+        srcState = edge.src
+        boxName = edge.info.boxArray[0]
+        edge.info.boxArray.pop(0)
         box = None
 
         if boxName is None:
-            newEdge[2].append(edge[2][0])
-            edge[2].pop(0)
+            newEdge.children.append(edge.children[0])
+            edge.children.pop(0)
             continue
         box = copy.deepcopy(boxes[boxName])
 
-        children = edge[2][:box.portArity]
-        edge[2] = edge[2][box.portArity:]
+        children = edge.children[:box.portArity]
+        edge.children = edge.children[box.portArity:]
 
         # unfold the box content into result
         # print(result.name, srcState, box.name, children, counter + unfolded)
@@ -44,7 +44,7 @@ def unfoldEdge(result: TTreeAut, foldedEdge: TEdge, counter: int, subTable: dict
             newName = f"{counter+unfolded}_{stateName}_{srcState}"
             result.transitions[newName] = copy.copy(box.transitions[stateName])
             box.renameState(stateName, newName)
-        newEdge[2].extend(box.rootStates)
+        newEdge.children.extend(box.rootStates)
         connectorList = findPortStates(box)
 
         for index, state in enumerate(connectorList):
@@ -67,24 +67,24 @@ def unfold(ta: TTreeAut) -> TTreeAut:
     subTable = {}
     for edgeList in ta.transitions.values():
         for key, edge in edgeList.items():
-            if edge[0] not in result.transitions:
-                result.transitions[edge[0]] = {}
+            if edge.src not in result.transitions:
+                result.transitions[edge.src] = {}
 
             # no boxes on transition (all short edges)
-            if edge[1].boxArray == []:
-                result.transitions[edge[0]][key] = edge
+            if edge.info.boxArray == []:
+                result.transitions[edge.src][key] = edge
                 continue
 
             boxesCount, newEdge = unfoldEdge(result, edge, unfoldCounter, subTable)
-            result.transitions[edge[0]][key] = newEdge
+            result.transitions[edge.src][key] = newEdge
             unfoldCounter += boxesCount
 
     for placeState, contentState in subTable.items():
         newDict = {}
         for edge in result.transitions[contentState].values():
             newEdge = copy.copy(edge)
-            newEdge[0] = placeState
-            newKey = f"{newEdge[0]}-{newEdge[1].label}-{newEdge[2]}"
+            newEdge.src = placeState
+            newKey = f"{newEdge.src}-{newEdge.info.label}-{newEdge.children}"
             newDict[newKey] = newEdge
         result.transitions[placeState] = newDict
 
@@ -96,6 +96,6 @@ def fixKeys(ta: TTreeAut):
     for state, edgeDict in ta.transitions.items():
         newEdgeDict = {}
         for edge in edgeDict.values():
-            newKey = f"{edge[0]}-{edge[1].label}-{edge[2]}"
+            newKey = f"{edge.src}-{edge.info.label}-{edge.children}"
             newEdgeDict[newKey] = edge
         ta.transitions[state] = newEdgeDict

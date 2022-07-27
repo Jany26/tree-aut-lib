@@ -48,7 +48,7 @@ def loadSymbol(line: str):
     return symbol, rest
 
 
-def loadTransitionFromTMB(line: str) -> list:
+def loadTransitionFromTMB(line: str) -> TTransition:
     line = line.strip()
     transitionData = line.split("->")
     srcState = transitionData[1].strip()
@@ -57,7 +57,7 @@ def loadTransitionFromTMB(line: str) -> list:
     childStates = replaceCommasIn(childrenString.strip())
     childStates = childStates.split(';')
     children = [state for state in childStates if state != ""]
-    return [srcState, TEdge(symbol, [None] * len(children), ""), children]
+    return TTransition(srcState, TEdge(symbol, [None] * len(children), ""), children)
 
 
 def loadArityFromTMB(line: str) -> dict:
@@ -77,14 +77,14 @@ def consistencyCheckTMB(edges, states, arities) -> bool:
     for stateName, edgeDict in edges.items():
         if stateName not in states:
             return False
-        for edgeData in edgeDict.values():
+        for edge in edgeDict.values():
             if (
-                edgeData[0] not in states
-                or edgeData[1].label not in arities
-                or len(edgeData[2]) != int(arities[edgeData[1].label])
+                edge.src not in states
+                or edge.info.label not in arities
+                or len(edge.children) != int(arities[edge.info.label])
             ):
                 return False
-            for child in edgeData[2]:
+            for child in edge.children:
                 if child not in states:
                     return False
     return True
@@ -126,9 +126,9 @@ def importTAfromTMB(source: str, sourceType='f') -> TTreeAut:
             # if arityProcessed and stateListProcessed:
             #     consistencyCheckTMB(edge, allStates, arityDict)
             key = generateKeyFromEdge(edge)
-            if str(edge[0]) not in transitionDict:
-                transitionDict[str(edge[0])] = {}
-            transitionDict[str(edge[0])][key] = edge
+            if str(edge.src) not in transitionDict:
+                transitionDict[str(edge.src)] = {}
+            transitionDict[str(edge.src)][key] = edge
             continue
 
         if line.startswith("Automaton"):
@@ -199,12 +199,12 @@ def writeTransitionsTMBfile(ta, tgt):
     tgt.write("Transitions\n")
     for transitionDict in ta.transitions.values():
         for edge in transitionDict.values():
-            tgt.write(f"{edge[1].label}(")
-            arity = len(edge[2])
+            tgt.write(f"{edge.info.label}(")
+            arity = len(edge.children)
             for i in range(arity):
-                tgt.write(f"{edge[2][i]}")
+                tgt.write(f"{edge.children[i]}")
                 tgt.write("," if i < arity - 1 else "")
-            tgt.write(f") -> {edge[0]}\n")
+            tgt.write(f") -> {edge.src}\n")
     tgt.write("\n\n")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -244,11 +244,11 @@ def writeTransitionsTMBstr(ta):
     result = "Transitions\n"
     for transitionDict in ta.transitions.values():
         for edge in transitionDict.values():
-            temp = f"{edge[1].label}("
-            for i in range(len(edge[2])):
-                temp += f"{edge[2][i]}"
-                temp += ", " if (i < len(edge[2]) - 1) else ""
-            temp += f") -> {edge[0]}\n"
+            temp = f"{edge.info.label}("
+            for i in range(len(edge.children)):
+                temp += f"{edge.children[i]}"
+                temp += ", " if (i < len(edge.children) - 1) else ""
+            temp += f") -> {edge.src}\n"
             result += temp
     result += "\n\n"
     return result

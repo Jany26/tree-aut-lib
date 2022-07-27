@@ -63,10 +63,10 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
             f"KEY = {key}",
             f"EDGE = {edge}",
         ))
-    name = f"{edge[0]}-{edge[1].label}->"
+    name = f"{edge.src}-{edge.info.label}->"
 
     # case 1 : output edge
-    if len(edge[2]) == 0:
+    if len(edge.children) == 0:
         # NODE: arbitrary output point
         graph.node(name,
                    shape='point',
@@ -74,19 +74,19 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
                    height='0.001'
                    )
         # EDGE: outputState -> arbitrary output point
-        graph.edge(edge[0], name,
+        graph.edge(edge.src, name,
                    penwidth='2.0',
                    arrowsize='0.5',
-                   label=f"<<B>[{edge[1].label}]</B>>")
+                   label=f"<<B>[{edge.info.label}]</B>>")
 
         if verbose:
             print(" > arbitrary output point", name)
         if verbose:
-            print(" > arbitrary output edge", edge[0], "->", name)
+            print(" > arbitrary output edge", edge.src, "->", name)
         return
 
     # case 2 : regular edge (connector node needed)
-    for curr_child in edge[2]:
+    for curr_child in edge.children:
         name += str(curr_child) + "==="
     name = name[:-3]
 
@@ -102,11 +102,11 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
 
     # EDGE: srcState -> connector node
     connectorLabel = ""
-    if edge[1].variable != "":
-        connectorLabel += f"[{edge[1].variable}] "
-    connectorLabel += f"{edge[1].label}"
+    if edge.info.variable != "":
+        connectorLabel += f"[{edge.info.variable}] "
+    connectorLabel += f"{edge.info.label}"
 
-    graph.edge(edge[0], name,
+    graph.edge(edge.src, name,
                splines='true',
                overlap='false',
                penwidth='1.0',
@@ -115,24 +115,24 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
                )
 
     if verbose:
-        print("connector edge", edge[0], "->", name)
+        print("connector edge", edge.src, "->", name)
 
     # EDGE: connector node -> children
     curr_child = 0
     curr_box = 0
-    while curr_child < len(edge[2]):
+    while curr_child < len(edge.children):
         edgeLabel = f"{curr_box}"
         hasBox = False
-        if edge[1].boxArray != [] and edge[1].boxArray[curr_box] is not None:
+        if edge.info.boxArray != [] and edge.info.boxArray[curr_box] is not None:
             hasBox = True
-            edgeLabel += f": {edge[1].boxArray[curr_box].name}"
+            edgeLabel += f": {edge.info.boxArray[curr_box].name}"
 
         # box handling (mapping more children to one edge (portArity > 1))
         if hasBox:
-            if type(edge[1].boxArray[curr_box]) == type(str):
-                boxName = edge[1].boxArray[curr_box]
+            if type(edge.info.boxArray[curr_box]) == type(str):
+                boxName = edge.info.boxArray[curr_box]
             else:
-                boxName = edge[1].boxArray[curr_box].name
+                boxName = edge.info.boxArray[curr_box].name
             arity = boxCatalogue[boxName].portArity
             if arity > 1:
                 temp = f"{name}_{curr_child}_{curr_box}"
@@ -156,7 +156,7 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
                     print(f" > > box handling edge {name}->{temp} label={edgeLabel}")
 
                 for j in range(arity):
-                    graph.edge(temp, edge[2][curr_child],
+                    graph.edge(temp, edge.children[curr_child],
                                label=f"⊕{j}",
                                penwidth='1.0',
                                arrowsize='0.5',
@@ -164,28 +164,28 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
                                )
 
                     if verbose:
-                        print(" > > > arity handling edge", temp, "->", edge[2][curr_child], f"label=port{j}")
+                        print(" > > > arity handling edge", temp, "->", edge.children[curr_child], f"label=port{j}")
                     curr_child += 1
             else:
-                graph.edge(name, edge[2][curr_child],
+                graph.edge(name, edge.children[curr_child],
                            label=edgeLabel,
                            penwidth='1.0',
                            arrowsize='0.5',
                            arrowhead='vee'
                            )
                 if verbose:
-                    print(" > > nobox handling edge", name, "->", edge[2][curr_child], f"label={edgeLabel}")
+                    print(" > > nobox handling edge", name, "->", edge.children[curr_child], f"label={edgeLabel}")
                 curr_child += 1
 
         else:
-            graph.edge(name, edge[2][curr_child],
+            graph.edge(name, edge.children[curr_child],
                        label=f"{curr_box}",
                        penwidth='1.0',
                        arrowsize='0.5',
                        arrowhead='vee'
                        )
             if verbose:
-                print(f" > normal edge {name} ->", {edge[2][curr_child]}, f"label={curr_box}")
+                print(f" > normal edge {name} ->", {edge.children[curr_child]}, f"label={curr_box}")
             curr_child += 1
         curr_box += 1
 

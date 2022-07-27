@@ -92,7 +92,7 @@ def processEdge(edgeInfo: list) -> Tuple[list, str]:
 def loadTransitionFromVTF(line: str, taType='ta') -> TTransition:
     line = line.strip()
     if line == "":
-        return []
+        return None
     words = line.split()
     state = words.pop(0)
     symbol = words.pop(0)
@@ -216,7 +216,7 @@ def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
                 raise Exception(f"importTAfromVTF(): unexpected preamble '{line}'")
         else:
             edge = loadTransitionFromVTF(line, taType)
-            if edge == []:
+            if edge == None:
                 continue
             # checking state and arity consistency - comparing with data from "preamble"
             key = generateKeyFromEdge(edge)

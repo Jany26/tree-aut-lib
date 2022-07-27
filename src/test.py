@@ -76,4 +76,5 @@ if __name__ == '__main__':
     print(ta)
     xy = fold(ta, boxOrder)
     print(xy)
+
 # End of file main.py

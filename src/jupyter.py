@@ -57,7 +57,7 @@ def exportTA(ta: TTreeAut, fmtType: str, tgtType: str, filePath: str = ""):
 # TREE AUTOMATA = GRAPHVIZ INTEGRATION WITH DOT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def DOTtransitionHandle(graph, edge, key, verbose=False):
+def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
     if verbose:
         print("{:<60} {:<120}".format(
             f"KEY = {key}",
@@ -125,11 +125,14 @@ def DOTtransitionHandle(graph, edge, key, verbose=False):
         hasBox = False
         if edge.info.boxArray != [] and edge.info.boxArray[curr_box] is not None:
             hasBox = True
-            edgeLabel += f": {edge.info.boxArray[curr_box].name}"
+            if type(edge.info.boxArray[curr_box]) == str:
+                edgeLabel += f": {boxCatalogue[edge.info.boxArray[curr_box]].name}"
+            else:
+                edgeLabel += f": {edge.info.boxArray[curr_box].name}"
 
         # box handling (mapping more children to one edge (portArity > 1))
         if hasBox:
-            if type(edge.info.boxArray[curr_box]) == type(str):
+            if type(edge.info.boxArray[curr_box]) == str:
                 boxName = edge.info.boxArray[curr_box]
             else:
                 boxName = edge.info.boxArray[curr_box].name

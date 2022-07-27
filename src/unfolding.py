@@ -8,11 +8,10 @@ boxes = boxCatalogue
 def findPortStates(ta: TTreeAut):
     # {portName: stateName}
     result = {}
-    for edgeList in ta.transitions.values():
-        for edge in edgeList.values():
-            label: str = edge.info.label
-            if label.startswith("Port") and label not in result:
-                result[label] = edge[0]
+    for edge in transitions(ta):
+        label: str = edge.info.label
+        if label.startswith("Port") and label not in result:
+            result[label] = edge.src
     # print([result[key] for key in sorted(result.keys())])
     return [result[key] for key in sorted(result.keys())]
 

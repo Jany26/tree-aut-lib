@@ -5,13 +5,13 @@
 
 # from _typeshed import FileDescriptor
 from io import TextIOWrapper
-from bdd import *
+import os
+import gc
+
 from test_data import *
 from format_vtf import *
 from format_tmb import *
 from format_dot import *
-import os
-import gc
 
 from coocurrence import *
 from unfolding import *
@@ -980,6 +980,7 @@ def productTests():
     H0 = importTAfromVTF("tests/tddetH0.vtf")
     H1 = importTAfromVTF("tests/tddetH1.vtf")
 
+    print(" > SUBUNIT TEST: testing product ...")
     failures = []
 
     productUnitTest(X, LPort, True, failures)
@@ -1035,6 +1036,7 @@ def extensionTests():
     H0 = importTAfromVTF("tests/tddetH0.vtf")
     H1 = importTAfromVTF("tests/tddetH1.vtf")
 
+    print(" > SUBUNIT TEST: testing extension ...")
     failures = []
     # extension je specializovanejsi // mal by byt
     extensionUnitTest(X, LPort, True, failures)
@@ -1071,26 +1073,59 @@ def extensionTests():
     printFailedTests(failures)
 
 
-def bddTests():
-    
+def unfoldingTests():
+    def testUnfolding(foldedTApath, exp: bool, failures):
+        ta = importTAfromVTF(foldedTApath, 'f')
+        ta = unfold(ta)
+        res = isUnfolded(ta)
+        if res != exp:
+            failures.append(
+                f"isUnfolded({ta.name}): expected {exp}, got {res}"
+            )
+
+    print(" > SUBUNIT TEST: testing unfolding ...")
     failures = []
     
-    a = BDDnode('a', 'x1')
-    b = BDDnode('b', 'x2')
-    c = BDDnode('c', 'x3')
-    d = BDDnode('d', 'x4')
-    e = BDDnode('0', 'x5')
-    f = BDDnode('1', 'x6')
+    testUnfolding("tests/unfoldingTest1.vtf", True, failures)
+    testUnfolding("tests/unfoldingTest2.vtf", True, failures)
+    testUnfolding("tests/unfoldingTest3.vtf", True, failures)
+    testUnfolding("tests/unfoldingTest4.vtf", True, failures)
+    
+    printFailedTests(failures)
 
-    a.attach(b, c)
-    b.attach(e, f)
-    c.attach(d, e)
-    d.attach(f, f)
 
-    # print(BDD('test1', a))
-    # (BDD('test1', a)).printBDD()
+def normalizationTests():
+    def testNormalization(unfoldedTApath, exp: bool, failures, unfolding=False):
+        ta = importTAfromVTF(unfoldedTApath, 'f')
+        symbols = ta.getSymbolArityDict()
+        variables = [f"x" + f"{i+1}" for i in range(8)]
+        if unfolding:
+            ta = unfold(ta)
+        ta = normalize(ta, symbols, variables)
+        res = isNormalized(ta)
+        if res != exp:
+            failures.append(
+                f"isNormalized({ta.name}): expected {exp}, got {res}"
+            )
+    
+    print(" > SUBUNIT TEST: testing normalization ...")
+    failures = []
+
+    testNormalization("tests/unfoldingTest1.vtf", True, failures, unfolding=True)
+    testNormalization("tests/unfoldingTest2.vtf", True, failures, unfolding=True)
+    testNormalization("tests/unfoldingTest3.vtf", True, failures, unfolding=True)
+    testNormalization("tests/unfoldingTest4.vtf", True, failures, unfolding=True)
+    testNormalization("tests/unfoldingTest5.vtf", True, failures, unfolding=True)
+    
+    testNormalization("tests/normalizationTest1.vtf", True, failures)
+    testNormalization("tests/normalizationTest2.vtf", True, failures)
+    testNormalization("tests/normalizationTest3.vtf", True, failures)
+    testNormalization("tests/normalizationTest4.vtf", True, failures)
+
+    printFailedTests(failures)
+
 
 def extraTests():
-    bddTests()
+    pass
 
 # End of file all_tests.py

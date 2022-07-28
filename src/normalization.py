@@ -1,8 +1,7 @@
 from ta_classes import *
 from ta_functions import *
 from test_data import *
-
-boxes = boxCatalogue
+from utils import *
 
 
 class NormalizationHelper:
@@ -155,23 +154,6 @@ def procTransitions(data: NormalizationHelper, childrenStates: list):
     else:
         edgesToAdd = createEdgeList(tr)
 
-    # edgevars = [i[2] for i in edgesToAdd]
-    # stateset = []
-    # for i in edgesToAdd:
-    #     stateset.extend(i[0])
-    # stateset = set(stateset)
-    # print("vars =", edgevars)
-    # print("states =", stateset)
-    # if edgevars == ['x1', 'x2', 'x3', 'x4', 'x5']:
-    #     if len(stateset) == 1:
-    #         print("ERROR")
-    #         print("edgesToAdd")
-    #         for i in edgesToAdd:
-    #             print(i)
-    #         print("varEdge =", varEdge)
-    #         print("novarEdge =", novarEdge)
-    #         print("tr =", tr)
-    #         print(childrenStates)
     for edge in edgesToAdd:
         stateList = edge[0]
         stateList.sort()
@@ -181,6 +163,11 @@ def procTransitions(data: NormalizationHelper, childrenStates: list):
             data.worklist.append(stateList)
 
 
+# This is strictly for compacting the UBDA before output for testing purposes.
+# Instead of many identical edges (with just different variables),
+# the edges are merged into one where variables are compacted into one string.
+# This provides much more readable format.
+# Only use this function before outputting the UBDA.
 def compressVariables(ta: TTreeAut) -> TTreeAut:
     temp = {}
     for edgeDict in ta.transitions.values():
@@ -203,5 +190,52 @@ def compressVariables(ta: TTreeAut) -> TTreeAut:
         transitions[src][key] = TTransition(src, edge, children)
     result = TTreeAut(ta.rootStates, transitions, f"compressed({ta.name})", ta.portArity)
     return result
+
+
+# This function performs a bottom-up check of normalization.
+# Each combination of children is supposed to meet parents through
+# a few transitions. In normalized UBDA the transitions do not repeat the same
+# variable. Either the edges to the specific children list have all
+# the variables once or have one "variable-less" edge. (empty string as var)
+def isNormalized(ta: TTreeAut) -> bool:
+    # lookup = edge symbol -> children array key ->
+    # set of variables over all transitions from parent to child
+    result: 'dict[str, dict[str, set]]' = {}
+
+    duplicateEdges: 'list[TTransition]' = []
+
+    for symbol, arity in ta.getSymbolArityDict().items():
+        if arity != 0:
+            result[symbol] = {}
+    queue = [i for i in ta.rootStates]
+    visited = set()
+    while queue != []:
+        parent = queue.pop(0)
+        if parent in visited:
+            continue
+        for edge in ta.transitions[parent].values():
+            if edge.children == []:
+                continue
+            for child in edge.children:
+                if child not in visited:
+                    queue.append(child)
+            symbol = edge.info.label
+            childStr = str(edge.children)
+            if childStr not in result[symbol]:
+                result[symbol][childStr] = set()
+            var = edge.info.variable
+            if (var in result[symbol][childStr]
+                or (var == "" and len(result[symbol][childStr]) != 0)
+                or (var != "" and "" in result[symbol][childStr])
+                ):
+                duplicateEdges.append(edge)
+            else:
+                result[symbol][childStr].add(var)
+        visited.add(parent)
+
+    for edge in duplicateEdges:
+        eprint(f"isNormalized(): edge {str(edge)[4:-1]} disrupts normalized property")
+
+    return duplicateEdges == []
 
 # End of normalization.py

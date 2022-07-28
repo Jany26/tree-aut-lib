@@ -34,15 +34,11 @@ def main():
     reachabilityBUTests()
     removeUselessStatesTests()
 
-    print(">> UNIT TEST: VATA format parsing ...")
+    print(">> UNIT TEST: VATA/TMB/DOT format import/export ...")
     vtfExportTests()
     # vtfImportTests() # time consuming
-
-    print(">> UNIT TEST: TMB format parsing ...")
     tmbExportTests()
     # tmbImportTests() # time consuming
-
-    print(">> UNIT TEST: DOT format export ...")
     dotExportTests()
     dotExportFromVTFTests()
 
@@ -54,6 +50,8 @@ def main():
     # extensionTests()
 
     # sanityTests()
+    unfoldingTests()
+    normalizationTests()
     print(">> UNIT TESTS DONE!")
 
 

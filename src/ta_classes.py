@@ -118,7 +118,9 @@ class TEdge:
         if not boxArrayEmpty:
             result += " ["
             for i in self.boxArray:
-                result += f"{i.name}, " if i is not None else f"_, "
+                result += "_, " if i is None else (
+                    f"{i}, " if type(i) == str else f"{i.name}, "
+                )
             result = result[:-2]
             result += "]"
         return result

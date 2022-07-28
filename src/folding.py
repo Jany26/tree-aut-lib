@@ -173,7 +173,6 @@ def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
                     for i, mapState in enumerate(mapping.values()):
                         e.children.insert(idx + i, mapState)
     result = removeUselessStates(result)
-    stringifyBoxes(result)
     return result
 
 

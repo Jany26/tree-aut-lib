@@ -4,47 +4,11 @@ from normalization import *
 from folding import *
 from all_tests import *
 from ta_functions import *
-from test_data import fullAlphabet, boxCatalogue
-
-
-boxOrder = ['X', 'LPort', 'HPort', 'L0', 'L1', 'H0', 'H1']
-
-
-def noSameChildrenEdgeCheck(ta: TTreeAut) -> bool:
-    result = {}
-    for edge in transitions(ta):
-        if edge.childen == []:
-            continue
-        child0 = edge.childen[0]
-        child1 = edge.childen[1]
-        if child0 not in result:
-            result[child0] = {}
-        if child1 not in result[child0]:
-            result[child0][child1] = 0
-        result[child0][child1] += 1
-
-    for i, j in result.items():
-        for k, l in j.items():
-            if l > 1:
-                print(i, k, l)
-    return True
-
-
-def testNormalization():
-    ta = importTAfromVTF("tests/unfoldingTest5.vtf", 'f')
-    symbols = ta.getSymbolArityDict()
-    variables = [f"x" + f"{i+1}" for i in range(8)]
-    ta = unfold(ta)
-    # print(ta)
-    ta = normalize(ta, symbols, variables)
-    # print(ta)
-    ta = compressVariables(ta)
-    print(ta)
-    print(noSameChildrenEdgeCheck(ta))
+from bdd import *
+from utils import *
 
 
 def testFold():
-    # ta = importTAfromVTF("tests/normalizationTest5.vtf", 'f')
     ta = importTAfromVTF("tests/unfoldingTest5.vtf", 'f')
     symbols = ta.getSymbolArityDict()
     variables = [f"x" + f"{i+1}" for i in range(8)]
@@ -61,20 +25,50 @@ def testFold():
     fold(ta, boxOrder)
 
 
-def testHelpers():
-    ta = importTAfromVTF("tests/unfoldingTest3.vtf", 'f')
-    for i in iterateDFS(ta):
-        print(i)
+def bddTests():
+    
+    failures = []
+    
+    a = BDDnode('a', 'x1')
+    b = BDDnode('b', 'x2')
+    c = BDDnode('c', 'x3')
+    d = BDDnode('d', 'x4')
+    e = BDDnode('0', 'x5')
+    f = BDDnode('1', 'x6')
 
+    a.attach(b, c)
+    b.attach(e, f)
+    c.attach(d, e)
+    d.attach(f, f)
+
+    # print(BDD('test1', a))
+    # (BDD('test1', a)).printBDD()
+
+
+def tidyUpNames(ta: TTreeAut):
+    result = copy.deepcopy(ta)
+    i = 0
+    for state in iterateBFS(ta):
+        result.renameState(state, f"q{i}")
+        i += 1
+    return result
 
 if __name__ == '__main__':
-    ta = importTAfromVTF("tests/foldingTest1.vtf", 'f')
-    ta = unfold(ta)
-    symbols = ta.getSymbolArityDict()
-    variables = [f"x" + f"{i+1}" for i in range(8)]
-    ta = normalize(ta, symbols, variables)
+    print("INITIAL:")
+    ta = importTAfromVTF("tests/unfoldingTest1.vtf", 'f')
     print(ta)
-    xy = fold(ta, boxOrder)
-    print(xy)
+    
+    print("\nUNFOLDING:")
+    ta = unfold(ta)
+    print(ta)
+
+    print("\nNORMALIZATION:")
+    ta = normalize(ta, ta.getSymbolArityDict(), testVarOrder)
+    ta = tidyUpNames(ta)
+    print(compressVariables(ta))
+
+    print("\nFOLDING:")
+    ta = fold(ta, boxOrder)
+    print(ta)
 
 # End of file main.py

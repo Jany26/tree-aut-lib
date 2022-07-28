@@ -2,8 +2,6 @@ from ta_classes import *
 from ta_functions import *
 from test_data import *
 
-boxes = boxCatalogue
-
 
 def findPortStates(ta: TTreeAut):
     # {portName: stateName}
@@ -32,7 +30,7 @@ def unfoldEdge(result: TTreeAut, foldedEdge: TTransition, counter: int, subTable
             newEdge.children.append(edge.children[0])
             edge.children.pop(0)
             continue
-        box = copy.deepcopy(boxes[boxName])
+        box = copy.deepcopy(boxCatalogue[boxName])
 
         children = edge.children[:box.portArity]
         edge.children = edge.children[box.portArity:]
@@ -54,7 +52,6 @@ def unfoldEdge(result: TTreeAut, foldedEdge: TTransition, counter: int, subTable
 
 
 def unfold(ta: TTreeAut) -> TTreeAut:
-    # print(ta)
     result = TTreeAut(
         ta.rootStates,
         {s: {} for s in ta.rootStates},
@@ -98,3 +95,16 @@ def fixKeys(ta: TTreeAut):
             newKey = f"{edge.src}-{edge.info.label}-{edge.children}"
             newEdgeDict[newKey] = edge
         ta.transitions[state] = newEdgeDict
+
+
+# This function checks if there are any boxes in the tree automaton (UBDA),
+# if no boxes are found, the UBDA is unfolded. For testing purposes.
+def isUnfolded(ta: TTreeAut) -> bool:
+    for edge in transitions(ta):
+        for box in edge.info.boxArray:
+            if box is not None:
+                print(f"isUnfolded[ {ta.name} ]: found a box: {edge}")
+                return False
+    return True
+
+# End of file unfolding.py

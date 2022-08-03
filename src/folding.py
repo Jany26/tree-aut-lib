@@ -18,6 +18,8 @@ def trim(ta: TTreeAut) -> TTreeAut:
     return workTA
 
 
+# creates a "key" for transition dictionary modified for working with
+# an "intersectoid" tree automaton
 def intersectoidEdgeKey(e1: list, e2: list) -> str:
     state = f"({e1.src}, {e2.src})"
     symb = e2.info.label
@@ -34,6 +36,21 @@ def intersectoidEdgeKey(e1: list, e2: list) -> str:
 
 # Funtion produces an intersectoid from the 'ta' UBDA and 'box' TA.
 # This intersectoid is used in boxFinding() to determine the result mapping.
+# Intersectoid is similar to a 'product' or an 'intersection' tree automaton.
+# state set: Q' = Q_v x Q_b (v = normalized BDA, b = box)
+#
+# types of transitions and how they came to be:
+#
+# 1) (q,s)-{LH}->[(q1,s1),(q2,s2)] | q-{LH}->(q1,q2) is in transition
+#       dictionary (trd.) of v and s-{LH}->(s1,s2) is in tr.dict. of b
+#
+# 2) (q,s)-{LH,var}->[(q1,s1),(q2,s2)] | q-{LH,var}->(q1,q2) is in trd.
+#       of v and s-{LH}->(s1,s2) is in trd. of b
+#
+# 3) (q,s)-{a}->() | q-{a}->() in trd. of v and s-{a}->() in trd. of b
+#       // a is a terminal symbol (e.g. '0' or '1') => output transition
+#
+# 4) (q,s)-{Port_i}->() | s-{Port_i}->() in tr.d of b
 def createIntersectoid(ta: TTreeAut, box: TTreeAut, root: str) -> TTreeAut:
 
     resultTransitions = {}
@@ -76,6 +93,7 @@ def createIntersectoid(ta: TTreeAut, box: TTreeAut, root: str) -> TTreeAut:
 # This function parses an intersectoid and creates a dictionary with all
 # port transitions and all states that begin with them.
 # input:
+# - an intersetoid "TA"
 # output:
 def portToStateMapping(ta: TTreeAut) -> dict:
     result = {e.info.label: []
@@ -91,6 +109,8 @@ def portToStateMapping(ta: TTreeAut) -> dict:
 
 # finds a state furthest from the root so that the mapping is "maximal"
 # input:
+# - an intersectoid "TA",
+# - dictionary of ports and states with port output transitions
 # output:
 def getMaximalMapping(ta: TTreeAut, ports: dict) -> dict:
     mapping = {}
@@ -176,7 +196,8 @@ def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
     return result
 
 
-def stringifyBoxes(ta:TTreeAut):
+# redundant most probably
+def stringifyBoxes(ta: TTreeAut):
     for edge in transitions(ta):
         newBoxArray = []
         for box in edge.info.boxArray:
@@ -185,7 +206,6 @@ def stringifyBoxes(ta:TTreeAut):
             else:
                 newBoxArray.append(box)
         edge.info.boxArray = newBoxArray
-            
 
 
 def getStateIndexFromBoxIndex(edge: list, idx: int) -> int:

@@ -920,7 +920,9 @@ def isWellDefined(ta: TTreeAut, errDisplay=False) -> bool:
 
     # 2) Trimness - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     allStates = ta.getStates()
-    if (set(reachableBU(ta)) != set(allStates) or set(reachableTD(ta)) != set(allStates)
+    if (
+        set(reachableBU(ta)) != set(allStates)
+        or set(reachableTD(ta)) != set(allStates)
     ):
         wellDefinedConditions["2-trimness"] = False
 

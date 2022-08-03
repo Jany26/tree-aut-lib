@@ -140,10 +140,11 @@ def consistencyCheckVTF(edges, states, arities, verbose=False) -> bool:
             return False
 
         for edge in edgeDict.values():
-            if (edge.src not in states
+            if (
+                edge.src not in states
                 or edge.info.label not in arities
                 or len(edge.children) != int(arities[edge.info.label])
-                ):
+            ):
                 if verbose:
                     if edge.src not in states:
                         print(f"edge.src = {edge.src} not in states = [{states}]")
@@ -166,7 +167,7 @@ def generateKeyFromEdge(edge: list) -> str:
     children = ""
     for i in range(len(edge.children)):
         children += str(edge.children[i])
-        if i < len(edge.children)-1:
+        if i < len(edge.children) - 1:
             children += ","
     # children.rstrip(",")
     return f"{edge.src}-{edge.info.label}-[{children}]"
@@ -216,7 +217,7 @@ def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
                 raise Exception(f"importTAfromVTF(): unexpected preamble '{line}'")
         else:
             edge = loadTransitionFromVTF(line, taType)
-            if edge == None:
+            if edge is None:
                 continue
             # checking state and arity consistency - comparing with data from "preamble"
             key = generateKeyFromEdge(edge)

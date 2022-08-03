@@ -224,10 +224,11 @@ def isNormalized(ta: TTreeAut) -> bool:
             if childStr not in result[symbol]:
                 result[symbol][childStr] = set()
             var = edge.info.variable
-            if (var in result[symbol][childStr]
+            if (
+                var in result[symbol][childStr]
                 or (var == "" and len(result[symbol][childStr]) != 0)
                 or (var != "" and "" in result[symbol][childStr])
-                ):
+            ):
                 duplicateEdges.append(edge)
             else:
                 result[symbol][childStr].add(var)

@@ -1085,12 +1085,12 @@ def unfoldingTests():
 
     print(" > SUBUNIT TEST: testing unfolding ...")
     failures = []
-    
+
     testUnfolding("tests/unfoldingTest1.vtf", True, failures)
     testUnfolding("tests/unfoldingTest2.vtf", True, failures)
     testUnfolding("tests/unfoldingTest3.vtf", True, failures)
     testUnfolding("tests/unfoldingTest4.vtf", True, failures)
-    
+
     printFailedTests(failures)
 
 
@@ -1107,7 +1107,7 @@ def normalizationTests():
             failures.append(
                 f"isNormalized({ta.name}): expected {exp}, got {res}"
             )
-    
+
     print(" > SUBUNIT TEST: testing normalization ...")
     failures = []
 
@@ -1116,7 +1116,7 @@ def normalizationTests():
     testNormalization("tests/unfoldingTest3.vtf", True, failures, unfolding=True)
     testNormalization("tests/unfoldingTest4.vtf", True, failures, unfolding=True)
     testNormalization("tests/unfoldingTest5.vtf", True, failures, unfolding=True)
-    
+
     testNormalization("tests/normalizationTest1.vtf", True, failures)
     testNormalization("tests/normalizationTest2.vtf", True, failures)
     testNormalization("tests/normalizationTest3.vtf", True, failures)

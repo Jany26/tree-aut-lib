@@ -36,7 +36,7 @@ boxCatalogue = {
     "H1": importTAfromVTF("tests/boxH1.vtf"),
     "LPort": importTAfromVTF("tests/boxLPort.vtf"),
     "HPort": importTAfromVTF("tests/boxHPort.vtf"),
-    
+
     "boxX": importTAfromVTF("tests/boxX.vtf"),
     "boxL0": importTAfromVTF("tests/boxL0.vtf"),
     "boxL1": importTAfromVTF("tests/boxL1.vtf"),

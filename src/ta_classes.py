@@ -177,7 +177,7 @@ class TTransition:
 #         - this will be called "transition" dictionary (for the current state)
 #         - the transition dictionary is referenced by arbitrary keys (for now)
 class TTreeAut:
-    def __init__(self, rootStates: list, transitions: dict, name: str, portArity: int=0):
+    def __init__(self, rootStates: list, transitions: dict, name: str, portArity: int = 0):
         self.rootStates = rootStates
         self.transitions = transitions
         self.name = name

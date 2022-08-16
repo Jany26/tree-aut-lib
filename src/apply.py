@@ -18,7 +18,7 @@ def createVarOrder(variables: list, terminals: list, sorted=True) -> dict:
 
 class ApplyHelper:
     def __init__(self, bdd1: BDD, bdd2: BDD, vars):
-        self.count: int = 0
+        self.count: int = 0  # node counter = for unique node names
         self.cache: 'dict[str, BDDnode]' = {}
         self.terminals = bdd1.getTerminalSymbolsList()
         self.terminals.extend(bdd2.getTerminalSymbolsList())
@@ -89,10 +89,14 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
                 value = node1.value
 
             lookup = f"{value},{low.name},{high.name}"
+            # in case both subtrees are isomorphic...
+            if low.name == high.name and low.value == high.value:
+                name = low.name
+                data.cache[lookup] = low
+                return low
             if lookup in data.cache:
                 print(f" > lookup of {lookup}")
                 return data.cache[lookup]
-
             name = f"n{data.count}"
             data.count += 1
             result = BDDnode(name, value)

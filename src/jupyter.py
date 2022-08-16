@@ -11,8 +11,11 @@ from ta_functions import *
 from format_dot import *
 from format_tmb import *
 from format_vtf import *
+
 from test_trees import *
 from test_data import boxCatalogue
+
+from bdd import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # IMPORT/EXPORT INTEGRATION WITH JUPYTER
@@ -123,10 +126,14 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
     while curr_child < len(edge.children):
         edgeLabel = f"{curr_box}"
         hasBox = False
-        if edge.info.boxArray != [] and edge.info.boxArray[curr_box] is not None:
+        if (
+            edge.info.boxArray != []
+            and edge.info.boxArray[curr_box] is not None
+        ):
             hasBox = True
             if type(edge.info.boxArray[curr_box]) == str:
-                edgeLabel += f": {boxCatalogue[edge.info.boxArray[curr_box]].name}"
+                temp = edge.info.boxArray[curr_box]
+                edgeLabel += f": {boxCatalogue[temp].name}"
             else:
                 edgeLabel += f": {edge.info.boxArray[curr_box].name}"
 
@@ -155,8 +162,8 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
 
                 if verbose:
                     print(f" > > box handling node {temp}")
-                if verbose:
-                    print(f" > > box handling edge {name}->{temp} label={edgeLabel}")
+                    print(f" > > box handling edge {name}->{temp}", end='')
+                    print(f", label={edgeLabel}")
 
                 for j in range(arity):
                     graph.edge(temp, edge.children[curr_child],
@@ -167,7 +174,11 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
                                )
 
                     if verbose:
-                        print(" > > > arity handling edge", temp, "->", edge.children[curr_child], f"label=port{j}")
+                        print(
+                            " > > > arity handling edge",
+                            temp, "->", edge.children[curr_child],
+                            f"label=port{j}"
+                        )
                     curr_child += 1
             else:
                 graph.edge(name, edge.children[curr_child],
@@ -177,7 +188,11 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
                            arrowhead='vee'
                            )
                 if verbose:
-                    print(" > > nobox handling edge", name, "->", edge.children[curr_child], f"label={edgeLabel}")
+                    print(
+                        " > > nobox handling edge",
+                        name, "->", edge.children[curr_child],
+                        f"label={edgeLabel}"
+                    )
                 curr_child += 1
 
         else:
@@ -188,7 +203,11 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
                        arrowhead='vee'
                        )
             if verbose:
-                print(f" > normal edge {name} ->", {edge.children[curr_child]}, f"label={curr_box}")
+                print(
+                    f" > normal edge {name} ->",
+                    {edge.children[curr_child]},
+                    f"label={curr_box}"
+                )
             curr_child += 1
         curr_box += 1
 
@@ -220,13 +239,15 @@ def DOTstateHandle(graph, state, leaves, roots):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def convertToDOT(src, type='a', verbose=False) -> Digraph:
-    if type == 'a':
+def convertToDOT(src, srcType='a', verbose=False) -> Digraph:
+    if type(src) == TTreeAut:
         return TAtoDOT(src, verbose)
-    elif type == 'n':
+    elif type(src) is TTreeNode:
         return treeToDOT(src)
-    elif type == 's':
+    elif type(src) is str:
         return treeToDOT(convertStringToTree(str(src)))
+    elif type(src) is BDD:
+        return bddToDOT(src)
 
 
 def TAtoDOT(ta: TTreeAut, verbose=False) -> Digraph:
@@ -271,25 +292,89 @@ def treeToDOT(root: TTreeNode) -> Digraph:
     if root is None:
         return dot
     # arbitrary root node (for extra arrow)
-    dot.node(f"->{root.value}",
-             label=f"->{root.value}",
-             shape='point',
-             width='0.001',
-             height='0.001'
-             )
+    dot.node(
+        f"->{root.value}",
+        label=f"->{root.value}",
+        shape='point',
+        width='0.001',
+        height='0.001'
+    )
 
     # the actual root node
-    dot.node(str(0),
-             label=f"{root.value}",
-             style='filled'
-             )
+    dot.node(
+        str(0),
+        label=f"{root.value}",
+        style='filled'
+    )
 
-    dot.edge(f"->{root.value}", str(0),
-             penwidth='1.0',
-             arrowsize='0.5',
-             arrowhead='vee'
-             )
+    dot.edge(
+        f"->{root.value}", str(0),
+        penwidth='1.0',
+        arrowsize='0.5',
+        arrowhead='vee'
+    )
     drawChildren(dot, root, 0)
     return dot
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# TREES = INTEGRATION WITH DOT/GRAPHVIZ
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+def drawBDDnode(graph: Graph, node: BDDnode, parent: BDDnode, low=False):
+    if node is None:
+        return
+
+    graph.node(
+        node.name,
+        label=f"{node.value}",
+        shape='box' if node.isLeaf() else 'circle',
+        style='filled' if node.isLeaf() else 'solid'
+    )
+
+    graph.edge(
+        parent.name, node.name,
+        penwidth='1.0',
+        style='dotted' if low is True else 'solid'
+    )
+
+    drawBDDnode(graph, node.low, node, low=True)
+    drawBDDnode(graph, node.high, node, low=False)
+    return
+
+
+def bddToDOT(bdd: BDD) -> Graph:
+    dot = Graph()
+
+    if bdd.root is None:
+        return dot
+
+    dot.node(
+        f"->{bdd.root.name}",
+        shape='point',
+        width='0.001',
+        height='0.001'
+    )
+
+    dot.node(
+        bdd.root.name,
+        label=f"{bdd.root.value}",
+        shape='box' if bdd.root.isLeaf() else 'circle',
+        style='filled' if bdd.root.isLeaf() else 'solid'
+    )
+
+    dot.edge(
+        f"->{bdd.root.name}", bdd.root.name,
+        penwidth='1.0',
+    )
+    # nameCache: dict[str, str] = {}
+    # counter: int = 0
+    # for i in bdd.iterateBFS(allowRepeats=False):
+    #     if i.name not in nameCache:
+    #         nameCache[i.name] = str(counter)
+    drawBDDnode(dot, bdd.root.low, bdd.root, low=True)
+    drawBDDnode(dot, bdd.root.high, bdd.root, low=False)
+    return dot
+
 
 # End of file jupyter.py

@@ -88,8 +88,10 @@ def normalize(ta: TTreeAut, alphabet: dict, varOrder: list) -> TTreeAut:
 
     processed = []
     while worklist != []:
+        ms = worklist.pop()  # macrostate
         for sym in symbols:
-            ms = worklist.pop()  # macrostate
+            # if worklist == []:
+            #     continue
             # print(ms)
             tuples = generatePossibleChildren(ms, states, symbols[sym])
             # for i in tuples:
@@ -161,35 +163,6 @@ def procTransitions(data: NormalizationHelper, childrenStates: list):
         if stateList not in data.states:
             data.states.append(stateList)
             data.worklist.append(stateList)
-
-
-# This is strictly for compacting the UBDA before output for testing purposes.
-# Instead of many identical edges (with just different variables),
-# the edges are merged into one where variables are compacted into one string.
-# This provides much more readable format.
-# Only use this function before outputting the UBDA.
-def compressVariables(ta: TTreeAut) -> TTreeAut:
-    temp = {}
-    for edgeDict in ta.transitions.values():
-        for edge in edgeDict.values():
-            tempKey = f"{edge.src}-{edge.info.label}-{edge.children}"
-            if tempKey not in temp:
-                temp[tempKey] = [[], []]
-            temp[tempKey][0] = [edge.src, edge.info.label, edge.children]
-            temp[tempKey][1].append(edge.info.variable)
-
-    transitions = {}
-    for key, edgeData in temp.items():
-        src = edgeData[0][0]
-        symb = edgeData[0][1]
-        children = edgeData[0][2]
-        vars = ",".join(edgeData[1])
-        edge = TEdge(symb, [], vars)
-        if src not in transitions:
-            transitions[src] = {}
-        transitions[src][key] = TTransition(src, edge, children)
-    result = TTreeAut(ta.rootStates, transitions, f"compressed({ta.name})", ta.portArity)
-    return result
 
 
 # This function performs a bottom-up check of normalization.

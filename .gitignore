@@ -6,5 +6,6 @@ src/vtf
 src/dot
 src/vtf-to-dot
 src/tmb
+src/dimacs-out
 notes.md
 0-adHocTests.ipynb

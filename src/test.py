@@ -7,7 +7,7 @@ from ta_functions import *
 from bdd import *
 from apply import *
 from utils import *
-
+from dimacs import *
 
 def testFold():
     ta = importTAfromVTF("tests/unfoldingTest5.vtf", 'f')
@@ -84,35 +84,63 @@ def applyTest():
     print(bdd3)
 
 
-def tidyUpNames(ta: TTreeAut):
-    result = copy.deepcopy(ta)
-    i = 0
-    for state in iterateBFS(ta):
-        result.renameState(state, f"q{i}")
-        i += 1
-    return result
-
-
 def foldTest():
-    print("INITIAL:")
+    # print("INITIAL:")
     ta = importTAfromVTF("tests/unfoldingTest1.vtf", 'f')
-    print(ta)
+    # print(ta)
 
-    print("\nUNFOLDING:")
+    # print("\nUNFOLDING:")
     ta = unfold(ta)
-    print(ta)
+    # print(ta)
+    # print("\nUNFOLDING RENAMED:")
+    ta = tidyUpNames(ta, prefix='u')
+    # print(ta)
 
     print("\nNORMALIZATION:")
     ta = normalize(ta, ta.getSymbolArityDict(), testVarOrder)
     ta = tidyUpNames(ta)
+    ta.name = "unfoldingTest1"
     print(compressVariables(ta))
+    for state in iterateDFS(ta):
+        print(state)
 
     print("\nFOLDING:")
-    ta = fold(ta, boxOrder)
+    ta, midResults = fold(ta, boxOrder)
+    print("\nFINAL RESULT:")
+    # print(ta)
+    for edge in transitions(ta):
+        for box in edge.info.boxArray:
+            if box is not None:
+                print(box.name)
+    # for intersectoid, mapping in midResults:
+    #     print(f"\nMAPPING = {mapping}")
+    #     print("\nINTERSECTOID")
+    #     print(intersectoid)
+
+
+def lexicographicOrderTest():
+    ta = importTAfromVTF("../nta/vtf/A0053.vtf", 'f')
+    ta = treeAutDeterminization(ta, ta.getSymbolArityDict())
+    ta.rootStates = [ta.rootStates[0]]
+    ta = tidyUpNames(ta)
+    ta = removeUselessStates(ta)
+    ta = normalize(ta, ta.getSymbolArityDict(), testVarOrder5)
+    # ta = tidyUpNames(ta)
     print(ta)
+    test = lexicographicalOrder(ta)
+    print(test)
+
+
+def dimacsTest():
+    dnf = dimacsRead("./dimacs/test.dnf")
+    dnf.printBDD()
+    dimacsWrite(dnf, "dimacs-out/output.dnf")
 
 
 if __name__ == '__main__':
     # bddTest()
-    applyTest()
+    # applyTest()
+    # foldTest()
+    # lexicographicOrderTest()
+    dimacsTest()
 # End of file main.py

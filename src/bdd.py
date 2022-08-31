@@ -106,13 +106,15 @@ class BDD:
     def __repr__(self):
         result = f"BDD '{self.name}'\n"
         for i in self.iterateDFS(allowRepeats=False):
-            nodeName = i.name
-            nodeVal = f"({i.value})"
+            nodeVal = f"<{i.value }>"
+            if type(i.value) == int:
+                nodeVal = f"[{i.value}]"
+            nodeName = f"\"{i.name}\""
             if i.isLeaf():
                 nodeVal = f"[{i.value}]"
-            lowName = i.low.name if i.low is not None else "_"
-            highName = i.high.name if i.high is not None else "_"
-            result += f"{nodeVal} \"{nodeName}\" -> ({lowName}, {highName})\n"
+            lowName = i.low.value if i.low is not None else "_"
+            highName = i.high.value if i.high is not None else "_"
+            result += f"{nodeVal} {nodeName} -> ({lowName}, {highName})\n"
         return result
 
     # Tree-like format of outputting/printing a BDD
@@ -121,10 +123,13 @@ class BDD:
             if node is None:
                 return
             spaces = " " * 2 * lvl
+            value = f"<{node.value}>" 
+            if type(node.value) == int:
+                value = f"[{node.value}]"
             isLeaf = "LEAF" if node.low is None or node.high is None else ""
-            print(f"{spaces}{prefix} {node.name} <{node.value}> {isLeaf}")
-            newPrefixLow = f"[{node.name}-L->]"
-            newPrefixHigh = f"[{node.name}-H->]"
+            print(f"{spaces}{prefix} {value} {node.name} {isLeaf}")
+            newPrefixLow = "" # f"[{node.name}-L->]"
+            newPrefixHigh = ""  # f"[{node.name}-H->]"
             printBDDNode(node.low, lvl + 1, newPrefixLow)
             printBDDNode(node.high, lvl + 1, newPrefixHigh)
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -236,6 +241,30 @@ class BDD:
         result = set()
         getTerminal(self.root, result)
         return list(result)
+    
+    # DFS counting the number of paths leading to a specific symbol - usually
+    # a leaf. Used to count how many dimacs clausules is the BDD made of.
+    def countBranchesIter(self, symbol) -> int:
+        counter = 0
+
+        if self.root is None:
+            return
+
+        # visited = set()
+        stack = [self.root]
+
+        while len(stack) > 0:
+            node = stack.pop()
+            if node is None:
+                continue
+
+            if node.value == symbol:
+                counter += 1
+
+            stack.append(node.high)
+            stack.append(node.low)
+
+        return counter
 
 
 # Deep recursive check if two BDD structures are equal.

@@ -77,10 +77,13 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
                    height='0.001'
                    )
         # EDGE: outputState -> arbitrary output point
+        outputEdgeLabel = edge.info.label
+        if edge.info.label.startswith("Port_"):
+            outputEdgeLabel = f"⊕{edge.info.label[5:]}"
         graph.edge(edge.src, name,
                    penwidth='2.0',
                    arrowsize='0.5',
-                   label=f"<<B>[{edge.info.label}]</B>>")
+                   label=f"<<B>[{outputEdgeLabel}]</B>>")
 
         if verbose:
             print(" > arbitrary output point", name)
@@ -132,10 +135,12 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
         ):
             hasBox = True
             if type(edge.info.boxArray[curr_box]) == str:
-                temp = edge.info.boxArray[curr_box]
-                edgeLabel += f": {boxCatalogue[temp].name}"
+                boxName = boxCatalogue[edge.info.boxArray[curr_box]].name
             else:
-                edgeLabel += f": {edge.info.boxArray[curr_box].name}"
+                boxName = edge.info.boxArray[curr_box].name
+            if boxName.startswith("box"):
+                boxName = boxName[len("box"):]
+            edgeLabel += f": {boxName}"
 
         # box handling (mapping more children to one edge (portArity > 1))
         if hasBox:
@@ -321,30 +326,44 @@ def treeToDOT(root: TTreeNode) -> Digraph:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def drawBDDnode(graph: Graph, node: BDDnode, parent: BDDnode, low=False):
+def drawBDDnode(
+    graph: Graph,
+    node: BDDnode,
+    parent: BDDnode,
+    cache: set,
+    low=False
+):
     if node is None:
         return
 
-    graph.node(
-        node.name,
-        label=f"{node.value}",
-        shape='box' if node.isLeaf() else 'circle',
-        style='filled' if node.isLeaf() else 'solid'
-    )
+    if node.name not in cache:
+        graph.node(
+            node.name,
+            label=f"{node.value}",
+            shape='box' if node.isLeaf() else 'circle',
+            style='filled' if node.isLeaf() else 'solid'
+        )
+        cache.add(node.name)
+    
+    if f"{parent.name}->{node.name}" not in cache:
+        graph.edge(
+            parent.name, node.name,
+            penwidth='1.0',
+            style='dotted' if low is True else 'solid'
+        )
+        cache.add(f"{parent.name}->{node.name}")
 
-    graph.edge(
-        parent.name, node.name,
-        penwidth='1.0',
-        style='dotted' if low is True else 'solid'
-    )
-
-    drawBDDnode(graph, node.low, node, low=True)
-    drawBDDnode(graph, node.high, node, low=False)
+    drawBDDnode(graph, node.low, node, cache, low=True)
+    drawBDDnode(graph, node.high, node, cache, low=False)
     return
 
 
 def bddToDOT(bdd: BDD) -> Graph:
     dot = Graph()
+
+    # dictionary: "nodeName": set of nodes, to which there exists an edge
+    # in the currently drawn BDD -> this is to avoid duplicate drawing
+    cache: set = set()
 
     if bdd.root is None:
         return dot
@@ -362,18 +381,14 @@ def bddToDOT(bdd: BDD) -> Graph:
         shape='box' if bdd.root.isLeaf() else 'circle',
         style='filled' if bdd.root.isLeaf() else 'solid'
     )
-
     dot.edge(
         f"->{bdd.root.name}", bdd.root.name,
         penwidth='1.0',
     )
-    # nameCache: dict[str, str] = {}
-    # counter: int = 0
-    # for i in bdd.iterateBFS(allowRepeats=False):
-    #     if i.name not in nameCache:
-    #         nameCache[i.name] = str(counter)
-    drawBDDnode(dot, bdd.root.low, bdd.root, low=True)
-    drawBDDnode(dot, bdd.root.high, bdd.root, low=False)
+
+    cache.add(bdd.root.name)
+    drawBDDnode(dot, bdd.root.low, bdd.root, cache, low=True)
+    drawBDDnode(dot, bdd.root.high, bdd.root, cache, low=False)
     return dot
 
 

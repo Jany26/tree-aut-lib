@@ -190,8 +190,8 @@ class TTreeAut:
         for state in iterateBFS(self):
             # result += "  >"
             for e in self.transitions[state].values():
-                comment = " <<< LEAF TRANSITION >>>" if e.children == [] else ""
-                result += f"  > {e.src} -- {e.info} --> {e.children}{comment}\n"
+                note = " <<< LEAF TRANSITION >>>" if e.children == [] else ""
+                result += f"  > {e.src} -- {e.info} --> {e.children}{note}\n"
         return result[:-1]  # trim the last '\n'
 
     def printTreeAut(self):
@@ -341,6 +341,15 @@ class TTreeAut:
                     keysToDelete.append(key)
             for key in keysToDelete:
                 content.pop(key)
+
+    def reformatKeys(self, prefix: str='k'):  # k as in 'key'
+        counter: int = 1  # for no collisions
+        for state in iterateBFS(self):
+            swap = [key for key in self.transitions[state].keys()]
+            for oldKey in swap:
+                newKey = f"{prefix}{counter}"
+                counter += 1
+                self.transitions[state][newKey] = self.transitions[state].pop(oldKey)
 
     # # Shrinks the tree automaton
     # such that it only contain the states from list (reachable states)
@@ -503,6 +512,7 @@ def transitions(obj):
 # Depth-first search iterator over states of a tree automaton
 def iterateDFS(ta: TTreeAut):
     stack = [root for root in ta.rootStates]
+    stack.reverse()
     visited = set()
     while stack:
         state = stack.pop()

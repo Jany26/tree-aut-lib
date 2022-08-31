@@ -3,8 +3,7 @@ from ta_classes import *
 from ta_functions import *
 from test_data import *
 
-
-from collections import deque
+from normalization import compressVariables
 
 
 # TBD
@@ -138,8 +137,8 @@ def getMaximalMapping(ta: TTreeAut, ports: dict) -> dict:
 #   - dictionary which specifies mapping of the output ports of the 'box'
 #     TA to the states of the initial 'ta' (UBDA)
 #   - if no mapping is found, empty dictionary {} is returned
-def boxFinding(ta: TTreeAut, box: TTreeAut, root: str) -> dict:
-    A = createIntersectoid(ta, box, root)
+def boxFinding(ta: TTreeAut, box: TTreeAut, root: str, midResults: list) -> dict:
+    A: TTreeAut = createIntersectoid(ta, box, root)
     A = trim(A)  # additional functionality maybe needed?
     # print("intersectoid")
     # print(A)
@@ -147,10 +146,20 @@ def boxFinding(ta: TTreeAut, box: TTreeAut, root: str) -> dict:
     # ^^ this is based on the rootDistances of nodes from "ports"
     if tree is None:
         return {}
+    B: TTreeAut = copy.deepcopy(A)
+    B.name = f"({box.name}, {root})"
 
     mapping = portToStateMapping(A)
     maxMapping = getMaximalMapping(A, mapping)
     finalMapping = {i: j for i, (j, _) in maxMapping.items()}
+   
+    # print("\nINTERSECTOID")
+    # print(B)
+    # print("first", mapping)
+    # print("max", maxMapping)
+    # print("final", finalMapping, "\n")
+
+    # midResults.append((B, finalMapping))
     return finalMapping
 
 
@@ -163,6 +172,7 @@ def boxFinding(ta: TTreeAut, box: TTreeAut, root: str) -> dict:
 # output: (folded) UBDA with applied reductions (same language as the input)
 def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
     result = copy.deepcopy(ta)
+    midResults = []
     fillBoxArrays(result)  # in case of [None, None] and [] discrepancies
     reductions = 0
     for boxName in boxes:
@@ -174,7 +184,7 @@ def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
 
                 if isAlreadyReduced(result, state, edgeInfo):
                     continue
-                mapping = boxFinding(result, box, edgeInfo[2])
+                mapping = boxFinding(result, box, edgeInfo[2], midResults)
                 # print(f"boxFinding({box.name}, {edgeInfo[2]}) = {mapping}")
 
                 # applying reduction HERE
@@ -192,11 +202,17 @@ def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
                     e.children.pop(idx)
                     for i, mapState in enumerate(mapping.values()):
                         e.children.insert(idx + i, mapState)
+                    midResults.append(copy.deepcopy(result))
+                    # print(f"\nMID-RESULT {reductions}")
+                    # print(f"boxFinding({box.name}, {edgeInfo[2]}) = {mapping}")
+                    # print(compressVariables(result))
     result = removeUselessStates(result)
-    return result
+    return result, midResults
 
 
-# redundant most probably
+# changes box objects on edges to strings of their names ???
+# initial try for compatability with dot/vtf format modules
+# NOTE: redundant
 def stringifyBoxes(ta: TTreeAut):
     for edge in transitions(ta):
         newBoxArray = []
@@ -208,6 +224,14 @@ def stringifyBoxes(ta: TTreeAut):
         edge.info.boxArray = newBoxArray
 
 
+# Returns the first (important notice!) child state (index),
+# to which does the transition lead through the box on index idx.
+#
+# E.g. q0 - [box1, box2] -> (q1, q2, q3, q4) ## consider box1 has portArity = 3
+# idx = 1 (box2)... box1 has port arity 3, so box2 is on the sub-edge leading
+# to state q4, as subedge with box1 encapsulates children q1, q2, q3
+#
+# NOTE: might not work in some special cases of port arity combinations etc.
 def getStateIndexFromBoxIndex(edge: list, idx: int) -> int:
     if idx >= len(edge.info.boxArray):
         raise Exception("getStateIndexFromBoxIndex(): idx out of range")
@@ -215,7 +239,7 @@ def getStateIndexFromBoxIndex(edge: list, idx: int) -> int:
     for i, box in enumerate(edge.info.boxArray):
         if i == idx:
             return result
-        result += box.portArity
+        result += box.portArity if box is not None else 1
     raise Exception("getStateIndexFromBoxIndex(): idx out of range")
 
 
@@ -231,8 +255,11 @@ def fillBoxArrays(ta: TTreeAut):
                 edge.info.boxArray.extend([None] * (symlen - boxlen))
 
 
-# NOTE: might be buggy (consider different index in edgeInfo and boxes with
-# different port arities)
+# This function checks whether or not a certain subedge has a box reduction.
+# (subedge is based on 'state' and 'edgeInfo')
+#
+# NOTE: might be buggy if box arities and boxArrays on edges are inconsistent
+# (consider different index in edgeInfo and boxes with different port arities)
 def isAlreadyReduced(ta: TTreeAut, state: str, edgeInfo: list) -> bool:
     edge = ta.transitions[state][edgeInfo[0]]  # edgeInfo[0] = key
     idx = edge.children.index(edgeInfo[2])
@@ -254,6 +281,63 @@ def isAlreadyReduced(ta: TTreeAut, state: str, edgeInfo: list) -> bool:
     return False
 
 
+# In order to canonically and deterministically fold the unfolded and
+# normalized UBDA, we need to determine an order in which the states will
+# be checked for possible applicable reductions. Lexicographic order (ordered
+# by the shortest path from root to the particular state),
+# which is similar to DFS, provides such a way.
+#
+# e.g. path to q1 from root is: low(0), low(0), high(1) edges - 001
+# path to q2 from root is: low(0), high(1), low(0) - 010
+# thus, lexicographically, q1 comes before q2
+#
+# This function takes a 
+def lexicographicalOrder(ta: TTreeAut) -> list:
+    def lexOrder(ta: TTreeAut, state: str, path: str, result, open):
+        if state not in result:
+            result[state] = path
+        else:  # probably redundant, as we go depth first from the lowest path
+            if path < result[state]:
+                result[state] = path
+
+        for edge in ta.transitions[state].values():
+            for idx, child in enumerate(edge.children):
+                if child in open:
+                    continue
+                open.add(child)
+                lexOrder(ta, child, path + str(idx), result, open)
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    pathDict = {}  # state -> path string
+    open = set()
+    for i in ta.rootStates:
+        open.add(i)
+        lexOrder(ta, i, '', pathDict, open)
+
+    # because some states can be accessed through identical paths,
+    # we need to have lists in the reverse path dict.
+    reversePathDict: dict[str, list[str]] = {}  # path -> list of states
+    for state, path in pathDict.items():
+        if path not in reversePathDict:
+            reversePathDict[path] = []
+        reversePathDict[path].append(state)
+
+    pathList = [path for path in reversePathDict.keys()]
+    pathList.sort()  # debug
+    for i, j in pathDict.items():  # debug
+        print(f"{i}{(6-len(i)) * ' '}: {j}") # debug
+    result = []
+    for path in pathList:
+        result.extend(reversePathDict[path])
+    return result
+
+
+# Helper function to create a list of states and some data about them,
+# which will be helpful during main folding procedure.
+# list of all sub-edges (parts of hyper-edge), with indexes to the child.
+#
+# e.g. key-transition pair "key": q0 -> (q1, q2) will be divided into:
+# ["key", 0, q1] and ["key", 1, q2]
 def prepareEdgeInfo(ta: TTreeAut, state: str) -> list:
     result = []
     for key, edge in ta.transitions[state].items():

@@ -13,6 +13,6 @@ clean:
 #	jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace *.ipynb
 	-cd src/ && rm -r __pycache__/
 	-cd src/ && rm *.pyc *.pyo *.pyd
-	-cd src/ && rm -r dot/ tmb/ vtf/ vtf-to-dot/
+	-cd src/ && rm -r dot/ tmb/ vtf/ vtf-to-dot/ dimacs-out/
 
 # End of file Makefile

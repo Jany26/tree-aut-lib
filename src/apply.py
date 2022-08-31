@@ -42,13 +42,10 @@ class ApplyHelper:
 # Creates a new BDD by applying some logic function on two BDDs.
 def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
 
-    data = ApplyHelper(bdd1, bdd2, varOrder)
-
     def applyFrom(func: str, node1: BDDnode, node2: BDDnode,
                   data: ApplyHelper) -> BDDnode:
         if node1.isLeaf() and node2.isLeaf():
-            # scenario A
-            # print(f"A: {node1} leaf and {node2} leaf")
+            # scenario A - both are leaves
             terminal = leafApplyOp(func, node1, node2)
             name = f"t{terminal}"
             if name in data.cache:
@@ -64,8 +61,7 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
                 (node1.isLeaf() and not node2.isLeaf())
                 or (data.vars[str(node1.value)] > data.vars[str(node2.value)])
             ):
-                # scenario D
-                # print(f"D: {node1} lower than {node2}")
+                # scenario D - node1 lower than node2
                 low = applyFrom(func, node1, node2.low, data)
                 high = applyFrom(func, node1, node2.high, data)
                 value = node2.value
@@ -73,8 +69,7 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
                 (not node1.isLeaf() and node2.isLeaf())
                 or (data.vars[node2.value] > data.vars[node1.value])
             ):
-                # scenario C
-                # print(f"C: {node1} higher than {node2}")
+                # scenario C - node1 higher than node2
                 low = applyFrom(func, node1.low, node2, data)
                 high = applyFrom(func, node1.high, node2, data)
                 value = node1.value
@@ -82,8 +77,7 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
                 (not node1.isLeaf() and not node2.isLeaf())
                 and data.vars[node1.value] == data.vars[node2.value]
             ):
-                # scenario B
-                # print(f"B: {node1} same level as {node2}")
+                # scenario B - node1 same level as node2 (but non-leaves)
                 low = applyFrom(func, node1.low, node2.low, data)
                 high = applyFrom(func, node1.high, node2.high, data)
                 value = node1.value
@@ -95,7 +89,6 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
                 data.cache[lookup] = low
                 return low
             if lookup in data.cache:
-                print(f" > lookup of {lookup}")
                 return data.cache[lookup]
             name = f"n{data.count}"
             data.count += 1
@@ -103,15 +96,21 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
             result.attach(low, high)
             data.cache[lookup] = result
             return result
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+    if bdd1.root is None and bdd2.root is None:
+        return BDD(None, None)
+    if bdd1.root is None:
+        return BDD(None, bdd2.root)
+    if bdd2.root is None:
+        return BDD(None, bdd1.root)
+    data = ApplyHelper(bdd1, bdd2, varOrder)
     newRoot = applyFrom(func, bdd1.root, bdd2.root, data)
-    print(data)
     return BDD("BDD", newRoot)
 
 
 def leafApplyOp(operator, bdd1, bdd2) -> int:
     def orOperator(val1, val2):
-        print(f"  >> {val1} or {val2} = {val1 or val2}")
         return val1 or val2
 
     def andOperator(val1, val2):

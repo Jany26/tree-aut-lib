@@ -1,0 +1,14 @@
+@NTA
+# Automaton newNormTest5 - 9.9.22
+%Root q1
+
+q1 LH <x1> ( q2 q3 )
+q2 LH ( q2 q2 )
+q2 LH ( q6 q7 )
+q3 LH ( q3 q5 )
+q3 LH ( q4 q5 )
+q4 LH ( q6 q7 )
+q5 LH ( q5 q5 )
+q5 LH ( q7 q6 )
+q6 0 ( )
+q7 1 ( )

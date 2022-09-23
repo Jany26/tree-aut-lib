@@ -1,4 +1,3 @@
-from re import L
 from format_vtf import *
 from normalization import *
 from folding import *
@@ -8,6 +7,7 @@ from bdd import *
 from apply import *
 from utils import *
 from dimacs import *
+
 
 def testFold():
     ta = importTAfromVTF("tests/unfoldingTest5.vtf", 'f')
@@ -83,35 +83,35 @@ def applyTest():
     bdd3 = applyFunction('or', bdd1, bdd2, varOrder=None)
     print(bdd3)
 
-
 def foldTest():
     # print("INITIAL:")
-    ta = importTAfromVTF("tests/unfoldingTest1.vtf", 'f')
+    ta = importTAfromVTF("tests/newNormTest4.vtf", 'f')
     # print(ta)
 
     # print("\nUNFOLDING:")
     ta = unfold(ta)
     # print(ta)
     # print("\nUNFOLDING RENAMED:")
-    ta = tidyUpNames(ta, prefix='u')
-    # print(ta)
+    ta.reformatStates()
+    print(ta)
 
     print("\nNORMALIZATION:")
-    ta = normalize(ta, ta.getSymbolArityDict(), testVarOrder)
-    ta = tidyUpNames(ta)
-    ta.name = "unfoldingTest1"
-    print(compressVariables(ta))
-    for state in iterateDFS(ta):
-        print(state)
+    ta = treeAutNormalize(ta, createVarOrder('x', 9))
+    # ta.reformatStates()
+    # ta.name = "unfoldingTest1"
+    # print(compressVariables(ta))
+    # for state in iterateDFS(ta):
+    #     print(state)
+    print(ta)
 
     print("\nFOLDING:")
-    ta, midResults = fold(ta, boxOrder)
+    ta = fold(ta, boxOrder)
     print("\nFINAL RESULT:")
-    # print(ta)
-    for edge in transitions(ta):
-        for box in edge.info.boxArray:
-            if box is not None:
-                print(box.name)
+    print(ta)
+    # for edge in transitions(ta):
+    #     for box in edge.info.boxArray:
+    #         if box is not None:
+    #             print(box.name)
     # for intersectoid, mapping in midResults:
     #     print(f"\nMAPPING = {mapping}")
     #     print("\nINTERSECTOID")
@@ -122,10 +122,9 @@ def lexicographicOrderTest():
     ta = importTAfromVTF("../nta/vtf/A0053.vtf", 'f')
     ta = treeAutDeterminization(ta, ta.getSymbolArityDict())
     ta.rootStates = [ta.rootStates[0]]
-    ta = tidyUpNames(ta)
+    ta.reformatStates()
     ta = removeUselessStates(ta)
-    ta = normalize(ta, ta.getSymbolArityDict(), testVarOrder5)
-    # ta = tidyUpNames(ta)
+    ta = normalize(ta, ta.getSymbolArityDict(), createVarOrder('x', 5))
     print(ta)
     test = lexicographicalOrder(ta)
     print(test)
@@ -136,11 +135,30 @@ def dimacsTest():
     dnf.printBDD()
     dimacsWrite(dnf, "dimacs-out/output.dnf")
 
+def normalizationTest():
+    # ta1 = importTAfromVTF("tests/unfoldingTest1.vtf")
+    # ta1 = unfold(ta1)
+    # ta1.reformatStates()
+    # ta1 = treeAutNormalize(ta, ['x1', 'x2', 'x3', 'x4'])
+    # print(ta1)
+
+    # ta2 = importTAfromVTF("tests/newNormTest5.vtf")  # already unfolded
+    # ta2 = copy.deepcopy(ta2)
+    # ta2 = treeAutNormalize(ta2, ['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7'])
+    # print(ta2)
+
+    ta3 = importTAfromVTF("tests/newNormTest4-loops.vtf")
+    ta3 = unfold(ta3)
+    ta3.reformatStates()
+    ta3 = treeAutNormalize(ta3, createVarOrder('x', 9))
+    print(ta3)
+
 
 if __name__ == '__main__':
     # bddTest()
     # applyTest()
-    # foldTest()
+    foldTest()
     # lexicographicOrderTest()
-    dimacsTest()
+    # dimacsTest()
+    # normalizationTest()
 # End of file main.py

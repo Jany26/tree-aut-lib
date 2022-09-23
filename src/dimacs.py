@@ -111,7 +111,7 @@ def dimacsWriteRecursiveDNF(node: BDDnode, dst, cache: list):
     cache.append((node.value, 0))
     dimacsWriteRecursiveDNF(node.low, dst, cache)
     cache.pop()
-    
+
     cache.append((node.value, 1))
     dimacsWriteRecursiveDNF(node.high, dst, cache)
     cache.pop()
@@ -140,7 +140,7 @@ def dimacsWriteRecursiveCNF(node: BDDnode, dst, cache: list):
     cache.append((node.value, 0))
     dimacsWriteRecursiveDNF(node.low, dst, cache)
     cache.pop()
-    
+
     cache.append((node.value, 1))
     dimacsWriteRecursiveDNF(node.high, dst, cache)
     cache.pop()

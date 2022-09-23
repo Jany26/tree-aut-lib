@@ -1,8 +1,11 @@
+from utils import *
 from ta_classes import *
 from ta_functions import *
 from test_data import *
 
 
+# Returns a list of states which have a port transition.
+# NOTE: assuming each port only appears once - for one state
 def findPortStates(ta: TTreeAut):
     # {portName: stateName}
     result = {}
@@ -14,6 +17,11 @@ def findPortStates(ta: TTreeAut):
     return [result[key] for key in sorted(result.keys())]
 
 
+# Performs an unfolding operation for one edge (edge with box reductions).
+# Adds the transitions from box on the unfolded edge to the resulting TA.
+# - counter = for unique state names (if >1 identical boxes are on one edge)
+# - subTable = remembers which states ("states with ports" from the box)
+# should be substituted for the initial TA states
 def unfoldEdge(result: TTreeAut, foldedEdge: TTransition, counter: int, subTable: dict):
     newEdgeInfo = TEdge(foldedEdge.info.label, [], foldedEdge.info.variable)
     newEdge = TTransition(foldedEdge.src, newEdgeInfo, [])
@@ -51,6 +59,10 @@ def unfoldEdge(result: TTreeAut, foldedEdge: TTransition, counter: int, subTable
     return unfolded, newEdge
 
 
+# The whole 'unfolding' cycle. This function goes through all transitions of
+# the tree automaton, searching for 'non-short' edges (or edges labeled with
+# boxes) and 'unfolds' them (replaces the part of the edge with corresponding
+# box = tree automaton). The cycle creates a new TA from scratch.
 def unfold(ta: TTreeAut) -> TTreeAut:
     result = TTreeAut(
         ta.rootStates,
@@ -82,12 +94,28 @@ def unfold(ta: TTreeAut) -> TTreeAut:
             newEdge.src = placeState
             newKey = f"{newEdge.src}-{newEdge.info.label}-{newEdge.children}"
             newDict[newKey] = newEdge
-        result.transitions[placeState] = newDict
+
+        # this line is left in only for testing purposes, it is bugged,
+        # as port states got all their initial transitions removed
+        # result.transitions[placeState] = newDict
+
+        # it is assumed that only one port transition at a time
+        # can be reached from one state
+        keyToPop = ""
+        for key, edge in result.transitions[placeState].items():
+            if edge.info.label.startswith("Port"):
+                keyToPop = key
+        # merging the transitions from box and initial transitions
+        result.transitions[placeState].update(newDict)
+        # but also removing the initial port transition
+        result.transitions[placeState].pop(keyToPop)
 
     return removeUselessStates(result)
 
 
-# possibly not needed
+# Goes through all edges and "updates" their keys in the transition lookup
+# dictionary. After unfolding, some edges could be labeled incorrectly.
+# NOTE: probably obsolete
 def fixKeys(ta: TTreeAut):
     for state, edgeDict in ta.transitions.items():
         newEdgeDict = {}

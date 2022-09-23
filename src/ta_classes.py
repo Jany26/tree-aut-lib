@@ -124,15 +124,6 @@ class TEdge:
             result = result[:-2]
             result += "]"
         return result
-        # tempString = f"{self.label} {{var='{self.variable}'}} , {{"
-        # for i in self.boxArray:
-        #     tempString += "_," if i is None else str(i + ",")
-        #     tempString += " "
-        # if len(self.boxArray) > 0:
-        #     tempString = tempString[:-2]
-        # tempString += "} >"
-        # return tempString
-        # # return self.label
 
     # makes the hyper-edge 'short' (all parts of the edge)
     def shortenEdge(self):
@@ -147,8 +138,8 @@ class TTransition:
         self.children = children
 
     def __repr__(self):
-        comment = " <<< LEAF TRANSITION >>>" if self.children == [] else ""
-        return f"  > {self.src} -- {self.info} --> {self.children}{comment}"
+        # comment = " <<< LEAF TRANSITION >>>" if self.children == [] else ""
+        return f"{self.src} -- {self.info} --> {self.children}"
 
 
 # class TState:
@@ -301,6 +292,40 @@ class TTreeAut:
         vars.sort()
         return vars
 
+    # Returns a dictionary of states, each of which has a list of variables,
+    # that the state can "see" = i.e. the state has a transition with
+    # this variable. e.g. {'q0': ['x1', 'x2'], 'q1': ['x5']}
+    # if reverse==True: the dictionary is referenced by variables, and values
+    # are lists of states. e.g. {'x1': ['q0'], 'x2': ['q0'], 'x5': ['q1']}
+    def getVariablesVisibility(self, reverse=False) -> dict:
+        result: dict[str, set] = {}
+        if reverse is True:
+            for edge in transitions(self):
+                if edge.info.variable != "":
+                    if edge.info.variable not in result:
+                        result[edge.info.variable] = set()
+                    result[edge.info.variable].add(edge.src)
+            return result
+        for edge in transitions(self):
+            if edge.info.variable != "":
+                if edge.src not in result:
+                    result[edge.src] = set()
+                result[edge.src].add(edge.info.variable)
+        return result
+
+    # Returns a list of all states that can be reached through 1 transition
+    # from a specific state (only one directional)
+    def reachableFrom(self, state: str) -> list:
+        if state not in self.transitions:
+            return []
+        result = set()
+
+        for edge in self.transitions[state].values():
+            for child in edge.children:
+                if child not in result:
+                    result.add(child)
+        return list(result)
+
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Modifying functions # - - - - - - - - - - - - - - - - - - - - - - - - - -
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -342,7 +367,22 @@ class TTreeAut:
             for key in keysToDelete:
                 content.pop(key)
 
-    def reformatKeys(self, prefix: str='k'):  # k as in 'key'
+    # Creates a better readable state names for more clear images (DOT).
+    # Useful after unfolding, determinization/normalization, etc.
+    def reformatStates(self, prefix='q'):
+        temp = {}
+        i = 0
+        for state in iterateBFS(self):
+            if state not in temp:
+                temp[state] = i
+                i += 1
+
+        for state, idx in temp.items():
+            self.renameState(state, f"temporaryName{idx}")
+        for idx in temp.values():
+            self.renameState(f"temporaryName{idx}", f"{prefix}{idx}")
+
+    def reformatKeys(self, prefix='k'):  # k as in 'key'
         counter: int = 1  # for no collisions
         for state in iterateBFS(self):
             swap = [key for key in self.transitions[state].keys()]
@@ -367,19 +407,6 @@ class TTreeAut:
 
         for i in set(toDelete):
             self.removeState(i)
-
-    # Returns a list of all states that can be reached through 1 transition
-    # from a specific state (only one directional)
-    def reachableFrom(self, state: str) -> list:
-        if state not in self.transitions:
-            return []
-        result = set()
-
-        for edge in self.transitions[state].values():
-            for child in edge.children:
-                if child not in result:
-                    result.add(child)
-        return list(result)
 
     # Calculates the smallest "hop" distance to the specified state from root
     # Works similarly to BFS but uses helping list to stop an iteration after
@@ -429,6 +456,12 @@ class TTreeAut:
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Building functions #  - - - - - - - - - - - - - - - - - - - - - - - - - -
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    # Prefix, suffix and infix creation was initially thought of as a means
+    # of obtaining a partial order over the box alphabet.
+    # Creating a total order over the box alphabet is necessary for canonical
+    # form of folding/unfolding algorithms.
+    
 
     def createPrefix(self, additionalOutputEdges):
         result = copy.deepcopy(self)
@@ -493,6 +526,8 @@ class TTreeAut:
         result.portArity = result.getPortArity()
         return result
 
+
+# ITERATORS
 
 # custom iterator - yields only edges (no keys)
 #  for cleaner code

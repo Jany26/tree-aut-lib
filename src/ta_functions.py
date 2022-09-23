@@ -5,11 +5,12 @@
 
 # from os import stat
 # from re import L
-from decimal import ExtendedContext
 from ta_classes import *
-from itertools import product
+from utils import *
 
+from itertools import product
 from typing import Tuple
+
 import copy
 
 # All operations for tree automata (TA) implemented in this module:
@@ -172,8 +173,8 @@ def matchTreeBU(ta: TTreeAut, root: TTreeNode) -> bool:
 
 # creates a string (state name) from list of states -- e.g. '{a,b,c}'
 def detCreateName(stateList: list) -> str:
-    stateList.sort()
-    return "{" + ",".join(stateList) + "}"
+    myList = stateNameSort(stateList)
+    return "{" + ",".join(myList) + "}"
 
 
 # Create a "reverse" transition dictionary, in which parents of specified edges
@@ -753,13 +754,23 @@ def removeUselessStates(ta: TTreeAut) -> TTreeAut:
     workTA.shrinkTA(reachableStatesTD)
     return workTA
 
+
+def getAllStateReachability(ta: TTreeAut) -> dict:
+    originalRoots = [i for i in ta.rootStates]
+    result = {}
+    for i in ta.getStates():
+        ta.rootStates = [i]
+        result[i] = set(reachableTD(ta, countItself=False))
+    ta.rootStates = [i for i in originalRoots]
+    return result
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
 # Generates a list of states reachable from the root states
-def reachableTD(ta: TTreeAut) -> list:
-    workList = copy.deepcopy(ta.rootStates)
-    result = copy.deepcopy(ta.rootStates)
+def reachableTD(ta: TTreeAut, countItself=True) -> list:
+    workList = [i for i in ta.rootStates]
+    result = [i for i in ta.rootStates] if countItself is True else []
 
     while len(workList) > 0:
         state = workList.pop()

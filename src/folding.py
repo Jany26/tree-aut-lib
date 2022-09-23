@@ -139,6 +139,7 @@ def getMaximalMapping(ta: TTreeAut, ports: dict) -> dict:
 #   - if no mapping is found, empty dictionary {} is returned
 def boxFinding(ta: TTreeAut, box: TTreeAut, root: str, midResults: list) -> dict:
     A: TTreeAut = createIntersectoid(ta, box, root)
+    # print(A)
     A = trim(A)  # additional functionality maybe needed?
     # print("intersectoid")
     # print(A)
@@ -152,7 +153,7 @@ def boxFinding(ta: TTreeAut, box: TTreeAut, root: str, midResults: list) -> dict
     mapping = portToStateMapping(A)
     maxMapping = getMaximalMapping(A, mapping)
     finalMapping = {i: j for i, (j, _) in maxMapping.items()}
-   
+
     # print("\nINTERSECTOID")
     # print(B)
     # print("first", mapping)
@@ -185,7 +186,7 @@ def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
                 if isAlreadyReduced(result, state, edgeInfo):
                     continue
                 mapping = boxFinding(result, box, edgeInfo[2], midResults)
-                # print(f"boxFinding({box.name}, {edgeInfo[2]}) = {mapping}")
+                print(f"{box.name}, {state} -> [{edgeInfo[1]}]: {edgeInfo[2]} => {mapping}")
 
                 # applying reduction HERE
                 if mapping != {}:
@@ -207,7 +208,7 @@ def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
                     # print(f"boxFinding({box.name}, {edgeInfo[2]}) = {mapping}")
                     # print(compressVariables(result))
     result = removeUselessStates(result)
-    return result, midResults
+    return result
 
 
 # changes box objects on edges to strings of their names ???
@@ -291,7 +292,7 @@ def isAlreadyReduced(ta: TTreeAut, state: str, edgeInfo: list) -> bool:
 # path to q2 from root is: low(0), high(1), low(0) - 010
 # thus, lexicographically, q1 comes before q2
 #
-# This function takes a 
+# This function takes a
 def lexicographicalOrder(ta: TTreeAut) -> list:
     def lexOrder(ta: TTreeAut, state: str, path: str, result, open):
         if state not in result:
@@ -324,8 +325,8 @@ def lexicographicalOrder(ta: TTreeAut) -> list:
 
     pathList = [path for path in reversePathDict.keys()]
     pathList.sort()  # debug
-    for i, j in pathDict.items():  # debug
-        print(f"{i}{(6-len(i)) * ' '}: {j}") # debug
+    # for i, j in pathDict.items():  # debug
+    #     print(f"{i}{(6-len(i)) * ' '}: {j}")  # debug
     result = []
     for path in pathList:
         result.extend(reversePathDict[path])

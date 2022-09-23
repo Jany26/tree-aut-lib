@@ -1,7 +1,7 @@
 from bdd import *
 
 
-# makes the list into a dictionary for easy lookup of indexing
+# Makes the list into a dictionary for easy lookup of indexing
 def createVarOrder(variables: list, terminals: list, sorted=True) -> dict:
     if not sorted and variables is not None:
         variables.sort()
@@ -16,13 +16,25 @@ def createVarOrder(variables: list, terminals: list, sorted=True) -> dict:
     return result
 
 
+# This class is for saving and accessing data important for apply function
+# across recursive calls.
+# Since there is more information needed, a structured data type (this class)
+# is used for lookup and caching.
+# - count = node counter, for unique node names
+# - cache = cache allows us to lookup nodes based on the data about them,
+#           it makes sure that there are no two same nodes in the BDD,
+#           thus satisfying the BDD reduction rule
+# - terminals = list of terminal symbols (most likely obsolete),
+#               maybe usable in case of MTBDDs ???
+# - vars = variable lookup table = each variable is indexed, the indices then
+#          create a variable order based on the initial boolean function
 class ApplyHelper:
     def __init__(self, bdd1: BDD, bdd2: BDD, vars):
-        self.count: int = 0  # node counter = for unique node names
+        self.count: int = 0
         self.cache: 'dict[str, BDDnode]' = {}
-        self.terminals = bdd1.getTerminalSymbolsList()
-        self.terminals.extend(bdd2.getTerminalSymbolsList())
-        self.terminals = list(set(self.terminals))
+        temp = bdd1.getTerminalSymbolsList()
+        temp.extend(bdd2.getTerminalSymbolsList())
+        self.terminals = list(set(temp))
         self.vars: dict = vars
         if vars is None or type(vars) == list:
             if vars is None:
@@ -30,6 +42,7 @@ class ApplyHelper:
                 temp.extend(bdd2.getVariableList())
             self.vars = createVarOrder(temp, self.terminals, sorted=False)
 
+    # for debugging purposes
     def __repr__(self):
         str = "Apply Helper info:\n"
         str += f"count = {self.count}\n"
@@ -44,8 +57,8 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
 
     def applyFrom(func: str, node1: BDDnode, node2: BDDnode,
                   data: ApplyHelper) -> BDDnode:
+        # scenario A - both are leaves
         if node1.isLeaf() and node2.isLeaf():
-            # scenario A - both are leaves
             terminal = leafApplyOp(func, node1, node2)
             name = f"t{terminal}"
             if name in data.cache:
@@ -53,31 +66,32 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
             result = BDDnode(name, terminal)
             data.cache[name] = result
             return result
+        # otherwise (at least one is not leaf) ...
         else:
             low: BDDnode = None
             high: BDDnode = None
             value = None
+            # scenario D - node1 lower than node2
             if (
                 (node1.isLeaf() and not node2.isLeaf())
                 or (data.vars[str(node1.value)] > data.vars[str(node2.value)])
             ):
-                # scenario D - node1 lower than node2
                 low = applyFrom(func, node1, node2.low, data)
                 high = applyFrom(func, node1, node2.high, data)
                 value = node2.value
+            # scenario C - node1 higher than node2
             elif (
                 (not node1.isLeaf() and node2.isLeaf())
                 or (data.vars[node2.value] > data.vars[node1.value])
             ):
-                # scenario C - node1 higher than node2
                 low = applyFrom(func, node1.low, node2, data)
                 high = applyFrom(func, node1.high, node2, data)
                 value = node1.value
+            # scenario B - node1 same level as node2 (but non-leaves)
             elif (
                 (not node1.isLeaf() and not node2.isLeaf())
                 and data.vars[node1.value] == data.vars[node2.value]
             ):
-                # scenario B - node1 same level as node2 (but non-leaves)
                 low = applyFrom(func, node1.low, node2.low, data)
                 high = applyFrom(func, node1.high, node2.high, data)
                 value = node1.value
@@ -109,6 +123,7 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
     return BDD("BDD", newRoot)
 
 
+# "Wrapper" for boolean functions
 def leafApplyOp(operator, bdd1, bdd2) -> int:
     def orOperator(val1, val2):
         return val1 or val2

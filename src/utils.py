@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 import sys
 import copy
 from ta_classes import *
@@ -5,30 +6,33 @@ from ta_classes import *
 
 # boxOrder = ['X', 'LPort', 'HPort', 'L0', 'L1', 'H0', 'H1']
 boxOrder = ['L0', 'L1', 'H0', 'H1', 'LPort', 'HPort', 'X']
-testVarOrder = [f"x{i+1}" for i in range(10)]
-testVarOrder5 = [f"x{i+1}" for i in range(5)]
 
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-# Creates a better readable state names for more clear images (DOT).
-# Useful after unfolding, determinization/normalization, etc.
-def tidyUpNames(ta: TTreeAut, prefix='q'):
-    result = copy.deepcopy(ta)
-    temp = {}
-    i = 0
-    for state in iterateBFS(ta):
-        if state not in temp:
-            temp[state] = i
-            i += 1
+# sorts the state names while ignoring the prefix
+def stateNameSort(stateList: list) -> list:
+    if stateList == []:
+        return []
+    
+    prefixLen = 0
+    for i in range(len(stateList[0])):
+        if not stateList[0][i:].isnumeric():
+            prefixLen += 1
+    prefix = stateList[0][:prefixLen]
+    try:
+        myList = [int(i.lstrip(prefix)) for i in stateList]
+        myList.sort()
+        myList = [f"{prefix}{i}" for i in myList]
+    except ValueError:
+        myList = [i for i in stateList]
+    return myList
 
-    for state, idx in temp.items():
-        result.renameState(state, f"temporaryName{idx}")
-    for idx in temp.values():
-        result.renameState(f"temporaryName{idx}", f"{prefix}{idx}")
-    return result
+
+def createVarOrder(prefix: str, count: int):
+    return [f"{prefix}{i+1}" for i in range(count)]
 
 
 # This is strictly for compacting the UBDA before output for testing purposes.
@@ -74,5 +78,5 @@ def compressVariables(ta: TTreeAut) -> TTreeAut:
         if src not in transitions:
             transitions[src] = {}
         transitions[src][key] = TTransition(src, edge, children)
-    result = TTreeAut(ta.rootStates, transitions, f"compressed({ta.name})", ta.portArity)
+    result = TTreeAut(ta.rootStates, transitions, f"{ta.name}", ta.portArity)
     return result

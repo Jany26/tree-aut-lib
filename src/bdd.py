@@ -123,12 +123,12 @@ class BDD:
             if node is None:
                 return
             spaces = " " * 2 * lvl
-            value = f"<{node.value}>" 
+            value = f"<{node.value}>"
             if type(node.value) == int:
                 value = f"[{node.value}]"
             isLeaf = "LEAF" if node.low is None or node.high is None else ""
             print(f"{spaces}{prefix} {value} {node.name} {isLeaf}")
-            newPrefixLow = "" # f"[{node.name}-L->]"
+            newPrefixLow = ""  # f"[{node.name}-L->]"
             newPrefixHigh = ""  # f"[{node.name}-H->]"
             printBDDNode(node.low, lvl + 1, newPrefixLow)
             printBDDNode(node.high, lvl + 1, newPrefixHigh)
@@ -241,7 +241,7 @@ class BDD:
         result = set()
         getTerminal(self.root, result)
         return list(result)
-    
+
     # DFS counting the number of paths leading to a specific symbol - usually
     # a leaf. Used to count how many dimacs clausules is the BDD made of.
     def countBranchesIter(self, symbol) -> int:

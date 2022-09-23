@@ -257,6 +257,7 @@ def convertToDOT(src, srcType='a', verbose=False) -> Digraph:
 
 def TAtoDOT(ta: TTreeAut, verbose=False) -> Digraph:
     dot = Digraph(comment=f"Tree Automaton {ta.name}")
+    dot.attr(label=f'{ta.name}')
     outputStates = ta.getOutputStates()
 
     for state in ta.getStates():
@@ -344,7 +345,7 @@ def drawBDDnode(
             style='filled' if node.isLeaf() else 'solid'
         )
         cache.add(node.name)
-    
+
     if f"{parent.name}->{node.name}" not in cache:
         graph.edge(
             parent.name, node.name,
@@ -360,6 +361,7 @@ def drawBDDnode(
 
 def bddToDOT(bdd: BDD) -> Graph:
     dot = Graph()
+    dot.attr(label=f'BDD - {bdd.name}')
 
     # dictionary: "nodeName": set of nodes, to which there exists an edge
     # in the currently drawn BDD -> this is to avoid duplicate drawing

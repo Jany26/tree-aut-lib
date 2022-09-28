@@ -5,6 +5,7 @@ from test_data import *
 
 from normalization import compressVariables
 
+import re
 
 # TBD
 def trim(ta: TTreeAut) -> TTreeAut:
@@ -25,9 +26,10 @@ def intersectoidEdgeKey(e1: list, e2: list) -> str:
     var = f",{e1.info.variable}" if e1.info.variable != "" else ""
 
     children = f""
-    for i in range(len(e1.children)):
-        children += f"({e1.children[i]},{e2.children[i]}),"
-    children = children[:-1]
+    if not e2.info.label.startswith("Port"):
+        for i in range(len(e1.children)):
+            children += f"({e1.children[i]},{e2.children[i]}),"
+        children = children[:-1]
 
     key = f"{state}-<{symb}{var}>-({children})"
     return key
@@ -51,48 +53,67 @@ def intersectoidEdgeKey(e1: list, e2: list) -> str:
 #
 # 4) (q,s)-{Port_i}->() | s-{Port_i}->() in tr.d of b
 def createIntersectoid(ta: TTreeAut, box: TTreeAut, root: str) -> TTreeAut:
+    def tupleName(tuple) -> str:
+        return f"({tuple[0]},{tuple[1]})"
 
-    resultTransitions = {}
-    for boxEdge in transitions(box):
-        for taEdge in transitions(ta):
-            if len(taEdge.children) != len(boxEdge.children):
-                continue
-
+    edges = {}
+    visited = set()
+    worklist: list = [(root, b) for b in box.rootStates]
+    keyCounter = 1
+    while worklist != []:
+        currentTuple = worklist.pop(0)
+        state = tupleName(currentTuple)
+        if state in visited:
+            continue
+        for te in ta.transitions[currentTuple[0]].values():  # ta edges
             # skipping edges with already applied reductions
             skip = False
-            for b in taEdge.info.boxArray:
+            for b in te.info.boxArray:
                 if b is not None:
                     skip = True
             if skip:
                 continue
+            for be in box.transitions[currentTuple[1]].values():  # box edges
+                if state not in edges:
+                    edges[state] = {}
+                # skipping differently labeled (e.g. LH and 0) edges
+                if (
+                    te.info.label != be.info.label and 
+                    not be.info.label.startswith("Port")
+                ): 
+                    continue
+                # ports are exceptions, mismatched labels in this case means,
+                # that the port label "overrules" any other one
+                if be.info.label.startswith("Port"):
+                    edgeObj = TEdge(be.info.label, [], '')
+                    edge = TTransition(state, edgeObj, [])
+                    edges[state][intersectoidEdgeKey(te, be)] = edge
+                    keyCounter += 1
+                    continue
 
-            # skipping different labeled edges (except the output port edges)
-            aSymb = taEdge.info.label
-            bSymb = boxEdge.info.label
-            aVar = taEdge.info.variable
-            if aSymb != bSymb and not bSymb.startswith("Port"):
-                continue
+                children = []
+                for i in range(len(te.children)):
+                    child = (te.children[i], be.children[i])
+                    children.append(tupleName(child))
+                    worklist.append(child)
+                edgeObj = TEdge(be.info.label, [], te.info.variable)
+                edge = TTransition(state, edgeObj, children)
+                edges[state][intersectoidEdgeKey(te, be)] = edge
+                keyCounter += 1
 
-            state = (taEdge.src, boxEdge.src)
-            key = intersectoidEdgeKey(taEdge, boxEdge)
-            if state not in resultTransitions:
-                resultTransitions[state] = {}
-
-            children = [(taEdge.children[i], boxEdge.children[i])
-                        for i in range(len(taEdge.children))]
-            edge = TTransition(state, TEdge(bSymb, [], aVar), children)
-            resultTransitions[state][key] = edge
-    resultRootstates = [(root, b) for b in box.rootStates]
-    resultName = f"intersectoid({ta.name}, {box.name}, {root})"
-    result = TTreeAut(resultRootstates, resultTransitions,
-                      resultName, box.portArity)
+        visited.add(state)
+    # end while loop
+    roots = [f"({root},{b})" for b in box.rootStates]
+    name = f"intersectoid({box.name}, {root})"
+    result = TTreeAut(roots, edges, name, box.portArity)
     return result
+
 
 
 # This function parses an intersectoid and creates a dictionary with all
 # port transitions and all states that begin with them.
 # input:
-# - an intersetoid "TA"
+# - an intersectoid "TA"
 # output:
 def portToStateMapping(ta: TTreeAut) -> dict:
     result = {e.info.label: []
@@ -117,6 +138,7 @@ def getMaximalMapping(ta: TTreeAut, ports: dict) -> dict:
         mapping[port] = None
         currentDistance = 0  # state, rootDistance
         for state in stateList:
+            
             dist = ta.getRootDistance(state)
             if dist > currentDistance:
                 mapping[port] = state
@@ -125,6 +147,11 @@ def getMaximalMapping(ta: TTreeAut, ports: dict) -> dict:
             raise Exception(f"getMaximalMapping: {port} mapping not found")
     return mapping
 
+
+def splitTupleName(string):
+        match = re.search("^\(.*,", string)
+        result = match.group(0)[1:-1]
+        return result
 
 # Main implementation of folding procedure (one step)
 # Function tries to apply tree automaton reduction starting from the specific
@@ -137,30 +164,17 @@ def getMaximalMapping(ta: TTreeAut, ports: dict) -> dict:
 #   - dictionary which specifies mapping of the output ports of the 'box'
 #     TA to the states of the initial 'ta' (UBDA)
 #   - if no mapping is found, empty dictionary {} is returned
-def boxFinding(ta: TTreeAut, box: TTreeAut, root: str, midResults: list) -> dict:
+def boxFinding(ta: TTreeAut, box: TTreeAut, root: str) -> dict:
     A: TTreeAut = createIntersectoid(ta, box, root)
-    # print(A)
     A = trim(A)  # additional functionality maybe needed?
-    # print("intersectoid")
-    # print(A)
     tree, string = nonEmptyBU(A)
-    # ^^ this is based on the rootDistances of nodes from "ports"
     if tree is None:
         return {}
-    B: TTreeAut = copy.deepcopy(A)
-    B.name = f"({box.name}, {root})"
 
     mapping = portToStateMapping(A)
     maxMapping = getMaximalMapping(A, mapping)
-    finalMapping = {i: j for i, (j, _) in maxMapping.items()}
-
-    # print("\nINTERSECTOID")
-    # print(B)
-    # print("first", mapping)
-    # print("max", maxMapping)
-    # print("final", finalMapping, "\n")
-
-    # midResults.append((B, finalMapping))
+    # ^^ this is based on the rootDistances of nodes from "ports"
+    finalMapping = {i: splitTupleName(j) for i, j in maxMapping.items()}
     return finalMapping
 
 
@@ -173,40 +187,36 @@ def boxFinding(ta: TTreeAut, box: TTreeAut, root: str, midResults: list) -> dict
 # output: (folded) UBDA with applied reductions (same language as the input)
 def fold(ta: TTreeAut, boxes: list) -> TTreeAut:
     result = copy.deepcopy(ta)
-    midResults = []
     fillBoxArrays(result)  # in case of [None, None] and [] discrepancies
-    reductions = 0
     for boxName in boxes:
-        box = boxCatalogue[boxName]
-        for state in iterateDFS(result):
+        for state in lexicographicalOrder(result):
+            box = boxCatalogue[boxName]
             edgesToChildren = prepareEdgeInfo(result, state)
             for edgeInfo in edgesToChildren:
                 # edgeInfo contains three items: [key, child-index, child]
-
                 if isAlreadyReduced(result, state, edgeInfo):
                     continue
-                mapping = boxFinding(result, box, edgeInfo[2], midResults)
-                print(f"{box.name}, {state} -> [{edgeInfo[1]}]: {edgeInfo[2]} => {mapping}")
+                mapping = boxFinding(result, box, edgeInfo[2])
 
-                # applying reduction HERE
-                if mapping != {}:
-                    reductions += 1
+                if mapping != {}:  # applying reduction HERE
+                    # phase 1: putting the box in the box array
                     e = result.transitions[state][edgeInfo[0]]
-                    boxList = e.info.boxArray
+                    initialBoxList = e.info.boxArray
                     symbol = e.info.label
-                    tempBoxArray = [None] * ta.getSymbolArityDict()[symbol]
-                    for idx in range(len(boxList)):
-                        tempBoxArray[idx] = boxList[idx]
-                    tempBoxArray[edgeInfo[1]] = box
-                    e.info.boxArray = tempBoxArray
+                    boxList = [None] * ta.getSymbolArityDict()[symbol]
+                    for idx in range(len(initialBoxList)):
+                        boxList[idx] = initialBoxList[idx]
+                    boxList[edgeInfo[1]] = box
+                    e.info.boxArray = boxList
+
+                    # phase 2: filling the box-port children in the child array
                     idx = getStateIndexFromBoxIndex(e, edgeInfo[1])
                     e.children.pop(idx)
                     for i, mapState in enumerate(mapping.values()):
                         e.children.insert(idx + i, mapState)
-                    midResults.append(copy.deepcopy(result))
-                    # print(f"\nMID-RESULT {reductions}")
-                    # print(f"boxFinding({box.name}, {edgeInfo[2]}) = {mapping}")
-                    # print(compressVariables(result))
+            # for each transition-part/edge (state-[index]->child)
+        # for each state
+    # for each box
     result = removeUselessStates(result)
     return result
 
@@ -265,20 +275,18 @@ def isAlreadyReduced(ta: TTreeAut, state: str, edgeInfo: list) -> bool:
     edge = ta.transitions[state][edgeInfo[0]]  # edgeInfo[0] = key
     idx = edge.children.index(edgeInfo[2])
     # if box is None => short edge => arity = 1 (1 target state)
-    arities = [(box, box.portArity) if box is not None else (None, 1) for box in edge.info.boxArray]
+    boxArities = []
+    for box in edge.info.boxArray:
+        boxArities.append((box, box.portArity) if box is not None else (None, 1))
 
     i = 0
-    for tuple in arities:
+    for tuple in boxArities:
         if idx < i + tuple[1]:
             if tuple[0] is not None:
-                # print(f"TRUE : st = {state}, tgt = {edgeInfo[2]} [{edgeInfo[1]}], edgeChildren = {edge.children}, arities = {[i[1] for i in arities]}")
                 return True
             else:
-                # print(f"FALSE: st = {state}, tgt = {edgeInfo[2]} [{edgeInfo[1]}], edgeChildren = {edge.children}, arities = {[i[1] for i in arities]}")
                 return False
         i += tuple[1]
-
-    # print(f"FALSE: st = {state}, tgt = {edgeInfo[2]} [{edgeInfo[1]}], edgeChildren = {edge.children}, arities = {[i[1] for i in arities]}")
     return False
 
 
@@ -324,9 +332,7 @@ def lexicographicalOrder(ta: TTreeAut) -> list:
         reversePathDict[path].append(state)
 
     pathList = [path for path in reversePathDict.keys()]
-    pathList.sort()  # debug
-    # for i, j in pathDict.items():  # debug
-    #     print(f"{i}{(6-len(i)) * ' '}: {j}")  # debug
+    pathList.sort()
     result = []
     for path in pathList:
         result.extend(reversePathDict[path])

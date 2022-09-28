@@ -93,8 +93,8 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
 
     # case 2 : regular edge (connector node needed)
     for curr_child in edge.children:
-        name += str(curr_child) + "==="
-    name = name[:-3]
+        name += str(curr_child) + ","
+    name = name[:-1]
 
     # NODE: middle/connector node
     graph.node(name,

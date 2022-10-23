@@ -350,11 +350,12 @@ class NewNormalizationHelper:
         return result
 
 
-def processPossibleEdges(tuple: list,
-                 norm: NewNormalizationHelper,
-                 currentVariable: str,
-                 symbol: str
-                 ):
+def processPossibleEdges(
+    tuple: list,
+    norm: NewNormalizationHelper,
+    currentVariable: str,
+    symbol: str
+):
     childrenLists = [list(i) for i in product(*tuple)]
     newMacroState = set()
     forceVar = False
@@ -376,7 +377,9 @@ def processPossibleEdges(tuple: list,
 
         # if self-loop (even partial), then no variable on edge
         # variable appears only if that was the case in the original UBDA
-        if newMacroState in tuple or not forceVar:
+
+        # if newMacroState in tuple or not forceVar:
+        if newMacroState in tuple:
             addedVar = ""
         else:
             addedVar = currentVariable
@@ -386,7 +389,7 @@ def processPossibleEdges(tuple: list,
             norm.processedEdges.add(lookupStr)
             norm.transitions.append([newMacroState, symbol, addedVar, tuple])
             if norm.verbose:
-                print("[!] new edge =", [newMacroState, symbol, addedVar, tuple])
+                print("[!] edge =", [newMacroState, symbol, addedVar, tuple])
             for root in norm.treeaut.rootStates:
                 if root in newMacroState:
                     norm.roots[str(newMacroState)] = newMacroState
@@ -395,12 +398,13 @@ def processPossibleEdges(tuple: list,
 # Another approach to normalization. This approach also goes bottom-up,
 # but remembers current variable, and always decreases the variable with each
 # iteration until it reaches the root.
+# This approach mostly does not create unnecessary transitions.
 def treeAutNormalize(ta: TTreeAut, vars: list, verbose=False) -> TTreeAut:
     norm = NewNormalizationHelper(ta, vars, verbose)
-    for symbol, stateList in ta.getOutputEdges().items():
-        norm.transitions.append([stateList, symbol, "", []])
-        norm.worklist.append(stateList)
     var = norm.variables.pop(0)
+    for symbol, stateList in ta.getOutputEdges().items():
+        norm.transitions.append([stateList, symbol, var, []])
+        norm.worklist.append(stateList)
     while norm.variables != []:
         var = norm.variables.pop(0)
         if norm.verbose:
@@ -416,7 +420,7 @@ def treeAutNormalize(ta: TTreeAut, vars: list, verbose=False) -> TTreeAut:
         if norm.variables == []:
             break
     ta = createTaFromHelper(norm)
-    # removeBadTransitions(ta, vars, norm)
+    removeBadTransitions(ta, vars, norm)
     return ta
 
 
@@ -442,7 +446,7 @@ def removeBadTransitions(ta: TTreeAut, vars: list, norm):
                 if child not in maxVarCache:
                     continue
                 if maxVarCache[child] < maxVarCache[edge.src]:
-                    # flaggedEdges.append((edge.src, key))
+                    flaggedEdges.append((edge.src, key))
                     if norm.verbose:
                         print("[!] flagged edge =", edge)
 

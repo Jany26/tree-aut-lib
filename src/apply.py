@@ -1,3 +1,11 @@
+# apply.py
+# Module for implementing apply operation of two BDDs.
+# Needed in order to parse DIMACS format and for creating BDDs
+# for further testing/experimenting with tree automata.
+#
+# Implementation of tree automata for article about automata-based BDDs
+# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+
 from bdd import *
 
 

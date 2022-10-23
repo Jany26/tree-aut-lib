@@ -64,6 +64,7 @@ def unfoldEdge(result: TTreeAut, foldedEdge: TTransition, counter: int, subTable
 # boxes) and 'unfolds' them (replaces the part of the edge with corresponding
 # box = tree automaton). The cycle creates a new TA from scratch.
 def unfold(ta: TTreeAut) -> TTreeAut:
+    # stringification of boxes
     result = TTreeAut(
         ta.rootStates,
         {s: {} for s in ta.rootStates},
@@ -134,5 +135,18 @@ def isUnfolded(ta: TTreeAut) -> bool:
                 print(f"isUnfolded[ {ta.name} ]: found a box: {edge}")
                 return False
     return True
+
+
+def stringifyBoxes(ta: TTreeAut):
+    for edge in transitions(ta):
+        newArray = []
+        for box in edge.info.boxArray:
+            if box is None:
+                newArray.append(None)
+            elif type(box) == TTreeAut:
+                newArray.append(box.name)
+            else:
+                newArray.append(box)
+        edge.info.boxArray = newArray
 
 # End of file unfolding.py

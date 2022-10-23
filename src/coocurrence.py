@@ -1,24 +1,25 @@
+# cooccurrence.py
+# Functions for computing coocurence relation between two tree automata.
+# Initial experiment on trying to find a partial order over the boxes.
+# Implementation of tree automata for article about automata-based BDDs
+# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+
 
 from ta_classes import *
 from ta_functions import *
 
 from itertools import product
-# from typing import Tuple
-# import copy
 
 
 def getCoOccurrentStatesTD(ta: TTreeAut) -> list:
 
     def merge(state, macroList):
-        # print(f"> merging {state} with {macroList}")
         result = [state]
         for item in macroList:
             result.extend(item)
-        # print(f" - merged: {result}")
         return set(result)
 
     def process(state, ta, queue):
-        # print(f"processing {state}")
         queue.append(state)
         result = []
         for edge in ta.transitions[state].values():
@@ -28,11 +29,9 @@ def getCoOccurrentStatesTD(ta: TTreeAut) -> list:
                     continue
                 if child in queue:
                     continue
-                # print(f" adding {state}->{child}")
                 process_results.append(process(child, ta, queue[:]))
 
             if edge.children == [] or process_results != []:
-                # print(f"process_results {state}: {process_results}")
                 result.extend([merge(state, macroList) for macroList in product(*process_results)])
         return result
 
@@ -72,9 +71,9 @@ def isExtension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
     outEdges = product.getOutputEdges(inverse=True)
 
     if debug:
-        ta1.printTreeAut()
-        ta2.printTreeAut()
-        product.printTreeAut()
+        print(ta1)
+        print(ta2)
+        print(product)
     fullList = []
     for i in cooccurrentList:
         tempList = []
@@ -97,11 +96,6 @@ def isExtension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
             # TODO: GENERALISATION NEEDED
             # e.g. going over all possible leaf-transitions in 1 state
 
-            # for symbol1 in edges1:
-            #     if symbol1.startswith("Port"):
-            #         print(edgeTuple)
-            #         # checkEdgeConsistency(symbol1, edges2, coocurence)
-
             symbol1 = edges1[0] if edges1 != [] else ""
             symbol2 = edges2[0] if edges2 != [] else ""
             if symbol1 == "" or symbol2 == "":
@@ -114,21 +108,15 @@ def isExtension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
             if len(possibleLeafEdges) != 1:
                 # print("False")
                 return False
-
-    # print(outEdges)
     fullList = []
     for stateSet in cooccurrentList:
         tupleList = []
         for state in stateSet:
             symbols = outEdges[state] if state in outEdges else []
-            # print(symbols)
             if (state, symbols) not in tupleList:
                 tupleList.append((state, symbols))
-            # print(tupleList)
         if tupleList not in fullList:
             fullList.append(tupleList)
-
-    # print(fullList)
     checkList = []
     for tupleList in fullList:
         check = {}
@@ -139,23 +127,15 @@ def isExtension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
                         check[symbol] = []
                     check[symbol].append(item[0])
         checkList.append(check)
-
-    # print(checkList)
     for listSet in checkList:
-        # print(">  ", listSet)
         for stateList in listSet.values():
-            # print(">>>  ", stateList)
             intersection = None
             for state in stateList:
                 product.rootStates = [state]
                 intersection = treeAutIntersection(product, intersection)
             witnessTree, witnessStr = nonEmptyTD(intersection)
-            # intersection.printTreeAut()
             if witnessTree is not None:
-                # witnessTree.printNode()
-                # print("True")
                 return True
-    # print("False")
     return False
 
 # End of cooccurrence.py

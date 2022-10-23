@@ -25,14 +25,15 @@ class TTreeNode:
         self.parent = None  # if None = the node is a root
         self.children = []
         self.depth = 0
-    
+
     # Recursively prints the whole node in somehow structured manner.
     # If called on root node, prints the whole tree
-    def printNode(self):
-        temp = 2 * self.depth * ' ' + str(self.value)
+    def printNode(self, offset: int = 0):
+        space = " " * offset
+        temp = space + 2 * self.depth * ' ' + str(self.value)
         print(temp + "   --> lv " + str(self.depth))
         for i in self.children:
-            i.printNode()
+            i.printNode(offset)
 
     def updateDepth(self, newRootDepth: int):
         self.depth = newRootDepth
@@ -178,27 +179,69 @@ class TTreeAut:
         self.name = name
         self.portArity = self.getPortArity() if portArity == 0 else portArity
 
+        # this parameter is only for formatted printing with edge-keys
+        self.printKeys = False
+
     def __repr__(self):
-        result = f"  == Name = '{self.name}' (port arity = {self.portArity})\n"
-        result += f"  == Root States = {self.rootStates}\n"
-        # for content in self.transitions.values():
+        # printing tree automaton header
+        result = ""
+        # result = "-" * 78 + '\n'
+        result += f"  [TreeAut]: '{self.name}'\n"
+        result += f"  > Root States = {self.rootStates}\n"
+
+        srcString = "source"
+        edgeString = "edge"
+        childString = "child #"
+        keyString = "key"
+
+        # computing lengths
+        srcLen = len(srcString)
+        edgeLen = len(edgeString)
+        childLen = len(childString)
+        keyLen = len(keyString)
+        maxArity = 0
+        for arity in self.getSymbolArityDict().values():
+            maxArity = max(arity, maxArity)
+        for edgeDict in self.transitions.values():
+            for key, edge in edgeDict.items():
+                srcLen = max(len(edge.src), srcLen)
+                edgeLen = max(len(str(edge.info)), edgeLen)
+                for i in edge.children:
+                    childLen = max(len(i), childLen)
+                keyLen = max(len(key), keyLen)
+
+        # printing edge table header
+        result += "  > %-*s -- %-*s --> " % (srcLen, srcString, edgeLen, edgeString)
+        for i in range(maxArity):
+            result += "%-*s  " % (childLen, f"{childString[:-2]} {i + 1}")
+        if self.printKeys:
+            result += "  %-*s" % (keyLen, keyString) + "\n"
+            result += "  " + "-" * (srcLen + edgeLen + keyLen + childLen * maxArity + 17) + '\n'
+        else:
+            result = result[:-2] + '\n'
+            result += "  " + "-" * (srcLen + edgeLen + childLen * maxArity + 13) + '\n'
+
+        # printing edges
         for state in iterateBFS(self):
-            # result += "  >"
-            for e in self.transitions[state].values():
-                note = " <<< LEAF TRANSITION >>>" if e.children == [] else ""
-                result += f"  > {e.src} -- {e.info} --> {e.children}{note}\n"
+            for k, e in self.transitions[state].items():
+                # note = " <<< LEAF TRANSITION >>>" if e.children == [] else ""
+                # result += f"  > {e.src} -- {e.info} --> {e.children}{note}\n"
+                result += "  > %-*s -- %-*s" % (
+                    srcLen, e.src, edgeLen, e.info
+                )
+                if len(e.children) != 0:
+                    result += " --> "
+                    for i in e.children:
+                        result += "%-*s  " % (childLen, i)
+                    result = result[:-2]
+                else:
+                    result += " " * (maxArity * childLen + 7)
+                if self.printKeys:
+                    result += "  : %-*s" % (keyLen, k)
+                result += "\n"
+        # result = "-" * 78 + '\n'
+        self.printKeys = False
         return result[:-1]  # trim the last '\n'
-
-    def printTreeAut(self):
-        print(f"Automaton '{self.name}' (port arity = {self.portArity})")
-        print("=== Root States ===")
-        print(str(self.rootStates))
-
-        for stateName, content in self.transitions.items():
-            print("=== State " + stateName + " ===")
-            for edge in content.values():
-                print(edge.src + " -- " + str(edge.info) + " --> " + str(edge.children))
-        print("")
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Informative functions # - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -295,6 +338,12 @@ class TTreeAut:
                     vars.append(edge.info.variable)
         vars.sort()
         return vars
+
+    def countEdges(self):
+        counter = 0
+        for _ in transitions(self):
+            counter += 1
+        return counter
 
     # Returns a dictionary of states, each of which has a list of variables,
     # that the state can "see" = i.e. the state has a transition with
@@ -465,7 +514,6 @@ class TTreeAut:
     # of obtaining a partial order over the box alphabet.
     # Creating a total order over the box alphabet is necessary for canonical
     # form of folding/unfolding algorithms.
-    
 
     def createPrefix(self, additionalOutputEdges):
         result = copy.deepcopy(self)
@@ -548,6 +596,26 @@ def transitions(obj):
                 yield edge
         else:
             yield innerObj
+
+
+# def transitionsWithKeys(obj):
+#     dictObj = obj
+#     if isinstance(obj, TTreeAut):
+#         dictObj = obj.transitions
+
+#     for key, innerObj in dictObj.items():
+#         if isinstance(innerObj, dict):
+#             for edge in transitions(innerObj):
+#                 yield edge
+#         else:
+#             yield innerObj
+
+
+def transitionsFrom(obj, state):
+    dictObj = obj
+    if isinstance(obj, TTreeAut):
+        for edge in dictObj.transitions[state].values():
+            yield edge
 
 
 # Depth-first search iterator over states of a tree automaton

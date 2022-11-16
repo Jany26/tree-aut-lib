@@ -13,7 +13,7 @@ class NormalizationHelper:
     def __init__(self, treeaut: TTreeAut, variables: list):
         self.treeaut = treeaut  # copy of the initial TA (un-normalized)
         self.roots = []
-        self.states = []  # for first version of normalization
+        self.states = []
         self.transitions = []  # these will be in the final TA/UBDA
         self.worklist = []  # currently considered (macro)states
         self.symbols = {}
@@ -158,7 +158,6 @@ def normalize(ta: TTreeAut, alphabet: dict, varOrder: list) -> TTreeAut:
     norm = NormalizationHelper(ta, varOrder)
     for symbol, stateList in ta.getOutputEdges().items():
         norm.transitions.append([stateList, symbol, "", []])
-        norm.states.append(stateList)
         norm.worklist.append(stateList)
 
     symbols = {s: a for s, a in alphabet.items() if a > 0}
@@ -317,7 +316,6 @@ class NewNormalizationHelper:
     def __init__(self, treeaut: TTreeAut, variables: list, verbose: bool):
         self.treeaut = treeaut  # copy of the initial TA (un-normalized)
         self.roots = {}
-        # self.states = []  # for first version of normalization
         self.transitions = []  # these will be in the final TA/UBDA
         self.worklist = []  # currently considered (macro)states
         self.nextWorklist = []  # which states are considered in next iteration
@@ -330,7 +328,6 @@ class NewNormalizationHelper:
             if str(edge.children) not in self.lookup:
                 self.lookup[str(edge.children)] = []
             self.lookup[str(edge.children)].append(edge)
-        self.processedStates = set()
         self.processedEdges = set()
         self.variables = variables[::-1]
         self.verbose = verbose
@@ -341,7 +338,6 @@ class NewNormalizationHelper:
         result += f"symbols   = {self.symbols}\n"
         result += f"worklist  = {self.worklist}\n"
         result += f"variables = {self.variables}\n"
-        result += f"proc. St  = {self.processedStates}\n"
         result += f"transitions ----------------\n"
         for i in self.transitions:
             result += f" > {i[0]} -- {i[1]} "
@@ -360,10 +356,12 @@ def processPossibleEdges(
     newMacroState = set()
     forceVar = False
     for c in childrenLists:
-        if str(c) not in norm.lookup:
+        if str(c) not in norm.lookup:   
             continue
         possibleEdges = norm.lookup[str(c)]
         for edge in possibleEdges:
+            if norm.verbose:
+                print("      > EDGE =", edge)
             if edge.info.variable == "":
                 newMacroState.add(edge.src)
             else:
@@ -373,12 +371,11 @@ def processPossibleEdges(
     if len(newMacroState) != 0:
         newMacroState = list(newMacroState)
         newMacroState = stateNameSort(newMacroState)
-        norm.nextWorklist.append(newMacroState)
+        if newMacroState not in norm.nextWorklist:
+            norm.nextWorklist.append(newMacroState)
 
         # if self-loop (even partial), then no variable on edge
         # variable appears only if that was the case in the original UBDA
-
-        # if newMacroState in tuple or not forceVar:
         if newMacroState in tuple:
             addedVar = ""
         else:
@@ -401,19 +398,25 @@ def processPossibleEdges(
 # This approach mostly does not create unnecessary transitions.
 def treeAutNormalize(ta: TTreeAut, vars: list, verbose=False) -> TTreeAut:
     norm = NewNormalizationHelper(ta, vars, verbose)
-    var = norm.variables.pop(0)
+    var = norm.variables.pop(0)  # discrepancy about variables on output edges
     for symbol, stateList in ta.getOutputEdges().items():
         norm.transitions.append([stateList, symbol, var, []])
         norm.worklist.append(stateList)
     while norm.variables != []:
         var = norm.variables.pop(0)
-        if norm.verbose:
-            print("var:", var, "|", [detCreateName(i) for i in norm.worklist])
+        if True:  # norm.verbose:
+            print("var:", var, "|", end='')
+            for i in norm.worklist:
+                name = detCreateName(i) 
+                print(f" {name}", end='')
+            print()
         for sym in norm.symbols:
             tuples = []
             for i in product(norm.worklist, repeat=norm.symbols[sym]):
                 tuples.append(list(i))
             for t in tuples:
+                if norm.verbose:
+                    print("   > tuple =", t)
                 processPossibleEdges(t, norm, var, sym)
         norm.worklist = norm.nextWorklist
         norm.nextWorklist = []

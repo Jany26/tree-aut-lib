@@ -7,12 +7,15 @@
 
 from typing import Union
 
+from ta_classes import TEdge, TTransition, TTreeAut
+from unfolding import isUnfolded
+
 
 # One node of a binary decision diagram.
 # - 'name'      - arbitrary name for a node (should be unique within a BDD)
 # - 'value'     - variable (value) which symbolizes the node (e.g. 'x1')
 #               - in case of leaves, the value is 0 or 1 (int)
-# - 'parent'    - list of all parent nodes (root node has empty parent list)
+# - 'parents'    - list of all parent nodes (root node has empty parents list)
 # - 'low'       - points to a low descendant node (symbolizes 'False' branch)
 # - 'high'      - points to a high descendant node (symbolizes 'True' branch)
 # (* leaf node has both low and high descendants None)
@@ -21,7 +24,7 @@ class BDDnode:
     def __init__(self, name, value, low=None, high=None):
         self.name: str = name
         self.value: Union[int, str] = value
-        self.parent: list = []
+        self.parents: list = []
         self.low: BDDnode = low
         self.high: BDDnode = high
         if low is not None and high is not None:
@@ -30,15 +33,20 @@ class BDDnode:
     def __repr__(self):
         if self is None:
             return ""
+        if self.isLeaf():
+            if self.value == 0:
+                return f"({self.name}, [0])"
+            else:
+                return f"({self.name}, [1])"
         return f"({self.name}, {self.value})"
 
     def isRoot(self):
         if self is None:
             return False
-        return True if self.parent is None else False
+        return True if self.parents is None else False
 
     def isLeaf(self):
-        if (self is not None and self.low is None and self.high is None):
+        if (self is not None and (self.low is None or self.high is None)):
             return True
         return False
 
@@ -47,10 +55,24 @@ class BDDnode:
             return
         self.low = lowNode
         if lowNode is not None:
-            lowNode.parent.append(self)
+            lowNode.parents.append(self)
         self.high = highNode
         if highNode is not None:
-            highNode.parent.append(self)
+            highNode.parents.append(self)
+
+    def renameNode(self, newName):
+        if self is None:
+            return
+        oldName = self.name
+        self.name = newName
+        if not self.isLeaf():
+            try:
+                self.low.parents.remove(oldName)
+                self.high.parents.remove(oldName)
+            except:
+                pass
+            self.low.parents.append(newName)
+            self.high.parents.append(newName)
 
     # calculates height of the node (distance from leaves)
     def height(self) -> int:
@@ -104,17 +126,31 @@ class BDD:
 
     # List-like output format for a BDD
     def __repr__(self):
-        result = f"BDD '{self.name}'\n"
-        for i in self.iterateDFS(allowRepeats=False):
-            nodeVal = f"<{i.value }>"
-            if type(i.value) == int:
-                nodeVal = f"[{i.value}]"
-            nodeName = f"\"{i.name}\""
+        nLen = len("node")  # max Node length
+        vLen = len("<var>")  # max Variable length
+        cLen = max(len('low'), len('high'))  # max Child length
+        for i in self.iterateDFS():
+            nLen = max(len(str(i.name)) + 2, nLen)
+            vLen = max(len(str(i.value)) + 2, vLen)
+            cLen = max(len(str(i.value)), cLen)
             if i.isLeaf():
-                nodeVal = f"[{i.value}]"
-            lowName = i.low.value if i.low is not None else "_"
-            highName = i.high.value if i.high is not None else "_"
-            result += f"{nodeVal} {nodeName} -> ({lowName}, {highName})\n"
+                cLen = max(len(f"<{i.value}>"), cLen)
+        result = f"  [BDD]: '{self.name}'\n"
+        result += f"  [root]: {self.root.name}\n"
+        headerString = "  > %-*s - %-*s -> %-*s %-*s" % (
+            nLen, 'node', vLen, '<var>', cLen, 'low', cLen, 'high'
+        )
+        result += headerString + '\n'
+        result += '  ' + '-' * (len(headerString) - 2) + '\n'
+
+        for i in self.iterateBFS():
+            if i.isLeaf():
+                continue
+            ln = i.low.name if type(i.low.value) != int else f"[{i.low.value}]"
+            hn = i.high.name if type(i.high.value) != int else f"[{i.high.value}]"
+            result += "  > %-*s - %-*s -> %-*s %-*s\n" % (
+                nLen, i.name, vLen, f"<{i.value}>", cLen, ln, cLen, hn
+            )
         return result
 
     # Tree-like format of outputting/printing a BDD
@@ -201,18 +237,18 @@ class BDD:
             stack.append(node.low)
 
     def getVariableList(self) -> list:
-        def getVar(node: BDDnode, result: list):
+        def getVar(node: BDDnode, result: set):
             if node.isLeaf():
                 return
-            result.append(node.value)
+            result.add(node.value)
             if node.low is not None:
                 getVar(node.low, result)
             if node.high is not None:
                 getVar(node.high, result)
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        result = []
+        result = set()
         getVar(self.root, result)
-        result = list(set(result))
+        result = list(result)
         result.sort()
         return result
 
@@ -266,6 +302,60 @@ class BDD:
 
         return counter
 
+    def countNodes(self) -> int:
+        counter = 0
+        for node in self.iterateDFS():
+            counter += 1
+        return counter
+
+    def reformatNodes(self, prefix='n'):
+        if self.root is None:
+            return
+        cnt = 0
+        visited = set()
+        queue = [self.root]
+
+        while len(queue) > 0:
+            node = queue.pop(0)
+            if node is None:
+                continue
+            if node in visited:
+                continue
+
+            node.renameNode(f"{prefix}{cnt}")
+            cnt += 1
+
+            visited.add(node)
+            if node.low is not None:
+                queue.append(node.low)
+            if node.high is not None:
+                queue.append(node.high)
+
+    def isValid(self) -> bool:
+        if self.root is None:
+            return
+
+        visited = set()
+        stack = [self.root]
+
+        while len(stack) > 0:
+            node = stack.pop()
+            if node is None:
+                continue
+            if node in visited:
+                continue
+            visited.add(node)
+
+            if node.high is not None and not node.high.isLeaf() and int(node.high.value) <= int(node.value):
+                print("INVALID", node, node.high)
+                return False
+            if node.low is not None and not node.low.isLeaf() and int(node.low.value) <= int(node.value):
+                print("INVALID", node, node.low)
+                return False
+            stack.append(node.high)
+            stack.append(node.low)
+        return True
+
 
 # Deep recursive check if two BDD structures are equal.
 # Does not check names of the nodes, only values and overall structure.
@@ -286,5 +376,56 @@ def compareBDDs(bdd1: BDD, bdd2: BDD) -> bool:
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     return compareNodes(bdd1.root, bdd2.root)
+
+
+# WIP ...
+# unfolding self-loops and partial-loops is needed.
+def createBDDfromTA(ta: TTreeAut) -> BDD:
+    if not isUnfolded(ta):
+        raise Exception('convertTAtoBDD(): folded input')
+    if len(ta.rootStates) != 1:
+        raise Exception('convertTAtoBDD(): more than 1 root state')
+
+    root = BDDnode(ta.rootStates[0], ta.transitions[ta.rootStates])
+
+    visited = set()
+    stack = [ta.rootStates[0]]
+
+    while len(stack) > 0:
+        node = stack.pop()
+        if node is None:
+            continue
+
+        if node in visited:
+            continue
+        visited.add(node)
+
+        yield node
+        stack.append(node.high)
+        stack.append(node.low)
+
+
+# Convert a BDD to a tree automaton.
+def createTAfromBDD(bdd: BDD) -> TTreeAut:
+    roots = [bdd.root.name]
+    transitions = {}
+    key = 0
+    for node in bdd.iterateBFS():
+        transitions[node.name] = {}
+        edge = None
+        children = []
+        if node.isLeaf():
+            edge = TEdge(str(node.value), [], '')
+        else:
+            edge = TEdge('LH', [], node.value)
+            children = [node.low.name, node.high.name]
+        newTransition = TTransition(node.name, edge, children)
+        transitions[node.name][f'k{key}'] = newTransition
+
+        key += 1
+    result = TTreeAut(roots, transitions, bdd.name, 0)
+    result.portArity = result.getPortArity()
+    return result
+
 
 # End of file bdd.py

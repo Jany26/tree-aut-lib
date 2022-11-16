@@ -357,15 +357,18 @@ def newFold(ta: TTreeAut, boxes: list, verbose=False) -> TTreeAut:
             # worklist update
         # while worklist != []
 
-        # if verbose:
-            # result.printKeys = True
-            # print(result)
-
+        if verbose:
+            result.printKeys = True
+            print(result)
+        
     # for each box in boxOrder
     removeFlaggedEdges(result, helper)
     result = removeUselessStates(result)
-    match = re.search(r"\(([^()]*)\)", result.name).group(1)
-    result.name = f"folded({match})"
+    match = re.search(r"\(([^()]*)\)", result.name)
+    if match is None:
+        result.name = f"folded({ta.name})"    
+    else:
+        result.name = f"folded({match.group(1)})"
     return result
 
 

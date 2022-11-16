@@ -111,6 +111,8 @@ def unfold(ta: TTreeAut) -> TTreeAut:
         # but also removing the initial port transition
         result.transitions[placeState].pop(keyToPop)
 
+    result.reformatStates()
+    result.reformatKeys()
     return removeUselessStates(result)
 
 
@@ -132,7 +134,7 @@ def isUnfolded(ta: TTreeAut) -> bool:
     for edge in transitions(ta):
         for box in edge.info.boxArray:
             if box is not None:
-                print(f"isUnfolded[ {ta.name} ]: found a box: {edge}")
+                eprint(f"isUnfolded[ {ta.name} ]: found a box: {edge}")
                 return False
     return True
 

@@ -5,7 +5,7 @@ from ta_classes import *
 
 
 # boxOrder = ['X', 'LPort', 'HPort', 'L0', 'L1', 'H0', 'H1']
-boxOrder = ['L0', 'L1', 'H0', 'H1', 'X', 'LPort', 'HPort']
+boxOrder = ['L0', 'L1', 'H0', 'H1', 'X']
 
 
 def eprint(*args, **kwargs):

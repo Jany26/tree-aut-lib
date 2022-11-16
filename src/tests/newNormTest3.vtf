@@ -3,7 +3,7 @@
 %Root q0
 
 q0 LH <[X X] x1> ( q1 q2 )
-q1 LH <[_ L0] x4> ( q3 q4 )
+q1 LH <[L1 L0] x4> ( q3 q4 )
 q2 LH <[H1 _] x6> ( q3 q4 )
 q3 0 ( )
 q4 1 ( )

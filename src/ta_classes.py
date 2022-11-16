@@ -106,9 +106,9 @@ class TTreeNode:
 #   * note: length of the boxArray = arity of the edge
 class TEdge:
     def __init__(self, label: str, boxArray: list, variable: str):
-        self.label = label
-        self.boxArray = boxArray
-        self.variable = variable
+        self.label: str = label
+        self.boxArray: list[str] = boxArray
+        self.variable: str = variable
 
     def __repr__(self):
         result = f"{self.label}"
@@ -136,14 +136,25 @@ class TEdge:
 
 
 class TTransition:
-    def __init__(self, src: str, info: TEdge, children: list):
-        self.src = src
-        self.info = info  # edge info (symbol, boxes, variable)
-        self.children = children
+    def __init__(self, src: str, info: TEdge, children: list[str]):
+        self.src: str = src
+        self.info: TEdge = info  # edge info (symbol, boxes, variable)
+        self.children: list[str] = children
 
     def __repr__(self):
         # comment = " <<< LEAF TRANSITION >>>" if self.children == [] else ""
         return f"{self.src} -- {self.info} --> {self.children}"
+
+    def checkSelfLoop(self):
+        if self.src in self.children:
+            return True
+        return False
+
+    def checkFullSelfLoop(self):
+        for i in self.children:
+            if i != self.src:
+                return False
+        return True
 
 
 # class TState:
@@ -173,14 +184,21 @@ class TTransition:
 #         - this will be called "transition" dictionary (for the current state)
 #         - the transition dictionary is referenced by arbitrary keys (for now)
 class TTreeAut:
-    def __init__(self, rootStates: list, transitions: dict, name: str, portArity: int = 0):
-        self.rootStates = rootStates
-        self.transitions = transitions
-        self.name = name
-        self.portArity = self.getPortArity() if portArity == 0 else portArity
-
+    def __init__(
+        self,
+        rootStates: list[str],
+        transitions: dict[str, dict[str, TTransition]],
+        name: str,
+        portArity: int = 0
+    ):
+        self.rootStates: list[str] = rootStates
+        self.transitions: dict[str, dict[str, TTransition]] = transitions
+        self.name: str = name
+        self.portArity: int = portArity
+        if self.portArity == 0:
+            self.portArity = self.getPortArity()
         # this parameter is only for formatted printing with edge-keys
-        self.printKeys = False
+        self.printKeys: bool = False
 
     def __repr__(self):
         # printing tree automaton header
@@ -312,13 +330,13 @@ class TTreeAut:
         return symbolDict
 
     def getPortArity(self) -> int:
-        portArray = []
+        portSet = set()
         for edgeDict in self.transitions.values():
             for edge in edgeDict.values():
                 sym = edge.info.label
-                if sym.startswith("Port") and sym not in portArray:
-                    portArray.append(sym)
-        return len(portArray)
+                if sym.startswith("Port"):
+                    portSet.add(sym)
+        return len(portSet)
 
     def isTDdeterministic(self) -> bool:
         for edgeDict in self.transitions.values():
@@ -331,11 +349,12 @@ class TTreeAut:
         return True
 
     def getVariableOrder(self) -> list:
-        vars = []
+        vars = set()
         for edgeDict in self.transitions.values():
             for edge in edgeDict.values():
                 if edge.info.variable != "":
-                    vars.append(edge.info.variable)
+                    vars.add(edge.info.variable)
+        vars = list(vars)
         vars.sort()
         return vars
 

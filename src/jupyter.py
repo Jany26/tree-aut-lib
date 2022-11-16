@@ -350,6 +350,8 @@ def drawBDDnode(
         graph.edge(
             parent.name, node.name,
             penwidth='1.0',
+            arrowsize='0.5',
+            arrowhead='vee',
             style='dotted' if low is True else 'solid'
         )
         cache.add(f"{parent.name}->{node.name}")
@@ -360,7 +362,7 @@ def drawBDDnode(
 
 
 def bddToDOT(bdd: BDD) -> Graph:
-    dot = Graph()
+    dot = Digraph()
     dot.attr(label=f'BDD - {bdd.name}')
 
     # dictionary: "nodeName": set of nodes, to which there exists an edge
@@ -386,6 +388,8 @@ def bddToDOT(bdd: BDD) -> Graph:
     dot.edge(
         f"->{bdd.root.name}", bdd.root.name,
         penwidth='1.0',
+        arrowsize='0.5',
+        arrowhead='vee'
     )
 
     cache.add(bdd.root.name)

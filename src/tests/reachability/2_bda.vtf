@@ -1,0 +1,9 @@
+@NTA
+# Automaton mapping_test_2_bda
+%Root q0
+
+q0 LH <x1> ( q1 q1 )
+q1 LH <x2> ( q2 q3 )
+q2 LH <x3> ( q4 q4 )
+q3 LH <x3> ( q4 q4 )
+q4 LH 1 ( )

@@ -972,13 +972,13 @@ def productTests():
                 f"got = {actual}"
             ))
 
-    X = importTAfromVTF("tests/tddetX.vtf")
-    LPort = importTAfromVTF("tests/tddetLPort.vtf")
-    HPort = importTAfromVTF("tests/tddetHPort.vtf")
-    L0 = importTAfromVTF("tests/tddetL0.vtf")
-    L1 = importTAfromVTF("tests/tddetL1.vtf")
-    H0 = importTAfromVTF("tests/tddetH0.vtf")
-    H1 = importTAfromVTF("tests/tddetH1.vtf")
+    X = importTAfromVTF("tests/boxes-topdowndet/tddetX.vtf")
+    LPort = importTAfromVTF("tests/boxes-topdowndet/tddetLPort.vtf")
+    HPort = importTAfromVTF("tests/boxes-topdowndet/tddetHPort.vtf")
+    L0 = importTAfromVTF("tests/boxes-topdowndet/tddetL0.vtf")
+    L1 = importTAfromVTF("tests/boxes-topdowndet/tddetL1.vtf")
+    H0 = importTAfromVTF("tests/boxes-topdowndet/tddetH0.vtf")
+    H1 = importTAfromVTF("tests/boxes-topdowndet/tddetH1.vtf")
 
     print(" > SUBUNIT TEST: testing product ...")
     failures = []
@@ -1028,13 +1028,13 @@ def extensionTests():
                 f"got = {actual}"
             ))
 
-    X = importTAfromVTF("tests/tddetX.vtf")
-    LPort = importTAfromVTF("tests/tddetLPort.vtf")
-    HPort = importTAfromVTF("tests/tddetHPort.vtf")
-    L0 = importTAfromVTF("tests/tddetL0.vtf")
-    L1 = importTAfromVTF("tests/tddetL1.vtf")
-    H0 = importTAfromVTF("tests/tddetH0.vtf")
-    H1 = importTAfromVTF("tests/tddetH1.vtf")
+    X = importTAfromVTF("tests/boxes-topdowndet/tddetX.vtf")
+    LPort = importTAfromVTF("tests/boxes-topdowndet/tddetLPort.vtf")
+    HPort = importTAfromVTF("tests/boxes-topdowndet/tddetHPort.vtf")
+    L0 = importTAfromVTF("tests/boxes-topdowndet/tddetL0.vtf")
+    L1 = importTAfromVTF("tests/boxes-topdowndet/tddetL1.vtf")
+    H0 = importTAfromVTF("tests/boxes-topdowndet/tddetH0.vtf")
+    H1 = importTAfromVTF("tests/boxes-topdowndet/tddetH1.vtf")
 
     print(" > SUBUNIT TEST: testing extension ...")
     failures = []
@@ -1086,10 +1086,10 @@ def unfoldingTests():
     print(" > SUBUNIT TEST: testing unfolding ...")
     failures = []
 
-    testUnfolding("tests/unfoldingTest1.vtf", True, failures)
-    testUnfolding("tests/unfoldingTest2.vtf", True, failures)
-    testUnfolding("tests/unfoldingTest3.vtf", True, failures)
-    testUnfolding("tests/unfoldingTest4.vtf", True, failures)
+    testUnfolding("tests/unfolding/unfoldingTest1.vtf", True, failures)
+    testUnfolding("tests/unfolding/unfoldingTest2.vtf", True, failures)
+    testUnfolding("tests/unfolding/unfoldingTest3.vtf", True, failures)
+    testUnfolding("tests/unfolding/unfoldingTest4.vtf", True, failures)
 
     printFailedTests(failures)
 
@@ -1111,16 +1111,16 @@ def normalizationTests():
     print(" > SUBUNIT TEST: testing normalization ...")
     failures = []
 
-    testNormalization("tests/unfoldingTest1.vtf", True, failures, unfolding=True)
-    testNormalization("tests/unfoldingTest2.vtf", True, failures, unfolding=True)
-    testNormalization("tests/unfoldingTest3.vtf", True, failures, unfolding=True)
-    testNormalization("tests/unfoldingTest4.vtf", True, failures, unfolding=True)
-    testNormalization("tests/unfoldingTest5.vtf", True, failures, unfolding=True)
+    testNormalization("tests/unfolding/unfoldingTest1.vtf", True, failures, unfolding=True)
+    testNormalization("tests/unfolding/unfoldingTest2.vtf", True, failures, unfolding=True)
+    testNormalization("tests/unfolding/unfoldingTest3.vtf", True, failures, unfolding=True)
+    testNormalization("tests/unfolding/unfoldingTest4.vtf", True, failures, unfolding=True)
+    testNormalization("tests/unfolding/unfoldingTest5.vtf", True, failures, unfolding=True)
 
-    testNormalization("tests/normalizationTest1.vtf", True, failures)
-    testNormalization("tests/normalizationTest2.vtf", True, failures)
-    testNormalization("tests/normalizationTest3.vtf", True, failures)
-    testNormalization("tests/normalizationTest4.vtf", True, failures)
+    testNormalization("tests/normalization/normalizationTest1.vtf", True, failures)
+    testNormalization("tests/normalization/normalizationTest2.vtf", True, failures)
+    testNormalization("tests/normalization/normalizationTest3.vtf", True, failures)
+    testNormalization("tests/normalization/normalizationTest4.vtf", True, failures)
 
     printFailedTests(failures)
 

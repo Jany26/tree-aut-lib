@@ -313,24 +313,32 @@ def isNormalized(ta: TTreeAut) -> bool:
 
 
 class NewNormalizationHelper:
-    def __init__(self, treeaut: TTreeAut, variables: list, verbose: bool):
+    def __init__(self, treeaut: TTreeAut, variables: list, verbose: bool, output):
         self.treeaut = treeaut  # copy of the initial TA (un-normalized)
         self.roots = {}
         self.transitions = []  # these will be in the final TA/UBDA
         self.worklist = []  # currently considered (macro)states
         self.nextWorklist = []  # which states are considered in next iteration
         self.symbols = {}
+        self.varWorklist: 'dict[str, list]' = {var: [] for var in variables}
         for symbol, arity in treeaut.getSymbolArityDict().items():
             if arity > 0:
                 self.symbols[symbol] = arity
         self.lookup = {}
-        for edge in transitions(treeaut):
-            if str(edge.children) not in self.lookup:
-                self.lookup[str(edge.children)] = []
-            self.lookup[str(edge.children)].append(edge)
+        self.edgeLookup = self.edgesToProcessCacheInit()
+        for edgeDict in treeaut.transitions.values():
+            for key, edge in edgeDict.items():
+                if str(edge.children) not in self.lookup:
+                    self.lookup[str(edge.children)] = []
+                self.lookup[str(edge.children)].append((key, edge))
         self.processedEdges = set()
+        self.keys = set()
+        for edgeDict in treeaut.transitions.values():
+            for k in edgeDict.keys():
+                self.keys.add(k)
         self.variables = variables[::-1]
         self.verbose = verbose
+        self.output = output
 
     def __repr__(self):
         result = ""
@@ -345,6 +353,94 @@ class NewNormalizationHelper:
             result += f"--> {i[3]}\n"
         return result
 
+    def edgesToProcessCacheInit(self) -> 'dict[str, set[str]]':
+        result = {}
+        for edgeDict in self.treeaut.transitions.values():
+            for key, edge in edgeDict.items():
+                for child in edge.children:
+                    if child not in result:
+                        result[child] = set()
+                    result[child].add(key)
+        return result
+    
+    def checkForUnprocessedStates(self):
+        """
+            Checking if some macrostate from current worklist has not yet been fully
+            processed = i.e. some edge leading to some state from the macrostate
+            has not yet been encountered.
+        """
+        temp = []
+        for macroState in self.worklist:
+            # NOTE: check subset, (to not create redundant "single" states that can be represented by )
+            # skip = False
+            # for nextMacroState in norm.nextWorklist:
+            #     ms = set(macroState)
+            #     nextms = set(nextMacroState)
+            #     if ms.issubset(nextms):
+            #         skip = True
+            # if skip:
+            #     continue
+            fullyProcessed = True
+            for state in macroState:
+                if len(self.edgeLookup[state]) != 0:
+                    for k in self.edgeLookup[state]:
+                        temp.append(k)
+                    fullyProcessed = False
+            if not fullyProcessed:
+                if macroState not in self.nextWorklist:
+                    self.nextWorklist.append(macroState)
+                    # print(f"adding {macroState} cuz of {temp}")
+            # norm.varWorklist[currentVariable].append(macroState)
+
+    def optimizeRedundantStates(self):
+        deleteList = []
+        for ms in self.nextWorklist:
+            keep = False
+            for s in ms:
+                if s not in self.edgeLookup:
+                    continue
+                if len(self.edgeLookup[s]) != 0:
+                    keep = True
+            if not keep:
+                deleteList.append(ms)
+        for ms in deleteList:
+            self.nextWorklist.remove(ms)
+        
+    def printEdgeLookup(self):
+        # cleaning norm.edgeLookup
+        toPop = []
+        for i,j in self.edgeLookup.items():
+            if j == set():
+                toPop.append(i)
+        for item in toPop:
+            self.edgeLookup.pop(item)
+        
+        result = ""
+        for i,j in self.edgeLookup.items():
+            result += f"{i} = ["
+            for key in j:
+                result += f"{key},"
+            result = result[:-1]
+            result += "] "
+        # print(result)
+
+    def printWorklist(self, var):
+        if self.variables != []:
+            oldVar = self.variables[0]
+        worklistStr = f"var: {var}"
+        # for i in norm.varWorklist[var]:
+        for i in self.worklist:
+            keySet = set()
+            for j in i:
+                if j not in self.edgeLookup:
+                    continue
+                for key in self.edgeLookup[j]:
+                    keySet.add(key)
+            keyList = list(keySet)
+            # worklistStr += f" | {detCreateName(i)}={detCreateName(keyList)}"
+            worklistStr += f" | {detCreateName(i)}"
+        print(worklistStr)
+
 
 def processPossibleEdges(
     tuple: list,
@@ -355,28 +451,45 @@ def processPossibleEdges(
     childrenLists = [list(i) for i in product(*tuple)]
     newMacroState = set()
     forceVar = False
+    keysToProcess = []
     for c in childrenLists:
         if str(c) not in norm.lookup:   
             continue
         possibleEdges = norm.lookup[str(c)]
-        for edge in possibleEdges:
+        for key, edge in possibleEdges:
             if norm.verbose:
-                print("      > EDGE =", edge)
-            if edge.info.variable == "":
-                newMacroState.add(edge.src)
-            else:
+                if norm.output is None:
+                    print("      > EDGE =", edge)
+                else:
+                    norm.output.write(f"      > EDGE = {edge}\n")
+            if edge.info.variable == "" or edge.info.variable == currentVariable:
+                varString = ""
                 if edge.info.variable == currentVariable:
+                    varString = f" through {currentVariable}"
                     forceVar = True
-                    newMacroState.add(edge.src)
+                newMacroState.add(edge.src)
+                for child in edge.children:
+                    if key in norm.edgeLookup[child]:
+                        # print(f"  [!] processed edge {key} leading to {child}{varString}")
+                        norm.edgeLookup[child].remove(key)
+                        if key in norm.keys:
+                            # print(f"  [!] removing key {key}")
+                            norm.keys.remove(key)
+                            keysToProcess.append(key)
     if len(newMacroState) != 0:
         newMacroState = list(newMacroState)
         newMacroState = stateNameSort(newMacroState)
         if newMacroState not in norm.nextWorklist:
+            # print(f"    > appending {newMacroState}")
             norm.nextWorklist.append(newMacroState)
+
+        # if newMacroState not in norm.varWorklist[currentVariable]:
+        #     norm.varWorklist[currentVariable].append(newMacroState)
 
         # if self-loop (even partial), then no variable on edge
         # variable appears only if that was the case in the original UBDA
-        if newMacroState in tuple:
+        if newMacroState in tuple or not forceVar:
+        # if newMacroState in tuple:
             addedVar = ""
         else:
             addedVar = currentVariable
@@ -386,7 +499,11 @@ def processPossibleEdges(
             norm.processedEdges.add(lookupStr)
             norm.transitions.append([newMacroState, symbol, addedVar, tuple])
             if norm.verbose:
-                print("[!] edge =", [newMacroState, symbol, addedVar, tuple])
+                if norm.output is None:
+                    print("[!] edge =", [newMacroState, symbol, addedVar, tuple])
+                else:
+                    norm.output.write(f"[!] edge = {[newMacroState, symbol, addedVar, tuple]}\n")
+                # print("  [keys] =", keysToProcess)
             for root in norm.treeaut.rootStates:
                 if root in newMacroState:
                     norm.roots[str(newMacroState)] = newMacroState
@@ -396,28 +513,40 @@ def processPossibleEdges(
 # but remembers current variable, and always decreases the variable with each
 # iteration until it reaches the root.
 # This approach mostly does not create unnecessary transitions.
-def treeAutNormalize(ta: TTreeAut, vars: list, verbose=False) -> TTreeAut:
-    norm = NewNormalizationHelper(ta, vars, verbose)
+def treeAutNormalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTreeAut:
+    norm = NewNormalizationHelper(ta, vars, verbose, output)
     var = norm.variables.pop(0)  # discrepancy about variables on output edges
     for symbol, stateList in ta.getOutputEdges().items():
         norm.transitions.append([stateList, symbol, var, []])
         norm.worklist.append(stateList)
+        # norm.varWorklist[var].append(stateList)
+    if norm.verbose:
+        if norm.output is None:
+            print(f"var: {var} | {[detCreateName(i) for i in norm.worklist]}")
+        else:
+            norm.output.write(f"var: {var} | {[detCreateName(i) for i in norm.worklist]}\n")
     while norm.variables != []:
+        oldVar = var
         var = norm.variables.pop(0)
-        if True:  # norm.verbose:
-            print("var:", var, "|", end='')
-            for i in norm.worklist:
-                name = detCreateName(i) 
-                print(f" {name}", end='')
-            print()
+        if norm.verbose:
+            if norm.output is None:
+                print(f"var: {var} | {[detCreateName(i) for i in norm.worklist]}")
+            else:
+                norm.output.write(f"var: {var} | {[detCreateName(i) for i in norm.worklist]}\n")
         for sym in norm.symbols:
             tuples = []
+            # for i in product(norm.varWorklist[oldVar], repeat=norm.symbols[sym]):
             for i in product(norm.worklist, repeat=norm.symbols[sym]):
                 tuples.append(list(i))
             for t in tuples:
                 if norm.verbose:
-                    print("   > tuple =", t)
+                    if norm.output is None:
+                        print(f"   > tuple = {t}\n")
+                    else:
+                        norm.output.write(f"   > tuple = {t}\n")
                 processPossibleEdges(t, norm, var, sym)
+            # norm.optimizeRedundantStates()
+            # norm.checkForUnprocessedStates()
         norm.worklist = norm.nextWorklist
         norm.nextWorklist = []
         if norm.variables == []:
@@ -427,6 +556,9 @@ def treeAutNormalize(ta: TTreeAut, vars: list, verbose=False) -> TTreeAut:
     return ta
 
 
+# remove edges that do not comply with the "variable order"
+#   - either edges that create a chain of same variable edges (x1, x1)
+#   - or edges that create a chain of unordered variable edges (x2, x1)
 def removeBadTransitions(ta: TTreeAut, vars: list, norm):
     varIndex = {j: i for i, j in enumerate(vars, start=1)}
     maxVarCache = {}
@@ -439,7 +571,7 @@ def removeBadTransitions(ta: TTreeAut, vars: list, norm):
         ):
             maxVarCache[edge.src] = varIndex[edge.info.variable]
 
-    flaggedEdges = []
+    flaggedEdges = set()
 
     for edgeDict in ta.transitions.values():
         for key, edge in edgeDict.items():
@@ -448,10 +580,11 @@ def removeBadTransitions(ta: TTreeAut, vars: list, norm):
             for child in edge.children:
                 if child not in maxVarCache:
                     continue
-                if maxVarCache[child] < maxVarCache[edge.src]:
-                    flaggedEdges.append((edge.src, key))
-                    if norm.verbose:
-                        print("[!] flagged edge =", edge)
+                if maxVarCache[child] <= maxVarCache[edge.src]:
+                # if maxVarCache[child] < maxVarCache[edge.src]:
+                    flaggedEdges.add((edge.src, key))
+                    # if norm.verbose:
+                    # print("[!] flagged edge =", edge)
 
     for src, key in flaggedEdges:
         ta.transitions[src].pop(key)

@@ -753,12 +753,12 @@ def removeUselessStates(ta: TTreeAut) -> TTreeAut:
     return workTA
 
 
-def getAllStateReachability(ta: TTreeAut) -> dict:
+def getAllStateReachability(ta: TTreeAut, reflexive=False) -> dict:
     originalRoots = [i for i in ta.rootStates]
     result = {}
     for i in ta.getStates():
         ta.rootStates = [i]
-        result[i] = set(reachableTD(ta, countItself=False))
+        result[i] = set(reachableTD(ta, countItself=reflexive))
     ta.rootStates = [i for i in originalRoots]
     return result
 

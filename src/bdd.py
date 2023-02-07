@@ -7,7 +7,7 @@
 
 from typing import Union
 
-from ta_classes import TEdge, TTransition, TTreeAut
+from ta_classes import *
 from unfolding import isUnfolded
 
 
@@ -427,5 +427,44 @@ def createTAfromBDD(bdd: BDD) -> TTreeAut:
     result.portArity = result.getPortArity()
     return result
 
+
+def getVarPrefix(varList: list) -> str:
+    if varList == []:
+        return ""
+    prefixLen = 0
+    for i in range(len(varList[0])):
+        if not varList[0][i:].isnumeric():
+            prefixLen += 1
+    prefix = varList[0][:prefixLen]
+    return prefix
+
+
+# Parses the tree automaton (freshly after dimacs parsing) and adds X boxes
+# to the places which make sense.
+#   - case 1: when an edge skips some variables
+#       * e.g. node deciding by x1 leads to x4 (as opposed to x2)
+#   - case 2: when a node that does not contain last variable
+#       leads straight to a leaf node 
+#       * e.g deciding by var x5, but there are 10 variables)
+def addDontCareBoxes(ta: TTreeAut, variableOrder: list, vars=0) -> TTreeAut:
+    # ??? not sure what varOrder is for...
+    result = copy.deepcopy(ta)
+    varOrder = {var: idx for idx, var in enumerate(variableOrder, start=1)}
+    maxVar = int(variableOrder[-1])
+    varVis = {i: int(list(j)[0]) for i, j in ta.getVariablesVisibility().items()}
+    leaves = set(ta.getOutputStates())
+    for edge in transitions(result):
+        if edge.isSelfLoop():
+            continue
+        for idx, child in enumerate(edge.children):
+            if (
+                (child in leaves and varVis[edge.src] != maxVar) or
+                (child not in leaves and varVis[child] - varVis[edge.src] > 1)
+            ):
+                # print(f"adding box-X to idx {idx} in edge {edge}")
+                if len(edge.info.boxArray) < idx + 1:
+                    edge.info.boxArray = [None] * len(edge.children)
+                edge.info.boxArray[idx] = 'X'
+    return result
 
 # End of file bdd.py

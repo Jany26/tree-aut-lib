@@ -1,0 +1,11 @@
+@NTA
+# Automaton simulationSkipping2
+%Root q0
+
+q0 LH <1> ( q4 q1 )
+q1 LH <2> ( q6 q3 )
+q3 LH <3> ( q6 q5 )
+q4 LH <3> ( q5 q6 )
+q5 LH <4> ( q7 q6 )
+q6 0 ( )
+q7 1 ( )

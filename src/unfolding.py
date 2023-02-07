@@ -63,10 +63,10 @@ def unfoldEdge(result: TTreeAut, foldedEdge: TTransition, counter: int, subTable
 # the tree automaton, searching for 'non-short' edges (or edges labeled with
 # boxes) and 'unfolds' them (replaces the part of the edge with corresponding
 # box = tree automaton). The cycle creates a new TA from scratch.
-def unfold(ta: TTreeAut) -> TTreeAut:
+def unfold(ta: TTreeAut, reformat=True) -> TTreeAut:
     # stringification of boxes
     result = TTreeAut(
-        ta.rootStates,
+        [i for i in ta.rootStates],
         {s: {} for s in ta.rootStates},
         "unfolded(" + ta.name + ")",
         ta.portArity
@@ -81,7 +81,7 @@ def unfold(ta: TTreeAut) -> TTreeAut:
 
             # no boxes on transition (all short edges)
             if edge.info.boxArray == []:
-                result.transitions[edge.src][key] = edge
+                result.transitions[edge.src][key] = copy.deepcopy(edge)
                 continue
 
             boxesCount, newEdge = unfoldEdge(result, edge, unfoldCounter, subTable)
@@ -91,7 +91,7 @@ def unfold(ta: TTreeAut) -> TTreeAut:
     for placeState, contentState in subTable.items():
         newDict = {}
         for edge in result.transitions[contentState].values():
-            newEdge = copy.copy(edge)
+            newEdge = copy.deepcopy(edge)
             newEdge.src = placeState
             newKey = f"{newEdge.src}-{newEdge.info.label}-{newEdge.children}"
             newDict[newKey] = newEdge
@@ -111,9 +111,11 @@ def unfold(ta: TTreeAut) -> TTreeAut:
         # but also removing the initial port transition
         result.transitions[placeState].pop(keyToPop)
 
-    result.reformatStates()
-    result.reformatKeys()
-    return removeUselessStates(result)
+    if reformat is True:
+        result.reformatStates()
+        result.reformatKeys()
+    result = removeUselessStates(result)
+    return result
 
 
 # Goes through all edges and "updates" their keys in the transition lookup

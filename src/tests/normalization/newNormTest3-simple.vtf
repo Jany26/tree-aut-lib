@@ -1,0 +1,7 @@
+@NTA
+# Automaton newNormTest3-simple
+%Root q0
+
+q0 LH <[X _] x1> ( q1 q2 )
+q1 1 ( )
+q2 0 ( )

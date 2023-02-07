@@ -8,6 +8,9 @@ from apply import *
 from utils import *
 from dimacs import *
 from simulation import *
+import format_abdd as abdd
+import render_dot as dot
+import os
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -46,8 +49,6 @@ def bddTest():
     bdd1.printBDD()
     bdd2.printBDD()
     print(bdd1.getVariableList())
-    # print(BDD('test1', a))
-    # BDD('test1', a).printBDD()
 
 
 def applyTest():
@@ -69,13 +70,6 @@ def applyTest():
     print(bdd3)
 
 
-def dimacsTest(file: str, override='dnf', verbose=True, horizontalCut=10, maxClausules=30):
-    dnf = dimacsRead(file, override=override, verbose=verbose, horizontalCut=horizontalCut, maxClausules=maxClausules)
-    print(dnf)
-    ta = createTAfromBDD(dnf)
-    print(ta)
-
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # normalization testing
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -83,12 +77,12 @@ def normalizationTest():
     ta1 = importTAfromVTF("tests/unfoldingTest1.vtf")
     ta1 = unfold(ta1)
     ta1.reformatStates()
-    ta1 = treeAutNormalize(ta1, ['x1', 'x2', 'x3', 'x4'])
+    ta1 = treeAutNormalize(ta1, createVarOrder('x', 4))
     print(ta1)
 
     ta2 = importTAfromVTF("tests/newNormTest5.vtf")  # already unfolded
     ta2 = copy.deepcopy(ta2)
-    ta2 = treeAutNormalize(ta2, ['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7'])
+    ta2 = treeAutNormalize(ta2, createVarOrder('x', 7))
     print(ta2)
 
     ta3 = importTAfromVTF("tests/newNormTest4-loops.vtf")
@@ -113,128 +107,274 @@ def lexicographicOrderTest():
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # folding testing
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def foldTest(variables: int, debug=False):
-    # print("INITIAL:")
-    ta = importTAfromVTF("tests/newNormTest4.vtf", 'f')
-    ta = unfold(ta)
-    ta.reformatStates()
-    # print(ta)
+def testBenchmark(vars: int, path, cli=False, debug=False, export=False, simulate=True, progress=True):
+    filename, file_extension = os.path.splitext(path)
+    basename = os.path.basename(filename)
+    imagePath = f'results/dimacs/{basename}'
+    if not os.path.exists(imagePath):
+        os.makedirs(imagePath)
+    if file_extension in ['.cnf', '.dnf']:
+        dnf = dimacsRead(path)
+        initial = createTAfromBDD(dnf)
+    elif file_extension == '.vtf':
+        initial = importTAfromVTF(path)
+    else: 
+        print("unknown format")
+        return
+    
+    initial.reformatStates()
+    initial.reformatKeys()
 
-    # print("\nNORMALIZATION:")
-    normta = treeAutNormalize(ta, createVarOrder('x', variables), verbose=debug)
-    # print(normta)
+    options = {
+        "vars": vars,
+        "image": imagePath,
+        "cli": cli,
+        "debug": debug,
+        "export": export,
+        "sim": simulate,
+        "progress": progress,
+    }
+    tree_auts = canonizeBenchmarkCheck(initial, options)
 
-    # print("\nFOLDING:")
-    foldedta = newFold(normta, boxOrder, verbose=debug)
-    # print("\nFINAL RESULT:")
-    # ta.printKeys = True
-    foldedta.printKeys = True
-    # print(foldedta)
-    return foldedta
+    res = None
+    if simulate:
+        res = simulateBenchmarkCheck(
+            tree_auts["initial"], 
+            tree_auts["unfolded_2_extra"], 
+            options
+        )
+    unfoldCount = len(tree_auts["initial"].getStates())
+    foldCount = len(tree_auts["folded_trimmed"].getStates())
+    print(f"{path :<50}: counts: {unfoldCount :<5} | {foldCount :<5} equivalent: {res}")
+
+
+def canonizeBenchmarkCheck(initial: TTreeAut, opt: dict):
+    if not os.path.exists(opt["image"]):
+        os.makedirs(opt["image"])
+    path = opt["image"]
+    logFile = open(f"{path}/log.txt", 'w')
+    logFile.write(f"INITIAL\n\n{initial}\n\n")
+
+    varOrder = initial.getVariableOrder()
+    initialChanged = addDontCareBoxes(initial, varOrder, vars=opt["vars"])
+    logFile.write(f"INITIAL (with X edge-correction)\n\n{initialChanged}\n\n")
+
+
+    unfolded = unfold(initialChanged)
+    logFile.write(f"UNFOLDED\n\n{unfolded}\n")
+
+    unfolded_extra = copy.deepcopy(unfolded)
+    computeAdditionalVariables(unfolded_extra, opt["vars"])
+    logFile.write(f"UNFOLDED (additional variables)\n\n{unfolded_extra}\n\n")
+
+    normalizationLogFile = open(f"{path}/log_normalization.txt", 'w')
+    normalizationLogFile.write(f"INPUT\n\n{unfolded_extra}\n\n")
+    normalized = treeAutNormalize(
+        unfolded_extra,
+        createVarOrder('', opt["vars"]+1),
+        verbose=opt["debug"],
+        output=normalizationLogFile
+    )
+    normalized_clean = copy.deepcopy(normalized)
+    normalized_clean.reformatKeys()
+    normalized_clean.reformatStates()
+    normalized.metaData.recompute()
+    normalized_clean.metaData.recompute()
+    
+    normalizationLogFile.write(f"OUTPUT\n\n{normalized}\n\n")
+    logFile.write(f"NORMALIZED\n\n{normalized}\n\n")
+    logFile.write(f"NORMALIZED CLEAN\n\n{normalized_clean}\n\n")
+
+    foldingLogFile = open(f"{path}/log_folding.txt", 'w')
+    foldingLogFile.write(f"INPUT\n\n{normalized_clean}\n\n")
+    folded = newFold(
+        normalized_clean,
+        boxOrder,
+        verbose=opt["debug"],
+        export=opt["export"],
+        output=foldingLogFile,
+        exportPath=opt["image"]
+    )
+    foldingLogFile.write(f"OUTPUT\n\n{folded}\n\n")
+    logFile.write(f"FOLDED\n\n{folded}\n\n")
+    
+    folded_trimmed = removeUselessStates(folded)
+    logFile.write(f"FOLDED TRIMMED\n\n{folded}\n\n")
+
+    unfolded_after = unfold(folded)
+    logFile.write(f"UNFOLDED AFTER FOLDING\n\n{unfolded_after}\n\n")
+
+    unfolded_after_extra = copy.deepcopy(unfolded_after)
+    computeAdditionalVariables(unfolded_after_extra, opt["vars"])
+    logFile.write(f"UNFOLDED AFTER FOLDING (additional variables)\n\n{unfolded_after_extra}\n\n")
+
+    logFile.close()
+    normalizationLogFile.close()
+    foldingLogFile.close()
+    result = {
+        "initial": initial,
+        "initial_extra": initialChanged,
+        "unfolded": unfolded,
+        "unfolded_extra": unfolded_extra,
+        "normalized": normalized,
+        "normalized_clean": normalized_clean,
+        "folded": folded,
+        "folded_trimmed": folded_trimmed,
+        "unfolded_2": unfolded_after,
+        "unfolded_2_extra": unfolded_after_extra,
+    }
+    names = [
+        'init', 'init-X', 'unfold', 'unfold-extra', 'normal', 'normal-clean',
+        'fold', 'fold-trim', 'unfold-2', 'unfold-2-extra'
+    ]
+    skip = [1, 2, 3, 4, 6, 8]
+    for ta in result.values():
+        ta.metaData.recompute()
+
+    if opt["export"]:
+        i = 0
+        for ta in result.values():
+            if i not in skip:
+                dot.exportToFile(ta, f"{path}/{i:02d}-{names[i]}")
+            exportTAtoVTF(ta, f"{path}/{i:02d}-{names[i]}.vtf")
+            i += 1
+        # exportTAtoVTF(initial, f'{path}/1a-initial')
+        # dot.exportToFile(initial, f'{path}/1a-initial')
+        # dot.exportToFile(initialChanged, f'{path}/1b-initial-with-X')
+        # dot.exportToFile(unfolded, f'{path}/2a-unfolded')
+        # dot.exportToFile(unfolded_extra, f'{path}/2b-unfolded-extra-vars')
+        # dot.exportToFile(normalized, f'{path}/3a-normalized')
+        # dot.exportToFile(normalized_clean, f'{path}/3b-normalized-clean')
+        # dot.exportToFile(folded, f'{path}/4a-folded')
+        # dot.exportToFile(folded_trimmed, f'{path}/4b-folded-trimmed')
+        # dot.exportToFile(unfolded_after, f'{path}/5a-unfolded-2')
+        # dot.exportToFile(unfolded_after_extra, f'{path}/5b-unfolded-2-extra-vars')
+  
+    if opt["cli"]:
+        print(f"INITIAL\n\n{initial}")
+        print(f"INITIAL (with X edge-correction)\n\n{initialChanged}")
+        print(f"UNFOLDED\n\n{unfolded}")
+        print(f"NORMALIZED\n\n{normalized}")
+        print(f"FOLDED\n\n{folded}")
+        print(f"UNFOLDED AFTER\n\n{unfolded_after}")
+
+    return result
+
+def simulateBenchmarkCheck(ta1, ta2, opt: dict):
+    if opt["sim"]:
+        path = opt["image"]
+        simLogFile = open(f"{path}/log_simulation.txt", 'w')
+        res = simulateAndCompare(ta1, ta2, opt["vars"], debug=opt["progress"], output=simLogFile)
+        simLogFile.close()
+        return res
+    
+
+
+# testBenchmark(20, f"./tests/dimacs/uf20/uf20-01.cnf", cli=False, debug=False, export=False)
+# testBenchmark(5, f"./tests/dimacs/test-varskip.dnf", cli=False, debug=False, export=True)
+# testBenchmark(8, f"./tests/normalization/newNormTest4.vtf", cli=True, export=True)
+# testBenchmark(6, f"./tests/dimacs/test-varskip-3.vtf", cli=True, export=True)
+# testBenchmark(3, f"./tests/dimacs/test-varskip-3.vtf", cli=True, export=True)
+
+
+def testABDDformat():
+    options = {
+        "vars": 6,
+        "image": f'results/uf20-01-error-1-minimized',
+        "cli": False, "debug": False, "export": True, "sim": False,
+    }
+    raw = importTAfromVTF(f"./tests/dimacs/folding-error-1.vtf")
+    tree_auts = canonizeBenchmarkCheck(raw, options)
+    test = tree_auts["folded_trimmed"]
+    test.reformatStates()
+    print(test)
+    abdd.exportTAtoABDD(test, "results/test-comments.dd", comments=True)
+    abdd.exportTAtoABDD(test, "results/test.dd", comments=False)
+    result = abdd.importTAfromABDD("results/test-comments.dd")
+    result.reformatStates()
+    print(result)
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# simulations
+# folding debugging
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def dimacsBenchmarkTest():
-    bdd1 = dimacsRead("dimacs/uf20-01-simplified.cnf", override='dnf', verbose=True)
-    # print(bdd1)
-    bdd1.reformatNodes()
-    print(bdd1)
-    bdd1 = dimacsRead("dimacs/test.cnf", override='dnf', verbose=True)
-    print(bdd1)
+def testDimacs20Benchmarks():
+    for i in range(1000):
+        if i+1 in [1, 10, 100, 101, 102, 103, 104, 105, 106, 1000]:
+            continue
+        filename = f"./tests/dimacs/uf20/uf20-0{i+1}.cnf"
+        if not filename.endswith(".cnf"):
+            continue
+        base = os.path.basename(filename).split('.')[0]
+        if not os.path.exists(f"results/{base}"):
+            os.makedirs(f"results/{base}")
+        if os.path.isfile(filename):
+            try:
+                testBenchmark(20, filename, cli=False, debug=True, export=True, simulate=True, progress=False)
+            except:
+                print(f"{filename :<50}: error")
 
 
-def simulationTest():
-    bdd1 = dimacsRead("dimacs/test.cnf", override='dnf')
-    bdd2 = dimacsRead("dimacs/test2.cnf", override='cnf')
-    result = simulateAndCompare(bdd1, bdd2, len(bdd1.getVariableList()))
-    print("they are same =", result)
-    dnf = dimacsRead("dimacs/uf20/uf20-01.cnf", override='dnf', maxClausules=20, verbose=True)
-    print(dnf)
-    ta = createTAfromBDD(dnf)
-    print(ta)
+def foldingError():
+    options = {
+        "vars": 20,
+        "image": f'results/dimacs/uf20-06-error-1',
+        "cli": False, "debug": True, "export": True, "sim": False,
+    }
+    # filename = f"./tests/dimacs/uf20/uf20-06.cnf"
+    # testBenchmark(20, filename, cli=False, debug=True, export=True, simulate=False, progress=False)
+    # raw.rootStates = ['q10']
+    # leafify(raw, 'q29', '1')
+    
+    cnf = dimacsRead(f"./tests/dimacs/uf20/uf20-06.cnf")
+    raw = createTAfromBDD(cnf)
+    raw.name = "uf20-06-error-1"
+    raw.reformatStates()
+    raw.reformatKeys()
+    
+    # raw.rootStates = ['q16']
+    # leafify(raw, 'q56', '1')
+    # raw = removeUselessStates(raw)
+    tree_auts = canonizeBenchmarkCheck(raw, options)
+
+    # test = {
+    #     1: 0, 2: 0, 3: 1, 4: 1, 5: 0, 6: 1, 7: 0, 8: 0, 9: 1, 10: 0, 
+    #     11: 0, 12: 1, 13: 1, 14: 0, 15: 1, 16: 0, 17: 0, 18: 0, 19: 1, 20: 1
+    # }
+    # test = {1: 1, 2: 1, 3: 0, 4: 0, 5: 1, 6: 0, 7: 0, 8: 1, 9: 0, 10: 1, 11: 1, 12: 1, 13: 0, 14: 1, 15: 1, 16: 1, 17: 1, 18: 0, 19: 0, 20: 1}
+
+    test1 = {1: 1, 2: 1, 3: 0, 4: 0, 5: 1, 6: 0, 7: 0, 8: 1, 9: 0, 10: 1, 11: 1, 12: 1, 13: 0, 14: 1, 15: 1, 16: 1, 17: 1, 18: 0, 19: 0, 20: 1}
+    test2 = {1: 1, 2: 1, 3: 0, 4: 0, 5: 1, 6: 0, 7: 0, 8: 1, 9: 0, 10: 1, 11: 1, 12: 1, 13: 0, 14: 1, 15: 1, 16: 1, 17: 1, 18: 0, 19: 1, 20: 1}
+
+    simulateRunTAdict(tree_auts["initial"], test1, verbose=True)
+    simulateRunTAdict(tree_auts["unfolded_2_extra"], test1, verbose=True)
+    simulateRunTAdict(tree_auts["initial"], test2, verbose=True)
+    simulateRunTAdict(tree_auts["unfolded_2_extra"], test2, verbose=True)
 
 
-def removeTransition(ta: TTreeAut, state: str, key: str):
-    if state in ta.transitions:
-        if key in ta.transitions[state]:
-            ta.transitions[state].pop(key)
+def intersectoidRelationTest():
+    bda1 = importTAfromVTF("./tests/reachability/1_bda.vtf")
+    bda2 = importTAfromVTF("./tests/reachability/2_bda.vtf")
 
+    test1a = importTAfromVTF("./tests/reachability/1_intersectoid_a.vtf")
+    test1b = importTAfromVTF("./tests/reachability/1_intersectoid_b.vtf")
+    test1c = importTAfromVTF("./tests/reachability/1_intersectoid_c.vtf")
+    test2a = importTAfromVTF("./tests/reachability/2_intersectoid_a.vtf")
+    test2b = importTAfromVTF("./tests/reachability/2_intersectoid_b.vtf")
 
-def TAsimulationTest():
-    ta = importTAfromVTF("tests/newNormTest4.vtf", 'f')
-    ta = unfold(ta)
-    taNorm = treeAutNormalize(ta, createVarOrder('x', 8))
-
-    ta2 = newFold(taNorm, boxOrder)
-    ta2 = unfold(ta2)
-    print(ta2)
-
-    # varAssign = assignVariables(int("00110010", 2), 8)
-    result = simulateAndCompare(ta, ta2, 8)
-    print("they are same =", result)
-
-
-def foldTestWithDifferentNormalizations():
-    print("\n_____________ initial version _____________\n")
-    ta = importTAfromVTF("tests/newNormTest4.vtf", 'f')
-    print(ta)
-    print("\n_____________ foldTest() version 1 _____________\n")
-    ta1 = foldTest(9)  # worklist x worklist
-    print(ta1)
-
-    print("\n_____________ unfolded version _____________\n")
-
-    ta = importTAfromVTF("tests/newNormTest4.vtf", 'f')
-    ta = unfold(ta)
-    ta.printKeys = True
-    print(ta)
-    varAssign = assignVariables(int("00110010", 2), 8)
-    simulateRunTA(ta, varAssign)
-
-    ta1 = unfold(ta1)
-    ta1.reformatStates()
-    print("ta and ta1 are same =", simulateAndCompare(ta, ta1, 8))
-
-
-def dimacsDebug():
-    # foldTestWithDifferentNormalizations()
-    # dimacsTest("./dimacs/test.cnf")
-    # dnf = dimacsRead("./dimacs/uf20-01-simplified.cnf", verbose=False, maxClausules=10)
-    dnf1 = dimacsRead("./dimacs/apply1.dnf", verbose=False)
-    # print(dnf1)
-    dnf2 = dimacsRead("./dimacs/apply2.dnf", verbose=False)
-    # print(dnf2)
-    dnf = applyFunction('or', dnf1, dnf2)
-    dnf.name = 'apply'
-    # print(res)
-    # dnf = dimacsRead("./dimacs/uf20-01-simplified.cnf", verbose=False, maxClausules=10)
-
-    print(f"BDD is valid = {dnf.isValid()}, # of nodes = {dnf.countNodes()}")
-    ta = createTAfromBDD(dnf)
-    print(ta)
-    # taNorm = treeAutNormalize(ta, createVarOrder('', 20))
-    # print(taNorm)
-    taFold = newFold(ta, boxOrder, verbose=True)
-    print(taFold)
-    print(len(taFold.transitions))
-
-
-def testDimacsBenchmark(id: int):
-    benchmarkID = id
-    dnf = dimacsRead(f"./dimacs/uf20/uf20-0{benchmarkID}.cnf", override='dnf')
-    cnf = dimacsRead(f"./dimacs/uf20/uf20-0{benchmarkID}.cnf", override='cnf')
-    simulateAndCompare(cnf, dnf, 20, debug=True)
-    print(f"{id}, cnf nodes = {cnf.countNodes()}, dnf nodes = {dnf.countNodes()}, same? = {compareBDDs(cnf, dnf)}")
-
+    print(getMaximalMappingFixed(test1a, bda1, portToStateMapping(test1a)))
+    print(getMaximalMappingFixed(test1b, bda1, portToStateMapping(test1b)))
+    print(getMaximalMappingFixed(test1c, bda1, portToStateMapping(test1c)))
+    print(getMaximalMappingFixed(test2a, bda2, portToStateMapping(test2a)))
+    print(getMaximalMappingFixed(test2b, bda2, portToStateMapping(test2b)))
+    print()
+    print(f"result = {getMapping(test1a, bda1)}")
+    print(f"result = {getMapping(test1b, bda1)}")
+    print(f"result = {getMapping(test1c, bda1)}")
+    print(f"result = {getMapping(test2a, bda2)}")
+    print(f"result = {getMapping(test2b, bda2)}")
 
 if __name__ == '__main__':
-    ta = importTAfromVTF("tests/newNormTest4.vtf")
-    ta = unfold(ta)
-    ta.reformatKeys()
-    ta.reformatStates()
-    taNorm = treeAutNormalize(ta, createVarOrder('x', 9))
-    print(taNorm)
-
-
+    # intersectoidRelationTest()
+    foldingError()
 # End of file main.py

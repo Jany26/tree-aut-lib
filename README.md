@@ -34,7 +34,7 @@ Supervisor: ondrik / Ing. Ondrej Lengal, PhD. <lengal@fit.vutbr.cz>
     * format_tmb.py   ... import/export TA to/from TMB format
     * format_vtf.py   ... import/export TA to/from VATA format
 
-    * jupyter.py      ... integrates automata image export into Jupyter Notebook
+    * render_dot.py      ... integrates automata image export into Jupyter Notebook
     
 
 

@@ -1,7 +1,4 @@
-from multiprocessing.sharedctypes import Value
 import sys
-import copy
-from ta_classes import *
 
 
 # boxOrder = ['X', 'LPort', 'HPort', 'L0', 'L1', 'H0', 'H1']

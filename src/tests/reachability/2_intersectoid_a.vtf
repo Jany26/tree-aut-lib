@@ -1,0 +1,7 @@
+@NTA
+# Automaton mapping_test_2_intersectoid_a
+%Root (q0,a)
+
+(q0,a) LH <x1> ((q2,b) (q3,c))
+(q2,b) Port_X ( )
+(q3,c) Port_X ( )

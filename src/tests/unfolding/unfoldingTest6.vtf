@@ -1,5 +1,5 @@
 @NTA
-# Automaton temp1
+# Automaton unfoldingTest6
 %Root q0
 
 q0 LH <[ X LPort ] x1> ( q1 q1 q2 )

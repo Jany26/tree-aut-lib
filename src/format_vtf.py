@@ -265,7 +265,33 @@ def writeAritiesVTFfile(arities, tgt):
 def writeEdgesVTFfile(edges, tgt):
     for edge in edges.values():
         for data in edge.values():
-            tgt.write(f"{data.src} {data.info.label} (")
+            boxArray = []
+            foundBox = False
+            for box in data.info.boxArray:
+                if box is None:
+                    boxArray.append("_")
+                else:
+                    foundBox = True
+                    if type(box) == str:
+                        boxArray.append(box)
+                    else:
+                        boxArray.append(box.name)
+            boxString = ""
+            if foundBox:
+                boxString += "["
+                for box in boxArray:
+                    boxString += box + " "
+                boxString = boxString[:-1]
+                boxString += "]"
+
+            edgeString = ""
+            if boxArray != [] or data.info.variable != "":
+                edgeString = f"<{boxString}"
+                if boxString != "":
+                    edgeString += " "
+                edgeString += f"{data.info.variable}> "
+            
+            tgt.write(f"{data.src} {data.info.label} {edgeString}(")
             for child in data.children:
                 tgt.write(f" {child}")
             tgt.write(" )\n")
@@ -314,31 +340,31 @@ def writeEdgesVTFstr(edges):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def exportTAtoVTF(ta: TTreeAut, format, fileName=""):
+def exportTAtoVTF(ta: TTreeAut, filePath="", format='f'):
     if format != 'f' or format != 's':
         Exception("exportTAtoVTF(): unsupported format")
 
-    if format == 'f' and fileName == "":
+    if format == 'f' and filePath == "":
         Exception("exportTAtoVTF(): fileName needed")
 
-    result = open(fileName, "w") if format == 'f' else ""
+    file = open(filePath, "w") if format == 'f' else ""
 
     if format == 'f':
-        result.write("@NTA\n")
-        result.write(f"# Automaton {ta.name}\n")
-        writeRootsVTFfile(ta.rootStates, result)
-        writeStatesVTFfile(ta.getStates(), result)
-        writeAritiesVTFfile(ta.getSymbolArityDict(), result)
-        writeEdgesVTFfile(ta.transitions, result)
-        result.close()
+        file.write("@NTA\n")
+        file.write(f"# Automaton {ta.name}\n")
+        writeRootsVTFfile(ta.rootStates, file)
+        writeStatesVTFfile(ta.getStates(), file)
+        writeAritiesVTFfile(ta.getSymbolArityDict(), file)
+        writeEdgesVTFfile(ta.transitions, file)
+        file.close()
     else:
-        result += "@NTA\n"
-        result += f"# Automaton {ta.name}\n"
-        result += writeRootsVTFstr(ta.rootStates)
-        result += writeStatesVTFstr(ta.getStates())
-        result += writeAritiesVTFstr(ta.getSymbolArityDict())
-        result += writeEdgesVTFstr(ta.transitions)
-        return result
+        file += "@NTA\n"
+        file += f"# Automaton {ta.name}\n"
+        file += writeRootsVTFstr(ta.rootStates)
+        file += writeStatesVTFstr(ta.getStates())
+        file += writeAritiesVTFstr(ta.getSymbolArityDict())
+        file += writeEdgesVTFstr(ta.transitions)
+        return file
     return
 
 # End of file format_vtf.py

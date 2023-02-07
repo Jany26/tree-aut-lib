@@ -3,41 +3,129 @@ from ta_functions import *
 from test_data import *
 
 import re
+from copy import deepcopy
+from utils import stateNameSort
+from render_dot import exportToFile
 
 
 class FoldingHelper:
-    def __init__(self):
+    def __init__(self, ta: TTreeAut, verbose: bool, export: bool, output, exportPath):
         # Helpful for storing (state, edgeKey) tuples during intersectoid
         # construction. If the intersectoid has non-empty language, the items
-        # from this list are moved to the final flaggedEdges dictionary
-        self.flaggedEdges = {}
+        # from this list are moved to the final softFlaggedEdges dictionary
+        self.softFlaggedEdges = {}
+        self.flaggedEdges = set()
+        self.intersectoids = []
+        self.name = ""
+        match = re.search(r"\(([^()]*)\)", ta.name)
+        if match is None:
+            self.name = f"{ta.name}"
+        else:
+            self.name = f"{match.group(1)}"
+        self.verbose = verbose
+        self.export = export
+        self.output = output
+        self.path = exportPath
+        self.counter = 0
 
     def __repr__(self):
         result = "FoldingHelper:\n"
         srcLen = 0
         keyLen = 0
         childLen = 0
-        for state, edges in self.flaggedEdges.items():
+        for state, edges in self.softFlaggedEdges.items():
             srcLen = max(srcLen, len(state))
             for childStr, (key, edge) in edges.items():
                 childLen = max(childLen, len(childStr))
                 keyLen = max(keyLen, len(key))
-        for state, edges in self.flaggedEdges.items():
+        for state, edges in self.softFlaggedEdges.items():
             for childStr, (key, edge) in edges.items():
                 result += "%-*s -> %-*s : %-*s : %s\n" % (
                     srcLen, state, childLen, childStr, keyLen, key, edge
                 )
         return result
 
-    def addEdge(self, key: str, edge: TTransition):
-        if edge.src not in self.flaggedEdges:
-            self.flaggedEdges[edge.src] = {}
+    def write(self, s):
+        # if helper.verbose:
+        #     space = f"{0 * ' '}"
+        #     sym = 'L' if edgePart[1] == 0 else 'H'
+        #     if helper.output is None:
+        #         print()
+        #     else:
+        #         helper.output.write("%s> boxFinding(%s-[%s:%s]->%s => %s)\n\n" % (
+        #             space, state, sym, box.name, edgePart[2], mapping
+        #         ))
+
+        # if helper.verbose:
+        #     if helper.output is None:
+        #         print(A)
+        #     else:
+        #         helper.output.write(f"{A}\n")
+        if self.verbose:
+            if self.output is None:
+                print(s)
+            else:
+                self.output.write(f"{s}\n")
+
+    def flagEdge(self, key: str, edge: TTransition):
+        if edge.src not in self.softFlaggedEdges:
+            self.softFlaggedEdges[edge.src] = {}
         childStr = ""
         for i in edge.children:
             childStr += i + " | "
         childStr = childStr[:-3]
-        if childStr not in self.flaggedEdges[edge.src]:
-            self.flaggedEdges[edge.src][childStr] = (key, edge)
+        if childStr not in self.softFlaggedEdges[edge.src]:
+            self.softFlaggedEdges[edge.src][childStr] = (key, edge)
+
+    def printFlaggedEdges(self):
+        for j in self.softFlaggedEdges.values():
+            for (l, m) in j.values():
+                print(l, m)
+
+    # ta -> intersectoid
+    def getFlaggedEdgesFrom(self, ta: TTreeAut):
+        for edge in transitions(ta):
+            if len(edge.children) == 0:
+                continue
+            taState = splitTupleName(edge.src)
+            children = [splitTupleName(i) for i in edge.children]
+            childrenStr = ','.join(children)
+            key = f"{taState}-{edge.info.variable}-{childrenStr}"
+            self.flaggedEdges.add(key)
+
+
+def removeFlaggedEdgesFix(ta: TTreeAut, helper: FoldingHelper):
+    keyDict = {}
+    for state, edges in ta.transitions.items():
+        keyDict[state] = set()
+        for key, edge in edges.items():
+            if len(edge.children) == 0:
+                continue
+            childStr = ','.join(edge.children)
+            if f"{edge.src}-{edge.info.variable}-{childStr}" in helper.flaggedEdges:
+                keyDict[state].add(key)
+    for state, keySet in keyDict.items():
+        for key in keySet:
+            ta.transitions[state].pop(key)
+
+
+def removeFlaggedEdges(ta: TTreeAut, helper: FoldingHelper):
+    keyList = []
+    for state, edges in helper.softFlaggedEdges.items():
+        for childStr, (key, edge) in edges.items():
+            originalChildren = childStr.split(" | ")
+            onlyBoxed = True
+            childrenStayed = True
+            for i in range(len(edge.children)):
+                if originalChildren[i] != edge.children[i]:
+                    childrenStayed = False
+                if not hasOnlyBoxedEdges(ta, edge.children[i]):
+                    onlyBoxed = False
+            if childrenStayed and not onlyBoxed:
+                keyList.append(key)
+                ta.transitions[state].pop(key)
+    # print(stateNameSort(keyList))
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Helper functions:
@@ -177,7 +265,7 @@ def createIntersectoid(
                     edgeObj = TEdge(be.info.label, [], te.info.variable)
                     if len(children) != 0:
                         helper.temp.append((splitTupleName(state), key))
-                        helper.addEdge(key, te)
+                        helper.flagEdge(key, te)
                     edge = TTransition(state, edgeObj, children)
                     edges[state][intersectoidEdgeKey(te, be)] = edge
             # for box edge
@@ -187,7 +275,7 @@ def createIntersectoid(
     roots = [f"({root},{b})" for b in box.rootStates]
     name = f"intersectoid({box.name}, {root})"
     result = TTreeAut(roots, edges, name, box.portArity)
-    result.reformatKeys()
+    # result.reformatKeys()
     return result
 
 
@@ -196,14 +284,13 @@ def createIntersectoid(
 # input:
 # - an intersectoid "TA"
 # output:
-def portToStateMapping(ta: TTreeAut) -> dict:
-    result = {e.info.label: []
-              for e in transitions(ta)
-              if e.info.label.startswith("Port")}
-    for edge in transitions(ta):
-        symb = edge.info.label
-        if symb.startswith("Port"):
-            result[symb].append(edge.src)
+def portToStateMapping(intersectoid: TTreeAut) -> dict:
+    result = {}
+    for edge in transitions(intersectoid):
+        if edge.info.label.startswith("Port"):
+            if edge.info.label not in result:
+                result[edge.info.label] = []
+            result[edge.info.label].append(edge.src)
     return result
 
 
@@ -212,18 +299,75 @@ def portToStateMapping(ta: TTreeAut) -> dict:
 # - an intersectoid "TA",
 # - dictionary of ports and states with port output transitions
 # output:
-def getMaximalMapping(ta: TTreeAut, ports: dict) -> dict:
+def getMaximalMapping(intersectoid: TTreeAut, ta: TTreeAut, ports: dict) -> dict:
     mapping = {}
     for port, stateList in ports.items():
         mapping[port] = None
         currentDistance = 0  # state, rootDistance
         for state in stateList:
-            dist = ta.getRootDistance(state)
+            dist = intersectoid.getRootDistance(state)
             if dist > currentDistance:
                 mapping[port] = state
                 currentDistance = dist
+            elif dist == currentDistance:
+                currentState = splitTupleName(mapping[port])
+                possibleNewState = splitTupleName(state)
+                currDist = ta.getRootDistance(currentState)
+                newDist = ta.getRootDistance(possibleNewState)
+                if newDist > currDist:
+                    mapping[port] = state
         if mapping[port] is None:
             raise Exception(f"getMaximalMapping: {port} mapping not found")
+    return mapping
+
+
+def getMapping(intersectoid: TTreeAut, ta: TTreeAut) -> dict:
+    ports = {}
+    for edge in transitions(intersectoid):
+        if edge.info.label.startswith("Port"):
+            if edge.info.label not in ports:
+                ports[edge.info.label] = []
+            ports[edge.info.label].append(edge.src)
+
+    reach: dict[str, set] = getAllStateReachability(ta, reflexive=False)
+    mapping = {}
+    for port, stateList in ports.items():
+        mapping[port] = None
+        for state in stateList:
+            s = splitTupleName(state)
+            infimum = True
+            for state2 in stateList:
+                if state == state2:
+                    continue
+                s2 = splitTupleName(state2)
+                if s in reach[s2] and not s2 in reach[s]:
+                    continue
+                else:
+                    infimum = False
+            if infimum:
+                mapping[port] = s
+        if mapping[port] == None:
+            return {}
+    return mapping
+
+
+def getMaximalMappingFixed(intersectoid: TTreeAut, ta: TTreeAut, ports: dict) -> dict:
+    mapping = {}
+    for port, stateList in ports.items():
+        temp = {}
+        mapping[port] = None
+        for state in stateList:
+            taState = splitTupleName(state)
+            dist = ta.getRootDistance(taState)
+            if dist not in temp:
+                temp[dist] = set()
+            temp[dist].add(state)
+        maxDist = 0
+        for dist in temp.keys():
+            maxDist = max(maxDist, dist)
+        if len(temp[maxDist]) > 1:
+            return {}
+        mapping[port] = list(temp[maxDist])[0]
     return mapping
 
 
@@ -242,18 +386,35 @@ def boxFinding(
     ta: TTreeAut,
     box: TTreeAut,
     root: str,
-    helper: FoldingHelper
+    helper: FoldingHelper,
+    source: str
 ) -> dict:
     A: TTreeAut = createIntersectoid(ta, box, root, helper)
-    # A = trim(A)  # additional functionality maybe needed?
     tree, string = nonEmptyBU(A)
     if tree is None:
         return {}
+    # copy = deepcopy(A)
+    helper.intersectoids.append(A)
+    if helper.export:
+        temp = f"{helper.counter}-{source}-{box.name}-{root}"
+        if helper.path is None:
+            path = f"results/{helper.name}/intersectoids/{temp}"
+        else:
+            path = f"{helper.path}/intersectoids/{temp}"
+        exportToFile(A, path)
+        exportTAtoVTF(A, format='f', filePath=f"{path}.vtf")
+    A = trim(A)  # additional functionality maybe needed?
+    helper.write(A)
+    helper.getFlaggedEdgesFrom(A)
 
-    mapping = portToStateMapping(A)
-    maxMapping = getMaximalMapping(A, mapping)
-    # ^^ this is based on the rootDistances of nodes from "ports"
-    finalMapping = {i: splitTupleName(j) for i, j in maxMapping.items()}
+    # mapping = portToStateMapping(A)
+    # # oldMapping = getMaximalMapping(A, ta, mapping)
+    # maxMapping = getMaximalMappingFixed(A, ta, mapping)
+    # # ^^ largest rootDistance of "port" nodes (inside intersectoid)
+    # finalMapping = {i: splitTupleName(j) for i, j in maxMapping.items()}
+
+    finalMapping = getMapping(A, ta)
+
     return finalMapping
 
 
@@ -294,15 +455,13 @@ def newPrepareEdgeInfo(ta: TTreeAut, state: str):
 #   'ta' - UBDA that we want to apply folding on,
 #   'boxes' - ordered list of box names, which can be used to reduce the 'ta'
 # output: (folded) UBDA with applied reductions (same language as the input)
-def newFold(ta: TTreeAut, boxes: list, verbose=False) -> TTreeAut:
+def newFold(ta: TTreeAut, boxes: list, verbose=False, export=False, output=None, exportPath=None) -> TTreeAut:
     result = copy.deepcopy(ta)
     fillBoxArrays(result)  # in case of [None, None] and [] discrepancies
     variableVisibility = createVariableVisibilityCache(ta)
-    helper = FoldingHelper()
+    helper = FoldingHelper(ta, verbose, export, output, exportPath)
     for boxName in boxes:
         box = boxCatalogue[boxName]
-        if verbose:
-            print("#" * 30, f"[box] =", boxName, "#" * 30)
         worklist = [root for root in ta.rootStates]
         visited = set()
         while worklist != []:
@@ -310,30 +469,39 @@ def newFold(ta: TTreeAut, boxes: list, verbose=False) -> TTreeAut:
             if state in visited:
                 continue
             edgesToChildren = newPrepareEdgeInfo(result, state)
+            # print(box.name, state, edgesToChildren)
             for edgePart in edgesToChildren:
                 # edgePart contains three items: [key, child-index, child]
                 if isAlreadyReduced(result, state, edgePart):
                     continue
                 if state in result.transitions[state][edgePart[0]].children:
                     continue
-                if verbose:
-                    space = f"{0 * ' '}"
-                    sym = 'L' if edgePart[1] == 0 else 'H'
-                    print("%s> boxFinding(%s-%s->%s [%s])" % (
-                        space, state, sym, edgePart[2], box.name
-                    ))
-                mapping = boxFinding(result, box, edgePart[2], helper)
+                mapping = boxFinding(result, box, edgePart[2], helper, state)
                 if mapping != {}:
-                    if verbose:
-                        print(f" ==>> {mapping}" if mapping != {} else "")
-                    skip = False
-                    for mappedState in mapping.values():
-                        if variableVisibility[mappedState] == "":
-                            skip = True
-                    if skip:
-                        continue
+                    helper.write("%s> boxFinding(%s-[%s:%s]->%s => %s)\n" % (
+                        f"{0 * ' '}", state, 'L' if edgePart[1] == 0 else 'H',
+                        box.name, edgePart[2], mapping
+                    ))
+                    if helper.export:
+                        temp = f"{state}-{edgePart[1]}:{box.name}-{edgePart[2]}"
+                        temp = f"{helper.counter}-{temp}"
+                        if helper.path is None:
+                            path = f"results/{helper.name}/ubdas/{temp}"
+                        else:
+                            path = f"{helper.path}/ubdas/{temp}"
+                        exportToFile(result, path)
+                        exportTAtoVTF(result, format='f', filePath=f"{path}.vtf")
+                        helper.counter += 1
+                    # skip = False
+                    # for mappedState in mapping.values():
+                    #     if variableVisibility[mappedState] == "":
+                    #         skip = True
+                    #         print(f"skipping mapping {mapping} because {mappedState} has no variable visible")
+                    # if skip:
+                    #     continue
                     # phase 1: putting the box in the box array
                     edge = result.transitions[edgePart[3]][edgePart[0]]
+                    # print(edge)
                     initialBoxList = edge.info.boxArray
                     symbol = edge.info.label
                     boxList = [None] * ta.getSymbolArityDict()[symbol]
@@ -357,34 +525,12 @@ def newFold(ta: TTreeAut, boxes: list, verbose=False) -> TTreeAut:
             # worklist update
         # while worklist != []
 
-        if verbose:
-            result.printKeys = True
-            print(result)
-        
-    # for each box in boxOrder
-    removeFlaggedEdges(result, helper)
-    result = removeUselessStates(result)
     match = re.search(r"\(([^()]*)\)", result.name)
     if match is None:
         result.name = f"folded({ta.name})"    
     else:
         result.name = f"folded({match.group(1)})"
     return result
-
-
-def removeFlaggedEdges(ta: TTreeAut, helper: FoldingHelper):
-    for state, edges in helper.flaggedEdges.items():
-        for childStr, (key, edge) in edges.items():
-            originalChildren = childStr.split(" | ")
-            onlyBoxed = True
-            childrenStayed = True
-            for i in range(len(edge.children)):
-                if originalChildren[i] != edge.children[i]:
-                    childrenStayed = False
-                if not hasOnlyBoxedEdges(ta, edge.children[i]):
-                    onlyBoxed = False
-            if childrenStayed and not onlyBoxed:
-                ta.transitions[state].pop(key)
 
 
 # changes box objects on edges to strings of their names ???

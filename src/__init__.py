@@ -5,5 +5,5 @@ import format_vtf
 import format_tmb
 import test_trees
 import test_data
-import jupyter
+import render_dot
 import all_tests

@@ -4,6 +4,7 @@
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
 import copy
+from utils import stateNameSort
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # CLASSES FOR TREE AND TREE AUTOMATON
@@ -134,7 +135,6 @@ class TEdge:
         arity = len(self.boxArray)
         self.boxArray = [None] * arity
 
-
 class TTransition:
     def __init__(self, src: str, info: TEdge, children: list[str]):
         self.src: str = src
@@ -149,8 +149,19 @@ class TTransition:
         if self.src in self.children:
             return True
         return False
+    
+    def isSelfLoop(self):
+        if self.src in self.children:
+            return True
+        return False
 
     def checkFullSelfLoop(self):
+        for i in self.children:
+            if i != self.src:
+                return False
+        return True
+    
+    def isFullSelfLoop(self):
         for i in self.children:
             if i != self.src:
                 return False
@@ -198,7 +209,8 @@ class TTreeAut:
         if self.portArity == 0:
             self.portArity = self.getPortArity()
         # this parameter is only for formatted printing with edge-keys
-        self.printKeys: bool = False
+        self.printKeys: bool = True
+        self.metaData: TTreeAutMetaData = TTreeAutMetaData(self)
 
     def __repr__(self):
         # printing tree automaton header
@@ -213,31 +225,26 @@ class TTreeAut:
         keyString = "key"
 
         # computing lengths
-        srcLen = len(srcString)
-        edgeLen = len(edgeString)
-        childLen = len(childString)
-        keyLen = len(keyString)
-        maxArity = 0
-        for arity in self.getSymbolArityDict().values():
-            maxArity = max(arity, maxArity)
-        for edgeDict in self.transitions.values():
-            for key, edge in edgeDict.items():
-                srcLen = max(len(edge.src), srcLen)
-                edgeLen = max(len(str(edge.info)), edgeLen)
-                for i in edge.children:
-                    childLen = max(len(i), childLen)
-                keyLen = max(len(key), keyLen)
+        self.metaData.recompute()
+        srcLen = max(len(srcString), self.metaData.state)
+        edgeLen = max(len(edgeString), self.metaData.edge)
+        childLen = max(len(childString), self.metaData.child)
+        keyLen = max(len(keyString), self.metaData.key)
 
         # printing edge table header
         result += "  > %-*s -- %-*s --> " % (srcLen, srcString, edgeLen, edgeString)
-        for i in range(maxArity):
+        for i in range(self.metaData.arity):
             result += "%-*s  " % (childLen, f"{childString[:-2]} {i + 1}")
         if self.printKeys:
             result += "  %-*s" % (keyLen, keyString) + "\n"
-            result += "  " + "-" * (srcLen + edgeLen + keyLen + childLen * maxArity + 17) + '\n'
+            result += "  " + "-" * sum(
+                [srcLen, edgeLen, keyLen, childLen * self.metaData.arity, 17]
+            ) + '\n'
         else:
             result = result[:-2] + '\n'
-            result += "  " + "-" * (srcLen + edgeLen + childLen * maxArity + 13) + '\n'
+            result += "  " + "-" * sum(
+                [srcLen, edgeLen, childLen * self.metaData.arity, 13]
+            ) + '\n'
 
         # printing edges
         for state in iterateBFS(self):
@@ -253,13 +260,38 @@ class TTreeAut:
                         result += "%-*s  " % (childLen, i)
                     result = result[:-2]
                 else:
-                    result += " " * (maxArity * childLen + 7)
+                    result += " " * (self.metaData.arity * childLen + 7)
                 if self.printKeys:
                     result += "  : %-*s" % (keyLen, k)
                 result += "\n"
         # result = "-" * 78 + '\n'
-        self.printKeys = False
         return result[:-1]  # trim the last '\n'
+
+    # Check if two TAs are equivalent... NOTE: wip
+    def __eq__(self, ta):
+        # unique counter value will be used to compare states
+        # states will be stored in two separate hash-maps, values will be counters
+        # need to compare child counts, 
+        # different, 'redundant' edges are stored in two separate places (maybe no)
+        if len(self.rootStates) != len(ta.rootStates):
+            return False
+        stateMapper: dict[str, tuple(str, str)] = {}
+        pass
+
+    def getEdgeString(self, edge: TTransition) -> str:
+        result = ""
+        result += "%-*s -- %-*s" % (
+            self.metaData.state, edge.src, self.metaData.edge, edge.info
+        )
+        if len(edge.children) != 0:
+            result += " --> "
+            for i in edge.children:
+                result += "%-*s  " % (self.metaData.child, i)
+        if self.printKeys is True:
+            for k, e in self.transitions[edge.src].items():
+                if str(edge) == str(e):
+                    result += "  : %-*s" % (self.metaData.key, k)
+        return result
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Informative functions # - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -340,10 +372,10 @@ class TTreeAut:
 
     def isTDdeterministic(self) -> bool:
         for edgeDict in self.transitions.values():
-            usedSymbols = []
+            usedSymbols = set()
             for edge in edgeDict.values():
                 if edge.info.label not in usedSymbols:
-                    usedSymbols.append(edge.info.label)
+                    usedSymbols.add(edge.info.label)
                 else:
                     return False
         return True
@@ -355,8 +387,24 @@ class TTreeAut:
                 if edge.info.variable != "":
                     vars.add(edge.info.variable)
         vars = list(vars)
-        vars.sort()
+        vars = stateNameSort(vars)
         return vars
+
+    def getVariablePrefix(self) -> str:
+        """Returns largest prefix of a variable in a TA, 
+        that does not contain only numeric symbols.
+
+        Examples:
+            'x1' - returns 'x'
+            'var5ta01 - returns 'var5ta'
+        """
+        for edge in transitions(self):
+            if edge.info.variable != "":
+                prefixLen = 0
+                for i in range(len(edge.info.variable)):
+                    if not edge.info.variable[i:].isnumeric():
+                        prefixLen += 1
+                return edge.info.variable[:prefixLen]
 
     def countEdges(self):
         counter = 0
@@ -364,25 +412,20 @@ class TTreeAut:
             counter += 1
         return counter
 
-    # Returns a dictionary of states, each of which has a list of variables,
+    # Returns a dictionary of states, each of which has a set of variables,
     # that the state can "see" = i.e. the state has a transition with
-    # this variable. e.g. {'q0': ['x1', 'x2'], 'q1': ['x5']}
+    # this variable. e.g. {'q0': {'x1', 'x2'}, 'q1': {'x5'}}
     # if reverse==True: the dictionary is referenced by variables, and values
-    # are lists of states. e.g. {'x1': ['q0'], 'x2': ['q0'], 'x5': ['q1']}
+    # are lists of states. e.g. {'x1': {'q0'}, 'x2': {'q0'}, 'x5': {'q1'}}
     def getVariablesVisibility(self, reverse=False) -> dict:
         result: dict[str, set] = {}
-        if reverse is True:
-            for edge in transitions(self):
-                if edge.info.variable != "":
-                    if edge.info.variable not in result:
-                        result[edge.info.variable] = set()
-                    result[edge.info.variable].add(edge.src)
-            return result
         for edge in transitions(self):
             if edge.info.variable != "":
-                if edge.src not in result:
-                    result[edge.src] = set()
-                result[edge.src].add(edge.info.variable)
+                lookup = edge.info.variable if reverse else edge.src
+                value = edge.src if reverse else edge.info.variable
+                if lookup not in result:
+                    result[lookup] = set()
+                result[lookup].add(value)
         return result
 
     # Returns a list of all states that can be reached through 1 transition
@@ -397,88 +440,6 @@ class TTreeAut:
                 if child not in result:
                     result.add(child)
         return list(result)
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    # Modifying functions # - - - - - - - - - - - - - - - - - - - - - - - - - -
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    # needed for union (and testing) - name collision resolving
-    def renameState(self, oldName: str, newName: str):
-        # renaming state in rootStates array (1st layer)
-        if oldName in self.rootStates:
-            self.rootStates.remove(oldName)
-            self.rootStates.append(newName)
-
-        if oldName not in self.transitions:
-            return
-        # supposing only one state with the oldName exists in treeAut
-        # renaming state in the dictionary of states (1st layer)
-        self.transitions[newName] = self.transitions.pop(oldName)
-
-        # renaming name of the state inside transitions (2nd layer)
-        for edge in transitions(self):
-            if edge.src == oldName:
-                edge.src = str(newName)
-            # renaming state name inside the children array (3rd layer)
-            for i in range(len(edge.children)):
-                if edge.children[i] == oldName:
-                    edge.children[i] = newName
-
-    def removeState(self, state: str):
-        if state in self.rootStates:
-            self.rootStates.remove(state)
-
-        if state in self.transitions:
-            self.transitions.pop(state)
-
-        for content in self.transitions.values():
-            keysToDelete = []
-            for key, edge in content.items():
-                if state in edge.children:
-                    keysToDelete.append(key)
-            for key in keysToDelete:
-                content.pop(key)
-
-    # Creates a better readable state names for more clear images (DOT).
-    # Useful after unfolding, determinization/normalization, etc.
-    def reformatStates(self, prefix='q'):
-        temp = {}
-        i = 0
-        for state in iterateBFS(self):
-            if state not in temp:
-                temp[state] = i
-                i += 1
-
-        for state, idx in temp.items():
-            self.renameState(state, f"temporaryName{idx}")
-        for idx in temp.values():
-            self.renameState(f"temporaryName{idx}", f"{prefix}{idx}")
-
-    def reformatKeys(self, prefix='k'):  # k as in 'key'
-        counter: int = 1  # for no collisions
-        for state in iterateBFS(self):
-            swap = [key for key in self.transitions[state].keys()]
-            for oldKey in swap:
-                newKey = f"{prefix}{counter}"
-                counter += 1
-                self.transitions[state][newKey] = self.transitions[state].pop(oldKey)
-
-    # Shrinks the tree automaton
-    # such that it only contain the states from list (reachable states)
-    def shrinkTA(self, reachable: list):
-        toDelete = [x for x in self.rootStates if x not in reachable]
-        for stateName, content in self.transitions.items():
-            if stateName not in reachable:
-                toDelete.append(stateName)
-            for edge in content.values():
-                if edge.src not in reachable:
-                    toDelete.append(edge.src)
-                for i in edge.children:
-                    if i not in reachable:
-                        toDelete.append(i)
-
-        for i in set(toDelete):
-            self.removeState(i)
 
     # Calculates the smallest "hop" distance to the specified state from root
     # Works similarly to BFS but uses helping list to stop an iteration after
@@ -524,6 +485,94 @@ class TTreeAut:
         for root in self.rootStates:
             preOrderDFS(root, [], result)
         return result
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # Modifying functions # - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    # needed for union (and testing) - name collision resolving
+    def renameState(self, oldName: str, newName: str):
+        # renaming state in rootStates array (1st layer)
+        if oldName in self.rootStates:
+            self.rootStates.remove(oldName)
+            self.rootStates.append(newName)
+
+        if oldName not in self.transitions:
+            return
+        # supposing only one state with the oldName exists in treeAut
+        # renaming state in the dictionary of states (1st layer)
+        self.transitions[newName] = self.transitions.pop(oldName)
+
+        # renaming name of the state inside transitions (2nd layer)
+        for edge in transitions(self):
+            if edge.src == oldName:
+                edge.src = str(newName)
+            # renaming state name inside the children array (3rd layer)
+            for i in range(len(edge.children)):
+                if edge.children[i] == oldName:
+                    edge.children[i] = newName
+
+    def removeState(self, state: str):
+        if state in self.rootStates:
+            self.rootStates.remove(state)
+
+        if state in self.transitions:
+            self.transitions.pop(state)
+
+        for content in self.transitions.values():
+            keysToDelete = []
+            for key, edge in content.items():
+                if state in edge.children:
+                    keysToDelete.append(key)
+            for key in keysToDelete:
+                content.pop(key)
+
+    def removeTransition(self, state: str, key: str):
+        if state not in self.transitions:
+            return
+        if key not in self.transitions[state]:
+            return
+        self.transitions[state].pop(key)
+
+    # Creates a better readable state names for more clear images (DOT).
+    # Useful after unfolding, determinization/normalization, etc.
+    def reformatStates(self, prefix='q', startFrom=0, verbose=False):
+        temp = {}
+        i = startFrom
+        for state in iterateBFS(self):
+            if state not in temp:
+                temp[state] = i
+                i += 1
+        for state, idx in temp.items():
+            self.renameState(state, f"temporaryName{idx}")
+        for idx in temp.values():
+            self.renameState(f"temporaryName{idx}", f"{prefix}{idx}")
+
+    def reformatKeys(self, prefix='k'):  # k as in 'key'
+        counter: int = 1  # for no collisions
+        for state in iterateBFS(self):
+            swap = [key for key in self.transitions[state].keys()]
+            for oldKey in swap:
+                newKey = f"{prefix}{counter}"
+                counter += 1
+                self.transitions[state][newKey] = self.transitions[state].pop(oldKey)
+
+    # Shrinks the tree automaton
+    # such that it only contain the states from list (reachable states)
+    def shrinkTA(self, reachable: list):
+        toDelete = [x for x in self.rootStates if x not in reachable]
+        for stateName, content in self.transitions.items():
+            if stateName not in reachable:
+                toDelete.append(stateName)
+            for edge in content.values():
+                if edge.src not in reachable:
+                    toDelete.append(edge.src)
+                for i in edge.children:
+                    if i not in reachable:
+                        toDelete.append(i)
+
+        for i in set(toDelete):
+            self.removeState(i)
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Building functions #  - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -604,7 +653,7 @@ class TTreeAut:
 
 # custom iterator - yields only edges (no keys)
 #  for cleaner code
-def transitions(obj):
+def transitions(obj) -> TTransition:
     dictObj = obj
     if isinstance(obj, TTreeAut):
         dictObj = obj.transitions
@@ -624,8 +673,8 @@ def transitions(obj):
 
 #     for key, innerObj in dictObj.items():
 #         if isinstance(innerObj, dict):
-#             for edge in transitions(innerObj):
-#                 yield edge
+#             for edge in transitionsWithKeys(innerObj):
+#                 yield key, edge
 #         else:
 #             yield innerObj
 
@@ -668,5 +717,69 @@ def iterateBFS(ta: TTreeAut):
             for child in edge.children:
                 if child not in visited:
                     queue.append(child)
+
+class TTreeAutMetaData:
+    """Contains string lengths for tidy formatting (tables, etc.).
+    """
+    def __init__(self, ta: TTreeAut):
+        self.ta: TTreeAut = ta
+
+        self.state: int = 0
+        self.child: int = 0
+        self.key: int = 0
+        self.variable: int = 0
+        self.label: int = 0
+        self.edge: int = 0
+        self.boxName: int = 0
+        self.arity: int = 0
+
+        self.keyPrefix: int = 0
+        self.statePrefix: int = 0
+        self.variablePrefix: int = 0
+
+    def __repr__(self):
+        return (
+            f"[TTreeAutMetaData]\n" +
+            f"Max State Length        = {self.state}\n" +
+            f"Max Child Length        = {self.child}\n" +
+            f"Max Key Length          = {self.key}\n" +
+            f"Max Variable Length     = {self.variable}\n" +
+            f"Max Edge Label Length   = {self.label}\n" +
+            f"Max Box Name Length     = {self.boxName}\n"
+        )
+
+    def recompute(self):
+        def getPrefixLength(string: str) -> int:
+            prefixLen = 0
+            for i in range(len(string)):
+                if not string[i:].isnumeric():
+                    prefixLen += 1
+            return prefixLen
+        
+        prefixesSet = False
+        for edgeDict in self.ta.transitions.values():
+            for key, edge in edgeDict.items():
+                self.state = max(self.state, len(edge.src))
+                self.label = max(self.label, len(edge.info.label))
+                self.variable = max(self.variable, len(edge.info.variable))
+                self.key = max(self.key, len(key))
+                self.edge = max(self.edge, len(str(edge.info)))
+
+                if edge.info.variable != "" and not prefixesSet:
+                    self.keyPrefix = getPrefixLength(key)
+                    self.statePrefix = getPrefixLength(edge.src)
+                    self.variablePrefix = getPrefixLength(edge.info.variable)
+                    prefixesSet = True
+
+                for box in edge.info.boxArray:
+                    if type(box) == str:
+                        self.boxName = max(self.boxName, len(box))
+                    if type(box) == TTreeAut:
+                        self.boxName = max(self.boxName, len(box.name))
+                for child in edge.children:
+                    self.child = max(self.child, len(child))
+                
+        for arity in self.ta.getSymbolArityDict().values():
+            self.arity = max(self.arity, arity)
 
 # End of file ta_classes.py

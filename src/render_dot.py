@@ -1,9 +1,9 @@
-# jupyter.py
+# render_dot.py
 # Module for integration of TreeAutLib into Jupyter Notebook (IPython)
 # Implementation of tree automata for article about automata-based BDDs
 # Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 
-from graphviz import *
+import graphviz
 
 from ta_classes import *
 from ta_functions import *
@@ -61,6 +61,7 @@ def exportTA(ta: TTreeAut, fmtType: str, tgtType: str, filePath: str = ""):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
+    useLH = False
     if verbose:
         print("{:<60} {:<120}".format(
             f"KEY = {key}",
@@ -109,8 +110,12 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
     # EDGE: srcState -> connector node
     connectorLabel = ""
     if edge.info.variable != "":
-        connectorLabel += f"[{edge.info.variable}] "
-    connectorLabel += f"{edge.info.label}"
+        connectorLabel += f"[{edge.info.variable}]"
+    if useLH:
+        if edge.info.label != "LH":
+            connectorLabel += f" {edge.info.label}"
+    else:
+        connectorLabel += f" {edge.info.label}"
 
     graph.edge(edge.src, name,
                splines='true',
@@ -127,7 +132,11 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
     curr_child = 0
     curr_box = 0
     while curr_child < len(edge.children):
-        edgeLabel = f"{curr_box}"
+        if edge.info.label == "LH" and useLH:
+            edgeLabel = 'L' if curr_box == 0 else 'H'
+        else:
+            # dead code - other non-nullar symbols other than LH are not used
+            edgeLabel = f"{curr_box}"
         hasBox = False
         if (
             edge.info.boxArray != []
@@ -202,7 +211,7 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
 
         else:
             graph.edge(name, edge.children[curr_child],
-                       label=f"{curr_box}",
+                       label=f"{edgeLabel}",
                        penwidth='1.0',
                        arrowsize='0.5',
                        arrowhead='vee'
@@ -244,8 +253,8 @@ def DOTstateHandle(graph, state, leaves, roots):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def convertToDOT(src, srcType='a', verbose=False) -> Digraph:
-    if type(src) == TTreeAut:
+def convertToDOT(src, srcType='a', verbose=False) -> graphviz.Digraph:
+    if type(src) is TTreeAut:
         return TAtoDOT(src, verbose)
     elif type(src) is TTreeNode:
         return treeToDOT(src)
@@ -255,8 +264,8 @@ def convertToDOT(src, srcType='a', verbose=False) -> Digraph:
         return bddToDOT(src)
 
 
-def TAtoDOT(ta: TTreeAut, verbose=False) -> Digraph:
-    dot = Digraph(comment=f"Tree Automaton {ta.name}")
+def TAtoDOT(ta: TTreeAut, verbose=False) -> graphviz.Digraph:
+    dot = graphviz.Digraph(comment=f"Tree Automaton {ta.name}")
     dot.attr(label=f'{ta.name}')
     outputStates = ta.getOutputStates()
 
@@ -274,7 +283,7 @@ def TAtoDOT(ta: TTreeAut, verbose=False) -> Digraph:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def drawChildren(graph: Digraph, root: TTreeNode, rootIdx: int) -> int:
+def drawChildren(graph: graphviz.Digraph, root: TTreeNode, rootIdx: int) -> int:
     nodeIdx = rootIdx + 1
     for i in range(len(root.children)):
         currIdx = nodeIdx
@@ -292,8 +301,8 @@ def drawChildren(graph: Digraph, root: TTreeNode, rootIdx: int) -> int:
     return nodeIdx
 
 
-def treeToDOT(root: TTreeNode) -> Digraph:
-    dot = Digraph()
+def treeToDOT(root: TTreeNode) -> graphviz.Digraph:
+    dot = graphviz.Digraph()
 
     if root is None:
         return dot
@@ -328,7 +337,7 @@ def treeToDOT(root: TTreeNode) -> Digraph:
 
 
 def drawBDDnode(
-    graph: Graph,
+    graph: graphviz.Graph,
     node: BDDnode,
     parent: BDDnode,
     cache: set,
@@ -361,8 +370,8 @@ def drawBDDnode(
     return
 
 
-def bddToDOT(bdd: BDD) -> Graph:
-    dot = Digraph()
+def bddToDOT(bdd: BDD) -> graphviz.Graph:
+    dot = graphviz.Digraph()
     dot.attr(label=f'BDD - {bdd.name}')
 
     # dictionary: "nodeName": set of nodes, to which there exists an edge
@@ -398,4 +407,8 @@ def bddToDOT(bdd: BDD) -> Graph:
     return dot
 
 
-# End of file jupyter.py
+def exportToFile(obj: object, path: str, format='png'):
+    dot = convertToDOT(obj)
+    dot.render(path, format=format, cleanup=True)
+
+# End of file render_dot.py

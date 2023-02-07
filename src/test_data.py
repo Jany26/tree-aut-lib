@@ -29,21 +29,21 @@ fullAlphabet = {
 }
 
 boxCatalogue = {
-    "X": importTAfromVTF("tests/boxX.vtf"),
-    "L0": importTAfromVTF("tests/boxL0.vtf"),
-    "L1": importTAfromVTF("tests/boxL1.vtf"),
-    "H0": importTAfromVTF("tests/boxH0.vtf"),
-    "H1": importTAfromVTF("tests/boxH1.vtf"),
-    "LPort": importTAfromVTF("tests/boxLPort.vtf"),
-    "HPort": importTAfromVTF("tests/boxHPort.vtf"),
+    "X": importTAfromVTF("tests/boxes/boxX.vtf"),
+    "L0": importTAfromVTF("tests/boxes/boxL0.vtf"),
+    "L1": importTAfromVTF("tests/boxes/boxL1.vtf"),
+    "H0": importTAfromVTF("tests/boxes/boxH0.vtf"),
+    "H1": importTAfromVTF("tests/boxes/boxH1.vtf"),
+    "LPort": importTAfromVTF("tests/boxes/boxLPort.vtf"),
+    "HPort": importTAfromVTF("tests/boxes/boxHPort.vtf"),
 
-    "boxX": importTAfromVTF("tests/boxX.vtf"),
-    "boxL0": importTAfromVTF("tests/boxL0.vtf"),
-    "boxL1": importTAfromVTF("tests/boxL1.vtf"),
-    "boxH0": importTAfromVTF("tests/boxH0.vtf"),
-    "boxH1": importTAfromVTF("tests/boxH1.vtf"),
-    "boxLPort": importTAfromVTF("tests/boxLPort.vtf"),
-    "boxHPort": importTAfromVTF("tests/boxHPort.vtf"),
+    "boxX": importTAfromVTF("tests/boxes/boxX.vtf"),
+    "boxL0": importTAfromVTF("tests/boxes/boxL0.vtf"),
+    "boxL1": importTAfromVTF("tests/boxes/boxL1.vtf"),
+    "boxH0": importTAfromVTF("tests/boxes/boxH0.vtf"),
+    "boxH1": importTAfromVTF("tests/boxes/boxH1.vtf"),
+    "boxLPort": importTAfromVTF("tests/boxes/boxLPort.vtf"),
+    "boxHPort": importTAfromVTF("tests/boxes/boxHPort.vtf"),
 }
 
 boxX = boxCatalogue["X"]
@@ -65,11 +65,11 @@ outputEdgesLPort = boxLPort.getOutputSymbols()
 outputEdgesHPort = boxHPort.getOutputSymbols()
 
 # reachability and useless state removal test data
-testUnreachable1 = importTAfromVTF("tests/testUnreachable1.vtf")
-testUnreachable2 = importTAfromVTF("tests/testUnreachable2.vtf")
-testUnreachable3 = importTAfromVTF("tests/testUnreachable3.vtf")
+testUnreachable1 = importTAfromVTF("tests/special_cases/testUnreachable1.vtf")
+testUnreachable2 = importTAfromVTF("tests/special_cases/testUnreachable2.vtf")
+testUnreachable3 = importTAfromVTF("tests/special_cases/testUnreachable3.vtf")
 
-testNonEmpty1 = importTAfromVTF("tests/testNonEmpty1.vtf")
+testNonEmpty1 = importTAfromVTF("tests/special_cases/testNonEmpty1.vtf")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 

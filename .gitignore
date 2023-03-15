@@ -2,12 +2,14 @@ src/__pycache__/
 __pycache__/
 *.py[cod]
 *$py.class
+
 src/vtf
 src/dot
 src/vtf-to-dot
 src/tmb
 src/dimacs-out
 src/results
-notes.md
+
+cpp
 0-adHocTests.ipynb
 *.png

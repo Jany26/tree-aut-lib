@@ -1,7 +1,5 @@
-from multiprocessing.sharedctypes import Value
 from typing import Union
 from ta_classes import *
-from unfolding import isUnfolded
 from bdd import BDD
 
 
@@ -196,6 +194,9 @@ def simulateAndCompare(
     same = True
     step = (2 ** variables) // 25
     progress = 0
+    if debug:
+        # print(f"Comparing equivalence of {obj1.name} and {obj2.name}")
+        print(f"Equivalence check: {obj1.name} ...")
     if output is not None:
         output.write(f"Comparing equivalence of {obj1.name} and {obj2.name}\n\n")
     for i in range(2 ** (variables)):
@@ -209,10 +210,13 @@ def simulateAndCompare(
                 print(currentAssignment, f"1 = {res1}, 2 = {res2}")
             else:
                 output.write(f"{currentAssignment}, 1 = {res1}, 2 = {res2}\n")
+                output.flush()
         if i == progress + step:
             progress += step
             if debug:
-                print(f"{round(i / (2 ** variables) * 100)} %")
+                # progress = round(i / (2 ** variables) * 25)
+                # print(f"[{'#' * progress}{' ' * (25 - progress)}]", end='\r')
+                print(f"{round(i / (2 ** variables) * 100)} %", end='\r')
     # if debug: print('')
     if output is not None:
         output.write(f"\nEquivalent? = {same}.")
@@ -250,7 +254,7 @@ def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, star
     """
 
     simHelper = {
-        'path': [],
+        # 'path': [],
         'prefix': ta.getVariablePrefix(),
         'leaves': ta.getOutputEdges(inverse=True),
         'length': len(assignment),
@@ -284,14 +288,14 @@ def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, star
         except:
             print(assignment)
         
-        for key in sortKeys(ta, state):
+        for key in simHelper['keys'][state]:
             edge: TTransition = ta.transitions[state][key]
             if edge.info.variable != "":
                 if f"{simHelper['prefix']}{variable}" != edge.info.variable:
                     if len(ta.transitions[state]) == 1:
                         if simHelper['debug']:
                             print(f" {variable :<3} -> {value} : skipping")
-                        simHelper['path'].append(state)
+                        # simHelper['path'].append(state)
                         result = backTrack(ta, variable + 1, state, assignment)
                         if result is not None:
                             return result
@@ -302,7 +306,7 @@ def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, star
             newState = edge.children[value]
             if simHelper['debug']:
                 print(f"[{variable :<3} -> {value}]: {ta.getEdgeString(edge)} -> {newState}")
-            simHelper['path'].append(newState)
+            # simHelper['path'].append(newState)
             result = backTrack(ta, variable + 1, newState, assignment)
             if result is not None:
                 return result
@@ -312,9 +316,10 @@ def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, star
     # for var, val in assignment.items():
     #     print(f"{var} ({type(var)}) -> {val} ({type(val)})")
     start = int(rootVar) if startingVar is None else int(startingVar)
+    simHelper['keys'] = {state: sortKeys(ta, state) for state in ta.getStates()}
     if simHelper['debug']:
         print(f"{ta.name} - simulating variable assignment")
-    simHelper['path'].append(root)
+    # simHelper['path'].append(root)
     result = backTrack(ta, start, root, assignment)
     return result
 

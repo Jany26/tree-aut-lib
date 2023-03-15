@@ -84,7 +84,7 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
         graph.edge(edge.src, name,
                    penwidth='2.0',
                    arrowsize='0.5',
-                   label=f"<<B>[{outputEdgeLabel}]</B>>")
+                   label=f"<<B>[{edge.info.variable}] {outputEdgeLabel}</B>>")
 
         if verbose:
             print(" > arbitrary output point", name)

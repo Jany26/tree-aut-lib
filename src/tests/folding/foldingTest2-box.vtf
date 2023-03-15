@@ -1,0 +1,7 @@
+@NTA
+# Automaton folding-test-2-box
+%Root b0
+
+b0 LH ( b1 b1 )
+b1 LH ( b2 b2 )
+b2 Port_X ( )

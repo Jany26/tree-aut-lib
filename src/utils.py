@@ -2,7 +2,8 @@ import sys
 
 
 # boxOrder = ['X', 'LPort', 'HPort', 'L0', 'L1', 'H0', 'H1']
-boxOrder = ['L0', 'L1', 'H0', 'H1', 'X']
+# boxOrder = ['L0', 'L1', 'H0', 'H1', 'X']
+boxOrder = ['L0', 'L1', 'H0', 'H1', 'LPort', 'HPort']
 
 
 def eprint(*args, **kwargs):
@@ -28,5 +29,5 @@ def stateNameSort(stateList: list) -> list:
     return myList
 
 
-def createVarOrder(prefix: str, count: int):
-    return [f"{prefix}{i+1}" for i in range(count)]
+def createVarOrder(prefix: str, count: int, start=1):
+    return [f"{prefix}{i+start}" for i in range(count)]

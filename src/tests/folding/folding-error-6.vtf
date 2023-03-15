@@ -1,0 +1,9 @@
+@NTA
+# Automaton folding-error-6
+%Root q0
+
+q0 LH <1> ( q1 q2 )
+q1 0 ( )
+q2 LH <2> ( q1 q3 )
+q3 LH <5> ( q1 q4 )
+q4 1 ( )

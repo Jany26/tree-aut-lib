@@ -90,12 +90,31 @@ def exportTAtoABDD(ta: TTreeAut, filePath: str, name="", comments=False):
             if comments or edgeString != "":
                 file.write('\n')
 
-
-def importTAfromABDD(source) -> TTreeAut:
+def importTAfromABDD(source) -> TTreeAut | list:
+    print(source)
     file = open(source, "r")
-    ta = TTreeAut([], {}, Path(source).stem)
+    name = Path(source).stem
+    # ta = createTAfromABDD(file, name)
+    results = []
+    positions = []
+    i = 0
+    for l in file:
+        if l.startswith("@BDD") or l.startswith("@ABDD"):
+            positions.append(i)
+        i += len(l)
+    for pos in positions:
+        file.seek(pos)
+        results.append(createTAfromABDD(file, name))
+    if len(results) == 1:
+        return results[0]
+    return results
+
+
+def createTAfromABDD(file, name) -> TTreeAut:
+    ta = TTreeAut([], {}, name)
     leaves = set()
     keyCounter = 0
+    preamble = False
     for l in file:
         line = l.split('#')[0]  # strip comments
         line = line.strip()  # strip leading and trailing whitespaces
@@ -103,9 +122,13 @@ def importTAfromABDD(source) -> TTreeAut:
             continue
         data = line.split()
         if line.startswith('@'):
-            if line != "@ABDD":
+            if line != "@ABDD" and line != "@BDD":
                 raise Exception(f"importTAfromABDD(): unexpected header: {line}")
-            continue
+            if preamble:
+                break
+            else:
+                preamble = True
+                continue
         if line.startswith('%'):
             if data[0] not in ["%Name", "%Vars", "%Root"]:
                 raise Exception(f"importTAfromABDD(): unexpected metadata: {data[0]}")
@@ -146,6 +169,7 @@ def importTAfromABDD(source) -> TTreeAut:
         ta.transitions[leaf] = {}
         ta.transitions[leaf][f"k{keyCounter}"] = edge
         keyCounter += 1
+
     return ta
    
 

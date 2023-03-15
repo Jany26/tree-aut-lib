@@ -1,0 +1,7 @@
+@NTA
+# Automaton folding-test-2-ta
+%Root q0
+
+q0 LH <1> ( q1 q1 )
+q1 LH     ( q1 q1 )
+q1 0  <7> ( )

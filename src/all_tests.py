@@ -16,6 +16,7 @@ from format_dot import *
 from coocurrence import *
 from unfolding import *
 from normalization import *
+from folding import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS FOR TEST SUITES
@@ -1124,6 +1125,33 @@ def normalizationTests():
 
     printFailedTests(failures)
 
+
+def folding_IntersectoidRelationTest():
+    def compareMappings(ta, intersectoid, failures):
+        map1 = getMaximalMappingFixed(intersectoid, ta, portToStateMapping(intersectoid))
+        map2 = getMapping(intersectoid, ta)
+        if map1 != map2:
+            failures.append(
+                f"compareMappings({ta.name}, {intersectoid.name}): expected {map1}, got {map2}"
+            )
+    failures = []
+    bda1 = importTAfromVTF("./tests/reachability/1_bda.vtf")
+    bda2 = importTAfromVTF("./tests/reachability/2_bda.vtf")
+
+    test1a = importTAfromVTF("./tests/reachability/1_intersectoid_a.vtf")
+    test1b = importTAfromVTF("./tests/reachability/1_intersectoid_b.vtf")
+    test1c = importTAfromVTF("./tests/reachability/1_intersectoid_c.vtf")
+    test2a = importTAfromVTF("./tests/reachability/2_intersectoid_a.vtf")
+    test2b = importTAfromVTF("./tests/reachability/2_intersectoid_b.vtf")
+
+    compareMappings(test1a, bda1, failures)
+    compareMappings(test1b, bda1, failures)
+    compareMappings(test1c, bda2, failures)
+    compareMappings(test2a, bda2, failures)
+    compareMappings(test2b, bda2, failures)
+
+    printFailedTests(failures)
+    
 
 def extraTests():
     pass

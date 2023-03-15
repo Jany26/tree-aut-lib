@@ -156,6 +156,8 @@ class TTransition:
         return False
 
     def checkFullSelfLoop(self):
+        if self.children == []:
+            return False
         for i in self.children:
             if i != self.src:
                 return False
@@ -307,8 +309,8 @@ class TTreeAut:
                 for i in data.children:
                     result.append(i)
         result = list(set(result))
-        result.sort()
-        return result
+        # result.sort()
+        return stateNameSort(result)
 
     # needed for feeding makePrefix() function
     # generates all edge symbols labeling the output edges from the TA
@@ -489,6 +491,15 @@ class TTreeAut:
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Modifying functions # - - - - - - - - - - - - - - - - - - - - - - - - - -
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    # creates a copy of a state dictionary (with isomorphic edges)
+    # - state: name of the state to copy edges from
+    # - name: state name of the copy
+    # e.g. copying the state a with edges:
+    # original: a  -> (b, c),   a  -> (a,  a )
+    # copy:     a' -> (b, c),   a' -> (a', a')
+    def copyState(self, state: str, name: str) -> dict:
+        pass
 
     # needed for union (and testing) - name collision resolving
     def renameState(self, oldName: str, newName: str):

@@ -446,25 +446,45 @@ def getVarPrefix(varList: list) -> str:
 #   - case 2: when a node that does not contain last variable
 #       leads straight to a leaf node 
 #       * e.g deciding by var x5, but there are 10 variables)
-def addDontCareBoxes(ta: TTreeAut, variableOrder: list, vars=0) -> TTreeAut:
-    # ??? not sure what varOrder is for...
+def addDontCareBoxes(ta: TTreeAut, vars: int) -> TTreeAut:
     result = copy.deepcopy(ta)
-    varOrder = {var: idx for idx, var in enumerate(variableOrder, start=1)}
-    maxVar = int(variableOrder[-1])
     varVis = {i: int(list(j)[0]) for i, j in ta.getVariablesVisibility().items()}
     leaves = set(ta.getOutputStates())
+    counter = 0
+    skippedVarEdges = []
+    varPrefix = ta.getVariablePrefix()
     for edge in transitions(result):
         if edge.isSelfLoop():
             continue
         for idx, child in enumerate(edge.children):
             if (
-                (child in leaves and varVis[edge.src] != maxVar) or
-                (child not in leaves and varVis[child] - varVis[edge.src] > 1)
+                child in leaves and varVis[edge.src] != vars or
+                child not in leaves and varVis[child] - varVis[edge.src] > 2
             ):
-                # print(f"adding box-X to idx {idx} in edge {edge}")
                 if len(edge.info.boxArray) < idx + 1:
                     edge.info.boxArray = [None] * len(edge.children)
                 edge.info.boxArray[idx] = 'X'
+                # print(f"adding box-X to {'H' if idx else 'L'} in edge {edge}")
+            if (child not in leaves and varVis[child] - varVis[edge.src] == 2):
+                # print(f"  > bad edge = {edge}, state {child} has var {varVis[child]}")
+                newState = f"temp{counter}"
+                edge.children[idx] = newState
+                newEdge = TTransition(
+                    newState, 
+                    TEdge('LH', [], f"{varPrefix}{varVis[edge.src] + 1}"),
+                    [child, child]
+                )
+                newKey = f"tempKey{counter}"
+                counter += 1
+                # print(f"  > edited edge {edge}")
+                # print(f"  > adding extra ({counter}) edge = {newEdge}")
+                skippedVarEdges.append((newState, newKey, newEdge))
+    for newState, newKey, newEdge in skippedVarEdges:
+        if newState not in result.transitions:
+            result.transitions[newState] = {}
+        if newKey not in result.transitions[newState]:
+            result.transitions[newState][newKey] = newEdge
+
     return result
 
 # End of file bdd.py

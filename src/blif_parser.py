@@ -201,8 +201,8 @@ if __name__ == '__main__':
     blif = BlifParser()
     blif.parse("./tests/blif/C17.blif")
     print(blif.result.countNodes())
-    ta = createTAfromBDD(blif.result)
-    ta.reformatStates()
-    exportTAtoVTF(ta, "./tests/blif/C17.vtf")
+    self = createTAfromBDD(blif.result)
+    self.reformatStates()
+    exportTAtoVTF(self, "./tests/blif/C17.vtf")
 
 # end of blif_parser.py

@@ -429,8 +429,8 @@ def addVariablesRecursive(ta: TTreeAut, helper: FoldingHelper):
         for edge in ta.transitions[state].values():
             if edge.info.variable != "":
                 edgeVar = int(edge.info.variable[len(helper.varPrefix):])
-                if edgeVar != var:
-                    print(f"WARNING: addVariables(): edge {edge} does not agree with var {var}")
+                # if edgeVar != var:
+                #     print(f"WARNING: addVariables(): edge {edge} does not agree with var {var}")
                 return
             edge.info.variable = f"{helper.varPrefix}{var}"
     # if root has no var-labeled edges and has no self-loops,
@@ -478,8 +478,8 @@ def boxFinding(
     source: str
 ) -> dict:
     A: TTreeAut = createIntersectoid(ta, box, root, helper)
-    if box.name in ['boxX', 'X'] and root == 'q1':
-        print(A)
+    # if box.name in ['boxX', 'X'] and root == 'q1':
+    #     print(A)
     tree, string = nonEmptyBU(A)
     if tree is None:
         return {}
@@ -557,10 +557,10 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
                 helper.minVar = int(edgePart[4].info.variable[len(helper.varPrefix):]) + 1
                 if state in result.transitions[state][edgePart[0]].children:
                     continue
-                print("%s> boxFinding(%s-[%s:%s]->%s)" % (
-                    f"{0 * ' '}", state, 'L' if edgePart[1] == 0 else 'H',
-                    box.name, edgePart[2]
-                ))
+                # print("%s> boxFinding(%s-[%s:%s]->%s)" % (
+                #     f"{0 * ' '}", state, 'L' if edgePart[1] == 0 else 'H',
+                #     box.name, edgePart[2]
+                # ))
                 mapping = boxFinding(result, box, edgePart[2], helper, state)
 
                 if mapping == {}:

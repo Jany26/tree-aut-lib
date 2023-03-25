@@ -448,7 +448,7 @@ def getVarPrefix(varList: list) -> str:
 #       * e.g deciding by var x5, but there are 10 variables)
 def addDontCareBoxes(ta: TTreeAut, vars: int) -> TTreeAut:
     result = copy.deepcopy(ta)
-    varVis = {i: int(list(j)[0]) for i, j in ta.getVariablesVisibility().items()}
+    varVis = {i: int(list(j)[0]) for i, j in ta.getVariableVisibility().items()}
     leaves = set(ta.getOutputStates())
     counter = 0
     skippedVarEdges = []

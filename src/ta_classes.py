@@ -300,15 +300,15 @@ class TTreeAut:
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     def getStates(self) -> list:
-        result = []
+        result = set()
         for stateName in self.rootStates:
-            result.append(stateName)
+            result.add(stateName)
         for stateName, edges in self.transitions.items():
-            result.append(stateName)
+            result.add(stateName)
             for data in edges.values():
                 for i in data.children:
-                    result.append(i)
-        result = list(set(result))
+                    result.add(i)
+        result = list(result)
         # result.sort()
         return stateNameSort(result)
 
@@ -419,7 +419,7 @@ class TTreeAut:
     # this variable. e.g. {'q0': {'x1', 'x2'}, 'q1': {'x5'}}
     # if reverse==True: the dictionary is referenced by variables, and values
     # are lists of states. e.g. {'x1': {'q0'}, 'x2': {'q0'}, 'x5': {'q1'}}
-    def getVariablesVisibility(self, reverse=False) -> dict:
+    def getVariableVisibility(self, reverse=False) -> dict:
         result: dict[str, set] = {}
         for edge in transitions(self):
             if edge.info.variable != "":
@@ -429,6 +429,28 @@ class TTreeAut:
                     result[lookup] = set()
                 result[lookup].add(value)
         return result
+
+    # for testing purposes (normalization checking -> sorted var occurence)
+    def getVariableOccurence(self, sorted=True) -> list:
+        prefixLen = len(self.getVariablePrefix())
+        result = []
+        for edge in transitions(self):
+            if edge.info.variable == "":
+                continue
+            var: int = int(edge.info.variable[prefixLen:])
+            result.append(var)
+        if sorted:
+            result.sort()
+        return result
+
+    def getVariableMax(self) -> int:
+        maxVar = 0
+        prefixLen = len(self.getVariablePrefix())
+        for edge in transitions(self):
+            if edge.info.variable != "":
+                var = int(edge.info.variable[prefixLen:])
+                maxVar = max(maxVar, var)
+        return maxVar
 
     # Returns a list of all states that can be reached through 1 transition
     # from a specific state (only one directional)

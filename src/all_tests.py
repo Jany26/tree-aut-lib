@@ -17,6 +17,9 @@ from coocurrence import *
 from unfolding import *
 from normalization import *
 from folding import *
+from simulation import *
+from bdd import addDontCareBoxes, BDD, BDDnode, compareBDDs
+from apply import applyFunction
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS FOR TEST SUITES
@@ -1108,6 +1111,25 @@ def normalizationTests():
             failures.append(
                 f"isNormalized({ta.name}): expected {exp}, got {res}"
             )
+    def normalizationUnitTest(
+        path, states: list, maxVar: int, vars: list, failures: list,
+        unfolded=False
+    ):
+        ta = importTAfromVTF(path)
+        if not unfolded:
+            ta = unfold(ta)
+            ta.reformatStates()
+        ta = treeAutNormalize(ta, createVarOrder('x', maxVar))
+        result = True
+        if ta.getVariableOccurence() != vars:
+            result = False
+        if set(ta.getStates()) != set(states):
+            result = False
+        if not isNormalized(ta):
+            result = False
+        if not result:
+            failures.append(f"normalizationUnitTest(): {path} -> not normalized properly")
+        return result
 
     print(" > SUBUNIT TEST: testing normalization ...")
     failures = []
@@ -1122,6 +1144,21 @@ def normalizationTests():
     testNormalization("tests/normalization/normalizationTest2.vtf", True, failures)
     testNormalization("tests/normalization/normalizationTest3.vtf", True, failures)
     testNormalization("tests/normalization/normalizationTest4.vtf", True, failures)
+
+    path1 = "tests/unfolding/unfoldingTest1.vtf"
+    states1 = ['{q0,q1,q2,q3}', '{q1,q2,q3}', '{q3,q4,q5}', '{q6}', '{q7}']
+    normalizationUnitTest(path1, states1, 4, [1, 3, 4, 4], failures)
+
+    path2 = "tests/normalization/newNormTest5.vtf"
+    states2 = ['{q1}', '{q3}', '{q2,q4}', '{q2}', '{q6}', '{q5}', '{q7}']
+    normalizationUnitTest(path2, states2, 7, [1, 7, 7], failures, unfolded=True)
+
+    path3 = "tests/normalization/newNormTest4-loops.vtf"
+    states3 = [
+        '{q0}', '{q5,q12}', '{q13,q14,q16}', '{q9,q14}', '{q11,q12,q15}', '{q1,q3,q7}',
+        '{q4,q8,q10}', '{q8}', '{q6}', '{q3,q6,q7}', '{q2,q4,q10}', '{q6,q8}'
+    ]
+    normalizationUnitTest(path3, states3, 9, [1, 4, 6, 9, 9], failures)
 
     printFailedTests(failures)
 
@@ -1153,7 +1190,121 @@ def folding_IntersectoidRelationTest():
     printFailedTests(failures)
     
 
+def foldingCompare(treeaut: TTreeAut, vars: int, boxorder: list, failures: list) -> bool:
+    # exportToFile(treeaut, f"./temp/{treeaut.name}-a")
+    initial = addDontCareBoxes(treeaut, vars)
+    unfolded = unfold(initial)
+    computeAdditionalVariables(unfolded, vars)
+    normalized = treeAutNormalize(unfolded, createVarOrder('', vars+1))
+    normalized.reformatKeys()
+    normalized.reformatStates()
+    folded = treeAutFolding(normalized, boxorder, vars+1)
+    folded = removeUselessStates(folded)
+    # exportToFile(folded, f"./temp/{treeaut.name}-b")
+    unfolded = unfold(folded)
+    computeAdditionalVariables(unfolded, vars)
+    result = simulateAndCompare(initial, unfolded, vars)
+    if result != True:
+        failures.append(f"foldingTest: {initial.name} -> not equivalent after folding")
+    return result
+    
+
+def foldingTests():
+    def foldingDebugMarch8() -> bool:
+        ta = importTAfromVTF("./tests/folding/foldingTest2-ta.vtf")
+        box = importTAfromVTF("./tests/folding/foldingTest2-box.vtf")
+        box.name = 'test'
+        boxCatalogue['test'] = box
+        taFold = treeAutFolding(ta, ['test'], 8, verbose=False)
+        taFold.reformatKeys()
+        taFold.reformatStates()
+        boxes = 0
+        edges = 0
+        for edge in transitions(taFold):
+            edges += 1
+            for box in edge.info.boxArray:
+                if box is not None and box != "_":
+                    boxes += 1
+        if boxes != 4 or edges != 4 or len(taFold.getStates()) != 3:
+            return False
+        return True
+    print(" > SUBUNIT TEST: testing folding ...")
+    failures = []
+    treeaut1 = importTAfromVTF("./tests/folding/folding-error-1.vtf")
+    treeaut2 = importTAfromVTF("./tests/folding/foldingTest1.vtf")
+    treeaut3 = importTAfromVTF("./tests/folding/folding-error-6.vtf")
+
+    boxorder = boxOrders['abdd-short']
+    res1 = foldingCompare(treeaut1, 5, boxorder, failures)
+    res2 = foldingCompare(treeaut2, 5, boxorder, failures)
+    res3 = foldingCompare(treeaut3, 5, boxorder, failures)
+    res4 = foldingDebugMarch8()
+    if res4 != True:
+        failures.append(f"foldingTest: foldingTest2 (special box) -> not correct structure")
+    printFailedTests(failures)
+
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# BDD testing
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+def bddTest():
+
+    a = BDDnode('a', 'x1')
+    b = BDDnode('b', 'x2')
+    c = BDDnode('c', 'x3')
+    d = BDDnode('d', 'x4')
+    e = BDDnode('0', 'x5')
+    f = BDDnode('1', 'x6')
+
+    a.attach(b, c)
+    b.attach(e, f)
+    c.attach(d, e)
+    d.attach(f, f)
+
+    bdd1 = BDD('test1', a)
+
+    q0 = BDDnode('e', 'x1')
+    q1 = BDDnode('f', 'x2')
+    q2 = BDDnode('g', 'x3')
+    q3 = BDDnode('h', 'x4')
+    q4 = BDDnode('0', 'x5')
+    q5 = BDDnode('1', 'x6')
+
+    q0.attach(q1, q2)
+    q1.attach(q4, q5)
+    q2.attach(q3, q4)
+    q3.attach(q5, q5)
+
+    bdd2 = BDD('test2', q0)
+    print(compareBDDs(bdd1, bdd2))
+    bdd1.printBDD()
+    bdd2.printBDD()
+    print(bdd1.getVariableList())
+
+
+def applyTest():
+    t0 = BDDnode('t0', 0)
+    t1 = BDDnode('t1', 1)
+    n1 = BDDnode('n1', 'x4', t0, t1)
+    n2 = BDDnode('n2', 'x2', t0, t1)
+    n3 = BDDnode('n3', 'x1', n1, n2)
+    bdd1 = BDD('test1', n3)
+    # bdd1.printBDD()
+    t0 = BDDnode('t0', 0)
+    t1 = BDDnode('t1', 1)
+    n1 = BDDnode('n1', 'x2', t0, t1)
+    n2 = BDDnode('n2', 'x4', t0, t1)
+    n3 = BDDnode('n3', 'x1', n1, n2)
+    bdd2 = BDD('test2', n3)
+    # bdd2.printBDD()
+    bdd3 = applyFunction('or', bdd1, bdd2, varOrder=None)
+    print(bdd3)
+
 def extraTests():
+    foldingTests()
+    # bddTest()
+    # applyTest()
     pass
 
 # End of file all_tests.py

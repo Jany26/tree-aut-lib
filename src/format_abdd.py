@@ -91,7 +91,7 @@ def exportTAtoABDD(ta: TTreeAut, filePath: str, name="", comments=False):
                 file.write('\n')
 
 def importTAfromABDD(source) -> TTreeAut | list:
-    print(source)
+    # print(source)
     file = open(source, "r")
     name = Path(source).stem
     # ta = createTAfromABDD(file, name)

@@ -44,7 +44,7 @@ class NormalizationHelper:
 # or wrong order of variables)
 def filterBadTransitions(ta: TTreeAut, norm: NormalizationHelper):
     varIndex = {j: i for i, j in enumerate(norm.variables, start=1)}
-    cacheVarVision = ta.getVariablesVisibility()
+    cacheVarVision = ta.getVariableVisibility()
     # cacheVarVisionReverse = ta.getVariablesVisibility(reverse=True)
     cacheReachability = getAllStateReachability(ta)
 
@@ -262,7 +262,7 @@ def procTransitions(data: NormalizationHelper, childrenStates: list):
 # a few transitions. In normalized UBDA the transitions do not repeat the same
 # variable. Either the edges to the specific children list have all
 # the variables once or have one "variable-less" edge. (empty string as var)
-def isNormalized(ta: TTreeAut) -> bool:
+def isNormalized(ta: TTreeAut, verbose=False) -> bool:
     # lookup = edge symbol -> children array key ->
     # set of variables over all transitions from parent to child
     result: 'dict[str, dict[str, set]]' = {}
@@ -299,9 +299,10 @@ def isNormalized(ta: TTreeAut) -> bool:
                 result[symbol][childStr].add(var)
         visited.add(parent)
 
-    for edge in duplicateEdges:
-        eprint("isNormalized():", end="")
-        eprint(f"edge {str(edge)[4:-1]} disrupts normalized property")
+    if verbose:
+        for edge in duplicateEdges:
+            eprint("isNormalized():", end="")
+            eprint(f"edge {str(edge)[4:]} disrupts normalized property")
 
     return duplicateEdges == []
 

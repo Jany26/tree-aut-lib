@@ -4,10 +4,10 @@
 # %States q0:0 q1:0 q2:0
 # %Alphabet LH:2 Port_H0:0 0:0
 
-q0 LH <x1> ( q1 q1 )
-q1 LH <x2> ( q2 q2 )
-q2 LH <x3> ( q3 q4 )
-q3 LH <x4> ( q5 q5 )
-q4 LH <x4> ( q5 q6 )
+q0 LH <1> ( q1 q1 )
+q1 LH <2> ( q2 q2 )
+q2 LH <3> ( q3 q4 )
+q3 LH <4> ( q5 q5 )
+q4 LH <4> ( q5 q6 )
 q5 0 ( )
 q6 1 ( )

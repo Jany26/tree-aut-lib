@@ -97,7 +97,7 @@ class SimulationHelper:
         }
         self.length = len(assignment)
         self.verbose = verbose
-        self.varVisibility = ta.getVariablesVisibility()
+        self.varVisibility = ta.getVariableVisibility()
         self.prefix = ta.getVariablePrefix()
         self.vars = [(k, e) for k, e in assignment.items()]
 
@@ -228,7 +228,7 @@ def simulateAndCompare(
 def computeAdditionalVariables(ta: TTreeAut, maxVar: int):
     def convertVars(varList: list, prefix: str) -> dict:
         return {i: int(i[len(prefix):]) for i in varList}
-    varVis = ta.getVariablesVisibility()
+    varVis = ta.getVariableVisibility()
     trueLeafs = set()
     varPrefix = getVarPrefix(ta.getVariableOrder())
     for leaf in ta.getOutputStates():
@@ -258,7 +258,7 @@ def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, star
         'prefix': ta.getVariablePrefix(),
         'leaves': ta.getOutputEdges(inverse=True),
         'length': len(assignment),
-        'vis': ta.getVariablesVisibility(),
+        'vis': ta.getVariableVisibility(),
         'debug': verbose,
     }
 
@@ -326,7 +326,7 @@ def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, star
 
 def leafify(ta: TTreeAut, state: str, value: str | int):
     keysToPop = [key for key in ta.transitions[state].keys()]
-    vis = ta.getVariablesVisibility()
+    vis = ta.getVariableVisibility()
     maxVar = max(vis[state])
     for key in keysToPop:
         ta.transitions[state].pop(key)

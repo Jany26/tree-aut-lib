@@ -407,6 +407,7 @@ class TTreeAut:
                     if not edge.info.variable[i:].isnumeric():
                         prefixLen += 1
                 return edge.info.variable[:prefixLen]
+        return ""
 
     def countEdges(self):
         counter = 0
@@ -422,12 +423,13 @@ class TTreeAut:
     def getVariableVisibility(self, reverse=False) -> dict:
         result: dict[str, set] = {}
         for edge in transitions(self):
-            if edge.info.variable != "":
-                lookup = edge.info.variable if reverse else edge.src
-                value = edge.src if reverse else edge.info.variable
-                if lookup not in result:
-                    result[lookup] = set()
-                result[lookup].add(value)
+            if edge.info.variable == "":
+                continue
+            lookup = edge.info.variable if reverse else edge.src
+            value = edge.src if reverse else edge.info.variable
+            if lookup not in result:
+                result[lookup] = set()
+            result[lookup].add(value)
         return result
 
     # for testing purposes (normalization checking -> sorted var occurence)
@@ -582,13 +584,28 @@ class TTreeAut:
             self.renameState(f"temporaryName{idx}", f"{prefix}{idx}")
 
     def reformatKeys(self, prefix='k'):  # k as in 'key'
-        counter: int = 1  # for no collisions
+        counter: int = self.countEdges() + 2  # for no collisions
+        for state in iterateBFS(self):
+            swap = [key for key in self.transitions[state].keys()]
+            for oldKey in swap:
+                newKey = counter
+                counter += 1
+                self.transitions[state][newKey] = self.transitions[state].pop(oldKey)
+        counter = 1
         for state in iterateBFS(self):
             swap = [key for key in self.transitions[state].keys()]
             for oldKey in swap:
                 newKey = f"{prefix}{counter}"
                 counter += 1
                 self.transitions[state][newKey] = self.transitions[state].pop(oldKey)
+
+    def checkVariableType(self):
+        varType = type("")
+        for edge in transitions(self):
+            if type(edge.info.variable) != varType:
+                return False
+        return True
+        
 
     # Shrinks the tree automaton
     # such that it only contain the states from list (reachable states)

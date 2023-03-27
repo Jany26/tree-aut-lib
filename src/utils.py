@@ -11,7 +11,7 @@ boxOrders = {
     "esrbdd": ['L0', 'H0', 'X'],
     "esrbdd2": ['L1', 'H1', 'X'],
     "abdd-short": ['L0', 'H0', 'L1', 'H1', 'X'],
-    # "abdd-full": ['L0', 'H0', 'L1', 'H1', 'LPort', 'HPort', 'X'],
+    "abdd-full": ['L0', 'H0', 'L1', 'H1', 'LPort', 'HPort', 'X'],
 }
 
 def eprint(*args, **kwargs):

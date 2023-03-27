@@ -1,0 +1,91 @@
+INPUT
+
+  [TreeAut]: 'normalized(unfolded(C432.iscas.var84))'
+  > Root States = ['q0']
+  > source -- edge    --> child 1  child 2    key
+  -----------------------------------------------
+  > q0     -- LH <0>  --> q1       q2       : k1 
+  > q1     -- LH <1>  --> q2       q3       : k2 
+  > q2     -- LH <2>  --> q4       q4       : k3 
+  > q2     -- LH      --> q2       q2       : k4 
+  > q3     -- LH <33> --> q5       q5       : k5 
+  > q3     -- LH      --> q3       q3       : k6 
+  > q4     -- LH <3>  --> q6       q7       : k7 
+  > q5     -- 1 <34>                        : k8 
+  > q6     -- LH <4>  --> q8       q8       : k9 
+  > q6     -- LH      --> q6       q6       : k10
+  > q7     -- LH <6>  --> q9       q9       : k11
+  > q7     -- LH      --> q7       q7       : k12
+  > q8     -- LH <5>  --> q7       q3       : k13
+  > q9     -- LH <7>  --> q10      q11      : k14
+  > q10    -- LH <8>  --> q12      q12      : k15
+  > q10    -- LH      --> q10      q10      : k16
+  > q11    -- LH <10> --> q13      q13      : k17
+  > q11    -- LH      --> q11      q11      : k18
+  > q12    -- LH <9>  --> q11      q3       : k19
+  > q13    -- LH <11> --> q14      q15      : k20
+  > q14    -- LH <12> --> q16      q16      : k21
+  > q14    -- LH      --> q14      q14      : k22
+  > q15    -- LH <14> --> q17      q17      : k23
+  > q15    -- LH      --> q15      q15      : k24
+  > q16    -- LH <13> --> q15      q3       : k25
+  > q17    -- LH <15> --> q18      q19      : k26
+  > q18    -- LH <16> --> q20      q20      : k27
+  > q18    -- LH      --> q18      q18      : k28
+  > q19    -- LH <18> --> q21      q21      : k29
+  > q19    -- LH      --> q19      q19      : k30
+  > q20    -- LH <17> --> q19      q3       : k31
+  > q21    -- LH <19> --> q22      q23      : k32
+  > q22    -- LH <20> --> q24      q24      : k33
+  > q22    -- LH      --> q22      q22      : k34
+  > q23    -- LH <22> --> q25      q25      : k35
+  > q23    -- LH      --> q23      q23      : k36
+  > q24    -- LH <21> --> q23      q3       : k37
+  > q25    -- LH <23> --> q26      q27      : k38
+  > q26    -- LH <24> --> q28      q28      : k39
+  > q26    -- LH      --> q26      q26      : k40
+  > q27    -- LH <26> --> q29      q29      : k41
+  > q27    -- LH      --> q27      q27      : k42
+  > q28    -- LH <25> --> q27      q3       : k43
+  > q29    -- LH <27> --> q30      q31      : k44
+  > q30    -- LH <28> --> q32      q32      : k45
+  > q30    -- LH      --> q30      q30      : k46
+  > q31    -- LH <30> --> q33      q33      : k47
+  > q31    -- LH      --> q31      q31      : k48
+  > q32    -- LH <29> --> q31      q3       : k49
+  > q33    -- LH <31> --> q34      q35      : k50
+  > q34    -- LH <32> --> q36      q36      : k51
+  > q34    -- LH      --> q34      q34      : k52
+  > q35    -- LH <33> --> q37      q37      : k53
+  > q35    -- LH      --> q35      q35      : k54
+  > q36    -- LH <33> --> q37      q5       : k55
+  > q37    -- 0 <34>                        : k56
+
+OUTPUT
+
+  [TreeAut]: 'folded(C432.iscas.var84)'
+  > Root States = ['q0']
+  > source -- edge                   --> child 1  child 2    key
+  --------------------------------------------------------------
+  > q0     -- LH <0> [_, boxX]       --> q1       q4       : k1 
+  > q1     -- LH <1> [boxX, boxL1]   --> q4       q5       : k2 
+  > q4     -- LH <3> [boxX, boxX]    --> q8       q9       : k7 
+  > q5     -- 1 <34>                                       : k8 
+  > q8     -- LH <5> [boxX, boxL1]   --> q9       q5       : k13
+  > q9     -- LH <7> [boxX, boxX]    --> q12      q13      : k14
+  > q12    -- LH <9> [boxX, boxL1]   --> q13      q5       : k19
+  > q13    -- LH <11> [boxX, boxX]   --> q16      q17      : k20
+  > q16    -- LH <13> [boxX, boxL1]  --> q17      q5       : k25
+  > q17    -- LH <15> [boxX, boxX]   --> q20      q21      : k26
+  > q20    -- LH <17> [boxX, boxL1]  --> q21      q5       : k31
+  > q21    -- LH <19> [boxX, boxX]   --> q24      q25      : k32
+  > q24    -- LH <21> [boxX, boxL1]  --> q25      q5       : k37
+  > q25    -- LH <23> [boxX, boxX]   --> q28      q29      : k38
+  > q28    -- LH <25> [boxX, boxL1]  --> q29      q5       : k43
+  > q29    -- LH <27> [boxX, boxX]   --> q32      q33      : k44
+  > q32    -- LH <29> [boxX, boxL1]  --> q33      q5       : k49
+  > q33    -- LH <31> [_, boxL0]     --> q34      q37      : k50
+  > q34    -- LH <32> [boxL0, boxL0] --> q5       q5       : k51
+  > q34    -- LH                     --> q34      q34      : k52
+  > q37    -- 0 <34>                                       : k56
+

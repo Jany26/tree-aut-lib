@@ -201,6 +201,8 @@ def removeUselessStatesTD(ta: TTreeAut) -> TTreeAut:
 
 def testFoldingOnSubBenchmarks(path, export, rootNum=None):
     # boxesOrder = boxOrder if "box_order" not in opt else boxOrders[opt["box_order"]]
+    if not os.path.exists(export):
+        os.makedirs(export)
     initial = abdd.importTAfromABDD(path)
     if rootNum is not None:
         initial.rootStates = [f"{rootNum}"]
@@ -236,23 +238,23 @@ def testFoldingOnSubBenchmarks(path, export, rootNum=None):
         "normalized_clean": normalized_clean
     }
 
+    exportTAtoVTF(result["initial"], f"{export}/vtf-1-init.vtf")
+    exportTAtoVTF(result["unfolded_extra"], f"{export}/vtf-2-unfold.vtf")
+    exportTAtoVTF(result["normalized_clean"], f"{export}/vtf-3-normal.vtf")
     dot.exportToFile(result["initial"], f"{export}/1-init")
-    dot.exportToFile(result["unfolded"], f"{export}/2-unfold")
+    # dot.exportToFile(result["unfolded"], f"{export}/2-unfold")
     dot.exportToFile(result["normalized_clean"], f"{export}/3-normal")
     nums = []
     for name, boxorder in boxOrders.items():
         folded = treeAutFolding(normalized_clean, boxorder, vars+1)
         folded_trimmed = removeUselessStates(folded)
-        # print(f"{export}/4-{name}-folded")
         nums.append(len(folded_trimmed.getStates()))
-        dot.exportToFile(folded, f"{export}/4-{name}-folded")
-        dot.exportToFile(folded_trimmed, f"{export}/4-{name}-folded-trimmed")
+        # dot.exportToFile(folded, f"{export}/4-{name}-folded")
+        exportTAtoVTF(folded_trimmed, f"{export}/vtf-4-{name}-fold.vtf")
+        dot.exportToFile(folded_trimmed, f"{export}/4-{name}-fold")
     for num in nums:
         print(f"\t| {num}", end='')
     print()
-    # exportToFile(initial, )
-
-    
     return result
 
 
@@ -265,15 +267,25 @@ if __name__ == "__main__":
     # C432.iscas.var133, 75,  1607
     # C432.iscas.var84,  20,  517
     report = open("./tests/blif/report.txt", "r")
+    print("name of the benchmark\t| init\t| norm\t| bdd\t| zdd\t| esr\t| abdd\t| esr2\t|")
     for line in report:
-        if not (line.startswith("C1908") or line.startswith("C1355")):
+        # if not (line.startswith("C1908") or line.startswith("C1355")):
+        #     continue
+        # if line.startswith('#') or line == "" or line.startswith("C432"):
+        #     continue
+        if line.startswith('#') or line == "":
             continue
-        data = line.split(';')
+        if line.startswith("C432"):
+            continue
+        # if not line.startswith("C1908.iscas.var912"):
+        #     continue
+        data = line.strip().split(';')
         name = data[0]
         nameData = name.split('.')
         benchmark = nameData[0]
         varname = nameData[2]
         root = int(data[2])
+        print(f"{benchmark}.{varname}", end='\r')
         testFoldingOnSubBenchmarks(
             f"./tests/blif/{benchmark}/{name}.abdd",  # import path
             f"./results/blif/{benchmark}/{varname}",  # export path

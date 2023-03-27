@@ -1,11 +1,11 @@
 from format_vtf import *
-from all_tests import *
+# from all_tests import *
 from ta_functions import *
 from apply import *
 from utils import *
 from bdd import createTAfromBDD
 from dimacs import dimacsRead
-from simulation import simulateAndCompare, computeAdditionalVariables
+from simulation import simulateAndCompare, computeAdditionalVariables, leafify
 
 import format_abdd as abdd
 import render_dot as dot
@@ -14,7 +14,7 @@ import os
 
 from unfolding import unfold
 from normalization import treeAutNormalize
-from folding import treeAutFolding
+from folding import treeAutFolding, getStateWitnessRelation
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -82,7 +82,7 @@ def testDimacsBenchmark(path, options: TestOptions) -> Tuple[bool | None, str]:
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def checkEquivalence(tree_auts: dict, options: dict):
+def checkEquivalence(tree_auts: dict, options: TestOptions):
     result = None
     if options.sim:
         simLogFile = open(f"{options.output_path}/log_simulation.txt", 'w')
@@ -98,10 +98,10 @@ def checkEquivalence(tree_auts: dict, options: dict):
         ubdaPath = f"{options.output_path}/ubdas/"
         for intersectoid in os.listdir(intersectoidPath):
             ta = importTAfromVTF(intersectoid)
-            exportToFile(ta, ta.name)
+            dot.exportToFile(ta, ta.name)
         for ubda in os.listdir(ubdaPath):
             ta = importTAfromVTF(ubda)
-            exportToFile(ta, ta.name)
+            dot.exportToFile(ta, ta.name)
 
     unfoldCount = len(tree_auts["initial"].getStates())
     foldCount = len(tree_auts["folded_trimmed"].getStates())
@@ -110,7 +110,7 @@ def checkEquivalence(tree_auts: dict, options: dict):
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def canonizeBenchmark(initial: TTreeAut, options: dict):
+def canonizeBenchmark(initial: TTreeAut, options: TestOptions):
     if not os.path.exists(options.output_path):
         os.makedirs(options.output_path)
     if options.progress:
@@ -151,7 +151,6 @@ def canonizeBenchmark(initial: TTreeAut, options: dict):
     normalized_clean = copy.deepcopy(normalized)
     normalized_clean.reformatKeys()
     normalized_clean.reformatStates()
-
     computeAdditionalVariables(normalized_clean, options.vars+2)
     normalized.metaData.recompute()
     normalized_clean.metaData.recompute()
@@ -292,7 +291,7 @@ def simulateBenchmark(inputPath: str, vars: int, outputPath, simulate=False, ima
         results["06-fold"] = treeAutFolding(results["05-normal-clean"], boxOrder, vars, verbose=False, export_vtf=False, export_png=True, output=log2, exportPath=outputPath)
         os.makedirs(f"{outputPath}/png/")
         for name in names:
-            exportToFile(results[name], f"{outputPath}/png/{name}")
+            dot.exportToFile(results[name], f"{outputPath}/png/{name}")
 
     log0.close()
     log1.close()
@@ -420,14 +419,44 @@ def blifTestNodeCounts(path):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
-    path = "./tests/blif/C432/C432.iscas.var84.abdd"
-    self = abdd.importTAfromABDD(path)
-    maxvar = self.getVariableMax()
-    options = TestOptions(
-        maxvar,
-        f'results/blif/c432-var84',
-        cli=True
-    )
-    canonizeBenchmark(self, options)
+    path = "./tests/blif/C432/C432.iscas.var133.abdd"
 
+    test = abdd.importTAfromABDD(path)
+    test.reformatStates()
+    # leafify(test, 'q5', 0)
+    # test = removeUselessStates(test)
+
+    folder = "./c432-133"
+    options = TestOptions(
+        test.getVariableMax(),
+        folder,
+        cli=False,
+        debug=False,
+        png=False,
+    )
+    options.box_order = ['X']
+
+    # init = importTAfromVTF("./c432-133/vtf/0-initial.vtf")
+    # fold = importTAfromVTF("./c432-133/vtf/3-folded.vtf")
+    # print(init)
+    # print(fold)
+    # init.reformatStates()
+    # fold.reformatStates()
+    # dot.exportToFile(init, "0-init")
+    # dot.exportToFile(fold, "3-fold")
+
+    results = canonizeBenchmark(test, options)
+    print(len(results["initial"].getStates()), len(results["folded_trimmed"].getStates()))
+
+    # exportTAtoVTF(results["initial"], f"{folder}/0-initial.vtf")
+    # exportTAtoVTF(results["initial_extra"], f"{folder}/1-initial_extra.vtf")
+    # exportTAtoVTF(results["normalized_clean"], f"{folder}/2-normal.vtf")
+    # exportTAtoVTF(results["folded_trimmed"], f"{folder}/3-folded.vtf")
+
+    # dot.exportToFile(results["initial"], f"{folder}/0-initial")
+    # dot.exportToFile(results["initial_extra"], f"{folder}/1-initial_extra")
+    # dot.exportToFile(results["normalized_clean"], f"{folder}/2-normal")
+    # dot.exportToFile(results["folded_trimmed"], f"{folder}/3-folded")
+
+    # print(getStateWitnessRelation(importTAfromVTF("./c432-133/0-q1-boxX-q3.vtf")))
 # End of file test.py

@@ -459,26 +459,26 @@ def addDontCareBoxes(ta: TTreeAut, vars: int) -> TTreeAut:
         for idx, child in enumerate(edge.children):
             if (
                 child in leaves and varVis[edge.src] != vars or
-                child not in leaves and varVis[child] - varVis[edge.src] > 2
+                child not in leaves and varVis[child] - varVis[edge.src] >= 2
             ):
                 if len(edge.info.boxArray) < idx + 1:
                     edge.info.boxArray = [None] * len(edge.children)
                 edge.info.boxArray[idx] = 'X'
                 # print(f"adding box-X to {'H' if idx else 'L'} in edge {edge}")
-            if (child not in leaves and varVis[child] - varVis[edge.src] == 2):
-                # print(f"  > bad edge = {edge}, state {child} has var {varVis[child]}")
-                newState = f"temp{counter}"
-                edge.children[idx] = newState
-                newEdge = TTransition(
-                    newState, 
-                    TEdge('LH', [], f"{varPrefix}{varVis[edge.src] + 1}"),
-                    [child, child]
-                )
-                newKey = f"tempKey{counter}"
-                counter += 1
-                # print(f"  > edited edge {edge}")
-                # print(f"  > adding extra ({counter}) edge = {newEdge}")
-                skippedVarEdges.append((newState, newKey, newEdge))
+            # if (child not in leaves and varVis[child] - varVis[edge.src] == 2):
+            #     # print(f"  > bad edge = {edge}, state {child} has var {varVis[child]}")
+            #     newState = f"temp{counter}"
+            #     edge.children[idx] = newState
+            #     newEdge = TTransition(
+            #         newState, 
+            #         TEdge('LH', [], f"{varPrefix}{varVis[edge.src] + 1}"),
+            #         [child, child]
+            #     )
+            #     newKey = f"tempKey{counter}"
+            #     counter += 1
+            #     # print(f"  > edited edge {edge}")
+            #     # print(f"  > adding extra ({counter}) edge = {newEdge}")
+            #     skippedVarEdges.append((newState, newKey, newEdge))
     for newState, newKey, newEdge in skippedVarEdges:
         if newState not in result.transitions:
             result.transitions[newState] = {}

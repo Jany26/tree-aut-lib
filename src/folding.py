@@ -7,6 +7,7 @@ from copy import deepcopy
 from utils import stateNameSort
 from render_dot import exportToFile
 
+printDebug = False
 
 class FoldingHelper:
     def __init__(
@@ -326,7 +327,7 @@ def createIntersectoid(
                         child = (te.children[i], be.children[i])
                         children.append(tupleName(child))
                         worklist.append(child)
-                    edgeObj = TEdge(be.info.label, [], te.info.variable)
+                    edgeObj = TEdge(be.info.label, [], f"{te.info.variable}")
                     if len(children) != 0:
                         helper.temp.append((splitTupleName(state), key))
                         helper.flagEdge(key, te)
@@ -342,6 +343,42 @@ def createIntersectoid(
     return result
 
 
+def getStateReachability(ta, intersectoid) -> dict[str, set]:
+    # smaller reachability maybe needed (go only as far as intersectoid)
+    pass
+
+def getStateWitnessRelation(intersectoid: TTreeAut, port: str):
+    def isEdgeUnified(children: list):
+        return len(set(children)) <= 1
+
+    def getRelationStep(state: str, intersectoid: TTreeAut):
+        res = []
+
+        for edge in intersectoid.transitions[state].values():
+            if edge.src in edge.children:
+                continue
+            if len(edge.children) == 0:
+                if edge.info.label == port:
+                    return [set([edge.src])]
+                continue
+
+            if isEdgeUnified(edge.children):
+                res.extend(getRelationStep(edge.children[0], intersectoid))
+                continue
+
+            subResult = set()
+            for child in edge.children:
+                for child_set in getRelationStep(child, intersectoid):
+                    subResult = subResult.union(child_set)
+
+            res.append(subResult)
+        return res
+
+    result = []
+    for root in intersectoid.rootStates:
+        result.extend(getRelationStep(root, intersectoid))
+    return result
+
 # This function finds all different port types in intersectoid and assigns
 # one state from the original ta to be mapped to the port.
 # It uses a reachability relation (similar to Floyd-Warshall algorithm) to
@@ -353,33 +390,124 @@ def createIntersectoid(
 # note: 'suspect' states (a,b) from the intersectoid contain a Port output
 # transition. (state 'a' from the original TA is compared wrt. the reachability)
 def getMapping(intersectoid: TTreeAut, ta: TTreeAut) -> dict:
-    ports = {}
-    for edge in transitions(intersectoid):
-        if edge.info.label.startswith("Port"):
-            if edge.info.label not in ports:
-                ports[edge.info.label] = []
-            ports[edge.info.label].append(edge.src)
-
+    ports = {
+        edge.info.label
+        for edge in transitions(intersectoid)
+        if edge.info.label.startswith("Port")
+    }
     reach: dict[str, set] = getAllStateReachability(ta, reflexive=False)
+    varvis = createVariableVisibilityCache(intersectoid)
     mapping = {}
-    for port, stateList in ports.items():
-        mapping[port] = None
-        for state in stateList:
-            s = splitTupleName(state)
-            infimum = True
-            for state2 in stateList:
-                if state == state2:
-                    continue
-                s2 = splitTupleName(state2)
-                if s in reach[s2] and not s2 in reach[s]:
-                    continue
-                else:
-                    infimum = False
-            if infimum:
-                mapping[port] = state
-        if mapping[port] == None:
+    for port in ports:
+        relation = [(varvis[list(s)[0]], s) for s in getStateWitnessRelation(intersectoid, port)]
+        relation.sort(reverse=True)
+        for var, stateset in relation:
+            skip = False
+            for state in stateset:
+                s = splitTupleName(state)
+                infimum = True
+                for state2 in stateset:
+                    if state == state2:
+                        continue
+                    s2 = splitTupleName(state2)
+                    if s in reach[s2] and not s2 in reach[s]:
+                        continue
+                    else:
+                        infimum = False
+                if infimum:
+                    mapping[port] = state
+                    skip = True
+                    break
+            if skip:
+                break
+        if port not in mapping:
             return {}
     return mapping
+
+
+def intersectoidReachability(ta: TTreeAut) -> list:
+    def intersectoidTupleGen(state: str, parents: list, varVis: dict) -> list:
+        possibilites = product(parents, repeat=2)
+        result = []
+        for k in possibilites:
+            if state not in k:
+                continue
+            if k[0] in varVis and k[1] in varVis:
+                if varVis[k[0]] != varVis[k[1]]:
+                    continue
+            result.append(list(k))
+        return result
+
+    try:
+        varVis = createVariableVisibilityCache(ta)
+    except:
+        return []
+    ta.getVariableVisibility()
+
+    copyta = copy.deepcopy(ta)
+    copyta.reformatKeys()
+    # print("varvis    =", varVis)
+    # print("varvis")
+    outputs = ta.getOutputEdges(inverse=True)
+
+    edgesToPop = []
+    for edgeDict in copyta.transitions.values():
+        for key, edge in edgeDict.items():
+            if len(edge.children) == 0:
+                if edge.info.label.startswith("Port") and edge.info.variable == "":
+                    edgesToPop.append((edge.src, key))
+                continue
+            bad = False
+            low = edge.children[0]
+            high = edge.children[1]
+            if low in varVis and high in varVis and edge.src in varVis:
+                if varVis[low] != varVis[high]:
+                    bad = True
+                if varVis[low] != varVis[edge.src] + 1:
+                    bad = True
+            if low in outputs and high in outputs and low != high:
+                if not ('0' in outputs[low] or '1' in outputs[low]) and not ('0' in outputs[high] or '1' in outputs[high]):
+                    bad = True
+            if bad:
+                edgesToPop.append((edge.src, key))
+
+    # print(copyta)
+    for src, key in edgesToPop:
+        # print(f'popping {key} from {src}')
+        copyta.transitions[src].pop(key)
+
+    copyta = removeUselessStates(copyta)
+    # print(copyta)
+    workList = copyta.getOutputStates()
+    result = copyta.getOutputStates()
+    # print(" > initial result =", result)
+    
+    # for i,j in varVis.items():
+    #     print(f"{i} -> {j} ({type(j)})")
+    doneTuples = set()
+    while len(workList) > 0:
+        # print(' > worklist =', workList)
+        state = workList.pop(0)
+        tuples = intersectoidTupleGen(state, result, varVis)
+        # print("  > tuples =", tuples)
+        for i in tuples:
+            # if str(i) in doneTuples:
+            #     print("  > DUPLICATE ! =", str(i))
+            doneTuples.add(str(i))
+        # print("  > tuples =", tuples)
+
+        for edge in transitions(copyta):
+            if len(edge.children) == 0:
+                continue
+            if edge.children not in tuples:
+                continue
+            if edge.src not in result:
+                workList.append(edge.src)
+                result.append(edge.src)  # similarly for dictionary
+    #             print('  > result +=', edge.src)
+    # print("> final reachability =", result)
+    # exit()
+    return result
 
 
 ## temporarily copied from simulation.py
@@ -414,7 +542,7 @@ def computeAdditionalVariablesFolding(ta: TTreeAut, minVar: int):
         if edge.src in edge.children:
             continue
         if edge.src in varVis:
-            edge.info.variable = varVis[edge.src]
+            edge.info.variable = f"{varVis[edge.src]}"
         pass # doSth()
 
 def addVariablesRecursive(ta: TTreeAut, helper: FoldingHelper):
@@ -429,9 +557,12 @@ def addVariablesRecursive(ta: TTreeAut, helper: FoldingHelper):
         for edge in ta.transitions[state].values():
             if edge.info.variable != "":
                 edgeVar = int(edge.info.variable[len(helper.varPrefix):])
-                # if edgeVar != var:
-                #     print(f"WARNING: addVariables(): edge {edge} does not agree with var {var}")
+                if edgeVar != var:
+                    if helper.verbose:
+                        print(f"WARNING: addVariables(): edge {edge} does not agree with var {var}")
                 return
+            if helper.verbose:
+                print(f"addVariables(): adding {helper.varPrefix}{var} to {edge}")
             edge.info.variable = f"{helper.varPrefix}{var}"
     # if root has no var-labeled edges and has no self-loops,
     # minVar is used to label edges starting from root
@@ -447,6 +578,8 @@ def addVariablesRecursive(ta: TTreeAut, helper: FoldingHelper):
         if selfLooping or not noVars:
             continue
         for edge in ta.transitions[root].values():
+            if helper.verbose:
+                print(f"addVariables(): adding {helper.varPrefix}{helper.minVar} to {edge}")
             edge.info.variable = f"{helper.varPrefix}{helper.minVar}"
 
     for edge in transitions(ta):
@@ -457,7 +590,6 @@ def addVariablesRecursive(ta: TTreeAut, helper: FoldingHelper):
         var = int(edge.info.variable[len(helper.varPrefix):])
         for child in edge.children:
             addVariables(ta, var + 1, child, helper)
-
 
 # Main implementation of one step of the folding procedure.
 # Function tries to apply tree automaton reduction starting from the specific
@@ -478,40 +610,37 @@ def boxFinding(
     source: str
 ) -> dict:
     A: TTreeAut = createIntersectoid(ta, box, root, helper)
-    # if box.name in ['boxX', 'X'] and root == 'q1':
-    #     print(A)
-    tree, string = nonEmptyBU(A)
+    tree, _ = nonEmptyBU(A)
     if tree is None:
         return {}
-
     A = trim(A)  # additional functionality maybe needed?
     helper.intersectoids.append(A)
 
-    if helper.png or helper.vtf:
-        temp = f"{helper.counter}-{source}-{box.name}-{root}"
+    temp = f"{helper.counter}-{source}-{box.name}-{root}"
+    if helper.png or helper.vtf:    
         if helper.path is None:
             path = f"results/{helper.name}/intersectoids/{temp}"
         else:
             path = f"{helper.path}/intersectoids/{temp}"
         if helper.vtf:
             exportTAtoVTF(A, format='f', filePath=f"{path}.vtf")
-        if helper.png:
-            exportToFile(A, path)
-
+    
     addVariablesRecursive(A, helper)
-    # computeAdditionalVariablesFolding(ta, helper.minVar)
+
     if helper.png:
-        exportToFile(A, f"{path}-trimmed")
+        exportToFile(A, f"{path}")
     helper.write(A)
     helper.getFlaggedEdgesFrom(A)
-
+    reach = intersectoidReachability(A)
+    A.shrinkTA(reach)
     # mapping = portToStateMapping(A)
     # # oldMapping = getMaximalMapping(A, ta, mapping)
     # maxMapping = getMaximalMappingFixed(A, ta, mapping)
     # # ^^ largest rootDistance of "port" nodes (inside intersectoid)
     # finalMapping = {i: splitTupleName(j) for i, j in maxMapping.items()}
-
     finalMapping = getMapping(A, ta)
+    if finalMapping == {}:
+        return {}
     varVis = createVariableVisibilityCache(A)
     splitMapping = {p: (splitTupleName(s), varVis[s]) for p,s in finalMapping.items()}
     return splitMapping
@@ -557,12 +686,12 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
                 helper.minVar = int(edgePart[4].info.variable[len(helper.varPrefix):]) + 1
                 if state in result.transitions[state][edgePart[0]].children:
                     continue
-                # print("%s> boxFinding(%s-[%s:%s]->%s)" % (
-                #     f"{0 * ' '}", state, 'L' if edgePart[1] == 0 else 'H',
-                #     box.name, edgePart[2]
-                # ))
+                if helper.verbose: print("%s> boxFinding(%s-[%s:%s]->%s)" % (
+                    f"{0 * ' '}", state, 'L' if edgePart[1] == 0 else 'H',
+                    box.name, edgePart[2]
+                ))
                 mapping = boxFinding(result, box, edgePart[2], helper, state)
-
+                # print(mapping)
                 if mapping == {}:
                     continue
                 # print(mapping)
@@ -580,8 +709,8 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
                 varVis = createVariableVisibilityCache(result)
                 for i, (mapState, var) in enumerate(mapping.values()):
                     # print(f"var = '{var}', mapState = '{mapState}', varVis[{mapState}] = '{varVis[mapState]}'")
-                    originalVar = int(varVis[mapState][len(helper.varPrefix):])
-                    intersectoidVar = int(var[len(helper.varPrefix):])
+                    originalVar = int(varVis[mapState])
+                    intersectoidVar = int(var)
                     if intersectoidVar > originalVar:
                         biggerVar = True
                 if biggerVar:
@@ -647,7 +776,7 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
                         edge.children[idx + i] = newState
                     result.transitions[newState] = {}
                     edge.children[idx + i] = newState
-                    newEdge = TTransition(newState, TEdge('LH', [], var), [mapState, mapState])
+                    newEdge = TTransition(newState, TEdge('LH', [], f"{var}"), [mapState, mapState])
                     helper.counter += 1
                     key = f"temp_{helper.counter2}"
                     helper.counter2 += 1
@@ -694,6 +823,7 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
         result.name = f"folded({ta.name})"    
     else:
         result.name = f"folded({match.group(1)})"
+    # print(result)
     return result
 
 
@@ -831,11 +961,12 @@ def stringifyBoxes(ta: TTreeAut):
 
 
 def createVariableVisibilityCache(ta: TTreeAut) -> dict:
-    result = {state: "" for state in ta.getStates()}
+    result = {}
+    prefix = len(ta.getVariablePrefix())
     for state in ta.getStates():
         for edge in ta.transitions[state].values():
             if edge.info.variable != "":
-                result[state] = edge.info.variable
+                result[state] = int(edge.info.variable[prefix:])
     return result
 
 

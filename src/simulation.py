@@ -330,7 +330,7 @@ def leafify(ta: TTreeAut, state: str, value: str | int):
     maxVar = max(vis[state])
     for key in keysToPop:
         ta.transitions[state].pop(key)
-    newEdge = TTransition(state, TEdge(str(value), [], maxVar), [])
+    newEdge = TTransition(state, TEdge(str(value), [], f"{maxVar}"), [])
     ta.transitions[state][keysToPop[0]] = newEdge
     # newEdge = TTransition(state, TEdge('LH', [], ""), [state, state])
 

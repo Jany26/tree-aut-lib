@@ -237,7 +237,7 @@ def computeAdditionalVariables(ta: TTreeAut, maxVar: int):
 
     varLookup = convertVars(ta.getVariableOrder(), varPrefix)
 
-    for edge in transitions(ta):
+    for edge in iterateEdges(ta):
         if edge.info.variable != "" or edge.src in edge.children:
             continue
         for child in edge.children:

@@ -800,7 +800,7 @@ def reachableBU(ta: TTreeAut) -> list:
                 if state not in result[symbol]:
                     result[symbol][state] = []
 
-        for edge in transitions(ta):
+        for edge in iterateEdges(ta):
             childSet = set(edge.children)
             symbol = edge.info.label
             if arities[symbol] == 0:

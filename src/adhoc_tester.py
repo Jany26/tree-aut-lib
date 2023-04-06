@@ -14,8 +14,10 @@ import os
 
 from unfolding import unfold
 from normalization import treeAutNormalize
-from folding import treeAutFolding, getStateWitnessRelation
+from folding import treeAutFolding, createIntersectoid
+from test_data import boxCatalogue
 
+import blif_analysis
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # FOLDING testing
@@ -164,6 +166,8 @@ def canonizeBenchmark(initial: TTreeAut, options: TestOptions):
     foldingLogFile = open(f"{path}/log_folding.txt", 'w')
     foldingLogFile.write(f"INPUT\n\n{normalized_clean}\n\n")
     if options.export_vtf:
+        if not os.path.exists(f"{options.output_path}/vtf/"):
+            os.makedirs(f"{options.output_path}/vtf/")
         names = [
         "00-init", "01-init-X", "02-unfold", "03-unfold-extra", "04-normal",
         "05-normal-clean", "06-fold", "07-fold-trim", "08-unfold-2", "09-unfold-2-extra"
@@ -215,18 +219,18 @@ def canonizeBenchmark(initial: TTreeAut, options: TestOptions):
         "unfolded_2_extra": unfolded_after_extra,
     }
 
-    # names = [
-    #     'init', 'init-X', 'unfold', 'unfold-extra', 'normal', 'normal-clean',
-    #     'fold', 'fold-trim', 'unfold-2', 'unfold-2-extra'
-    # ]
-    # # skip = [1, 2, 3, 4, 6]
+    names = [
+        'init', 'init-X', 'unfold', 'unfold-extra', 'normal', 'normal-clean',
+        'fold', 'fold-trim', 'unfold-2', 'unfold-2-extra'
+    ]
+    skip = [1, 2, 3, 4, 6, 8, 9]
     # skip = []
-    # if options.export_png or options.export_vtf:
-    #     for i, ta in enumerate(result.values()):
-    #         ta.metaData.recompute()
-    #         exportTAtoVTF(ta, f"{path}/{i:02d}-{names[i]}.vtf")
-    #         if i not in skip:
-    #             dot.exportToFile(ta, f"{path}/{i:02d}-{names[i]}")
+    if options.export_png:  # or options.export_vtf:
+        for i, ta in enumerate(result.values()):
+            ta.metaData.recompute()
+            # exportTAtoVTF(ta, f"{path}/{i:02d}-{names[i]}.vtf")
+            if i not in skip:
+                dot.exportToFile(ta, f"{path}/{i:02d}-{names[i]}")
   
     if options.cli:
         print(f"INITIAL\n\n{initial}\n")
@@ -382,7 +386,7 @@ def blifTestC17():
     print("initial =", len(init.getStates()))
     print(init)
     varMapping = {f"{i}": f"{i+1}" for i in range(11)}
-    for edge in transitions(init):
+    for edge in iterateEdges(init):
         if edge.info.variable in varMapping:
             edge.info.variable = varMapping[edge.info.variable]
     results = canonizeBenchmark(init, options)
@@ -417,46 +421,96 @@ def blifTestNodeCounts(path):
     print("total after folding  =", folded_total)
 
 
+
+def isTopDownDeterministic(treeaut: TTreeAut) -> bool:
+    for state in treeaut.getStates():
+        if len(treeaut.transitions[state].values()) > 1:
+            return False
+    return True
+
+def bddIsomorphicCheck(ta1: TTreeAut, ta2: TTreeAut) -> bool:
+    outputs1 = ta1.getOutputEdges(inverse=True)
+    outputs2 = ta2.getOutputEdges(inverse=True)
+    varVis1 = ta1.getVariableVisibilityCache()
+    varVis2 = ta2.getVariableVisibilityCache()
+    def compareNode(ta1: TTreeAut, ta2: TTreeAut, state1: str, state2: str):
+        found1 = state1 in outputs1
+        found2 = state2 in outputs2
+        if found1 or found2:
+            if found1 == found2:
+                return True
+            else:
+                print(f"outputs not agreeing => {state1}, {state2}")
+                return False
+            # return found1 == found2
+        if found1 and found2:
+            if outputs1[state1] != outputs2[state2]:
+                print(f"outputs => {state1}, {state2}")
+                return False
+        if varVis1[state1] != varVis2[state2]:
+            print(f"varvis => {state1}, {state2}")
+            return False
+        
+        for edge1 in ta1.transitions[state1].values():
+            for edge2 in ta2.transitions[state2].values():
+                if len(edge1.children) != len(edge2.children):
+                    print(f"children length => {edge1}, {edge2}")
+                    return False
+                for idx in range(len(edge1.children)):
+                    child1 = edge1.children[idx]
+                    child2 = edge2.children[idx]
+                    if not compareNode(ta1, ta2, child1, child2):
+                        return False
+        return True
+
+    if len(ta1.rootStates) != len(ta2.rootStates) or len(ta1.rootStates) != 1:
+        raise AssertionError("treeAutIsomorphic(): Nondeterminism - rootstates > 1.")
+
+    if not isTopDownDeterministic(ta1):
+        raise AssertionError(f"treeAutIsomorphic(): {ta1.name} is not top-down deterministic")
+    if not isTopDownDeterministic(ta2):
+        raise AssertionError(f"treeAutIsomorphic(): {ta2.name} is not top-down deterministic")
+
+    return compareNode(ta1, ta2, ta1.rootStates[0], ta2.rootStates[0])
+
+
+def isomorphicCheckBLIF():
+    for subdir, dirs, files in os.walk("./results/blif/"):
+        init: TTreeAut = None
+        bdd: TTreeAut = None
+        for file in files:
+            if file.endswith("1-init.vtf"):
+                init = importTAfromVTF(f"{subdir}/{file}")
+            if file.endswith("4-bdd-fold.vtf"):
+                bdd = importTAfromVTF(f"{subdir}/{file}")
+        if init is None or bdd is None:
+            continue
+        isomorphic = bddIsomorphicCheck(init, bdd)
+        # print(subdir, "isomorphic", bddIsomorphicCheck(init, bdd))
+        if not isomorphic:
+            return False
+    return True
+
+def LPort_test():
+    path = "./results/blif/C1355/var558/vtf-4-abdd-short-fold.vtf"
+    test = importTAfromVTF(path)
+    test.reformatStates()
+    folder = "./c1355-558"
+    fold = treeAutFolding(test, ['LPort'], test.getVariableMax(),
+                          export_png=True, export_vtf=False, exportPath=folder)
+    fold = removeUselessStates(fold)
+    dot.exportToFile(test, f"{folder}/init")
+    dot.exportToFile(fold, f"{folder}/fold")
+    print(len(test.getStates()), len(fold.getStates()))
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
-    path = "./tests/blif/C432/C432.iscas.var133.abdd"
-
-    test = abdd.importTAfromABDD(path)
-    test.reformatStates()
-    # leafify(test, 'q5', 0)
-    # test = removeUselessStates(test)
-
-    folder = "./c432-133"
-    options = TestOptions(
-        test.getVariableMax(),
-        folder,
-        cli=False,
-        debug=False,
-        png=False,
+    # LPort_test()
+    blif_analysis.testFoldingOnSubBenchmarks(
+        f"./tests/blif/C432/C432.iscas.var195.abdd",  # import path
+        f"./results/blif-6-4/C432/var195",  # export path
+        rootNum=None  # root
     )
-    options.box_order = ['X']
 
-    # init = importTAfromVTF("./c432-133/vtf/0-initial.vtf")
-    # fold = importTAfromVTF("./c432-133/vtf/3-folded.vtf")
-    # print(init)
-    # print(fold)
-    # init.reformatStates()
-    # fold.reformatStates()
-    # dot.exportToFile(init, "0-init")
-    # dot.exportToFile(fold, "3-fold")
-
-    results = canonizeBenchmark(test, options)
-    print(len(results["initial"].getStates()), len(results["folded_trimmed"].getStates()))
-
-    # exportTAtoVTF(results["initial"], f"{folder}/0-initial.vtf")
-    # exportTAtoVTF(results["initial_extra"], f"{folder}/1-initial_extra.vtf")
-    # exportTAtoVTF(results["normalized_clean"], f"{folder}/2-normal.vtf")
-    # exportTAtoVTF(results["folded_trimmed"], f"{folder}/3-folded.vtf")
-
-    # dot.exportToFile(results["initial"], f"{folder}/0-initial")
-    # dot.exportToFile(results["initial_extra"], f"{folder}/1-initial_extra")
-    # dot.exportToFile(results["normalized_clean"], f"{folder}/2-normal")
-    # dot.exportToFile(results["folded_trimmed"], f"{folder}/3-folded")
-
-    # print(getStateWitnessRelation(importTAfromVTF("./c432-133/0-q1-boxX-q3.vtf")))
 # End of file test.py

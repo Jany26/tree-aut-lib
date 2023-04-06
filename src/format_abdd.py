@@ -76,11 +76,11 @@ def exportTAtoABDD(ta: TTreeAut, filePath: str, name="", comments=False):
     file = open(filePath, 'w')
     ABDDpreamble(taCopy, file, name)
     edgeStringMaxLen = 0
-    for edge in transitions(taCopy):
+    for edge in iterateEdges(taCopy):
         edgeLen = len(ABDDtransition(taCopy, edge))
         if edgeStringMaxLen < edgeLen:
             edgeStringMaxLen = edgeLen
-    for state in iterateBFS(taCopy):
+    for state in iterateStatesBFS(taCopy):
         for edge in taCopy.transitions[state].values():
             edgeString = ABDDtransition(taCopy, edge)
             file.write(edgeString)

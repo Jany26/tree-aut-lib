@@ -453,7 +453,7 @@ def addDontCareBoxes(ta: TTreeAut, vars: int) -> TTreeAut:
     counter = 0
     skippedVarEdges = []
     varPrefix = ta.getVariablePrefix()
-    for edge in transitions(result):
+    for edge in iterateEdges(result):
         if edge.isSelfLoop():
             continue
         for idx, child in enumerate(edge.children):

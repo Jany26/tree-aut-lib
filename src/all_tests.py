@@ -1220,7 +1220,7 @@ def foldingTests():
         taFold.reformatStates()
         boxes = 0
         edges = 0
-        for edge in transitions(taFold):
+        for edge in iterateEdges(taFold):
             edges += 1
             for box in edge.info.boxArray:
                 if box is not None and box != "_":

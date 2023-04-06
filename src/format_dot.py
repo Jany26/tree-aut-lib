@@ -144,7 +144,7 @@ def exportTreeAutToDOT(ta: TTreeAut, fileName: str):
     file.write("digraph G {\n")
     allStatesHandle(ta, file)
     rootHandle(ta.rootStates, file)
-    for edge in transitions(ta):
+    for edge in iterateEdges(ta):
         edgeHandle(edge, file, debug=False)
     file.write("}\n")
     file.close()

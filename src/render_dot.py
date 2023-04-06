@@ -149,6 +149,9 @@ def DOTtransitionHandle(graph, edge: TTransition, key: str, verbose=False):
                 boxName = edge.info.boxArray[curr_box].name
             if boxName.startswith("box"):
                 boxName = boxName[len("box"):]
+            if boxName.endswith("Port"):
+                boxName = boxName[:-4]
+                boxName += "⊕"
             edgeLabel += f": {boxName}"
 
         # box handling (mapping more children to one edge (portArity > 1))

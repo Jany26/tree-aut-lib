@@ -249,7 +249,7 @@ class TTreeAut:
             ) + '\n'
 
         # printing edges
-        for state in iterateBFS(self):
+        for state in iterateStatesBFS(self):
             for k, e in self.transitions[state].items():
                 # note = " <<< LEAF TRANSITION >>>" if e.children == [] else ""
                 # result += f"  > {e.src} -- {e.info} --> {e.children}{note}\n"
@@ -328,7 +328,7 @@ class TTreeAut:
     # from which the transitions with the specific symbol originate
     def getOutputEdges(self, inverse=False) -> dict:
         result = {}
-        for edge in transitions(self):
+        for edge in iterateEdges(self):
             if len(edge.children) == 0:
                 if inverse:
                     if edge.src not in result:
@@ -400,7 +400,7 @@ class TTreeAut:
             'x1' - returns 'x'
             'var5ta01 - returns 'var5ta'
         """
-        for edge in transitions(self):
+        for edge in iterateEdges(self):
             if edge.info.variable != "":
                 prefixLen = 0
                 for i in range(len(edge.info.variable)):
@@ -411,7 +411,7 @@ class TTreeAut:
 
     def countEdges(self):
         counter = 0
-        for _ in transitions(self):
+        for _ in iterateEdges(self):
             counter += 1
         return counter
 
@@ -422,7 +422,7 @@ class TTreeAut:
     # are lists of states. e.g. {'x1': {'q0'}, 'x2': {'q0'}, 'x5': {'q1'}}
     def getVariableVisibility(self, reverse=False) -> dict:
         result: dict[str, set] = {}
-        for edge in transitions(self):
+        for edge in iterateEdges(self):
             if edge.info.variable == "":
                 continue
             lookup = edge.info.variable if reverse else edge.src
@@ -432,11 +432,22 @@ class TTreeAut:
             result[lookup].add(value)
         return result
 
+    # Works similarly to getVariableVisibility(), but instead assigns only one
+    # variable to each state (assumes 'determinism' wrt. variable visibility)
+    def getVariableVisibilityCache(self) -> dict:
+        result: dict[str, int] = {}
+        prefix = len(self.getVariablePrefix())
+        for state in self.getStates():
+            for edge in self.transitions[state].values():
+                if edge.info.variable != "":
+                    result[state] = int(edge.info.variable[prefix:])
+        return result
+
     # for testing purposes (normalization checking -> sorted var occurence)
     def getVariableOccurence(self, sorted=True) -> list:
         prefixLen = len(self.getVariablePrefix())
         result = []
-        for edge in transitions(self):
+        for edge in iterateEdges(self):
             if edge.info.variable == "":
                 continue
             var: int = int(edge.info.variable[prefixLen:])
@@ -448,7 +459,7 @@ class TTreeAut:
     def getVariableMax(self) -> int:
         maxVar = 0
         prefixLen = len(self.getVariablePrefix())
-        for edge in transitions(self):
+        for edge in iterateEdges(self):
             if edge.info.variable != "":
                 var = int(edge.info.variable[prefixLen:])
                 maxVar = max(maxVar, var)
@@ -539,7 +550,7 @@ class TTreeAut:
         self.transitions[newName] = self.transitions.pop(oldName)
 
         # renaming name of the state inside transitions (2nd layer)
-        for edge in transitions(self):
+        for edge in iterateEdges(self):
             if edge.src == oldName:
                 edge.src = str(newName)
             # renaming state name inside the children array (3rd layer)
@@ -574,7 +585,7 @@ class TTreeAut:
     def reformatStates(self, prefix='q', startFrom=0, verbose=False):
         temp = {}
         i = startFrom
-        for state in iterateBFS(self):
+        for state in iterateStatesBFS(self):
             if state not in temp:
                 temp[state] = i
                 i += 1
@@ -585,14 +596,14 @@ class TTreeAut:
 
     def reformatKeys(self, prefix='k'):  # k as in 'key'
         counter: int = self.countEdges() + 2  # for no collisions
-        for state in iterateBFS(self):
+        for state in iterateStatesBFS(self):
             swap = [key for key in self.transitions[state].keys()]
             for oldKey in swap:
                 newKey = counter
                 counter += 1
                 self.transitions[state][newKey] = self.transitions[state].pop(oldKey)
         counter = 1
-        for state in iterateBFS(self):
+        for state in iterateStatesBFS(self):
             swap = [key for key in self.transitions[state].keys()]
             for oldKey in swap:
                 newKey = f"{prefix}{counter}"
@@ -601,7 +612,7 @@ class TTreeAut:
 
     def checkVariableType(self):
         varType = type("")
-        for edge in transitions(self):
+        for edge in iterateEdges(self):
             if type(edge.info.variable) != varType:
                 return False
         return True
@@ -703,33 +714,37 @@ class TTreeAut:
 
 # custom iterator - yields only edges (no keys)
 #  for cleaner code
-def transitions(obj) -> TTransition:
+def iterateEdges(obj) -> TTransition:
     dictObj = obj
     if isinstance(obj, TTreeAut):
         dictObj = obj.transitions
 
     for innerObj in dictObj.values():
         if isinstance(innerObj, dict):
-            for edge in transitions(innerObj):
+            for edge in iterateEdges(innerObj):
                 yield edge
         else:
             yield innerObj
 
 
-# def transitionsWithKeys(obj):
-#     dictObj = obj
-#     if isinstance(obj, TTreeAut):
-#         dictObj = obj.transitions
+def iterateKeyEdgePairs(obj) -> tuple[str, TTransition]:
+    if not isinstance(obj, TTreeAut):
+        raise ValueError("transitionsWithKeys can only work with TTreeAut.")
 
-#     for key, innerObj in dictObj.items():
-#         if isinstance(innerObj, dict):
-#             for edge in transitionsWithKeys(innerObj):
-#                 yield key, edge
-#         else:
-#             yield innerObj
+    for edgeDict in obj.transitions.values():
+        for key, edge in edgeDict.items():
+            yield key, edge
 
 
-def transitionsFrom(obj, state):
+def iterateKeys(obj) -> str:
+    if not isinstance(obj, TTreeAut):
+        raise ValueError("iterateKeys can only work with TTreeAut.")
+    for edgeDict in obj.transitions.values():
+        for key in edgeDict.keys():
+            yield key
+
+
+def iterateEdgesFromState(obj, state):
     dictObj = obj
     if isinstance(obj, TTreeAut):
         for edge in dictObj.transitions[state].values():
@@ -737,7 +752,7 @@ def transitionsFrom(obj, state):
 
 
 # Depth-first search iterator over states of a tree automaton
-def iterateDFS(ta: TTreeAut):
+def iterateStatesDFS(ta: TTreeAut):
     stack = [root for root in ta.rootStates]
     stack.reverse()
     visited = set()
@@ -754,7 +769,7 @@ def iterateDFS(ta: TTreeAut):
 
 
 # Breadth-first search iterator over states of a tree automaton
-def iterateBFS(ta: TTreeAut):
+def iterateStatesBFS(ta: TTreeAut):
     queue = [root for root in ta.rootStates]
     visited = set()
     while queue:
@@ -767,6 +782,7 @@ def iterateBFS(ta: TTreeAut):
             for child in edge.children:
                 if child not in visited:
                     queue.append(child)
+
 
 class TTreeAutMetaData:
     """Contains string lengths for tidy formatting (tables, etc.).

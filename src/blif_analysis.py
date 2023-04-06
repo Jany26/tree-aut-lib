@@ -123,10 +123,10 @@ def getAllNodeCounts(filePath: str) -> dict:
     for treeaut in treeauts:
         # originalRoots = [r for r in treeaut.rootStates]
         subtreeSizes: dict[str, int] = {}
-        for state in self.iterateBFS(treeaut):
+        for state in self.iterateStatesBFS(treeaut):
             treeaut.rootStates = [state]
             reachableStates = set()
-            for s in self.iterateBFS(treeaut):
+            for s in self.iterateStatesBFS(treeaut):
                 reachableStates.add(s)
             # subtreeSizes[state] = len(reachableStates)
             subtreeSizes[state] = len(reachableStates)
@@ -182,14 +182,6 @@ def exportSubBlifs(filePath):
         abdd.exportTAtoABDD(treeaut, f"./tests/blif/subfiles/{treeaut.name}")
 
 
-def relabelVars(treeaut: TTreeAut):
-    mapping = {}
-    # for edge in transitions(ta):
-    #     if edge.
-    vars = treeaut.getVariableOrder()
-    print(vars)
-
-
 def removeUselessStatesTD(ta: TTreeAut) -> TTreeAut:
     workTA = copy.deepcopy(ta)
     # reachableStatesBU = reachableBU(workTA)
@@ -210,8 +202,6 @@ def testFoldingOnSubBenchmarks(path, export, rootNum=None):
     
     initial.reformatKeys()
     initial.reformatStates()
-    # relabelVars(initial)
-    # exit()
     vars = int(initial.getVariableOrder()[-1])
     initialChanged = addDontCareBoxes(initial, vars)
     # print("unfolding")
@@ -227,8 +217,6 @@ def testFoldingOnSubBenchmarks(path, export, rootNum=None):
     computeAdditionalVariables(normalized_clean, vars+2)
     normalized.metaData.recompute()
     normalized_clean.metaData.recompute()
-    print(f"{initial.name}\t| {len(initial.getStates())}\t| {len(normalized_clean.getStates())}", end='')
-
     result = {
         "initial": initial,
         "initial_extra": initialChanged,
@@ -238,23 +226,29 @@ def testFoldingOnSubBenchmarks(path, export, rootNum=None):
         "normalized_clean": normalized_clean
     }
 
-    exportTAtoVTF(result["initial"], f"{export}/vtf-1-init.vtf")
-    exportTAtoVTF(result["unfolded_extra"], f"{export}/vtf-2-unfold.vtf")
-    exportTAtoVTF(result["normalized_clean"], f"{export}/vtf-3-normal.vtf")
-    dot.exportToFile(result["initial"], f"{export}/1-init")
-    # dot.exportToFile(result["unfolded"], f"{export}/2-unfold")
-    dot.exportToFile(result["normalized_clean"], f"{export}/3-normal")
-    nums = []
+    # print("init", len(initial.getStates()))
+    # print("norm", len(normalized_clean.getStates()))
+
+    # exportTAtoVTF(result["initial"], f"{export}/vtf-1-init.vtf")
+    # exportTAtoVTF(result["unfolded_extra"], f"{export}/vtf-2-unfold.vtf")
+    # exportTAtoVTF(result["normalized_clean"], f"{export}/vtf-3-normal.vtf")
+    # dot.exportToFile(result["initial"], f"{export}/1-init")
+    # # dot.exportToFile(result["unfolded"], f"{export}/2-unfold")
+    # dot.exportToFile(result["normalized_clean"], f"{export}/3-normal")
+
+    nums = [len(initial.getStates()), len(normalized_clean.getStates())]
     for name, boxorder in boxOrders.items():
         folded = treeAutFolding(normalized_clean, boxorder, vars+1)
         folded_trimmed = removeUselessStates(folded)
         nums.append(len(folded_trimmed.getStates()))
-        # dot.exportToFile(folded, f"{export}/4-{name}-folded")
-        exportTAtoVTF(folded_trimmed, f"{export}/vtf-4-{name}-fold.vtf")
-        dot.exportToFile(folded_trimmed, f"{export}/4-{name}-fold")
+        # print(name, len(folded_trimmed.getStates()))
+        # # dot.exportToFile(folded, f"{export}/4-{name}-folded")
+        # exportTAtoVTF(folded_trimmed, f"{export}/vtf-4-{name}-fold.vtf")
+        # dot.exportToFile(folded_trimmed, f"{export}/4-{name}-fold")
+    result_print = f"{initial.name}"
     for num in nums:
-        print(f"\t| {num}", end='')
-    print()
+        result_print += f"\t| {num}"
+    print(result_print)
     return result
 
 
@@ -267,15 +261,17 @@ if __name__ == "__main__":
     # C432.iscas.var133, 75,  1607
     # C432.iscas.var84,  20,  517
     report = open("./tests/blif/report.txt", "r")
-    print("name of the benchmark\t| init\t| norm\t| bdd\t| zdd\t| esr\t| abdd\t| esr2\t|")
+
+    report_line = "name of the benchmark\t| init\t| norm"
+    for orderName in boxOrders.keys():
+        report_line += f"\t| {orderName}"
+    print(report_line)
     for line in report:
         # if not (line.startswith("C1908") or line.startswith("C1355")):
         #     continue
         # if line.startswith('#') or line == "" or line.startswith("C432"):
         #     continue
         if line.startswith('#') or line == "":
-            continue
-        if line.startswith("C432"):
             continue
         # if not line.startswith("C1908.iscas.var912"):
         #     continue
@@ -289,7 +285,8 @@ if __name__ == "__main__":
         testFoldingOnSubBenchmarks(
             f"./tests/blif/{benchmark}/{name}.abdd",  # import path
             f"./results/blif/{benchmark}/{varname}",  # export path
-            rootNum=root  # root
+            # rootNum=None  # root
+            rootNum=root
         )
 
 

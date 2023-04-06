@@ -1,0 +1,16 @@
+@NTA
+# Automaton folding-test-2-ta
+# testing multiport (LPort box) boxes
+%Root q0
+
+q0 LH <0> ( q1 q3 )
+q1 LH <1> ( qi qs )
+q3 LH <1> ( qs q4 )
+q4 LH <2> ( qs q5 )
+q5 LH <3> ( qs qi )
+qs LH ( qs qs )
+qi LH ( qi qi )
+qs LH <4> ( 0 1 )
+qi LH <4> ( 1 0 )
+0 0 ()
+1 1 ()

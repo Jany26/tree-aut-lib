@@ -9,7 +9,7 @@ from test_data import *
 def findPortStates(ta: TTreeAut):
     # {portName: stateName}
     result = {}
-    for edge in transitions(ta):
+    for edge in iterateEdges(ta):
         label: str = edge.info.label
         if label.startswith("Port") and label not in result:
             result[label] = edge.src
@@ -133,7 +133,7 @@ def fixKeys(ta: TTreeAut):
 # This function checks if there are any boxes in the tree automaton (UBDA),
 # if no boxes are found, the UBDA is unfolded. For testing purposes.
 def isUnfolded(ta: TTreeAut) -> bool:
-    for edge in transitions(ta):
+    for edge in iterateEdges(ta):
         for box in edge.info.boxArray:
             if box is not None:
                 eprint(f"isUnfolded[ {ta.name} ]: found a box: {edge}")
@@ -142,7 +142,7 @@ def isUnfolded(ta: TTreeAut) -> bool:
 
 
 def stringifyBoxes(ta: TTreeAut):
-    for edge in transitions(ta):
+    for edge in iterateEdges(ta):
         newArray = []
         for box in edge.info.boxArray:
             if box is None:

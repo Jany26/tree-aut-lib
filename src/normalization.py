@@ -218,7 +218,7 @@ def procTransitions(data: NormalizationHelper, childrenStates: list):
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     tr = []
-    for edge in transitions(data.treeaut):
+    for edge in iterateEdges(data.treeaut):
         if len(edge.children) != len(childrenStates):
             continue
         childsAreInMacroStates = True
@@ -563,7 +563,7 @@ def treeAutNormalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TT
 def removeBadTransitions(ta: TTreeAut, vars: list, norm):
     varIndex = {j: i for i, j in enumerate(vars, start=1)}
     maxVarCache = {}
-    for edge in transitions(ta):
+    for edge in iterateEdges(ta):
         if edge.info.variable == "":
             continue
         if (

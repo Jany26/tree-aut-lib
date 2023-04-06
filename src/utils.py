@@ -8,10 +8,10 @@ boxOrder = ['L0', 'L1', 'H0', 'H1', 'LPort', 'HPort']
 boxOrders = {
     "bdd": ['X'],
     "zdd": ['H0'],
-    "esrbdd": ['L0', 'H0', 'X'],
-    "esrbdd2": ['L1', 'H1', 'X'],
-    "abdd-short": ['L0', 'H0', 'L1', 'H1', 'X'],
-    "abdd-full": ['L0', 'H0', 'L1', 'H1', 'LPort', 'HPort', 'X'],
+    "esr": ['L0', 'H0', 'X'],
+    # "esr2": ['L1', 'H1', 'X'],
+    # "abdd": ['L0', 'H0', 'L1', 'H1', 'X'],
+    "full": ['L0', 'H0', 'L1', 'H1', 'X', 'LPort', 'HPort'],
 }
 
 def eprint(*args, **kwargs):

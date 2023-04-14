@@ -582,17 +582,33 @@ class TTreeAut:
 
     # Creates a better readable state names for more clear images (DOT).
     # Useful after unfolding, determinization/normalization, etc.
-    def reformatStates(self, prefix='q', startFrom=0, verbose=False):
-        temp = {}
+    def reformatStates(self, prefix='q', startFrom=0):
+        temp = {}  # state -> idx
         i = startFrom
-        for state in iterateStatesBFS(self):
+        for state in self.getStates():
             if state not in temp:
                 temp[state] = i
                 i += 1
-        for state, idx in temp.items():
-            self.renameState(state, f"temporaryName{idx}")
-        for idx in temp.values():
-            self.renameState(f"temporaryName{idx}", f"{prefix}{idx}")
+        # old version:
+        # for state, idx in temp.items():
+        #     self.renameState(state, f"temporaryName{idx}")
+        # for idx in temp.values():
+        #     self.renameState(f"temporaryName{idx}", f"{prefix}{idx}")
+
+        # optimized version:
+        newRoots = []
+        for root in self.rootStates:
+            newRoots.append(f"{prefix}{temp[root]}")
+        self.rootStates = newRoots
+        newTransitions = {}
+        for state, edgeDict in self.transitions.items():
+            newTransitions[f"{prefix}{temp[state]}"] = edgeDict
+        self.transitions = newTransitions
+        for edge in iterateEdges(self):
+            edge.src = f"{prefix}{temp[edge.src]}"
+            for i in range(len(edge.children)):
+                edge.children[i] = f"{prefix}{temp[edge.children[i]]}"
+
 
     def reformatKeys(self, prefix='k'):  # k as in 'key'
         counter: int = self.countEdges() + 2  # for no collisions

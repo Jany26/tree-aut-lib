@@ -134,44 +134,51 @@ def getAllNodeCounts(filePath: str) -> dict:
         result[treeaut.name] = subtreeSizes
     return result
         
-def printSubtrees(benchmarks: list):
+def printSubtrees(filePath, reportPath):
     files = []
-    for num in benchmarks:
-        # path = f"./tests/blif/C{num}.blif"
-        report = open(f"./tests/blif/reports/C{num}.txt", 'w')
-        path = f"../cpp/benchmarks/C{num}.abdd"
-        results = getAllNodeCounts(path)
-        for taName, taResults in results.items():
-            report.write(f"{taName}")
-            # print(f"{taName} -> full node count = ")
-            sorter: set[int] = set()
-            temp: dict[int, list[str]] = {}
-            for state, nodeCount in taResults.items():
-                if nodeCount not in temp:
-                    temp[nodeCount] = []
-                sorter.add(nodeCount)
-                temp[nodeCount].append(state)
-            sorter = list(sorter)
-            sorter.sort()
-            # max = 0
-            # print(sorter)
-            # report.write(f"{sorter[-1]}\n")
-            found = False
-            for nc in sorter:
-                # max = nc
-                if nc < 100:
-                    continue
-                if not found and nc >= 100 and nc <= 300:
-                    found = True
-                    report.write(f";{nc};{temp[nc][0]}\n")
-            if not found:
-                report.write(f";{sorter[-1]};{temp[nc][0]}\n")
-            # if max <= 300:
-            #     report.write(f"  > {max} : {len(temp[max])} states = {temp[max][:5]}\n")
-        # report.close()
+    report = open(f"{reportPath}", 'w')
+    path = f"{filePath}"
+    results = getAllNodeCounts(path)
+    for taName, taResults in results.items():
+        report.write(f"{taName}\n")
+        # print(f"{taName} -> full node count = ")
+        sorter: set[int] = set()
+        temp: dict[int, list[str]] = {}
+        for state, nodeCount in taResults.items():
+            if nodeCount not in temp:
+                temp[nodeCount] = []
+            sorter.add(nodeCount)
+            temp[nodeCount].append(state)
+        sorter = list(sorter)
+        sorter.sort()
+        max = sorter[-1]
+        # found = False
+        for nc in sorter:
+            if nc < 100:
+                continue
+            if len(temp[nc]) <= 10:
+                report.write(f"{nc};{temp[nc]}\n")
+            else:
+                report.write(f"{nc};{temp[nc][0::10]}\n")
+        # if not found:
+        #     report.write(f"{sorter[-1]};{temp[nc]}\n")
+    report.close()
+    if max < 100:
+        os.remove(reportPath)
 
 benchmarks = [432, 499, 880, 1355, 1908]
 # benchmarks = [432, 499, 880, 1355, 1908, 2670, 3540, 5315, 6288, 7552]
+
+def countBoxesOnEdges(treeaut: TTreeAut):
+    result = {}
+    for edge in iterateEdges(treeaut):
+        for box in edge.info.boxArray:
+            if box is None:
+                continue
+            if box not in result:
+                result[box] = 0
+            result[box] += 1
+    return result
 
 
 def exportSubBlifs(filePath):
@@ -182,35 +189,30 @@ def exportSubBlifs(filePath):
         abdd.exportTAtoABDD(treeaut, f"./tests/blif/subfiles/{treeaut.name}")
 
 
-def removeUselessStatesTD(ta: TTreeAut) -> TTreeAut:
-    workTA = copy.deepcopy(ta)
-    # reachableStatesBU = reachableBU(workTA)
-    # workTA.shrinkTA(reachableStatesBU)
-    reachableStatesTD = reachableTD(workTA)
-    workTA.shrinkTA(reachableStatesTD)
-    return workTA
-
-
 def testFoldingOnSubBenchmarks(path, export, rootNum=None):
     # boxesOrder = boxOrder if "box_order" not in opt else boxOrders[opt["box_order"]]
     if not os.path.exists(export):
         os.makedirs(export)
+    print(f"importing...", end='\r')
     initial = abdd.importTAfromABDD(path)
     if rootNum is not None:
+        print(f"trimming...", end='\r')
         initial.rootStates = [f"{rootNum}"]
         initial = removeUselessStatesTD(initial)
-    
-    initial.reformatKeys()
-    initial.reformatStates()
+
+    # initial.reformatKeys()
+    # initial.reformatStates()
     vars = int(initial.getVariableOrder()[-1])
     initialChanged = addDontCareBoxes(initial, vars)
-    # print("unfolding")
+    print(f"unfolding...", end='\r')
     unfolded = unfold(initialChanged)
+
     unfolded_extra = copy.deepcopy(unfolded)
     computeAdditionalVariables(unfolded_extra, vars)
     var_order = createVarOrder('', vars+2, start=0)
-    # print("normalizing")
+    print(f"normalizing...", end='\r')
     normalized = treeAutNormalize(unfolded_extra, var_order)
+    print(f"reformatting...", end='\r')
     normalized_clean = copy.deepcopy(normalized)
     normalized_clean.reformatKeys()
     normalized_clean.reformatStates()
@@ -226,6 +228,11 @@ def testFoldingOnSubBenchmarks(path, export, rootNum=None):
         "normalized_clean": normalized_clean
     }
 
+    # exportTAtoVTF()
+    vtfPath = path.split('/')[-1]
+    if not os.path.exists("./results/normalized-blif/"):
+        os.makedirs("./results/normalized-blif/")
+    exportTAtoVTF(result["normalized_clean"], f"./results/normalized-blif/{vtfPath}.vtf")
     # print("init", len(initial.getStates()))
     # print("norm", len(normalized_clean.getStates()))
 
@@ -236,11 +243,20 @@ def testFoldingOnSubBenchmarks(path, export, rootNum=None):
     # # dot.exportToFile(result["unfolded"], f"{export}/2-unfold")
     # dot.exportToFile(result["normalized_clean"], f"{export}/3-normal")
 
-    nums = [len(initial.getStates()), len(normalized_clean.getStates())]
+    nums = [len(initial.getStates()), len(unfolded.getStates()), len(normalized_clean.getStates())]
     for name, boxorder in boxOrders.items():
+        # if name != 'full':
+        #     continue
+        print(f"{name}-fold.....", end='\r')
         folded = treeAutFolding(normalized_clean, boxorder, vars+1)
-        folded_trimmed = removeUselessStates(folded)
-        nums.append(len(folded_trimmed.getStates()))
+        # folded_trimmed = removeUselessStates(folded)
+        # nums.append(len(folded_trimmed.getStates()))
+        nodeCount = len(reachableTD(folded))
+        nums.append(nodeCount)
+        # print(f"{name} - {nodeCount}")
+        # if name == "full":
+            # print(countBoxesOnEdges(folded))
+            # exportToFile(removeUselessStatesTD(folded), "./results/temp/c432-84-2")
         # print(name, len(folded_trimmed.getStates()))
         # # dot.exportToFile(folded, f"{export}/4-{name}-folded")
         # exportTAtoVTF(folded_trimmed, f"{export}/vtf-4-{name}-fold.vtf")
@@ -252,29 +268,18 @@ def testFoldingOnSubBenchmarks(path, export, rootNum=None):
     return result
 
 
-if __name__ == "__main__":
-    # C432.iscas.var195, 100, 17170
-    # C432.iscas.var194, 100, 16269
-    # C432.iscas.var193, 101, 15336
-    # C432.iscas.var188, 120, 12114
-    # C432.iscas.var163, 100, 4875
-    # C432.iscas.var133, 75,  1607
-    # C432.iscas.var84,  20,  517
-    report = open("./tests/blif/report.txt", "r")
+def foldingTest():
+    report = open("./results/blif-reports/report.txt", "r")
 
-    report_line = "name of the benchmark\t| init\t| norm"
+    report_line = "name of the benchmark\t| init\t| unfo\t| norm"
     for orderName in boxOrders.keys():
         report_line += f"\t| {orderName}"
     print(report_line)
     for line in report:
-        # if not (line.startswith("C1908") or line.startswith("C1355")):
-        #     continue
-        # if line.startswith('#') or line == "" or line.startswith("C432"):
+        # if (line.startswith("C432")):
         #     continue
         if line.startswith('#') or line == "":
             continue
-        # if not line.startswith("C1908.iscas.var912"):
-        #     continue
         data = line.strip().split(';')
         name = data[0]
         nameData = name.split('.')
@@ -290,3 +295,18 @@ if __name__ == "__main__":
         )
 
 
+def analyzeNodeCounts():
+    benchmarks = [432, 499, 880, 1355, 1908]
+    if not os.path.exists('./results/blif-reports/'):
+        os.makedirs('./results/blif-reports/')
+    for num in benchmarks:
+        for subdir, dirs, files in os.walk(f"./tests/blif/C{num}"):
+            for file in files:
+                reportPath = f"'./results/blif-reports/{file.replace('.abdd', '.txt')}"
+                printSubtrees(f"{subdir}/{file}", reportPath)
+
+
+if __name__ == "__main__":
+    # analyzeNodeCounts()
+    foldingTest()
+        

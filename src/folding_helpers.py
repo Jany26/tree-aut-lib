@@ -45,6 +45,7 @@ class FoldingHelper:
         self.stateMap = {}
         self.counter = 0
         self.counter2 = 0
+        self.reach: dict[str, set] = getAllStateReachability(ta, reflexive=False)
 
         # export/debug options
         self.intersectoids = []
@@ -56,7 +57,7 @@ class FoldingHelper:
 
 
     def __repr__(self):
-        result = "FoldingHelper:\n"
+        result = "[FoldingHelper]\n"
         srcLen = 0
         keyLen = 0
         childLen = 0
@@ -70,6 +71,11 @@ class FoldingHelper:
                 result += "%-*s -> %-*s : %-*s : %s\n" % (
                     srcLen, state, childLen, childStr, keyLen, key, edge
                 )
+        result += f"minvar = {self.minVar}, maxvar = {self.maxVar}\n"
+        result += f"keycounter = {self.keyCounter}, counter = {self.counter}, counter2 = {self.counter2}\n"
+        result += f"statemap = {self.stateMap}\n"
+        # result += f"{}\n"
+        # result += f"{}\n"
         return result
 
     def write(self, s):

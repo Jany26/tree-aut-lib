@@ -112,7 +112,7 @@ def createIntersectoid(
     return result
 
 
-def intersectoidReachability(ta: TTreeAut) -> list:
+def intersectoidReachability(ta: TTreeAut, varVis) -> list:
     def intersectoidTupleGen(state: str, parents: list, varVis: dict) -> list:
         possibilites = product(parents, repeat=2)
         result = []
@@ -125,11 +125,11 @@ def intersectoidReachability(ta: TTreeAut) -> list:
             result.append(list(k))
         return result
 
-    try:
-        varVis = ta.getVariableVisibilityCache()
-    except:
-        return []
-    ta.getVariableVisibility()
+    # try:
+    # varVis = ta.getVariableVisibilityCache()
+    # except:
+    #     return []
+    # ta.getVariableVisibility()
 
     copyta = copy.deepcopy(ta)
     copyta.reformatKeys()
@@ -165,31 +165,24 @@ def intersectoidReachability(ta: TTreeAut) -> list:
         copyta.transitions[src].pop(key)
 
     copyta = removeUselessStates(copyta)
-    workList = copyta.getOutputStates()
-    result = copyta.getOutputStates()
-    doneTuples = set()
-    while len(workList) > 0:
-        state = workList.pop(0)
-        tuples = intersectoidTupleGen(state, result, varVis)
-        # print("  > tuples =", tuples)
-        for i in tuples:
-            # if str(i) in doneTuples:
-            #     print("  > DUPLICATE ! =", str(i))
-            doneTuples.add(str(i))
-        # print("  > tuples =", tuples)
-
-        for edge in iterateEdges(copyta):
-            if len(edge.children) == 0:
-                continue
-            if edge.children not in tuples:
-                continue
-            if edge.src not in result:
-                workList.append(edge.src)
-                result.append(edge.src)  # similarly for dictionary
-    #             print('  > result +=', edge.src)
-    # print("> final reachability =", result)
-    # exit()
-    return result
+    return reachableBU(copyta)
+    # workList = copyta.getOutputStates()
+    # result = copyta.getOutputStates()
+    # doneTuples = set()
+    # while len(workList) > 0:
+    #     state = workList.pop(0)
+    #     tuples = intersectoidTupleGen(state, result, varVis)
+    #     for i in tuples:
+    #         doneTuples.add(str(i))
+    #     for edge in iterateEdges(copyta):
+    #         if len(edge.children) == 0:
+    #             continue
+    #         if edge.children not in tuples:
+    #             continue
+    #         if edge.src not in result:
+    #             workList.append(edge.src)
+    #             result.append(edge.src)
+    # return result
 
 
 def addVariablesRecursive(treeaut: TTreeAut, helper: FoldingHelper):

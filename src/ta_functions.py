@@ -753,6 +753,15 @@ def removeUselessStates(ta: TTreeAut) -> TTreeAut:
     return workTA
 
 
+def removeUselessStatesTD(ta: TTreeAut) -> TTreeAut:
+    workTA = copy.deepcopy(ta)
+    reachableStatesTD = set(reachableTD(workTA))
+    unreachableStatesTD = set(i for i in workTA.getStates() if i not in reachableStatesTD)
+    for i in unreachableStatesTD:
+        workTA.transitions.pop(i)        
+    return workTA
+
+
 def getAllStateReachability(ta: TTreeAut, reflexive=False) -> dict:
     originalRoots = [i for i in ta.rootStates]
     result = {}

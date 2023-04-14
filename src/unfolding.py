@@ -114,7 +114,7 @@ def unfold(ta: TTreeAut, reformat=True) -> TTreeAut:
     if reformat is True:
         result.reformatStates()
         result.reformatKeys()
-    result = removeUselessStates(result)
+    result = removeUselessStatesTD(result)
     return result
 
 

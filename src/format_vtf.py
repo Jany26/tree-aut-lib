@@ -8,6 +8,7 @@
 from ta_functions import *
 import re
 import os
+# from test_data import boxCatalogue
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS
@@ -130,6 +131,21 @@ def consistencyCheck(data: list, allStates: list, arityDict: dict):
             raise Exception(f"consistencyCheck(): child state '{i}' not in preamble")
 
 
+# def checkChildrenArity(edge: TTransition, arityDict: dict):
+#     # NOTE: cannot be used - cyclical dependencies of initial boxCatalogue imports
+#     arity = arityDict[edge.info.label]
+#     boxPortCount = 0
+#     boxCount = 0
+#     for box in edge.info.boxArray:
+#         boxCount += 1
+#         boxPortCount += boxCatalogue[box].portArity if box is not None else 1
+#     if boxCount != arity:
+#         return False
+#     if boxPortCount != len(edge.children):
+#         return False
+#     return True
+
+
 def consistencyCheckVTF(edges, states, arities, verbose=False) -> bool:
     # print(states)
     for stateName, edgeDict in edges.items():
@@ -144,6 +160,7 @@ def consistencyCheckVTF(edges, states, arities, verbose=False) -> bool:
                 edge.src not in states
                 or edge.info.label not in arities
                 or len(edge.children) != int(arities[edge.info.label])
+                # or not checkChildrenArity(edge, arities)
             ):
                 if verbose:
                     if edge.src not in states:

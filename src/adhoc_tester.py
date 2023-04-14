@@ -504,13 +504,51 @@ def LPort_test():
     print(len(test.getStates()), len(fold.getStates()))
 
 
+def popUnreachable(treeaut: TTreeAut) -> TTreeAut:
+    result = copy.deepcopy(treeaut)
+    popStates = []
+    reachable = set(reachableTD(result))
+    # for state in reachableTD(result):
+    for state in result.getStates():
+        if state not in reachable:
+            popStates.append(state)
+    for state in popStates:
+        result.transitions.pop(state)
+    return result
+
+
+def printBoxedEdges(ta: TTreeAut):
+    for edge in iterateEdges(ta):
+        foundbox = False
+        for box in edge.info.boxArray:
+            if box is not None:
+                foundbox = True
+        if foundbox:
+            print(edge)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
     # LPort_test()
-    blif_analysis.testFoldingOnSubBenchmarks(
-        f"./tests/blif/C432/C432.iscas.var195.abdd",  # import path
-        f"./results/blif-6-4/C432/var195",  # export path
-        rootNum=None  # root
-    )
+    # blif_analysis.testFoldingOnSubBenchmarks(
+    #     f"./tests/blif/C432/C432.iscas.var195.abdd",  # import path
+    #     f"./results/blif-6-4/C432/var195",  # export path
+    #     rootNum=None  # root
+    # )
+    # test = importTAfromVTF(f"./temp/ubda.vtf")
+    # # print(test)
+    # result = treeAutFolding(test, ['HPort'], test.getVariableMax())
+    # print(len(result.getStates()))
+    # popUnreachable(result)
+    # print(len(result.getStates()))
+    # ta = abdd.importTAfromABDD(f"./tests/blif/C432/C432.iscas.var84.abdd")
+    # print(ta)
+    ta = importTAfromVTF("./results/blif/C432/var84/vtf-3-normal.vtf")
+    dot.exportToFile(ta, "./results/temp/normal")
+    fold = treeAutFolding(ta, ['H0'], ta.getVariableMax(), export_png=True, exportPath="./results/temp/")
+    fold = removeUselessStates(fold)
+    dot.exportToFile(fold, "./results/temp/zdd-fold")
+    printBoxedEdges(fold)
+    # ta.reformatStates()
+
+    # print(ta)
 
 # End of file test.py

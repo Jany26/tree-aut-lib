@@ -1,0 +1,16 @@
+Ops LH:2 Port_HPort0:0 Port_HPort1:0
+
+Automaton boxHPort
+
+States w0:0 w1:0 w2:0
+
+Final States w0
+
+Transitions
+LH(w1,w2) -> w0
+LH(w0,w2) -> w0
+Port_HPort0() -> w1
+LH(w2,w2) -> w2
+Port_HPort1() -> w2
+
+

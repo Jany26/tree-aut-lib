@@ -6,13 +6,13 @@
 .SILENT: all clean
 
 all:
-	cd src/ && python3 main.py
+	cd py/ && python3 adhoc_tester.py
 test:
-	cd src/ && python3 adhoc_tester.py
+	cd py/ && python3 all_tests.py
 clean:
 #	jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace *.ipynb
-	-cd src/ && rm -r __pycache__/
-	-cd src/ && rm *.pyc *.pyo *.pyd
-	-cd src/ && rm -r dot/ tmb/ vtf/ vtf-to-dot/ dimacs-out/
+	-cd py/ && rm -r __pycache__/
+	-cd py/ && rm *.pyc *.pyo *.pyd
+	-cd py/ && rm -r dot/ tmb/ vtf/ vtf-to-dot/ dimacs-out/
 
 # End of file Makefile

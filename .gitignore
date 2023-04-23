@@ -8,8 +8,8 @@ src/dot
 src/vtf-to-dot
 src/tmb
 src/dimacs-out
-src/results
+data
 
-cpp
+cpp/
 0-adHocTests.ipynb
 *.png

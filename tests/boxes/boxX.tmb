@@ -1,0 +1,14 @@
+Ops LH:2 Port_X:0
+
+Automaton boxX
+
+States q0:0 q1:0
+
+Final States q0
+
+Transitions
+LH(q0,q0) -> q0
+LH(q1,q1) -> q0
+Port_X() -> q1
+
+

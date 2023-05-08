@@ -530,6 +530,10 @@ def printBoxedEdges(ta: TTreeAut):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
+    test = abdd.importTAfromABDD("../tests/abdd-format/abdd-format-demo.dd")
+    test2 = abdd.importTAfromABDD("../tests/abdd-format/test-comments.dd")
+    print(test)
+    print(test2)
     pass
 
 # End of file test.py

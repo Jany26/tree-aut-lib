@@ -6,7 +6,7 @@
 from ta_classes import *
 from copy import deepcopy
 from test_data import boxCatalogue
-import os
+import os, re
 from pathlib import Path
 
 # @ABDD     # Automata-based reduction BDDs
@@ -91,10 +91,8 @@ def exportTAtoABDD(ta: TTreeAut, filePath: str, name="", comments=False):
                 file.write('\n')
 
 def importTAfromABDD(source) -> TTreeAut | list:
-    # print(source)
     file = open(source, "r")
     name = Path(source).stem
-    # ta = createTAfromABDD(file, name)
     results = []
     positions = []
     i = 0
@@ -141,32 +139,43 @@ def createTAfromABDD(file, name) -> TTreeAut:
             continue
         if line == "":
             continue
-        src, var = data[0].rstrip(']').split('[')
-        if data[1].endswith(']'):
-            child1, box1 = data[1].rstrip(']').split('[')
-            if box1 == "":
-                box1 = None
-        else:
-            child1, box1 = data[1], None
-        if data[2].endswith(']'):
-            child2, box2 = data[2].rstrip(']').split('[')
-            if box2 == "":
-                box2 = None
-        else:
-            child2, box2 = data[2], None
-        # print(src, var, box1, box2, var, child1, child2)
-        edge = TTransition(src, TEdge('LH', [box1, box2], var), [child1, child2])
+        srcRe = "(\d+)"
+        varRe = "\[(\d+|)\]"
+        childRe = "(\(\d+(?:\s*,\s*\d+)*\)|<\d+>|\d+)"
+        boxRe = "(\[\w+\]|)"
+        # "(\d+)\[(\d+)\]\s*(\(\d+(?:\s*,\s*\d+)*\)|<\d+>|\d+)(\[\w+\]|)\s*(\(\d+(?:\s*,\s*\d+)*\)|<\d+>|\d+)(\[\w+\]|)"
+        allMatchRegex = f"{srcRe}{varRe}\s*{childRe}{boxRe}\s*{childRe}{boxRe}"
+        groups = re.match(allMatchRegex, line)
+        src = groups.group(1)
+        var = groups.group(2)
+        tgt1 = groups.group(3)
+        box1 = groups.group(4)
+        tgt2 = groups.group(5)
+        box2 = groups.group(6)
+        box1 = box1.lstrip('[').rstrip(']')
+        box2 = box2.lstrip('[').rstrip(']')
+        box1 = None if box1 == "" else box1
+        box2 = None if box2 == "" else box2
+        children = []
+        print(src, var, tgt1, box1, tgt2, box2)
+        for j in [i.strip() for i in tgt1.lstrip('(').rstrip(')').split(',')]:
+            children.append(j)
+        for j in [i.strip() for i in tgt2.lstrip('(').rstrip(')').split(',')]:
+            children.append(j)
+        edge = TTransition(src, TEdge('LH', [box1, box2], var), children)
         if src not in ta.transitions:
             ta.transitions[src] = {}
         ta.transitions[src][f"k{keyCounter}"] = edge
         keyCounter += 1
-        for state in [src, child1, child2]:
+        if src.startswith('<') and src.endswith('>'):
+            leaves.add(src)
+        for state in children:
             if state.startswith('<') and state.endswith('>'):
                 leaves.add(state)
     # print(ta)
     for leaf in leaves:
         symbol = leaf.lstrip("<").rstrip(">")
-        edge = TTransition(leaf, TEdge(symbol, [], ""), [])
+        edge = TTransition(leaf, TEdge(symbol, [], f"{int(maxVar)-1}"), [])
         ta.transitions[leaf] = {}
         ta.transitions[leaf][f"k{keyCounter}"] = edge
         keyCounter += 1

@@ -5,7 +5,7 @@ from apply import *
 from utils import *
 from bdd import createTAfromBDD
 from dimacs import dimacsRead
-from simulation import simulateAndCompare, computeAdditionalVariables, leafify
+from simulation import simulateAndCompare, addVariablesBU, leafify
 
 import format_tmb as tmb
 import format_abdd as abdd
@@ -138,7 +138,7 @@ def canonizeBenchmark(initial: TTreeAut, options: TestOptions):
     if options.progress:
         print(f"\r{'Computing extra variables (4/8)...': <80}", end='')
     unfolded_extra = copy.deepcopy(unfolded)
-    computeAdditionalVariables(unfolded_extra, options.vars)
+    addVariablesBU(unfolded_extra, options.vars)
     logFile.write(f"UNFOLDED (additional variables)\n\n{unfolded_extra}\n\n")
 
     if options.progress:
@@ -154,7 +154,7 @@ def canonizeBenchmark(initial: TTreeAut, options: TestOptions):
     normalized_clean = copy.deepcopy(normalized)
     normalized_clean.reformatKeys()
     normalized_clean.reformatStates()
-    computeAdditionalVariables(normalized_clean, options.vars+2)
+    addVariablesBU(normalized_clean, options.vars+2)
     normalized.metaData.recompute()
     normalized_clean.metaData.recompute()
     
@@ -200,7 +200,7 @@ def canonizeBenchmark(initial: TTreeAut, options: TestOptions):
     if options.progress:
         print(f"\r{'Computing extra variables again (8/8)...': <80}", end='')
     unfolded_after_extra = copy.deepcopy(unfolded_after)
-    computeAdditionalVariables(unfolded_after_extra, options.vars)
+    addVariablesBU(unfolded_after_extra, options.vars)
     logFile.write(f"UNFOLDED AFTER FOLDING (additional variables)\n\n{unfolded_after_extra}\n\n")
 
     logFile.close()
@@ -274,7 +274,7 @@ def simulateBenchmark(inputPath: str, vars: int, outputPath, simulate=False, ima
     results["01-init-X"] = addDontCareBoxes(results["00-init"], vars)
     results["02-unfold"] = unfold(results["01-init-X"])
     results["03-unfold-extra"] = copy.deepcopy(results["02-unfold"])
-    computeAdditionalVariables(results["03-unfold-extra"], vars)
+    addVariablesBU(results["03-unfold-extra"], vars)
     results["04-normal"] = treeAutNormalize(results["03-unfold-extra"], createVarOrder('', vars+1), verbose=True, output=log1)
     results["05-normal-clean"] = copy.deepcopy(results["04-normal"])
     results["05-normal-clean"].reformatKeys()
@@ -283,7 +283,7 @@ def simulateBenchmark(inputPath: str, vars: int, outputPath, simulate=False, ima
     results["07-fold-trim"] = removeUselessStates(results["06-fold"])
     results["08-unfold-2"] = unfold(results["07-fold-trim"])
     results["09-unfold-2-extra"] = copy.deepcopy(results["08-unfold-2"])
-    computeAdditionalVariables(results["09-unfold-2-extra"], vars)
+    addVariablesBU(results["09-unfold-2-extra"], vars)
     for name in names:
         exportTAtoVTF(results[name], f"{outputPath}/vtf/{name}.vtf")
         log0.write(f"{name}\n\n{results[name]}\n\n")
@@ -324,9 +324,9 @@ def testABDDformat():
     test = tree_auts["folded_trimmed"]
     test.reformatStates()
     print(test)
-    abdd.exportTAtoABDD(test, "results/test-comments.dd", comments=True)
-    abdd.exportTAtoABDD(test, "results/test.dd", comments=False)
-    result = abdd.importTAfromABDD("results/test-comments.dd")
+    abdd.exportTAtoABDD(test, "../data/abdd-format/test-comments.dd", comments=True)
+    abdd.exportTAtoABDD(test, "../data/abdd-format/test.dd", comments=False)
+    result = abdd.importTAfromABDD("../data/abdd-format/test-comments.dd")
     result.reformatStates()
     print(result)
 
@@ -526,6 +526,8 @@ def printBoxedEdges(ta: TTreeAut):
                 foundbox = True
         if foundbox:
             print(edge)
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
     pass

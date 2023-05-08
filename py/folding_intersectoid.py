@@ -125,17 +125,9 @@ def intersectoidReachability(ta: TTreeAut, varVis) -> list:
             result.append(list(k))
         return result
 
-    # try:
-    # varVis = ta.getVariableVisibilityCache()
-    # except:
-    #     return []
-    # ta.getVariableVisibility()
-
     copyta = copy.deepcopy(ta)
     copyta.reformatKeys()
-    # print("varvis    =", varVis)
-    # print("varvis")
-    outputs = ta.getOutputEdges(inverse=True)
+    # outputs = ta.getOutputEdges(inverse=True)
 
     edgesToPop = []
     for edgeDict in copyta.transitions.values():
@@ -146,18 +138,8 @@ def intersectoidReachability(ta: TTreeAut, varVis) -> list:
                     edgesToPop.append((edge.src, key))
                 continue
             bad = False
-            low = edge.children[0]
-            high = edge.children[1]
-            # if low in varVis and high in varVis and edge.src in varVis:
-            #     # children should not see different variables
-            #     if varVis[low] != varVis[high]:
-            #         bad = True
-            #     # children should be consistent with source state variable 
-            #     if varVis[low] != varVis[edge.src] + 1:
-            #         bad = True
-            # if low in outputs and high in outputs and low != high:
-            #     if not ('0' in outputs[low] or '1' in outputs[low]) and not ('0' in outputs[high] or '1' in outputs[high]):
-            #         bad = True
+            # low = edge.children[0]
+            # high = edge.children[1]
             if bad:
                 edgesToPop.append((edge.src, key))
 
@@ -185,9 +167,7 @@ def intersectoidReachability(ta: TTreeAut, varVis) -> list:
     # return result
 
 
-def addVariablesRecursive(treeaut: TTreeAut, helper: FoldingHelper):
-    # var = int(edge.info.variable[len(helper.varPrefix):])
-    # edge.info.variable = f"{helper.varPrefix}{var}"
+def addVariablesTD(treeaut: TTreeAut, helper: FoldingHelper):
     def addVariables(ta: TTreeAut, var: int, state: str, helper: FoldingHelper):
         if var > helper.maxVar + 1:
             return
@@ -228,14 +208,10 @@ def addVariablesRecursive(treeaut: TTreeAut, helper: FoldingHelper):
     # when using LPort, HPort, possibly even X port, sometimes the port-mapped state
     # can be reached through multiple vars
     varVis = treeaut.getVariableVisibilityCache()
-    # print(ta.name)
     for edge in iterateEdges(treeaut):
         if edge.info.label.startswith("Port") and edge.info.variable == "":
             if edge.src in varVis:
-                # print(f"{edge} -> adding {varVis[edge.src]}")
                 edge.info.variable = f"{helper.varPrefix}{varVis[edge.src]}"
-        
-        
 
     # propagating variable values to lower edges where possible
     for edge in iterateEdges(treeaut):
@@ -309,6 +285,6 @@ def reducePortableStates(intersectoid: TTreeAut):
     for state, keySet in edgePopper.items():
         for key in keySet:
             intersectoid.transitions[state].pop(key)
-    # print(intersectoid)
 
-#     pass
+
+# end folding_intersectoid.py

@@ -1,0 +1,11 @@
+@ABDD
+# imported from folded(folding-error-1)
+%Name folded(folding-error-1)
+%Vars 7
+%Root 1
+
+1[1] 2[X] <0>[L0]
+2[3] 4[L0] 5[L0]
+4[5] <1>[L1] 5[L0]
+5[] <0> <0>
+5[] 5 5

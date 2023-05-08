@@ -297,9 +297,6 @@ def treeAutDeterminization(ta: TTreeAut,
     doneSet = detOutEdges(ta.getOutputEdges(), doneEdges, alphabet)
     workSet = copy.deepcopy(doneSet)
     if verbose:
-        # print("workset   = {workSet}")
-        # print("doneset   = {doneSet}")
-        # print("doneedges = {doneEdges}")
         print("{:<60} {:<20} {:<60} {:<5} {:<5}".format(
             "currentState", "symbol", "children", "work", "done"
         ))

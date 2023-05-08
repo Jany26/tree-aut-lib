@@ -13,7 +13,7 @@ Supervisor: ondrik / Ing. Ondrej Lengal, PhD. <lengal@fit.vutbr.cz>
 
 # File structure and content
 
-- src/ 
+- py/ 
 
     - these files implement the functions and algorithms for tree-aut-lib
 
@@ -46,7 +46,7 @@ Supervisor: ondrik / Ing. Ondrej Lengal, PhD. <lengal@fit.vutbr.cz>
     * vtf/            ... output data from export to VTF format
     * vtf-to-dot/     ... output data from export to DOT from VTF format
 
-- nta/ ... test TAs - larger, more complex than in basic tests 
+- benchmark/ ... test TAs - larger, more complex than in basic tests 
     - more info at https://github.com/ondrik/automata-benchmarks
 
     * tmb/ 

@@ -74,8 +74,10 @@ def unfold(ta: TTreeAut, reformat=True) -> TTreeAut:
 
     unfoldCounter = 1
     subTable = {}
-    for edgeList in ta.transitions.values():
-        for key, edge in edgeList.items():
+    # for edgeList in ta.transitions.values():
+    #     for key, edge in edgeList.items():
+    for state in iterateStatesBFS(ta):
+        for key, edge in ta.transitions[state].items():
             if edge.src not in result.transitions:
                 result.transitions[edge.src] = {}
 
@@ -110,11 +112,10 @@ def unfold(ta: TTreeAut, reformat=True) -> TTreeAut:
         result.transitions[placeState].update(newDict)
         # but also removing the initial port transition
         result.transitions[placeState].pop(keyToPop)
-
+    result = removeUselessStatesTD(result)
     if reformat is True:
         result.reformatStates()
         result.reformatKeys()
-    result = removeUselessStatesTD(result)
     return result
 
 

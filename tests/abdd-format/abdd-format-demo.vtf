@@ -1,0 +1,8 @@
+@NTA
+%Root q1
+
+q1 LH <[HPort X] x0> (q2 q3 q3)
+q2 LH <[X _] x4> (qZ q3)
+q3 LH <[L0 H1] x5> (qO qZ)
+qO 1 ()
+qZ 0 ()

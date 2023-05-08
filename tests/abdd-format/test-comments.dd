@@ -1,0 +1,14 @@
+@ABDD
+# imported from folded(folding-error-1)
+%Name folded(folding-error-1)
+%Vars 7
+%Root 1
+
+1[1] 2[X] <0>[L0]  # 1 -- LH <1> [boxX, boxL0] --> ['2', '3']
+2[3] 4[L0] 5[L0]   # 2 -- LH <3> [boxL0, boxL0] --> ['4', '5']
+                   # 3 -- 0 <7> --> []
+4[5] <1>[L1] 5[L0] # 4 -- LH <5> [boxL1, boxL0] --> ['6', '5']
+5[] <0> <0>        # 5 -- LH --> ['3', '3']
+5[] 5 5            # 5 -- LH --> ['5', '5']
+                   # 6 -- 1 <7> --> []
+                   # 6 -- LH --> ['6', '6']

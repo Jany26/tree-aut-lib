@@ -1,0 +1,8 @@
+@ABDD     # Automata-based reduction BDDs
+%Name example-abdd
+%Vars 10
+%Root 1
+
+1[0] (2, 3)[HPort] 3[X]   # transition a
+2[4] <0>[X] 3             # transition b
+3[5] <1>[L0] <0>[H1]      # transition c

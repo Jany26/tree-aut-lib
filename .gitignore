@@ -9,7 +9,7 @@ src/vtf-to-dot
 src/tmb
 src/dimacs-out
 data
+.vscode
 
-cpp/
 0-adHocTests.ipynb
 *.png

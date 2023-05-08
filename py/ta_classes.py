@@ -585,7 +585,7 @@ class TTreeAut:
     def reformatStates(self, prefix='q', startFrom=0):
         temp = {}  # state -> idx
         i = startFrom
-        for state in self.getStates():
+        for state in iterateStatesBFS(self):
             if state not in temp:
                 temp[state] = i
                 i += 1

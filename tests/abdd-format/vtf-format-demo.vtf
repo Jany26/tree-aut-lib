@@ -1,0 +1,10 @@
+@NTA
+%Root q0
+%States q0:0 q1:0 q2:0 q3:0 q4:0
+# %Alphabet LH:2 0:0 1:0
+
+q0 LH <[ LPort X ] x1> ( q1 q2 q1 )
+q1 LH <x3> ( q3 q4 )
+q2 LH <x3> ( q4 q3 )
+q3 0 ( )
+q4 1 ( )

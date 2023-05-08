@@ -350,9 +350,9 @@ def prepareEdgeInfo(ta: TTreeAut, state: str) -> list:
 
 
 
-# NOTE: function addVariablesRecursive is in use for folding
+# NOTE: function addVariablesTD is in use for folding
 # temporarily copied from simulation.py
-def computeAdditionalVariablesFolding(ta: TTreeAut, minVar: int):
+def addVariablesBUFolding(ta: TTreeAut, minVar: int):
     def convertVars(varList: list, prefix: str) -> dict:
         return {i: int(i[len(prefix):]) for i in varList}
 

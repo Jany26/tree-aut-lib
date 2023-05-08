@@ -7,13 +7,11 @@ boxOrder = ['L0', 'L1', 'H0', 'H1', 'LPort', 'HPort']
 
 boxOrders = {
     "bdd": ['X'],
-    "zdd": ['H0'],
-    "tdd": ['X', 'H0'],
+    "zbdd": ['H0'],
+    "tbdd": ['X', 'H0'],
     "cbdd": ['X', 'HPort'],
-    "czdd": ['H0', 'X'], # initially incorrectly used in tbdds
+    "czdd": ['H0', 'X'],
     "esr": ['L0', 'H0', 'X'],
-    # "esr2": ['L1', 'H1', 'X'],
-    # "abdd": ['L0', 'H0', 'L1', 'H1', 'X'],
     "full": ['L0', 'H0', 'L1', 'H1', 'X', 'LPort', 'HPort'],
 }
 

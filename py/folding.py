@@ -147,26 +147,15 @@ def boxFinding(
     """
     intersectoid: TTreeAut = createIntersectoid(ta, box, root, helper)
     intersectoid = trim(intersectoid)  # additional functionality maybe needed?
-    # if root == 'q618' and source == "q741" and box.name == 'boxHPort':
-    #     print(intersectoid)
-    #     print(helper)
-    #     exportToFile(intersectoid, './temp/intersectoid')
-    #     exportToFile(ta, './temp/ubda')
-    #     exportTAtoVTF(ta, './temp/ubda.vtf')
-    #     exit()
-    # print(f"{source}-{box.name}-{root}")
     tree, _ = nonEmptyBU(intersectoid)
     if tree is None:
         return {}
 
-    addVariablesRecursive(intersectoid, helper)
+    addVariablesTD(intersectoid, helper)
     helper.exportIntersectoid(intersectoid, source, root, box.name)
     varVis = intersectoid.getVariableVisibilityCache()
     reach = intersectoidReachability(intersectoid, varVis)
-    # print(intersectoid)
-    # print(reach)
     intersectoid.shrinkTA(reach)
-    # print(intersectoid)
     if intersectoid.getPortArity() > 1:
         reducePortableStates(intersectoid)
         intersectoid = trim(intersectoid)
@@ -231,7 +220,6 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
             os.makedirs(f"{helper.path}/intersectoids/")
     varVis = result.getVariableVisibilityCache()
     for boxName in boxes:
-        # print(boxName)
         box = boxCatalogue[boxName]
         worklist = [root for root in ta.rootStates]
         visited = set()
@@ -244,16 +232,16 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
                 # edgePart contains 5 items: [key, child-index, child-state, source-state, edge]
                 part = 'L' if edgePart[1] == 0 else 'H'
                 if isAlreadyReduced(result, state, edgePart):
-                    # print(f"edgePart ({edgePart[0]}): {edgePart[3]} --[{part}]--> {edgePart[2]}")
                     continue
                 helper.minVar = int(edgePart[4].info.variable[len(helper.varPrefix):]) + 1
 
                 # skipping self-loop
                 if state in result.transitions[state][edgePart[0]].children:
                     continue
-                if helper.verbose: print("%s> boxFinding(%s-[%s:%s]->%s)" % (
-                    f"{0 * ' '}", state, part, box.name, edgePart[2]
-                ))
+                if helper.verbose:
+                    print("%s> boxFinding(%s-[%s:%s]->%s)" % (
+                        f"{0 * ' '}", state, part, box.name, edgePart[2]
+                    ))
                 mapping = boxFinding(result, box, edgePart[2], helper, state)
                 # phase 0: checking correctness of the mapping
                 # checking if all mapped states have a visible variable
@@ -271,16 +259,7 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
                 boxList = [None] * ta.getSymbolArityDict()[symbol]
                 for idx in range(len(initialBoxList)):
                     boxList[idx] = initialBoxList[idx]
-                try:
-                    boxList[getBoxIndex(edgePart)] = box.name
-                except:
-                    print(mapping)
-                    print(getBoxIndex(edgePart))
-                    print(boxList)
-                    print("[key, child-index, child-state, source-state, edge]")
-                    print(edgePart)
-                    print(edge)
-                    exit()
+                boxList[getBoxIndex(edgePart)] = box.name
                 edge.info.boxArray = boxList
                 # phase 2: fill the box-port children in the child array
                 idx = getStateIndexFromBoxIndex(edge, getBoxIndex(edgePart))
@@ -288,7 +267,7 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
                 for i, (mapState, var) in enumerate(mapping.values()):
                     edge.children.insert(idx + i, mapState)
                     if var == varVis[mapState]:
-                        # TODO: here, possibly remove self-loop(s) in mapState
+                        # NOTE: here, possibly remove self-loop(s) in mapState
                         # in case of identical variables (ta, intersectoid)
                         continue
                     newState = f"{mapState}-{var}"
@@ -296,7 +275,8 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
                         edge.children[idx + i] = newState
                     result.transitions[newState] = {}
                     edge.children[idx + i] = newState
-                    newEdge = TTransition(newState, TEdge('LH', [], f"{var}"), [mapState, mapState])
+                    newEdge = TTransition(newState, TEdge('LH', [], f"{var}"),
+                                          [mapState, mapState])
                     varVis[newState] = var
                     helper.counter += 1
                     key = f"temp_{helper.counter2}"
@@ -314,11 +294,7 @@ def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
         # while worklist != []
 
     match = re.search(r"\(([^()]*)\)", result.name)
-    if match is None:
-        result.name = f"folded({ta.name})"    
-    else:
-        result.name = f"folded({match.group(1)})"
-    # print(result)
+    result.name = f"folded({ta.name if match is None else match.group(1)})"
     return result
 
 

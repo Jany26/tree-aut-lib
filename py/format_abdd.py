@@ -154,6 +154,7 @@ def createTAfromABDD(file, name) -> TTreeAut:
                 box2 = None
         else:
             child2, box2 = data[2], None
+        # print(src, var, box1, box2, var, child1, child2)
         edge = TTransition(src, TEdge('LH', [box1, box2], var), [child1, child2])
         if src not in ta.transitions:
             ta.transitions[src] = {}

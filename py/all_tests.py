@@ -1196,14 +1196,14 @@ def folding_IntersectoidRelationTest():
 def foldingCompare(treeaut: TTreeAut, vars: int, boxorder: list, failures: list) -> bool:
     initial = addDontCareBoxes(treeaut, vars)
     unfolded = unfold(initial)
-    computeAdditionalVariables(unfolded, vars)
+    addVariablesBU(unfolded, vars)
     normalized = treeAutNormalize(unfolded, createVarOrder('', vars+1))
     normalized.reformatKeys()
     normalized.reformatStates()
     folded = treeAutFolding(normalized, boxorder, vars+1)
     folded = removeUselessStates(folded)
     unfolded = unfold(folded)
-    computeAdditionalVariables(unfolded, vars)
+    addVariablesBU(unfolded, vars)
     result = simulateAndCompare(initial, unfolded, vars)
     if result != True:
         failures.append(f"foldingTest: {initial.name} -> not equivalent after folding")

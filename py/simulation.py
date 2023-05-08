@@ -225,7 +225,7 @@ def simulateAndCompare(
 
 # For faster/more precise decision making, especially in unfolded UBDAs.
 # TODO: Needs fixing (see results/folding-error-2/...)
-def computeAdditionalVariables(ta: TTreeAut, maxVar: int):
+def addVariablesBU(ta: TTreeAut, maxVar: int):
     def convertVars(varList: list, prefix: str) -> dict:
         return {i: int(i[len(prefix):]) for i in varList}
     varVis = ta.getVariableVisibility()

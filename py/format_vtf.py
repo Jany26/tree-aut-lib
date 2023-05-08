@@ -231,7 +231,7 @@ def importTAfromVTF(source, sourceType='f', taType='ta') -> TTreeAut:
                 allStates = loadStatesFromVTF(line)
                 stateListProcessed = True
             else:
-                raise Exception(f"importTAfromVTF(): unexpected preamble '{line}'")
+                raise Exception(f"importTAfromVTF(): unexpected preamble '{line.strip()}'")
         else:
             edge = loadTransitionFromVTF(line, taType)
             if edge is None:

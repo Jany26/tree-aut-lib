@@ -6,7 +6,7 @@
 from ta_classes import *
 from copy import deepcopy
 from test_data import boxCatalogue
-import os, re
+import re
 from pathlib import Path
 
 # @ABDD     # Automata-based reduction BDDs
@@ -157,7 +157,6 @@ def createTAfromABDD(file, name) -> TTreeAut:
         box1 = None if box1 == "" else box1
         box2 = None if box2 == "" else box2
         children = []
-        print(src, var, tgt1, box1, tgt2, box2)
         for j in [i.strip() for i in tgt1.lstrip('(').rstrip(')').split(',')]:
             children.append(j)
         for j in [i.strip() for i in tgt2.lstrip('(').rstrip(')').split(',')]:
@@ -172,7 +171,6 @@ def createTAfromABDD(file, name) -> TTreeAut:
         for state in children:
             if state.startswith('<') and state.endswith('>'):
                 leaves.add(state)
-    # print(ta)
     for leaf in leaves:
         symbol = leaf.lstrip("<").rstrip(">")
         edge = TTransition(leaf, TEdge(symbol, [], f"{int(maxVar)-1}"), [])

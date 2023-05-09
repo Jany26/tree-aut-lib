@@ -788,10 +788,8 @@ int main(int argc, char* argv[]) {
     std::string output_file_name = argv[2];
     
     BlifParser parser = BlifParser(blif_input, output_file_name, OUTPUT_FUNCTION);
-    if (argc > 3 and strcmp(argv[3], "rec") == 0) {
-        parser.recursive = true;
-    }
-    if (argc > 4 and strcmp(argv[4], "smartvars") == 0) {
+    parser.recursive = true;
+    if (argc > 3 and strcmp(argv[3], "smartvars") == 0) {
         parser.smartvars = true;
     }
     parser.tokenize();

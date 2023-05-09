@@ -21,8 +21,6 @@ def checkVariableNaming(file):
         if words[0] not in [".inputs", ".outputs", ".names"]:
             continue
         for i in words[1:]:
-            # print(i)
-            # for j in matches:
             match = re.search(r"\(([^()]*)\)", i)
             if match:
                 var = int(match.group(0)[1:-1])
@@ -121,28 +119,23 @@ def getAllNodeCounts(filePath: str) -> dict:
     if type(treeauts) != list:
         treeauts = [treeauts]
     for treeaut in treeauts:
-        # originalRoots = [r for r in treeaut.rootStates]
         subtreeSizes: dict[str, int] = {}
         for state in self.iterateStatesBFS(treeaut):
             treeaut.rootStates = [state]
             reachableStates = set()
             for s in self.iterateStatesBFS(treeaut):
                 reachableStates.add(s)
-            # subtreeSizes[state] = len(reachableStates)
             subtreeSizes[state] = len(reachableStates)
-        # treeaut.rootStates = originalRoots
         result[treeaut.name] = subtreeSizes
     return result
 
         
 def printSubtrees(filePath, reportPath):
-    files = []
     report = open(f"{reportPath}", 'w')
     path = f"{filePath}"
     results = getAllNodeCounts(path)
     for taName, taResults in results.items():
         report.write(f"{taName}\n")
-        # print(f"{taName} -> full node count = ")
         sorter: set[int] = set()
         temp: dict[int, list[str]] = {}
         for state, nodeCount in taResults.items():
@@ -169,7 +162,6 @@ def printSubtrees(filePath, reportPath):
 
 
 benchmarks = [432, 499, 880, 1355, 1908]
-# benchmarks = [432, 499, 880, 1355, 1908, 2670, 3540, 5315, 6288, 7552]
 
 def countBoxesOnEdges(treeaut: TTreeAut):
     result = {}
@@ -228,15 +220,12 @@ def testFoldingOnSubBenchmarks(path, export, orders=None, rootNum=None):
         "normalized_clean": normalized_clean
     }
 
-    # exportTAtoVTF(result["normalized_clean"], f"../data/blif-normalized/{vtfPath}.vtf")
     nums = [len(initial.getStates()), len(unfolded.getStates()), len(normalized_clean.getStates())]
 
-    dot.exportToFile(removeUselessStatesTD(normalized_clean), f"../data/temp/c1355-555-trim/normal")
     for name in test:
         boxorder = boxOrders[name]
         print(f"folding {name}", end='\r')
         folded = treeAutFolding(normalized_clean, boxorder, vars+1)
-        # folded_trimmed = removeUselessStatesTD(folded)
         nodeCount = len(reachableTD(folded))
         nums.append(nodeCount)
     result_print = f"{initial.name :<30}"
@@ -247,15 +236,13 @@ def testFoldingOnSubBenchmarks(path, export, orders=None, rootNum=None):
 
 
 def foldingTestBLIF(test=None):
-    report = open("../results/raw/blif-report.txt", "r")
+    report = open("../tests/blif-report.txt", "r")
 
     report_line = f"{'name of the benchmark' :<30}\t| init\t| unfo\t| norm"
     for orderName in boxOrders.keys():
         report_line += f"\t| {orderName}"
     print(report_line)
     for line in report:
-        # if (line.startswith("C432")):
-        #     continue
         if line.startswith('#') or line == "":
             continue
         data = line.strip().split(';')
@@ -313,7 +300,7 @@ def printBoxCountsBLIF():
     for val in translation.values():
         initialString += f"{val :<5}, "
     print(initialString)
-    report = open(f"../results/blif-report.txt", 'r')
+    report = open(f"../tests/blif-report.txt", 'r')
     for line in report:
         if line.startswith('#') or line == "":
             continue
@@ -323,32 +310,6 @@ def printBoxCountsBLIF():
         ta = importTAfromVTF(f"../data/blif-normalized/{name}.vtf")
         folded = treeAutFolding(ta, boxOrders['full'], ta.getVariableMax())
         print(f"{name :<30} = {len(ta.getStates()) :<5}, {len(reachableTD(folded)) :<5}, {formatBoxCounts(folded)}")
-
-
-def testNoNormalization():
-    initialString = f"{'path' :<30} = {'norm' :<5}, {'bdd' :<5}, {'zbdd' :<5}, {'tbdd' :<5}"
-    print(initialString)
-    report = open(f"../results/blif-report.txt", 'r')
-    for line in report:
-        if line.startswith('#') or line == "":
-            continue
-        data = line.strip().split(';')
-        name = data[0]
-        root = int(data[2])
-        print(name, end='\r')
-        ta = importTAfromVTF(f"../data/blif-normalized/{name}.vtf")
-        print(f'{name} - bdd', end='\r')
-        folded_bdd = treeAutFolding(ta, boxOrders['bdd'], ta.getVariableMax())
-        print(f'{name} - zbdd', end='\r')
-        folded_zbdd = treeAutFolding(ta, boxOrders['zbdd'], ta.getVariableMax())
-        print(f'{name} - tbdd', end='\r')
-        folded_tbdd = treeAutFolding(ta, boxOrders['tbdd'], ta.getVariableMax())
-        result_print = f"{name :<30} = "
-        result_print += f"{len(ta.getStates()) :<5}, "
-        result_print += f"{len(reachableTD(folded_bdd)) :<5}, "
-        result_print += f"{len(reachableTD(folded_zbdd)) :<5}, "
-        result_print += f"{len(reachableTD(folded_tbdd)) :<5}"
-        print(result_print)
 
 
 def blifConsistencyCheck(path):
@@ -364,10 +325,7 @@ def blifConsistencyCheck(path):
 
 
 if __name__ == "__main__":
-    # blifConsistencyCheck("../../benchmarks/cc-blif-benchmarks/lgsynth91/rot.blif")
-
-    # analyzeNodeCounts()
-    # orders = ['bdd', 'zbdd', 'tbdd']
-    # foldingTestBLIF(test=orders)
-    # additionalTest()
-    printBoxCountsBLIF()
+    path = "../tests/blif/"
+    #blifConsistencyCheck()
+    foldingTestBLIF()
+    # printBoxCountsBLIF()

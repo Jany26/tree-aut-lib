@@ -1,24 +1,18 @@
 from format_vtf import *
-# from all_tests import *
 from ta_functions import *
 from apply import *
 from utils import *
 from bdd import createTAfromBDD
 from dimacs import dimacsRead
-from simulation import simulateAndCompare, addVariablesBU, leafify
+from simulation import simulateAndCompare, addVariablesBU
 
-import format_tmb as tmb
 import format_abdd as abdd
 import render_dot as dot
-import blif_parser as blif
 import os
 
 from unfolding import unfold
 from normalization import treeAutNormalize
-from folding import treeAutFolding, createIntersectoid
-from test_data import boxCatalogue, boxesDict
-
-import blif_analysis
+from folding import treeAutFolding
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # FOLDING testing
@@ -379,7 +373,7 @@ def foldingDebug(idx):
 def blifTestC17():
     options = {
         "vars": 11,
-        "image": f'../benchmark/blif/c17',
+        "image": f'../data/blif/c17',
         "cli": False, "debug": False, "sim": False, "progress": False,
         "export_vtf": False, "export_png": False,
     }
@@ -429,6 +423,7 @@ def isTopDownDeterministic(treeaut: TTreeAut) -> bool:
             return False
     return True
 
+
 def bddIsomorphicCheck(ta1: TTreeAut, ta2: TTreeAut) -> bool:
     outputs1 = ta1.getOutputEdges(inverse=True)
     outputs2 = ta2.getOutputEdges(inverse=True)
@@ -476,7 +471,7 @@ def bddIsomorphicCheck(ta1: TTreeAut, ta2: TTreeAut) -> bool:
 
 
 def isomorphicCheckBLIF():
-    for subdir, dirs, files in os.walk("../benchmark/blif/"):
+    for subdir, dirs, files in os.walk("../data/blif/"):
         init: TTreeAut = None
         bdd: TTreeAut = None
         for file in files:
@@ -487,29 +482,15 @@ def isomorphicCheckBLIF():
         if init is None or bdd is None:
             continue
         isomorphic = bddIsomorphicCheck(init, bdd)
-        # print(subdir, "isomorphic", bddIsomorphicCheck(init, bdd))
         if not isomorphic:
             return False
     return True
-
-def LPort_test():
-    path = "../data/blif/C1355/var558/vtf-4-abdd-short-fold.vtf"
-    test = importTAfromVTF(path)
-    test.reformatStates()
-    folder = "../data/c1355-558"
-    fold = treeAutFolding(test, ['LPort'], test.getVariableMax(),
-                          export_png=True, export_vtf=False, exportPath=folder)
-    fold = removeUselessStates(fold)
-    dot.exportToFile(test, f"{folder}/init")
-    dot.exportToFile(fold, f"{folder}/fold")
-    print(len(test.getStates()), len(fold.getStates()))
 
 
 def popUnreachable(treeaut: TTreeAut) -> TTreeAut:
     result = copy.deepcopy(treeaut)
     popStates = []
     reachable = set(reachableTD(result))
-    # for state in reachableTD(result):
     for state in result.getStates():
         if state not in reachable:
             popStates.append(state)
@@ -530,13 +511,6 @@ def printBoxedEdges(ta: TTreeAut):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
-    print(" > SUBUNIT TEST: exporting to TMB format ...")
+    pass
 
-    if not os.path.exists("data/tmb"):
-        os.makedirs("data/tmb")
-
-    failures = []
-    for name, box in boxesDict.items():
-        tmb.exportTAtoTMB(box, f"data/tmb/{name}.tmb")
-
-# End of file test.py
+# End of file adhoc_tester.py

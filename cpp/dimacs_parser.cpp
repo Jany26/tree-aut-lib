@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include <iostream>
 #include <string>
@@ -130,7 +131,7 @@ void DimacsParser::parse() {
             preamble();
             bdd_setvarnum(this->variables_count);
         } else {
-            printf("clausule %d of %d\n", this->processed_clausules, this->clausules_count);
+            // printf("clausule %d of %d\n", this->processed_clausules, this->clausules_count);
             clausule();
             this->processed_clausules++;
         }
@@ -278,24 +279,32 @@ void DimacsParser::export_to_abdd() {
 }
 
 
-int main(int argc, char **argv) {
-    if (argc < 3) {
-        fprintf(stderr, "missing args\n");
-        return 1;
-    }
-    int benchmark_start = std::stoi(argv[1]);
-    int benchmark_end = std::stoi(argv[2]);
+int main(/*int argc, char **argv*/) {
+    // if (argc < 3) {
+    //     fprintf(stderr, "missing args\n");
+    //     return 1;
+    // }
+    int benchmark_start = 1;
+    int benchmark_end = 1000;
 
-    // CBS_k3_n100_m403_b90/CBS_k3_n100_m403_b90_0.cnf
-    std::string input_file, output_file;
-    DimacsParser parser = DimacsParser(input_file, output_file);
+    // std::string input_path = argv[1];
+    // std::string output_path = argv[2];
+
+    DimacsParser parser = DimacsParser("", "");
     bdd_init(100000, 100000);
     for(int i = benchmark_start; i <= benchmark_end; i++) {
+        struct stat sb;
+        if (!(stat("../data/uf20/", &sb) == 0 && S_ISDIR(sb.st_mode))) {
+            int result = mkdir("../data/uf20/", 0777);
+            if (result != 0) {
+                fprintf(stderr, "DimacsParser: could not create ");
+                fprintf(stderr, "folder '../data/uf20/' for outputs\n");
+                return 1;
+            }
+        }
         parser.reset();
-        parser.input_file = 
-            "../benchmark/dimacs/CBS_k3_n100_m403_b90/CBS_k3_n100_m403_b90_"+ std::to_string(i)+  ".cnf";
-        parser.output_file =
-            "../data/uf100/cbs-100-403/CBS_k3_n100_m403_b90_" + std::to_string(i) + ".cnf";
+        parser.input_file = "../benchmark/dimacs/uf20/uf20-0"+ std::to_string(i)+  ".cnf";
+        parser.output_file = "../data/uf20/uf20-0" + std::to_string(i) + ".abdd";
         parser.tokenize();
         parser.parse();
         parser.export_to_abdd();

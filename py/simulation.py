@@ -24,7 +24,6 @@ def assignVariablesDict(num: int, size: int) -> dict:
     result.reverse()
     resultDict = {i+1: result[i] for i in range(size)}
     return resultDict
-    # result[int(size - i)] = remainder
 
 
 def getVarPrefix(varList: list) -> str:
@@ -275,8 +274,6 @@ def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, star
         return result
 
     def backTrack(ta: TTreeAut, variable: int, state: str, assignment: dict):
-        # if simHelper['debug']:
-        #     print(f"var = {variable}, state = {state}")
         if state in simHelper['leaves']:  # or variable > sim['length']:
             if simHelper['debug']:
                 print(f" END -> {simHelper['leaves'][state][0]} : {state} = leaf")
@@ -313,8 +310,6 @@ def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, star
 
     root = ta.rootStates[0]
     rootVar = list(simHelper['vis'][root])[0]
-    # for var, val in assignment.items():
-    #     print(f"{var} ({type(var)}) -> {val} ({type(val)})")
     start = int(rootVar) if startingVar is None else int(startingVar)
     simHelper['keys'] = {state: sortKeys(ta, state) for state in ta.getStates()}
     if simHelper['debug']:
@@ -333,10 +328,6 @@ def leafify(ta: TTreeAut, state: str, value: str | int):
     newEdge = TTransition(state, TEdge(str(value), [], f"{maxVar}"), [])
     ta.transitions[state][keysToPop[0]] = newEdge
     # newEdge = TTransition(state, TEdge('LH', [], ""), [state, state])
-
-
-def convertToDict(ta: TTreeAut, varList: list):
-    pass
 
 
 # End of file simulation.py    

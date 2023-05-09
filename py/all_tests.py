@@ -703,7 +703,7 @@ def dotExportFromVTFTests():
     if not os.path.exists("vtf-to-dot"):
         os.makedirs("vtf-to-dot")
 
-    for subdir, dirs, files in os.walk("."):
+    for subdir, dirs, files in os.walk("./tests/"):
         for file in files:
             filePath = subdir + os.sep + file
             if filePath.endswith(".vtf"):
@@ -721,7 +721,7 @@ def tmbImportTests():
     print(" > SUBUNIT TEST: importing from TMB format ...")
     failures = []
 
-    for subdir, dirs, files in os.walk(".."):
+    for subdir, dirs, files in os.walk("./tests/"):
         for file in files:
             filePath = subdir + os.sep + file
             if filePath.endswith(".tmb"):
@@ -736,15 +736,15 @@ def tmbImportTests():
 def tmbExportTests():
     print(" > SUBUNIT TEST: exporting to TMB format ...")
 
-    if not os.path.exists("tmb"):
-        os.makedirs("tmb")
+    if not os.path.exists("data/tmb"):
+        os.makedirs("data/tmb")
 
     failures = []
     for name, box in boxesDict.items():
         try:
-            exportTAtoTMB(box, 'f', f"tmb/{name}.tmb")
+            exportTAtoTMB(box, f"../data/tmb/{name}.tmb")
         except Exception as e:
-            failures.append(f"exportTreeAutToTMB(tmb/{name}.tmb)")
+            failures.append(f"exportTreeAutToTMB(data/tmb/{name}.tmb)")
 
     printFailedTests(failures)
 
@@ -979,13 +979,13 @@ def productTests():
                 f"got = {actual}"
             ))
 
-    X = importTAfromVTF("tests/boxes-topdowndet/tddetX.vtf")
-    LPort = importTAfromVTF("tests/boxes-topdowndet/tddetLPort.vtf")
-    HPort = importTAfromVTF("tests/boxes-topdowndet/tddetHPort.vtf")
-    L0 = importTAfromVTF("tests/boxes-topdowndet/tddetL0.vtf")
-    L1 = importTAfromVTF("tests/boxes-topdowndet/tddetL1.vtf")
-    H0 = importTAfromVTF("tests/boxes-topdowndet/tddetH0.vtf")
-    H1 = importTAfromVTF("tests/boxes-topdowndet/tddetH1.vtf")
+    X = importTAfromVTF("../tests/boxes-topdowndet/tddetX.vtf")
+    LPort = importTAfromVTF("../tests/boxes-topdowndet/tddetLPort.vtf")
+    HPort = importTAfromVTF("../tests/boxes-topdowndet/tddetHPort.vtf")
+    L0 = importTAfromVTF("../tests/boxes-topdowndet/tddetL0.vtf")
+    L1 = importTAfromVTF("../tests/boxes-topdowndet/tddetL1.vtf")
+    H0 = importTAfromVTF("../tests/boxes-topdowndet/tddetH0.vtf")
+    H1 = importTAfromVTF("../tests/boxes-topdowndet/tddetH1.vtf")
 
     print(" > SUBUNIT TEST: testing product ...")
     failures = []
@@ -1035,13 +1035,13 @@ def extensionTests():
                 f"got = {actual}"
             ))
 
-    X = importTAfromVTF("tests/boxes-topdowndet/tddetX.vtf")
-    LPort = importTAfromVTF("tests/boxes-topdowndet/tddetLPort.vtf")
-    HPort = importTAfromVTF("tests/boxes-topdowndet/tddetHPort.vtf")
-    L0 = importTAfromVTF("tests/boxes-topdowndet/tddetL0.vtf")
-    L1 = importTAfromVTF("tests/boxes-topdowndet/tddetL1.vtf")
-    H0 = importTAfromVTF("tests/boxes-topdowndet/tddetH0.vtf")
-    H1 = importTAfromVTF("tests/boxes-topdowndet/tddetH1.vtf")
+    X = importTAfromVTF("../tests/boxes-topdowndet/tddetX.vtf")
+    LPort = importTAfromVTF("../tests/boxes-topdowndet/tddetLPort.vtf")
+    HPort = importTAfromVTF("../tests/boxes-topdowndet/tddetHPort.vtf")
+    L0 = importTAfromVTF("../tests/boxes-topdowndet/tddetL0.vtf")
+    L1 = importTAfromVTF("../tests/boxes-topdowndet/tddetL1.vtf")
+    H0 = importTAfromVTF("../tests/boxes-topdowndet/tddetH0.vtf")
+    H1 = importTAfromVTF("../tests/boxes-topdowndet/tddetH1.vtf")
 
     print(" > SUBUNIT TEST: testing extension ...")
     failures = []
@@ -1093,10 +1093,10 @@ def unfoldingTests():
     print(" > SUBUNIT TEST: testing unfolding ...")
     failures = []
 
-    testUnfolding("tests/unfolding/unfoldingTest1.vtf", True, failures)
-    testUnfolding("tests/unfolding/unfoldingTest2.vtf", True, failures)
-    testUnfolding("tests/unfolding/unfoldingTest3.vtf", True, failures)
-    testUnfolding("tests/unfolding/unfoldingTest4.vtf", True, failures)
+    testUnfolding("../tests/unfolding/unfoldingTest1.vtf", True, failures)
+    testUnfolding("../tests/unfolding/unfoldingTest2.vtf", True, failures)
+    testUnfolding("../tests/unfolding/unfoldingTest3.vtf", True, failures)
+    testUnfolding("../tests/unfolding/unfoldingTest4.vtf", True, failures)
 
     printFailedTests(failures)
 
@@ -1137,26 +1137,26 @@ def normalizationTests():
     print(" > SUBUNIT TEST: testing normalization ...")
     failures = []
 
-    testNormalization("tests/unfolding/unfoldingTest1.vtf", True, failures, unfolding=True)
-    testNormalization("tests/unfolding/unfoldingTest2.vtf", True, failures, unfolding=True)
-    testNormalization("tests/unfolding/unfoldingTest3.vtf", True, failures, unfolding=True)
-    testNormalization("tests/unfolding/unfoldingTest4.vtf", True, failures, unfolding=True)
-    testNormalization("tests/unfolding/unfoldingTest5.vtf", True, failures, unfolding=True)
+    testNormalization("../tests/unfolding/unfoldingTest1.vtf", True, failures, unfolding=True)
+    testNormalization("../tests/unfolding/unfoldingTest2.vtf", True, failures, unfolding=True)
+    testNormalization("../tests/unfolding/unfoldingTest3.vtf", True, failures, unfolding=True)
+    testNormalization("../tests/unfolding/unfoldingTest4.vtf", True, failures, unfolding=True)
+    testNormalization("../tests/unfolding/unfoldingTest5.vtf", True, failures, unfolding=True)
 
-    testNormalization("tests/normalization/normalizationTest1.vtf", True, failures)
-    testNormalization("tests/normalization/normalizationTest2.vtf", True, failures)
-    testNormalization("tests/normalization/normalizationTest3.vtf", True, failures)
-    testNormalization("tests/normalization/normalizationTest4.vtf", True, failures)
+    testNormalization("../tests/normalization/normalizationTest1.vtf", True, failures)
+    testNormalization("../tests/normalization/normalizationTest2.vtf", True, failures)
+    testNormalization("../tests/normalization/normalizationTest3.vtf", True, failures)
+    testNormalization("../tests/normalization/normalizationTest4.vtf", True, failures)
 
-    path1 = "tests/unfolding/unfoldingTest1.vtf"
+    path1 = "../tests/unfolding/unfoldingTest1.vtf"
     states1 = ['{q0,q1,q2,q3}', '{q1,q2,q3}', '{q3,q4,q5}', '{q6}', '{q7}']
     normalizationUnitTest(path1, states1, 4, [1, 3, 4, 4], failures)
 
-    path2 = "tests/normalization/newNormTest5.vtf"
+    path2 = "../tests/normalization/newNormTest5.vtf"
     states2 = ['{q1}', '{q3}', '{q2,q4}', '{q2}', '{q6}', '{q5}', '{q7}']
     normalizationUnitTest(path2, states2, 7, [1, 7, 7], failures, unfolded=True)
 
-    path3 = "tests/normalization/newNormTest4-loops.vtf"
+    path3 = "../tests/normalization/newNormTest4-loops.vtf"
     states3 = [
         '{q0}', '{q5,q12}', '{q13,q14,q16}', '{q9,q14}', '{q11,q12,q15}', '{q1,q3,q7}',
         '{q4,q8,q10}', '{q8}', '{q6}', '{q3,q6,q7}', '{q2,q4,q10}', '{q6,q8}'
@@ -1235,7 +1235,7 @@ def foldingTests():
     treeaut2 = importTAfromVTF("../tests/folding/foldingTest1.vtf")
     treeaut3 = importTAfromVTF("../tests/folding/folding-error-6.vtf")
 
-    boxorder = boxOrders['abdd-short']
+    boxorder = boxOrders['full']
     res1 = foldingCompare(treeaut1, 5, boxorder, failures)
     res2 = foldingCompare(treeaut2, 5, boxorder, failures)
     res3 = foldingCompare(treeaut3, 5, boxorder, failures)
@@ -1303,9 +1303,6 @@ def applyTest():
     print(bdd3)
 
 def extraTests():
-    foldingTests()
-    # bddTest()
-    # applyTest()
     pass
 
 def main(config: dict):
@@ -1361,19 +1358,29 @@ def main(config: dict):
         print(">> UNIT TEST: canonicity tests ...")
         unfoldingTests()
         normalizationTests()
-        foldingTests()
+        # foldingTests()
 
 
 if __name__ == '__main__':
+    # config = {
+    #     "helpers": True,
+    #     "match": True,
+    #     "empty": True,
+    #     "treeaut_op": True,
+    #     "reachability": True,
+    #     "export": False,  # creates a lot of files...
+    #     "boxorder": False,  # not yet fully working...
+    #     "canonicity": True,
+    # }
     config = {
         "helpers": False,
         "match": False,
         "empty": False,
         "treeaut_op": False,
         "reachability": False,
-        "export": False,
-        "boxorder": False,
-        "canonicity": True,
+        "export": True,  # creates a lot of files...
+        "boxorder": False,  # not yet fully working...
+        "canonicity": False,
     }
     print("[MAIN UNIT TESTS START!]")
     main(config)

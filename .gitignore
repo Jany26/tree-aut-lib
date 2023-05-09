@@ -10,6 +10,7 @@ src/tmb
 src/dimacs-out
 data
 .vscode
+cpp/bin
 
 0-adHocTests.ipynb
 *.png

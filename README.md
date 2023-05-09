@@ -13,41 +13,74 @@ Supervisor: ondrik / Ing. Ondrej Lengal, PhD. <lengal@fit.vutbr.cz>
 
 # File structure and content
 
-- py/ 
+`cpp/` - contains C++ parser for BLIF files and DIMACS files using BuDDy library
 
-    - these files implement the functions and algorithms for tree-aut-lib
+* `blif_parser.cpp`     ... BlifParser implementation (supports only .names constructs), can convert combinational circuit BLIF description into a BDD (or multiple BDDs)
+* `blif_parser.h`       ... BlifParser class
+* `dimacs_parser.cpp`   ... DimacsParser class + implementation (.cnf files)
+* `tree_aut.cpp`        ... some preliminary work on designing tree automata classes in C++
 
-    * ta_classes.py   ... tree node and tree automaton classes
-    * ta_lib.py       ... basic library (operations) for working with tree automata
+`py/` - these files implement the functions and algorithms for tree automata and ABDDs
 
-    - these files and directories are used for testing: 
+* `adhoc_tester.py`         ... not important - only used for some testing/debugging
+* `all_tests.py`            ... contains test suites for regression testing for all functions from other modules
+* `apply.py`                ... Python implementation of BDD apply operations (not efficient)
+* `bdd.py`                  ... BDD class + iterators, functions etc.
+* `blif_analysis.py`        ... script for running BLIF tests
+* `blif_parser.py`          ... Python implementation of BLIF parsing (use the upgraded, faster C++ version)
+* `coocurrence.py`          ... preliminary (so far unsuccessful) work on trying to total order over boxes via language inclusion checking
+* `dimacs_analysis.py`      ... script for running DIMACS tests
+* `dimacs.py`               ... Python implementation of DIMACS parser (use the upgraded, faster C++ version)
+* `folding_helpers.py`      ... helping functions for folding (extra checks, etc.)
+* `folding_intersectoid.py` ... algorithms on intersectoid creating and modifying
+* `folding.py`              ... implementation of main algorithms behind *folding*
+* `format_abdd.py`          ... import/export TTreeAut into ABDD format
+* `format_dot.py`           ... export TA to DOT format (text-file)
+* `format_tmb.py`           ... import/export TA to/from TMB format
+* `format_vtf.py`           ... import/export TA to/from (modified) VATA format
+* `normalization.py`        ... main *normalization* algorithm + all supporting functions
+* `render_dot.py`           ... export TA to DOT format (images) using `graphviz` library
+* `simulation.py`           ... equivalence testing - iterating over all assignments
+* `ta_classes.py`           ... *basic classes* (TTreeAut, TEdge, TTransition, TTreeNode)
+* `ta_functions.py`         ... *treeaut library* (basic TA operations)
+* `test_data.py`            ... helpful structures used in tests (mainly TAs)
+* `test_trees.py`           ... small tree examples used in tests (+ helping functions)
+* `unfolding.py`            ... *unfolding* algorithm + helping functions
+* `utils.py`                ... boxOrders and some debug functions
 
-    * main.py         ... runs all test units from all_tests.py
-    * tests/          ... test boxes (TAs) in vtf format
-    * all_tests.py    ... contains test units for all functions from other modules
-    * test_data.py    ... helpful structures used in tests (mainly TAs)
-    * test_trees.py   ... small tree examples used in tests (+ helping functions)
+These files serve as a documentation/demonstration of Tree automata library usage:
 
-    - these files are for importing and exporting TAs:
+* `1-introduction.ipynb`
+* `2a-boxes.ipynb`
+* `2b-match.ipynb`
+* `3-nonEmptiness.ipynb`
+* `4-operations.ipynb`
+* `5-reachability.ipynb`
+* `6-unfolding.ipynb`
+* `7-normalization.ipynb`
+* `8-folding.ipynb`
 
-    * format_dot.py   ... export TA to DOT format
-    * format_tmb.py   ... import/export TA to/from TMB format
-    * format_vtf.py   ... import/export TA to/from VATA format
+`tests/` - test files used in `all_tests.py`
 
-    * render_dot.py      ... integrates automata image export into Jupyter Notebook
-    
+`benchmark/` - contains benchmarks that were used in results (not all benchmarks were tested)
 
+* `benchmark/blif/`     ... BLIF files representing combinational circuits used as benchmarks (C432, C499, C880, C1355, C1908 were tested)
+* `benchmark/dimacs/`   ... DIMACS format - CNF functions - 20var, 50var, 100var (only 20var were tested so far)
+* `benchmark/ntas/`     ... test TAs - larger, more complex than in basic tests  - more info at https://github.com/ondrik/automata-benchmarks
 
-    - these following directories are created as a result of tests:
-    - (can be removed using `make clean`)
+`results` - node counts and box usage statistics results (+ scripts to generate figures)
 
-    * dot/            ... output data from export to DOT format
-    * tmb/            ... output data from export to TMB format
-    * vtf/            ... output data from export to VTF format
-    * vtf-to-dot/     ... output data from export to DOT from VTF format
+* `results/csv`     ... csv data for node counts and box usage from DIMACS and BLIF benchmark testing
+* `results/figures` ... graphs of results (generated by python scripts located in `results`)
+* `results/raw`     ... raw results in a more readable format
 
-- benchmark/ ... test TAs - larger, more complex than in basic tests 
-    - more info at https://github.com/ondrik/automata-benchmarks
+# Additional Notes
 
-    * tmb/ 
-    * vtf/
+- these following directories are created as a result of export tests (VTF, TMB, DOT):
+- (can be removed using `make clean`)
+
+* `py/dot/`            ... output data from export to DOT format
+* `py/tmb/`            ... output data from export to TMB format
+* `py/vtf/`            ... output data from export to VTF format
+* `py/vtf-to-dot/`     ... output data from export to DOT from VTF format
+

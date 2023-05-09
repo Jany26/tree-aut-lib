@@ -16,7 +16,7 @@ import os
 from unfolding import unfold
 from normalization import treeAutNormalize
 from folding import treeAutFolding, createIntersectoid
-from test_data import boxCatalogue
+from test_data import boxCatalogue, boxesDict
 
 import blif_analysis
 
@@ -530,6 +530,13 @@ def printBoxedEdges(ta: TTreeAut):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
-    pass
+    print(" > SUBUNIT TEST: exporting to TMB format ...")
+
+    if not os.path.exists("data/tmb"):
+        os.makedirs("data/tmb")
+
+    failures = []
+    for name, box in boxesDict.items():
+        tmb.exportTAtoTMB(box, f"data/tmb/{name}.tmb")
 
 # End of file test.py

@@ -1,3 +1,9 @@
+"""
+[file] unfolding.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] ABDD/BDA unfolding procedure implementation.
+"""
+
 from utils import *
 from ta_classes import *
 from ta_functions import *

@@ -1,9 +1,9 @@
-# bdd.py
-# Module for implementing basic BDD operations.
-# Needed in order to parse DIMACS format (read as DNF* for simplification).
-#
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+"""
+[file] bdd.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Module for implementing basic BDD operations.
+[note] Needed in order to parse DIMACS format (read as DNF* for simplification).
+"""
 
 from typing import Union
 
@@ -464,21 +464,6 @@ def addDontCareBoxes(ta: TTreeAut, vars: int) -> TTreeAut:
                 if len(edge.info.boxArray) < idx + 1:
                     edge.info.boxArray = [None] * len(edge.children)
                 edge.info.boxArray[idx] = 'X'
-                # print(f"adding box-X to {'H' if idx else 'L'} in edge {edge}")
-            # if (child not in leaves and varVis[child] - varVis[edge.src] == 2):
-            #     # print(f"  > bad edge = {edge}, state {child} has var {varVis[child]}")
-            #     newState = f"temp{counter}"
-            #     edge.children[idx] = newState
-            #     newEdge = TTransition(
-            #         newState, 
-            #         TEdge('LH', [], f"{varPrefix}{varVis[edge.src] + 1}"),
-            #         [child, child]
-            #     )
-            #     newKey = f"tempKey{counter}"
-            #     counter += 1
-            #     # print(f"  > edited edge {edge}")
-            #     # print(f"  > adding extra ({counter}) edge = {newEdge}")
-            #     skippedVarEdges.append((newState, newKey, newEdge))
     for newState, newKey, newEdge in skippedVarEdges:
         if newState not in result.transitions:
             result.transitions[newState] = {}

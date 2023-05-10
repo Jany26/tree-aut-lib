@@ -1,9 +1,9 @@
-# all_tests.py
-# Some basic testing for tree implementation and tree automata
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+"""
+[file] all_tests.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Some basic testing for tree implementation and tree automata
+"""
 
-# from _typeshed import FileDescriptor
 from io import TextIOWrapper
 import os
 import gc

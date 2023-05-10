@@ -1,7 +1,11 @@
-# format_abdd.py
-# Basic classes needed for implementing tree automata
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+
+"""
+[file] format_abdd.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Import/export operations into .abdd format.
+[note] see comments for a description of the format of files in
+../tests/abdd-format/*.dd
+"""
 
 from ta_classes import *
 from copy import deepcopy
@@ -180,7 +184,5 @@ def createTAfromABDD(file, name) -> TTreeAut:
 
     return ta
    
-
-    
 
 # End of file format_abdd.py

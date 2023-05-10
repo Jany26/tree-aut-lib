@@ -1,3 +1,9 @@
+"""
+[file] folding_intersectoid.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Functions for manipulating intersectoid construction used in folding.
+"""
+
 from ta_classes import *
 from ta_functions import *
 from test_data import *
@@ -7,9 +13,13 @@ import itertools
 from folding_helpers import *
 
 
-# creates a "key" for transition dictionary modified for working with
-# an "intersectoid" tree automaton
+
 def intersectoidEdgeKey(e1: list, e2: list) -> str:
+    """
+    [description]
+    Creates a "key" for transition dictionary modified for working with
+    an "intersectoid" tree automaton.
+    """
     state = f"({e1.src}, {e2.src})"
     symb = e2.info.label
     var = ""
@@ -26,29 +36,45 @@ def intersectoidEdgeKey(e1: list, e2: list) -> str:
     return key
 
 
-# Funtion produces an intersectoid from the 'ta' UBDA and 'box' TA.
-# This intersectoid is used in boxFinding() to determine the result mapping.
-# Intersectoid is similar to a 'product' or an 'intersection' tree automaton.
-# state set: Q' = Q_v x Q_b (v = normalized BDA, b = box)
-#
-# types of transitions and how they came to be:
-#
-# 1) (q,s)-{LH}->[(q1,s1),(q2,s2)] | q-{LH}->(q1,q2) is in transition
-#       dictionary (trd.) of v and s-{LH}->(s1,s2) is in tr.dict. of b
-#
-# 2) (q,s)-{LH,var}->[(q1,s1),(q2,s2)] | q-{LH,var}->(q1,q2) is in trd.
-#       of v and s-{LH}->(s1,s2) is in trd. of b
-#
-# 3) (q,s)-{a}->() | q-{a}->() in trd. of v and s-{a}->() in trd. of b
-#       // a is a terminal symbol (e.g. '0' or '1') => output transition
-#
-# 4) (q,s)-{Port_i}->() | s-{Port_i}->() in tr.d of b
+
 def createIntersectoid(
     ta: TTreeAut,
     box: TTreeAut,
     root: str,
     helper: FoldingHelper
 ) -> TTreeAut:
+    """
+    [description]
+    Funtion produces an intersectoid from the 'ta' UBDA and 'box' TA.
+    This intersectoid is used in boxFinding() to determine the result mapping.
+    Intersectoid is similar to a 'product' or an 'intersection' tree automaton.
+    state set: Q' = Q_v x Q_b (v = normalized BDA, b = box)
+
+    types of transitions and how they came to be:
+
+    1) (q,s)-{LH}->[(q1,s1),(q2,s2)] | q-{LH}->(q1,q2) is in transition
+        dictionary (trd.) of v and s-{LH}->(s1,s2) is in tr.dict. of b
+
+    2) (q,s)-{LH,var}->[(q1,s1),(q2,s2)] | q-{LH,var}->(q1,q2) is in trd.
+        of v and s-{LH}->(s1,s2) is in trd. of b
+
+    3) (q,s)-{a}->() | q-{a}->() in trd. of v and s-{a}->() in trd. of b
+        // a is a terminal symbol (e.g. '0' or '1') => output transition
+
+    4) (q,s)-{Port_i}->() | s-{Port_i}->() in tr.d of b
+
+    [parameters]
+    'ta' - UBDA that is folded (first states of the tuples)
+    'box' - TA representing reduction that is analysed (second states of the tuples)
+    'root' - state from the UBDA ('ta') where the intersectoid is created from
+    'helper' - FoldingHelper instance with additional information used during
+    intersectoid creation
+
+    [return]
+    Tree automaton/UBDA representing the intersectoid (contains additional
+    output symbols/output edges => port transitions), which is used later
+    for finding the correct port-state mapping for applying folding reductions.
+    """
     helper.keyCounter = 0
     edges = {}
     visited = set()
@@ -86,8 +112,6 @@ def createIntersectoid(
                     edgeObj = TEdge(be.info.label, [], "")
                     edge = TTransition(state, edgeObj, [])
                     edges[state][intersectoidEdgeKey(te, be)] = edge
-                    # edges[state][f'k{helper.keyCounter}'] = edge
-                    # helper.keyCounter += 1
                 elif not skip:
                     children = []
                     for i in range(len(te.children)):
@@ -97,11 +121,8 @@ def createIntersectoid(
                     edgeObj = TEdge(be.info.label, [], f"{te.info.variable}")
                     if len(children) != 0:
                         helper.temp.append((splitTupleName(state), key))
-                        # helper.flagEdge(key, te)
                     edge = TTransition(state, edgeObj, children)
                     edges[state][intersectoidEdgeKey(te, be)] = edge
-                    # edges[state][f'k{helper.keyCounter}'] = edge
-                    # helper.keyCounter += 1
             # for box edge
         # for tree automaton edge
         visited.add(state)
@@ -113,6 +134,22 @@ def createIntersectoid(
 
 
 def intersectoidReachability(ta: TTreeAut, varVis) -> list:
+    """
+    [description]
+    Computes bottom-up reachability within the intersectoid with regards to
+    properly labeled port transitions with variables.
+    Port transitions without variables are considered invalid.
+
+    [parameters]
+    'ta' - intersectoid to analyze
+
+    [return]
+    list of states that are reachable without invalid port transitions.
+
+    [note]
+    This function is used after creating the intersectoid and saturating the
+    transitions with variables where possible.
+    """
     def intersectoidTupleGen(state: str, parents: list, varVis: dict) -> list:
         possibilites = product(parents, repeat=2)
         result = []
@@ -127,7 +164,6 @@ def intersectoidReachability(ta: TTreeAut, varVis) -> list:
 
     copyta = copy.deepcopy(ta)
     copyta.reformatKeys()
-    # outputs = ta.getOutputEdges(inverse=True)
 
     edgesToPop = []
     for edgeDict in copyta.transitions.values():
@@ -148,26 +184,24 @@ def intersectoidReachability(ta: TTreeAut, varVis) -> list:
 
     copyta = removeUselessStates(copyta)
     return reachableBU(copyta)
-    # workList = copyta.getOutputStates()
-    # result = copyta.getOutputStates()
-    # doneTuples = set()
-    # while len(workList) > 0:
-    #     state = workList.pop(0)
-    #     tuples = intersectoidTupleGen(state, result, varVis)
-    #     for i in tuples:
-    #         doneTuples.add(str(i))
-    #     for edge in iterateEdges(copyta):
-    #         if len(edge.children) == 0:
-    #             continue
-    #         if edge.children not in tuples:
-    #             continue
-    #         if edge.src not in result:
-    #             workList.append(edge.src)
-    #             result.append(edge.src)
-    # return result
 
 
 def addVariablesTD(treeaut: TTreeAut, helper: FoldingHelper):
+    """
+    [description]
+    Top-down variable saturation. Can compute variables to edges where child
+    states do not contain self looping transitions (so it is clear which variables
+    can go there) and recursively propagates following variables down from
+    each edge that was var-labeled beforehand.
+    
+    [parameters]
+    'treeaut' - usually an intersectoid to saturate
+    'helper' - contains additional information like minVar, maxVar, etc.,
+    that are useful in this procedure
+
+    [note]
+    nothing is returned -> the variables are saturated in situ into 'treeaut'
+    """
     def addVariables(ta: TTreeAut, var: int, state: str, helper: FoldingHelper):
         if var > helper.maxVar + 1:
             return
@@ -225,6 +259,20 @@ def addVariablesTD(treeaut: TTreeAut, helper: FoldingHelper):
 
 
 def reducePortableStates(intersectoid: TTreeAut):
+    """
+    [description]
+    This function is used to find out which tuples of port states
+    (in multiport boxes => port arity > 1) can be used as a mapping.
+
+    This is computed by trying out all different combinations of port transitions
+    (the other port transitions of the same type are temporarily left out)
+    and checking if the language of the intersectoid is non-empty.
+
+    If the language of the intersectoid is empty for the particular combination
+    of port transitions => the mapping would not be possible and thus these
+    are then not considered.
+
+    """
     def getPortEdgelookup(intersectoid: TTreeAut):
         # each port has paths to edge lookup (state, key)
         result: dict[str, list[tuple(str, str)]] = {}

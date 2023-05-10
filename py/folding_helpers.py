@@ -1,3 +1,13 @@
+"""
+[file] folding_helpers.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Helper functions and FoldingHelper class used during all
+essential algorithms/operations regarding folding.
+
+[note] mostly redundant or self-explanatory functions
+"""
+
+
 from ta_classes import *
 from ta_functions import *
 from test_data import *
@@ -524,6 +534,7 @@ def getMaximalMappingFixed(intersectoid: TTreeAut, ta: TTreeAut, ports: dict) ->
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # different versions of manipulating the edge targets
 # after finding out the mapping (used in treeAutFolding function)
+# ~~deprecated~~, kept for documenting/archiving purposes
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # for i, (mapState, var) in enumerate(mapping.values()):

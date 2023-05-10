@@ -1,7 +1,8 @@
-# test_data.py
-# Test variables used in testSuite.py for better readability
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+"""
+[file] test_data.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Test automata/structures used in all_tests.py
+"""
 
 from ta_functions import *
 from test_trees import *

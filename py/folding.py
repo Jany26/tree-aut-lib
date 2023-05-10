@@ -1,3 +1,10 @@
+"""
+[file] folding.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] All top-level important folding procedures.
+"""
+
+
 from ta_classes import *
 from ta_functions import *
 from test_data import *
@@ -16,12 +23,19 @@ from folding_intersectoid import *
 def getStateWitnessRelation(intersectoid: TTreeAut, port: str):
     """
     [description]
+    Analyzes the intersectoid and gets states that are related to each other.
+    That states are in relation if they in every tree of the intersectoid
+    language there are all of or none of the related states.
+    This relation is equivalence relation so the "neighbouring" or "related"
+    states form partitions -> this function analyzes the properties of the
+    transition function and returns the partitions of states.
 
     [parameters]
+    'intersectoid' - TA/UBDA that is analyzed
+    'port' - with regards to which port is the relation computed
 
     [return]
-
-    [notes]
+    Relation describing partitions of states that are always encountered together.
     """
     def isEdgeUnified(children: list):
         return len(set(children)) <= 1
@@ -67,12 +81,12 @@ def getMapping(intersectoid: TTreeAut, varvis, reach: dict[str, set]) -> dict:
     fails and thus no box folding should be applied.
 
     [parameters]
-    - interesctoid - contains states with output port transitions, for each
+    'interesctoid' - contains states with output port transitions, for each
     different port type (2), one state will be chosen as the mapped state,
     according to the reachability relation, such that the chosen state will
     "cover" the biggest pattern of the folded TA, while not changing semantics 
 
-    - reach - reachability dict - for each state a set of reachable states,
+    'reach' - reachability dict - for each state a set of reachable states,
     reachability comparison is necessary for getting "maximum" mapping wrt. the
     semantics of the original unfolded tree automaton
 
@@ -136,9 +150,9 @@ def boxFinding(
     state in the normalized (and well-specified) UBDA.
     
     [parameters]
-      'ta' - UBDA on which we try to apply reduction
-      'box' - specifies which tree automaton should be applied
-      'root' - which state is the starting point of the procedure
+    'ta' - UBDA on which we try to apply reduction
+    'box' - specifies which tree automaton should be applied
+    'root' - which state is the starting point of the procedure
 
     [return]
       - dictionary which specifies mapping of the output ports of the 'box'
@@ -167,6 +181,12 @@ def boxFinding(
 
 
 def mappingIsCorrect(mapping: dict, varVis: dict):
+    """
+    [description]
+    Checks if the mapped states and variables they see are consistent.
+    If not, the mapping is not correct and thus folding fails for that particular
+    iteration.
+    """
     if mapping == {}:
         return False
     biggerVar = False
@@ -183,6 +203,14 @@ def mappingIsCorrect(mapping: dict, varVis: dict):
     return True
 
 def getBoxIndex(edgePart):
+    """
+    [decsription]
+    Since childern list of transitions is merged and does not have to be
+    consistent with the arity of the symbol on transition (and is also related)
+    to the box arities used on the transition parts,
+    this function computes the starting child index of the states related
+    to the edgePart child-index.
+    """
     # edgePart contains 5 items: [key, child-index, child-state, source-state, edge]
     currIdx = 0
 
@@ -196,20 +224,27 @@ def getBoxIndex(edgePart):
     return currIdx
     
 
-# Main function implementing process of folding.
-# Applying separate folding steps implemented in boxFinding() funtion.
-# Respects the chosen box order.
-# inputs:
-#   'ta' - UBDA that we want to apply folding on,
-#   'boxes' - ordered list of box names, which can be used to reduce the 'ta'
-# output: (folded) UBDA with applied reductions (same language as the input)
-def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,
+def treeAutFolding(ta: TTreeAut, boxes: list, maxVar: int,                  
     verbose=False,
     export_vtf=False,
     export_png=False,
     output=None,
     exportPath=None,
 ) -> TTreeAut:
+    """
+    [description]
+    Main function implementing process of folding.
+    Applying separate folding steps implemented in boxFinding() funtion.
+    Respects the chosen box order.
+
+    [parameters]
+    'ta' - UBDA that we want to apply folding on,
+    'boxes' - ordered list of box names, which can be used to reduce the 'ta'
+
+    [return]
+    (folded) UBDA with applied reductions (same language as the input)
+    """
+    
     result = copy.deepcopy(ta)
     fillBoxArrays(result)  # in case of [None, None] and [] discrepancies
     helper = FoldingHelper(ta, verbose, export_vtf, export_png, output, exportPath, maxVar)

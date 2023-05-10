@@ -1,3 +1,9 @@
+/**
+ * blif_parser.h
+ * Some helper macros, and used structure definitions plus
+ * BlifParser class definition.
+ * 
+*/
 #include "bdd.h"
 
 #include <stdio.h>
@@ -143,3 +149,5 @@ class BlifParser {
 };
 
 #endif // BLIF_PARSER_H
+
+/* End of file blif_parser.h */

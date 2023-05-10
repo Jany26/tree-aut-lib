@@ -1,3 +1,12 @@
+"""
+[file] dimacs_analysis.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Folding tests on processed Boolean functions in
+conjuntive normal form (CNF) - DIMACS format.
+[note] Also gets box usage statistics for ABDD model.
+"""
+
+
 import os
 import copy
 

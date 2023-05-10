@@ -1,7 +1,11 @@
-# render_dot.py
-# Module for integration of TreeAutLib into Jupyter Notebook (IPython)
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+"""
+[file] render_dot.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Functions for exporting tree automaton into DOT format (.dot)
+for generating a graphical representation of the TA. (IMAGE OUTPUT)
+[note] see graphviz library for python documentation
+[link] https://graphviz.readthedocs.io/en/stable/manual.html
+"""
 
 import graphviz
 

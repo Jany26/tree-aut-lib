@@ -1,3 +1,10 @@
+"""
+[file] adhoc_tester.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] helping tester functions for debugging, optimization, etc.
+[note] not essential/important for the final working version
+"""
+
 from format_vtf import *
 from ta_functions import *
 from apply import *

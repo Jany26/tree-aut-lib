@@ -1,3 +1,7 @@
+/**
+ * dimacs_parser.cpp
+ * Dimacs parser class plus methods implementation.
+*/
 #include "bdd.h"
 
 #include <stdio.h>
@@ -17,7 +21,6 @@ class DimacsParser {
     public:
         std::string input_file, output_file, name;
         int variables_count, clausules_count, processed_clausules;
-        // int variables_count, clausules_count;
         bool cnf; // if true => parsed as CNF, if false => DNF
         std::vector<std::string> tokens;
         std::string current_token;
@@ -92,7 +95,6 @@ void DimacsParser::tokenize() {
             line = "";
             continue;
         }
-        // std::cout << line;
         std::string word;
         line += '\n';
         for (char c : line) {
@@ -117,7 +119,6 @@ std::string DimacsParser::get_token() {
         this->current_token = "";
         return "";
     }
-    // std::cout << this->current_token << std::endl;
     this->current_token = this->tokens[0];
     this->tokens.erase(this->tokens.begin());
     return this->current_token;
@@ -131,6 +132,7 @@ void DimacsParser::parse() {
             preamble();
             bdd_setvarnum(this->variables_count);
         } else {
+            // progress tracker
             // printf("clausule %d of %d\n", this->processed_clausules, this->clausules_count);
             clausule();
             this->processed_clausules++;
@@ -206,7 +208,6 @@ void DimacsParser::export_to_abdd() {
     std::string temp_name = this->output_file;
     temp_name += ".temp";
     FILE *temp = fopen(temp_name.c_str(), "w");
-    // fprintf(stderr, "... creating file %s\n", this->output_file.c_str());
     if (temp == NULL) {
         fprintf(stderr, "BlifParser: export_to_abdd():");
         fprintf(stderr, "failed to open file '%s.temp'\n", this->output_file.c_str());
@@ -224,20 +225,12 @@ void DimacsParser::export_to_abdd() {
         fprintf(stderr, "failed to re-open file '%s.temp'\n", this->output_file.c_str());
         return;
     }
-    // this->output_file = this->name + this->construct_counter;
-    // this->output_file = "./benchmarks/" + this->name + ".var" + std::to_string(this->clausules_count) + ".abdd";
-    // printf("%s\n", this->output_file.c_str());
     FILE *f = fopen(this->output_file.c_str(), "w");
 
     fprintf(f, "@BDD\n");
     fprintf(f, "# imported from %s\n", this->input_file.c_str());
     fprintf(f, "%%Vars %d\n", this->variables_count);
     fprintf(f, "# Variable mapping (from original file):\n");
-
-    // fprintf(f, "#");
-    // for (auto &it: this->var_map)
-    //     fprintf(f, " %s:%d", it.first.c_str(), it.second);
-    // fprintf(f, "\n");
 
     fprintf(f, "%%Root %d\n\n", this->result.id());
 
@@ -315,3 +308,5 @@ int main(/*int argc, char **argv*/) {
 
     return 0;
 }
+
+/* End of file dimacs_parser.cpp */

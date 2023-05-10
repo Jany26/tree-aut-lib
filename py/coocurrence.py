@@ -1,8 +1,10 @@
-# cooccurrence.py
-# Functions for computing coocurence relation between two tree automata.
-# Initial experiment on trying to find a partial order over the boxes.
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+"""
+[file] coocurrence.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Functions for computing coocurence relation between two tree automata.
+[note] Part of a preliminary work on trying to find a total order over boxes
+with regards to their language inclusion properties.
+"""
 
 
 from ta_classes import *

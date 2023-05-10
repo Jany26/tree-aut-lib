@@ -1,3 +1,11 @@
+"""
+[file] simulation.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Equivalence testing via inputting all possible variable assignments. 
+[note] Used during developing/debugging the folding procedure.
+"""
+
+
 from typing import Union
 from ta_classes import *
 from bdd import BDD

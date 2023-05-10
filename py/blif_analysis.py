@@ -1,3 +1,12 @@
+"""
+[file] blif_analysis.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Analysing properties of processed combinational circuits
+from BLIF files (benchmarks).
+[note] Also performs folding tests on BLIF benchmarks with all compared models
+(box orders) and gets box usage statistics for ABDD model.
+"""
+
 import re
 import os
 import format_abdd as abdd

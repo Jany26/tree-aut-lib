@@ -1,7 +1,8 @@
-# ta_classes.py
-# Basic classes needed for implementing tree automata
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+"""
+[file] ta_classes.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Basic classes needed for implementing tree automata
+"""
 
 import copy
 from utils import stateNameSort

@@ -1,9 +1,11 @@
-# format_tmb.py
-# Functions for exporting tree automaton into TMB format (.tmb)
-# for generating a graphical representation of the TA.
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
-
+"""
+[file] format_tmb.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Import/Export into TMB (Timbuk) format for tree automata.
+[note] See TIMBUK documentation for the format information and where and how
+it was initially used.
+[link] https://people.irisa.fr/Thomas.Genet/timbuk/
+"""
 
 from format_vtf import *
 from ta_classes import *

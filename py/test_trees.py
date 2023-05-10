@@ -1,7 +1,8 @@
-# test_trees.py
-# Some basic trees for testing (and helper functions)
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+"""
+[file] test_trees.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Some basic trees for testing (and helper functions)
+"""
 
 from ta_functions import *
 import re

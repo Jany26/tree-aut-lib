@@ -1,3 +1,13 @@
+"""
+[file] format_vtf.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Import/Export into VATA format for tree automata/UBDA/ABDDs
+used in this project.
+[note] See VATA (documentation and source files for the format information and
+where and how it was initially used. 'libVATA' is a C++ library for efficient
+manipulation with non-deterministic finite (tree) automata.
+[link] https://github.com/ondrik/libvata
+"""
 # format_vtf.py
 # Functions for loading/saving tree automaton from/to VATA format (.vtf)
 # Implementation of tree automata for article about automata-based BDDs

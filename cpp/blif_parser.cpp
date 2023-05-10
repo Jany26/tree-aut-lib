@@ -1,3 +1,8 @@
+/**
+ * blif_parser.cpp
+ * Implementation of all BlifParser methods plus some helper functions.
+ * 
+*/
 #include "blif_parser.h"
 
 template<typename V>
@@ -59,7 +64,6 @@ void BlifParser::tokenize() {
             line = "";
             continue;
         }
-        // std::cout << line;
         std::string word;
         line += '\n';
         for (char c : line) {
@@ -107,8 +111,8 @@ void BlifParser::initial_parse() {
     // temporary set for storing all found variable strings
     std::unordered_set<std::string> vars = {};
     int i = 0;
-    // std::unordered_set<std::string> keywords = {".inputs", ".outputs", ".names", };
 
+    // skip model and EOLs until .inputs or .outputs fields are reached
     while (i < (int) this->tokens.size()) {
         if (this->tokens[i] == ".inputs" or this->tokens[i] == ".outputs") {
             i++; // skip keyword
@@ -156,12 +160,16 @@ void BlifParser::initial_parse() {
         } while (this->tokens[i] != ".names" and this->tokens[i] != ".end");
         this->parsed_constructs[last_variable] = current_construct;
     }
+    
+    // if smartvars is not used, variables are assigned numbers in random order /
+    // order of appearance
     if (!this->smartvars) {
         this->var_map = {};
         for (const auto &var: vars) {
             this->var_map[var] = this->var_counter;
             this->var_counter++;
         }
+    // some benchmarks have variables in the form of XXGAT(YY) => YY is then used as a variable index
     } else {
         const std::regex var_regex("\\(([^(^)]*)\\)"); // finding the inside content of parentheses
         std::smatch group;
@@ -203,10 +211,6 @@ void BlifParser::export_to_abdd() {
         export_to_abdd_append_result();
     } else if (this->parsing == OUTPUT_FUNCTION) {
         for (auto &it : this->bdd_map) {
-            // printf("it.first = %d\n", it.first);
-            // // printf("it.second")
-            // printf("it.second.second = %d\n", it.second.second);
-            // bdd_printtable(it.second.first);
             if (it.second.second) {
                 continue;
             }
@@ -695,7 +699,6 @@ void BlifParser::pick_result() {
     int max_bdd;
     int max_nodes = 0;
     int total_nodes = 0;
-    // this->print();
     if (this->parsing == CHARACTERISTIC_FUNCTION) {
         int total_nodes = bdd_nodecount(this->result);
         fprintf(stderr, "total node count = %d\n", total_nodes);
@@ -707,7 +710,6 @@ void BlifParser::pick_result() {
             continue;
         }
         int node_count = bdd_nodecount(it.second.first);
-        // fprintf(stderr, "var %d partial = %d\n", it.first, node_count);
         total_nodes += node_count;
         if (node_count > max_nodes) {
             max_bdd = it.first;
@@ -721,11 +723,9 @@ void BlifParser::pick_result() {
 void BlifParser::build_var_dependency() {
     int output = this->names.back();
     this->names_map[output] = {};
-    // printf("build_var_dependency()\n");
     for (int i = 0; i < (int) this->names.size() - 1; ++i) {
         int input = this->names[i];
         this->names_map[output].push_back(input);
-        // printf("[%d] += %d\n", output, input);
     }
 
 }
@@ -760,7 +760,6 @@ void BlifParser::variable_order_dfs() {
         var_label_dfs(this->names_map, visited, this->var_order, var);
     }
 
-    // PRINT_VECTOR("order", this->var_order);
     if (this->parsing == CHARACTERISTIC_FUNCTION)
         return;
     used = {};
@@ -771,10 +770,8 @@ void BlifParser::variable_order_dfs() {
     for (int i = 0; i < (int) this->var_order.size(); ++i)
         if (used.find(this->var_order[i]) == used.end())
             to_remove.push_back(i);
-    // for (auto &idx : to_remove)
     for (int i = to_remove.size() - 1; i >= 0; --i)
         this->var_order.erase(this->var_order.begin() + to_remove[i]);
-    // PRINT_VECTOR("order", this->var_order);
 }
 
 int main(int argc, char* argv[]) {
@@ -811,3 +808,5 @@ int main(int argc, char* argv[]) {
     bdd_done();
     return 0;
 }
+
+/* End of file blif_parser.cpp */

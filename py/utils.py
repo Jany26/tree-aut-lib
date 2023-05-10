@@ -1,3 +1,10 @@
+"""
+[file] utils.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] some helper utilities used throughout other modules
+"""
+
+
 import sys
 
 

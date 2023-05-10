@@ -66,6 +66,9 @@ These files serve as a documentation/demonstration of Tree automata library usag
 
 `tests/` - test files used in `all_tests.py`
 
+* `tests/blif`            ... preprocessed BLIF benchmarks (abdd)
+* `tests/blif-report.txt` ... BLIF benchmarks metadata (node count and root node number), also used as input for tests (commented lines are skipped)
+
 `benchmark/` - contains benchmarks that were used in results (not all benchmarks were tested)
 
 * `benchmark/blif/`     ... BLIF files representing combinational circuits used as benchmarks (C432, C499, C880, C1355, C1908 were tested)
@@ -89,6 +92,7 @@ These 4 subfolders are created when using `make test` (deleted using `make clean
 These subfolders are used for storing pre-processed data, analyzed information about tests, etc.
 * `data/blif-normalized` ... normalized UBDAs from BLIF benchmarks (for faster testing)
 * `data/blif-reports`    ... text files with reports of node counts of each subtree of benchmarks (for getting trimmed results for testing/debugging/etc.)
+* `data/uf20`            ... preprocessed dimacs benchmarks
 
 # Additional Notes
 

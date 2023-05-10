@@ -1,3 +1,10 @@
+"""
+[file] dimacs.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Simple parser of DIMACS files (import/export).
+[note] Better and faster version using BuDDy library is in ../cpp/
+"""
+
 import os
 from bdd import *
 from apply import *

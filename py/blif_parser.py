@@ -1,3 +1,10 @@
+"""
+[file] blif_parser.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Simple parser of BLIF files (assumes bottom-up order of constructs)
+[note] Better and faster version using BuDDy library is in ../cpp/
+"""
+
 from bdd import *
 from apply import *
 from format_vtf import *
@@ -131,7 +138,6 @@ class BlifParser:
             namesList()
 
         def namesContent():
-            # print(self.token)
             inputPlane = getToken()
             output = int(getToken())
             getToken()  # '\n'

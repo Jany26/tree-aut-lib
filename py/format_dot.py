@@ -1,8 +1,11 @@
-# format_dot.py
-# Functions for exporting tree automaton into DOT format (.dot)
-# for generating a graphical representation of the TA.
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+"""
+[file] format_dot.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Functions for exporting tree automaton into DOT format (.dot)
+for generating a graphical representation of the TA. (TEXT OUTPUT)
+[note] see graphviz documentation for DOT format specification.
+[link] https://graphviz.org/
+"""
 
 from ta_functions import *
 from test_data import boxCatalogue

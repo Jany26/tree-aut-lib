@@ -1,7 +1,8 @@
-# ta_functions.py
-# Basic functions for working with tree automata (from taLib.py)
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+"""
+[file] ta_functions.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Basic functions for working with tree automata (from taLib.py)
+"""
 
 from ta_classes import *
 from utils import *

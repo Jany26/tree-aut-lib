@@ -1363,22 +1363,12 @@ def main(config: dict):
 
 
 if __name__ == '__main__':
-    # config = {
-    #     "helpers": True,
-    #     "match": True,
-    #     "empty": True,
-    #     "treeaut_op": True,
-    #     "reachability": True,
-    #     "export": False,  # creates a lot of files...
-    #     "boxorder": False,  # not yet fully working...
-    #     "canonicity": True,
-    # }
     config = {
-        "helpers": False,
-        "match": False,
-        "empty": False,
-        "treeaut_op": False,
-        "reachability": False,
+        "helpers": True,
+        "match": True,
+        "empty": True,
+        "treeaut_op": True,
+        "reachability": True,
         "export": True,  # creates a lot of files...
         "boxorder": False,  # not yet fully working...
         "canonicity": False,

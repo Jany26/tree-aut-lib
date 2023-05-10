@@ -53,7 +53,7 @@ def printBoxCountsDIMACS():
     for val in translation.values():
         initialString += f"{val :<5}, "
     print(initialString)
-    dimacsSorter = createFileOrder(f"../tests/uf20/")
+    dimacsSorter = createFileOrder(f"../data/uf20/")
     for benchmark in sorted(dimacsSorter.keys()):
         path = dimacsSorter[benchmark]
         name = path.split('/')[-1]
@@ -68,7 +68,7 @@ def foldingTestDIMACS():
         report_line += f"\t| {orderName}"
     print(report_line)
 
-    dimacsSorter = createFileOrder("../tests/uf20/")
+    dimacsSorter = createFileOrder("../data/uf20/")
     for benchmark in sorted(dimacsSorter.keys()):
         filename = dimacsSorter[benchmark]
         print(f"{filename}", end='\r')

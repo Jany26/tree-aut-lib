@@ -392,6 +392,9 @@ def treeAutIntersection(ta1: TTreeAut,
 
         if state not in result.transitions:
             result.transitions[state] = {}
+        for child in newChildren:
+            if child not in result.transitions:
+                result.transitions[child] = {}
         # add transition to transitions in a state dictionary
         # if verbose: print(newKey)
         result.transitions[state][newKey] = TTransition(newState, newEdge, newChildren)

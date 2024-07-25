@@ -19,7 +19,7 @@ from normalization import *
 from folding import *
 from simulation import *
 from bdd import addDontCareBoxes, BDD, BDDnode, compareBDDs
-from apply import applyFunction
+from bdd_apply import applyFunction
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS FOR TEST SUITES

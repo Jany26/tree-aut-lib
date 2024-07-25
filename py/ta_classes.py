@@ -315,7 +315,7 @@ class TTreeAut:
 
     # needed for feeding makePrefix() function
     # generates all edge symbols labeling the output edges from the TA
-    def getOutputSymbols(self) -> list:
+    def getOutputSymbols(self) -> list[str]:
         outputEdgeList = []
         for edgeDict in self.transitions.values():
             for edge in edgeDict.values():
@@ -415,6 +415,10 @@ class TTreeAut:
         for _ in iterateEdges(self):
             counter += 1
         return counter
+    
+    # Returns a map of states to number of edges starting in that state.
+    def getEdgeCounts(self) -> dict[str, int]:
+        return {s: len(e) for s, e in self.transitions.items()}
 
     # Returns a dictionary of states, each of which has a set of variables,
     # that the state can "see" = i.e. the state has a transition with
@@ -580,6 +584,15 @@ class TTreeAut:
         if key not in self.transitions[state]:
             return
         self.transitions[state].pop(key)
+
+    def removeOutputTransitions(self):
+        for state in self.getStates():
+            keys = []
+            for k, tr in self.transitions[state].items():
+                if len(tr.children) == 0:
+                    keys.append(k)
+            for k in keys:
+                self.removeTransition(state, k)
 
     # Creates a better readable state names for more clear images (DOT).
     # Useful after unfolding, determinization/normalization, etc.

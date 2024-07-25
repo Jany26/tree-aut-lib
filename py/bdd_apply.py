@@ -1,5 +1,5 @@
 """
-[file] apply.py
+[file] bdd_apply.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 [description] Module for implementing apply operation of two BDDs.
 [note] Needed in order to parse DIMACS format and for creating BDDs

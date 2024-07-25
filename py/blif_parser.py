@@ -6,7 +6,7 @@
 """
 
 from bdd import *
-from apply import *
+from bdd_apply import *
 from format_vtf import *
 import re
 

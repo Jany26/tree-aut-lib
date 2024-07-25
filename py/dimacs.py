@@ -7,7 +7,7 @@
 
 import os
 from bdd import *
-from apply import *
+from bdd_apply import *
 from utils import *
 
 

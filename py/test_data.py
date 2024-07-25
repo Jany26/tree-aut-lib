@@ -30,6 +30,8 @@ fullAlphabet = {
 }
 
 boxCatalogue = {
+    "0": importTAfromVTF("../tests/boxes/box0.vtf"),
+    "1": importTAfromVTF("../tests/boxes/box1.vtf"),
     "X": importTAfromVTF("../tests/boxes/boxX.vtf"),
     "L0": importTAfromVTF("../tests/boxes/boxL0.vtf"),
     "L1": importTAfromVTF("../tests/boxes/boxL1.vtf"),

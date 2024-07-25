@@ -7,7 +7,7 @@
 
 from format_vtf import *
 from ta_functions import *
-from apply import *
+from bdd_apply import *
 from utils import *
 from bdd import createTAfromBDD
 from dimacs import dimacsRead
@@ -42,7 +42,7 @@ class TestOptions:
         self.sim: bool = sim  # check equivalence (before/after folding)
                               # simulates all variable assignments (time-consuming)
         self.progress: bool = prog  # show % progress of simulation
-        self.box_order = boxOrders["abdd-short"]  # if explicit box order is needed
+        self.box_order = boxOrders["full"]  # if explicit box order is needed
         self.var_order = None  # if explicit variable order is needed
 # end of TestOptions class
 
@@ -225,7 +225,7 @@ def canonizeBenchmark(initial: TTreeAut, options: TestOptions):
         'init', 'init-X', 'unfold', 'unfold-extra', 'normal', 'normal-clean',
         'fold', 'fold-trim', 'unfold-2', 'unfold-2-extra'
     ]
-    skip = [1, 2, 3, 4, 6, 8, 9]
+    skip = []
     # skip = []
     if options.export_png:  # or options.export_vtf:
         for i, ta in enumerate(result.values()):
@@ -320,14 +320,14 @@ def testABDDformat():
         "image": f'results/uf20-01-error-1-minimized',
         "cli": False, "debug": False, "export_vtf": True, "sim": False,
     }
-    raw = importTAfromVTF(f"./tests/dimacs/folding-error-1.vtf")
+    raw = importTAfromVTF(f"./tests/folding/folding-error-1.vtf")
     tree_auts = canonizeBenchmark(raw, options)
     test = tree_auts["folded_trimmed"]
     test.reformatStates()
     print(test)
-    abdd.exportTAtoABDD(test, "../data/abdd-format/test-comments.dd", comments=True)
-    abdd.exportTAtoABDD(test, "../data/abdd-format/test.dd", comments=False)
-    result = abdd.importTAfromABDD("../data/abdd-format/test-comments.dd")
+    abdd.exportTAtoABDD(test, "../tests/abdd-format/test-comments.dd", comments=True)
+    abdd.exportTAtoABDD(test, "../tests/abdd-format/test.dd", comments=False)
+    result = abdd.importTAfromABDD("../tests/abdd-format/test-comments.dd")
     result.reformatStates()
     print(result)
 
@@ -515,9 +515,20 @@ def printBoxedEdges(ta: TTreeAut):
         if foundbox:
             print(edge)
 
+def setVarMax(ta: TTreeAut, var: int):
+    prefix = ta.getVariablePrefix()
+    for edge in iterateEdges(ta):
+        if len(edge.children) == 0:
+            edge.info.variable = f"{prefix}{var}"
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if __name__ == '__main__':
+    opt = TestOptions(19, "../data/testout", vtf=True, png=True)
+    ta = abdd.importTAfromABDD("../data/uf20/uf20-01.abdd")
+    setVarMax(ta, 20)
+    ta.reformatStates()
+    canonizeBenchmark(ta, opt)
     pass
 
 # End of file adhoc_tester.py

@@ -1,0 +1,11 @@
+@NTA
+# Automaton boxX
+%Root q0
+%States q0:0 q1:0
+%Alphabet LH:2 0:0
+
+q0 LH ( q0 q0 )
+q0 LH ( q0 q1 )
+q0 LH ( q1 q0 )
+q0 LH ( q1 q1 )
+q1 0 ( )

@@ -26,7 +26,7 @@ Supervisor: ondrik / Ing. Ondrej Lengal, PhD. <lengal@fit.vutbr.cz>
 
 * `adhoc_tester.py`         ... not important - only used for some testing/debugging
 * `all_tests.py`            ... contains test suites for regression testing for all functions from other modules
-* `apply.py`                ... Python implementation of BDD apply operations (not efficient)
+* `bdd_apply.py`                ... Python implementation of BDD apply operations (not efficient)
 * `bdd.py`                  ... BDD class + iterators, functions etc.
 * `blif_analysis.py`        ... script for running BLIF tests
 * `blif_parser.py`          ... Python implementation of BLIF parsing (use the upgraded, faster C++ version)
@@ -96,10 +96,10 @@ These subfolders are used for storing pre-processed data, analyzed information a
 
 # Additional Notes
 
-To run some folding tests, use these scripts:
+To run some folding tests, use these scripts in `py/` folder:
 
-`cd py && python3 blif_analysis.py`
-`cd py && python3 dimacs_analysis.py`
+`python3 blif_analysis.py`
+`python3 dimacs_analysis.py`
 
 `blif_analysis` runs BLIF benchmark folding tests, currently set to only run C432 benchmark tests, if you want to change which tests are run, edit file `tests/blif-report.txt` (remove '#' or put '#' at the start of each line)
 

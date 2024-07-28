@@ -1,0 +1,13 @@
+@NTA
+# Automaton IFF0
+%Root a0
+%States a0:0 a1:0 a2:0 a3:0
+%Alphabet LH:2 0:0 Port_L:0 Port_H:0
+
+a0 LH ( a1 a2 )
+a1 LH ( a1 a3 )
+a1 Port_L ( )
+a2 LH ( a3 a2 )
+a2 Port_H ( )
+a3 LH ( a3 a3 )
+a3 0 ( )

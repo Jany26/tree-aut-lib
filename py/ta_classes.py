@@ -6,6 +6,7 @@
 
 import copy
 from utils import stateNameSort
+from typing import Generator, Tuple
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # CLASSES FOR TREE AND TREE AUTOMATON
@@ -271,6 +272,7 @@ class TTreeAut:
         return result[:-1]  # trim the last '\n'
 
     # Check if two TAs are equivalent... NOTE: wip
+    # An attempt to create an on-the-fly isomorphism check.
     def __eq__(self, ta):
         # unique counter value will be used to compare states
         # states will be stored in two separate hash-maps, values will be counters
@@ -278,7 +280,7 @@ class TTreeAut:
         # different, 'redundant' edges are stored in two separate places (maybe no)
         if len(self.rootStates) != len(ta.rootStates):
             return False
-        stateMapper: dict[str, tuple(str, str)] = {}
+        stateMapper: dict[str, (str, str)] = {}
         pass
 
     def getEdgeString(self, edge: TTransition) -> str:
@@ -507,7 +509,7 @@ class TTreeAut:
 
         raise Exception(f"getRootDistance(): {state} not found in {self.name}")
 
-    # Calculates all possible paths through the TA.
+    # Calculates all possible paths (acyclic) through the TA.
     # Path must begin with a root state and end with a leaf
     # note: based on DFS
     # result is a list of paths, path is a lists of states
@@ -527,6 +529,29 @@ class TTreeAut:
         for root in self.rootStates:
             preOrderDFS(root, [], result)
         return result
+
+    # explore the state space (BFS-like) of the TA and remember the paths taken
+    # return the dictionary of state -> paths
+    # paths are represented as strings of '0's and '1's 
+    def get_shortest_state_paths_dict(self) -> dict[str, str]:
+        # note: we assume 'boxes' (tree automata used in ABDDs) need root-uniqueness to be well-defined,
+        # so the state space is not traversed in parallel
+        queue = [(i, "") for i in self.rootStates]
+        result = {i: "" for i in self.rootStates}
+        while queue != []:
+            state, path = queue.pop(0)
+            for edge in self.transitions[state].values():
+                if len(edge.children) == 0:
+                    continue
+                for i, child in enumerate(edge.children):
+                    if child not in result:
+                        newpath = f"{path}{i}"
+                        result[child] = newpath
+                        queue.append((child, newpath))
+                    elif result[child] > f"{path}{i}":
+                        result[child] = f"{path}{i}"
+        return {k: v for k,v in sorted(result.items(), key=lambda item: item[1])}
+
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Modifying functions # - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -593,6 +618,18 @@ class TTreeAut:
                     keys.append(k)
             for k in keys:
                 self.removeTransition(state, k)
+    
+    # Removes total or partial self looping transitions.
+    # If soft is True, self loops are only removed if there is a viable
+    # non-self looping transition present within a state.
+    def removeSelfLoops(self, soft=False):
+        for state, edges in self.transitions.items():
+            keys_to_delete = []
+            for k, edge in edges.items():
+                if edge.src in edge.children:
+                    keys_to_delete.append(k)
+            for k in keys_to_delete:
+                self.transitions[state].pop(k)
 
     # Creates a better readable state names for more clear images (DOT).
     # Useful after unfolding, determinization/normalization, etc.
@@ -639,6 +676,21 @@ class TTreeAut:
                 newKey = f"{prefix}{counter}"
                 counter += 1
                 self.transitions[state][newKey] = self.transitions[state].pop(oldKey)
+
+    # note:
+    # since TAs do not have to be deterministic, some states can have the same shortest path
+    # thus the state order we obtain is not necessarily total, but only partial
+    # that is why the inverted dictionary will have a path pointing to a list (set) of states
+    def reformatPorts(self):
+        paths_dict = self.get_shortest_state_paths_dict()
+        counter = 0
+        
+        # we assume max one port transition per state
+        for state in paths_dict.keys():
+            for edge in self.transitions[state].values():
+                if edge.info.label.startswith("Port"):
+                    edge.info.label = f"Port_{counter}"
+                    counter += 1
 
     def checkVariableType(self):
         varType = type("")
@@ -744,7 +796,7 @@ class TTreeAut:
 
 # custom iterator - yields only edges (no keys)
 #  for cleaner code
-def iterateEdges(obj) -> TTransition:
+def iterateEdges(obj) -> Generator[TTransition, None, None]:
     dictObj = obj
     if isinstance(obj, TTreeAut):
         dictObj = obj.transitions
@@ -757,7 +809,7 @@ def iterateEdges(obj) -> TTransition:
             yield innerObj
 
 
-def iterateKeyEdgePairs(obj) -> tuple[str, TTransition]:
+def iterateKeyEdgePairs(obj) -> Generator[Tuple[str, TTransition], None, None]:
     if not isinstance(obj, TTreeAut):
         raise ValueError("transitionsWithKeys can only work with TTreeAut.")
 
@@ -766,7 +818,7 @@ def iterateKeyEdgePairs(obj) -> tuple[str, TTransition]:
             yield key, edge
 
 
-def iterateKeys(obj) -> str:
+def iterateKeys(obj) -> Generator[str, None, None]:
     if not isinstance(obj, TTreeAut):
         raise ValueError("iterateKeys can only work with TTreeAut.")
     for edgeDict in obj.transitions.values():

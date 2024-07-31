@@ -156,6 +156,7 @@ def treeAutEqual(aut: TTreeAut, box: TTreeAut, debug=False) -> bool:
 
 
 def apply_intersectoid_compare(aut: TTreeAut, debug=False):
+    # for boxname in ["X", "L0", "L1", "H0", "H1", "0", "1", "LPort", "HPort"]:
     for boxname in ["X", "L0", "L1", "H0", "H1", "0", "1", "LPort", "HPort", "IFF0", "IFF1", "IFFPort"]:
         box = boxCatalogue[boxname]
         box.reformatPorts()
@@ -200,8 +201,3 @@ def test_all_apply_intersectoids():
 
 if __name__ == "__main__":
     test_all_apply_intersectoids()
-    # aut = importTAfromVTF("../data/apply_tests/AND/L1_AND_HPort.vtf")
-    # box = boxCatalogue["IFFPort"]
-    # aut.reformatPorts()
-    # box.reformatPorts()
-    # print(treeAutEqual(aut, box))

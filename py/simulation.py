@@ -128,10 +128,10 @@ def simulateRunTA(ta: TTreeAut, assignment: list, verbose=False) -> bool:
     def createSortedEdgeList(edges: dict[str, TTransition]) -> list[str]:
         result = []
         for key, edge in edges.items():
-            if not edge.checkSelfLoop():
+            if not edge.isSelfLoop():
                 result.append(key)
         for key, edge in edges.items():
-            if edge.checkSelfLoop():
+            if edge.isSelfLoop():
                 result.append(key)
         return result
 
@@ -273,7 +273,7 @@ def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, star
         result = []
         # NOTE: maybe there is a way to append (tail) and push (head) into the list ...
         for key, edge in ta.transitions[state].items():
-            if edge.info.variable != "" or not edge.checkSelfLoop():  # and len(edge.children) != 0:
+            if edge.info.variable != "" or not edge.isSelfLoop():  # and len(edge.children) != 0:
                 result.append(key)
         for key, edge in ta.transitions[state].items():
             if edge.info.variable == "":  # and len(edge.children) != 0:

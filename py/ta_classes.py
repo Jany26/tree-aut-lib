@@ -29,6 +29,24 @@ class TTreeNode:
         self.children = []
         self.depth = 0
 
+    # TODO pretty print of a tree
+    def __repr__(self):
+        # vertical space # of lines => # of leaves + 3 * (# of leaves - 1)
+        # if 4 leaves -> 3 in-between spaces
+        # 1 in between space => 3 lines if untight
+        #                    => 1 line if untight
+        
+        # length of 1 line => depth of the tree + spaces in between
+        # one tree node will be long max_length characters
+
+        # so we need to precompute:
+        # max_depth, number_of_leaves, longest_nodename
+        # high nodes (true branch) will be up
+        # low nodes (false branch) will be down
+
+        # we use postorder DFS traversal in reverse order of child nodes (from 1 down to 0)
+        pass
+
     # Recursively prints the whole node in somehow structured manner.
     # If called on root node, prints the whole tree
     def printNode(self, offset: int = 0):
@@ -146,26 +164,15 @@ class TTransition:
     def __repr__(self):
         # comment = " <<< LEAF TRANSITION >>>" if self.children == [] else ""
         return f"{self.src} -- {self.info} --> {self.children}"
-
-    def checkSelfLoop(self):
-        if self.src in self.children:
-            return True
-        return False
     
     def isSelfLoop(self):
         if self.src in self.children:
             return True
         return False
 
-    def checkFullSelfLoop(self):
+    def isFullSelfLoop(self):
         if self.children == []:
             return False
-        for i in self.children:
-            if i != self.src:
-                return False
-        return True
-    
-    def isFullSelfLoop(self):
         for i in self.children:
             if i != self.src:
                 return False
@@ -472,9 +479,38 @@ class TTreeAut:
                 maxVar = max(maxVar, var)
         return maxVar
 
+    # Returns a reachability dictionary: state q -> states reachable from q
+    # TODO: Edit this function so that it does not consider initial rootstate as a visited state
+    def get_reachable_states_from(self, state: str) -> set:
+        original_rootstates = [i for i in self.rootStates]
+        self.rootStates = [state]
+        result = set()
+        root = True
+        for state in iterateStatesBFS(self):
+            if root:
+                root = False
+                continue
+            result.add(state)
+        self.rootStates = original_rootstates
+        return result
+
+    # def get_reachable_states_from(self, state: str) -> set:
+    #     queue = [state]
+    #     visited = set()
+    #     result = set()
+    #     while queue != []:
+    #         current = queue.pop(0)
+    #         visited.add(current)
+    #         for edge in self.transitions[current].values():
+    #             for child in edge.children:
+    #                 result.add(child)
+    #                 if child not in visited:
+    #                     queue.append(child)
+    #     return result
+        
     # Returns a list of all states that can be reached through 1 transition
     # from a specific state (only one directional)
-    def reachableFrom(self, state: str) -> list:
+    def get_neighbors_of(self, state: str) -> set:
         if state not in self.transitions:
             return []
         result = set()
@@ -483,7 +519,7 @@ class TTreeAut:
             for child in edge.children:
                 if child not in result:
                     result.add(child)
-        return list(result)
+        return result
 
     # Calculates the smallest "hop" distance to the specified state from root
     # Works similarly to BFS but uses helping list to stop an iteration after
@@ -501,7 +537,7 @@ class TTreeAut:
                 if currentState == state:
                     return distance
                 visited.add(currentState)
-                for i in self.reachableFrom(currentState):
+                for i in self.get_neighbors_of(currentState):
                     if i not in visited:
                         nextIteration.append(i)
             workList = [i for i in nextIteration]
@@ -518,7 +554,7 @@ class TTreeAut:
             path.append(state)
             if state in leaves:
                 result.append(copy.copy(path))
-            for i in self.reachableFrom(state):
+            for i in self.get_neighbors_of(state):
                 if i not in path:
                     preOrderDFS(i, path, result)
             path.pop()

@@ -10,5 +10,3 @@ Transitions
 LH(q0,q0) -> q0
 LH(q1,q1) -> q0
 Port_X() -> q1
-
-

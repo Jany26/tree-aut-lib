@@ -12,5 +12,3 @@ LH(w0,w2) -> w0
 Port_HPort0() -> w1
 LH(w2,w2) -> w2
 Port_HPort1() -> w2
-
-

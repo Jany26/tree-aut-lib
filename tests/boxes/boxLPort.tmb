@@ -12,5 +12,3 @@ LH(v1,v2) -> v0
 LH(v1,v1) -> v1
 Port_LPort0() -> v1
 Port_LPort1() -> v2
-
-

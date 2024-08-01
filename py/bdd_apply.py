@@ -9,12 +9,12 @@ for further testing/experimenting with tree automata.
 from bdd import *
 from utils import *
 
-def createVarOrder(variables: list, terminals: list) -> dict:
+def create_var_order(variables: list, terminals: list) -> dict:
     """
         Makes the list into a dictionary for easy lookup of indexing
     """
     if variables is not None:
-        variables = stateNameSort(variables)
+        variables = state_name_sort(variables)
     result = {}
     i = 1
     for var in variables:
@@ -42,16 +42,16 @@ class ApplyHelper:
     def __init__(self, bdd1: BDD, bdd2: BDD, vars):
         self.count: int = 0
         self.cache: 'dict[str, BDDnode]' = {}
-        temp = bdd1.getTerminalSymbolsList()
-        temp.extend(bdd2.getTerminalSymbolsList())
+        temp = bdd1.get_terminal_symbols_list()
+        temp.extend(bdd2.get_terminal_symbols_list())
         self.terminals = list(set(temp))
         self.vars: dict = vars
         self.spacing = 0
         if vars is None or type(vars) == list:
             if vars is None:
-                temp = bdd1.getVariableList()
-                temp.extend(bdd2.getVariableList())
-            self.vars = createVarOrder(temp, self.terminals)
+                temp = bdd1.get_variable_list()
+                temp.extend(bdd2.get_variable_list())
+            self.vars = create_var_order(temp, self.terminals)
 
     # for debugging purposes
     def __repr__(self):
@@ -63,14 +63,14 @@ class ApplyHelper:
         return str
 
 # Creates a new BDD by applying some logic function on two BDDs.
-def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
+def apply_function(func: str, bdd1: BDD, bdd2: BDD, var_order=None) -> BDD:
 
-    class scenario:
+    class ApplyCase:
         """
-            scenario a: both trees are leaves
-            scenario b: node1 is leaf, node2 is tree
-            scenario c: node1 is tree, node2 is leaf
-            scenario d: both trees are trees
+            Case a): both trees are leaves
+            Case b): node1 is leaf, node2 is tree
+            Case c): node1 is tree, node2 is leaf
+            Case d): both trees are trees
         """
         a = False
         b = False
@@ -79,37 +79,37 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
         def __init__(self, letter):
             self.__setattr__(letter, True)
 
-    def decideScenario(node1:BDDnode, node2:BDDnode, data:ApplyHelper) -> scenario:
+    def decide_case(node1:BDDnode, node2:BDDnode, data:ApplyHelper) -> ApplyCase:
         """
         compares node1 node2 and decides according to which scenario
-        should continue function apply     
+        should continue function apply
         """
-        if node1.isLeaf() and node2.isLeaf():
-            return scenario("a")
+        if node1.is_leaf() and node2.is_leaf():
+            return ApplyCase("a")
 
-        if not node1.isLeaf() and node2.isLeaf():
-            return scenario("c")
+        if not node1.is_leaf() and node2.is_leaf():
+            return ApplyCase("c")
 
-        if node1.isLeaf() and not node2.isLeaf():
-            return scenario("b")
+        if node1.is_leaf() and not node2.is_leaf():
+            return ApplyCase("b")
 
         if data.vars[str(node1.value)] > data.vars[str(node2.value)]:
-            return scenario("b")
-        
+            return ApplyCase("b")
+
         if data.vars[str(node1.value)] < data.vars[str(node2.value)]:
-            return scenario("c")
-        
-        return scenario("d")
+            return ApplyCase("c")
+
+        return ApplyCase("d")
 
 
-    def applyFrom(func: str, node1: BDDnode, node2: BDDnode,
+    def apply_from(func: str, node1: BDDnode, node2: BDDnode,
                   data: ApplyHelper) -> BDDnode:
-        currScenario = decideScenario(node1, node2, data)
+        current_case = decide_case(node1, node2, data)
         data.spacing += 2
 
         # scenario A - both are leaves
-        if currScenario.a:
-            terminal = leafApplyOp(func, node1, node2)
+        if current_case.a:
+            terminal = leaf_apply_op(func, node1, node2)
             # print(f"{data.spacing * ' '}[{node1.value}] {func} [{node2.value}] = {terminal}")
             name = f"t{terminal}"
             if name in data.cache:
@@ -119,34 +119,34 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
             data.cache[name] = result
             data.spacing -= 2
             return result
-        
+
         # otherwise (at least one is not leaf) ...
-        node1val = f"[{node1.value}]" if node1.isLeaf() else f"v{node1.value}"
-        node2val = f"[{node2.value}]" if node2.isLeaf() else f"v{node2.value}"
+        node1val = f"[{node1.value}]" if node1.is_leaf() else f"v{node1.value}"
+        node2val = f"[{node2.value}]" if node2.is_leaf() else f"v{node2.value}"
         # print(f"{data.spacing * ' '}{node1val}, {node2val}")
         low: BDDnode = None
         high: BDDnode = None
         value = None
 
         # scenario B - node1 lower than node2
-        if currScenario.b:
+        if current_case.b:
             # print(f"  > descend RIGHT [{node1.value} > {node2.value}]")
-            low = applyFrom(func, node1, node2.low, data)
-            high = applyFrom(func, node1, node2.high, data)
+            low = apply_from(func, node1, node2.low, data)
+            high = apply_from(func, node1, node2.high, data)
             value = node2.value
-        
+
         # scenario C - node1 higher than node2
-        if currScenario.c:
+        if current_case.c:
             # print(f"  > descend LEFT [{node1.value} < {node2.value}]")
-            low = applyFrom(func, node1.low, node2, data)
-            high = applyFrom(func, node1.high, node2, data)
+            low = apply_from(func, node1.low, node2, data)
+            high = apply_from(func, node1.high, node2, data)
             value = node1.value
-        
+
         # scenario D - node1 same level as node2 (but non-leaves)
-        if currScenario.d:
+        if current_case.d:
             # print(f"  > same level")
-            low = applyFrom(func, node1.low, node2.low, data)
-            high = applyFrom(func, node1.high, node2.high, data)
+            low = apply_from(func, node1.low, node2.low, data)
+            high = apply_from(func, node1.high, node2.high, data)
             value = node1.value
 
         lookup = f"{value},{low.name},{high.name}"
@@ -176,37 +176,37 @@ def applyFunction(func: str, bdd1: BDD, bdd2: BDD, varOrder=None) -> BDD:
         return BDD(None, bdd2.root)
     if bdd2.root is None:
         return BDD(None, bdd1.root)
-    data = ApplyHelper(bdd1, bdd2, varOrder)
+    data = ApplyHelper(bdd1, bdd2, var_order)
     # print(data.vars)
-    newRoot = applyFrom(func, bdd1.root, bdd2.root, data)
+    new_root = apply_from(func, bdd1.root, bdd2.root, data)
 
 
-    return BDD("BDD", newRoot)
+    return BDD("BDD", new_root)
 
 
 # "Wrapper" for boolean functions
-def leafApplyOp(operator, bdd1, bdd2) -> int:
-    def orOperator(val1, val2):
+def leaf_apply_op(operator, bdd1, bdd2) -> int:
+    def or_operator(val1, val2):
         return val1 or val2
 
-    def andOperator(val1, val2):
+    def and_operator(val1, val2):
         return val1 and val2
 
-    def xorOperator(val1, val2):
+    def xor_operator(val1, val2):
         return val1 ^ val2
 
-    def nandOperator(val1, val2):
+    def nand_operator(val1, val2):
         return not (val1 and val2)
 
-    def norOperator(val1, val2):
+    def nor_operator(val1, val2):
         return not (val1 or val2)
 
     lookup = {
-        'or': orOperator,
-        'and': andOperator,
-        'xor': xorOperator,
-        'nor': norOperator,
-        'nand': nandOperator,
+        'or': or_operator,
+        'and': and_operator,
+        'xor': xor_operator,
+        'nor': nor_operator,
+        'nand': nand_operator,
     }
     func = lookup[str(operator)]
     result = func(bdd1.value, bdd2.value)

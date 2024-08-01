@@ -2,10 +2,10 @@ import re
 import sys
 import os
 
-from apply_testing import treeAutEqual
-from format_vtf import importTAfromVTF
+from apply_testing import tree_aut_equal
+from format_vtf import import_treeaut_from_vtf
 from ta_classes import TTreeAut
-from test_data import boxCatalogue
+from test_data import box_catalogue
 
 class BoxTreeNode:
     # leaf constructor
@@ -21,41 +21,41 @@ class BoxTreeNode:
         children = "" if self.is_leaf else f" ({self.low} {self.high})"
         return "'" + self.node + "'" + children
         # return f"{self.node} '({self.low if self.low is not None else ''} {self.high if self.high is not None else ''})"
-        
+
         # return f"{self.node}{self.low if self.low is not None else ''}{self.high if self.high is not None else ''}"
 
 
 # maybe not needed, since recursive solution seems more elegant
 def get_transient_states(aut: TTreeAut) -> set[str]:
-    reach_dict = {i: aut.get_reachable_states_from(i) for i in aut.getStates()}
+    reach_dict = {i: aut.get_reachable_states_from(i) for i in aut.get_states()}
     result = set()
     for state in aut.transitions.keys():
         transient = True
         for t in aut.transitions[state].values():
-            if t.isSelfLoop():
+            if t.is_self_loop():
                 transient = False
         unreachable = True
         if transient:
             for reachable_state in reach_dict[state]:
                 if state in reach_dict[reachable_state]:
                     unreachable = False
-        non_leaf = state not in aut.getOutputStates()
+        non_leaf = state not in aut.get_output_states()
         if transient and unreachable and non_leaf:
             result.add(state)
     return result
 
 
 def boxtree_intersectoid_compare(aut: TTreeAut, root: str) -> str | None:
-    roots = [i for i in aut.rootStates]
-    aut.rootStates = [root]
-    aut.reformatPorts()
+    roots = [i for i in aut.roots]
+    aut.roots = [root]
+    aut.reformat_ports()
     for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort", "False", "True"]:
-        box = boxCatalogue[boxname]
-        box.reformatPorts()
-        if treeAutEqual(aut, box):
-            aut.rootStates = roots
+        box = box_catalogue[boxname]
+        box.reformat_ports()
+        if tree_aut_equal(aut, box):
+            aut.roots = roots
             return boxname
-    aut.rootStates = roots
+    aut.roots = roots
     return None
 
 def build_box_tree(aut: TTreeAut) -> BoxTreeNode | None:
@@ -81,14 +81,14 @@ def build_box_tree(aut: TTreeAut) -> BoxTreeNode | None:
                     return result
         print(" returning none")
         return None
-    
-    for i in aut.rootStates:
+
+    for i in aut.roots:
         box_tree = build_box_tree_recursive(aut, i)
         if box_tree is not None:
             return box_tree
 
 
 if __name__ == "__main__":
-    ta = importTAfromVTF(sys.argv[1])
+    ta = import_treeaut_from_vtf(sys.argv[1])
     print(ta)
     print(build_box_tree(ta))

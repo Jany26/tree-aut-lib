@@ -10,9 +10,9 @@ import sys
 
 # boxOrder = ['X', 'LPort', 'HPort', 'L0', 'L1', 'H0', 'H1']
 # boxOrder = ['L0', 'L1', 'H0', 'H1', 'X']
-boxOrder = ['L0', 'L1', 'H0', 'H1', 'LPort', 'HPort']
+box_order = ['L0', 'L1', 'H0', 'H1', 'LPort', 'HPort']
 
-boxOrders = {
+box_orders = {
     "bdd": ['X'],
     "zbdd": ['H0'],
     "tbdd": ['X', 'H0'],
@@ -27,23 +27,23 @@ def eprint(*args, **kwargs):
 
 
 # sorts the state names while ignoring the prefix
-def stateNameSort(stateList: list) -> list:
-    if stateList == []:
+def state_name_sort(states: list) -> list:
+    if states == []:
         return []
 
-    prefixLen = 0
-    for i in range(len(stateList[0])):
-        if not stateList[0][i:].isnumeric():
-            prefixLen += 1
-    prefix = stateList[0][:prefixLen]
+    prefix_len = 0
+    for i in range(len(states[0])):
+        if not states[0][i:].isnumeric():
+            prefix_len += 1
+    prefix = states[0][:prefix_len]
     try:
-        myList = [int(i.lstrip(prefix)) for i in stateList]
-        myList.sort()
-        myList = [f"{prefix}{i}" for i in myList]
+        result = [int(i.lstrip(prefix)) for i in states]
+        result.sort()
+        result = [f"{prefix}{i}" for i in result]
     except ValueError:
-        myList = [i for i in stateList]
-    return myList
+        result = [i for i in states]
+    return result
 
 
-def createVarOrder(prefix: str, count: int, start=1):
+def create_var_order(prefix: str, count: int, start=1):
     return [f"{prefix}{i+start}" for i in range(count)]

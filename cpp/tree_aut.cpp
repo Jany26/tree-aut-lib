@@ -47,14 +47,14 @@ class TreeAutomaton {
         TransitionMap transitions;
         std::list<int> roots;
         int ports;
-    
+
         TreeAutomaton(
             std::string name,
             int ports,
             std::list<int> roots,
             TransitionMap transitions
         ) {
-            
+
         }
         void print();
 };

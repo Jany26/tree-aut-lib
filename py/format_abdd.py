@@ -9,7 +9,7 @@
 
 from ta_classes import *
 from copy import deepcopy
-from test_data import boxCatalogue
+from test_data import box_catalogue
 import re
 from pathlib import Path
 
@@ -17,84 +17,84 @@ from pathlib import Path
 # %Name example-abdd
 # %Vars 100
 # %Root 1
-def ABDDpreamble(ta: TTreeAut, file, name: str):
+def abdd_preamble(ta: TTreeAut, file, name: str):
     file.write("@ABDD\n")
     file.write(f"# imported from {ta.name}\n")
-    finalName = ta.name if name == "" else name
-    file.write(f"%Name {finalName}\n")
-    maxVar = ta.getVariableOrder()[-1]
-    file.write(f"%Vars {maxVar[ta.metaData.variablePrefix:]}\n")
-    file.write(f"%Root {ta.rootStates[0][ta.metaData.statePrefix:]}\n\n")
+    final_name = ta.name if name == "" else name
+    file.write(f"%Name {final_name}\n")
+    max_var = ta.get_var_order()[-1]
+    file.write(f"%Vars {max_var[ta.meta_data.var_prefix:]}\n")
+    file.write(f"%Root {ta.roots[0][ta.meta_data.state_prefix:]}\n\n")
 
 
-# 1[0] (2, 3)[HPort] 3[X] # this denotes node id 1 with variable x0 going 
-# over L to nodes id 2, id 3 with applying the reduction rule HPort (box with arity 2) 
+# 1[0] (2, 3)[HPort] 3[X] # this denotes node id 1 with variable x0 going
+# over L to nodes id 2, id 3 with applying the reduction rule HPort (box with arity 2)
 # and over H to node id 3 applying reduction rule X (arity 1)
-# 1[0] 2 3     # this denotes node id 1 with variable x0 going 
+# 1[0] 2 3     # this denotes node id 1 with variable x0 going
 # over L (low) to node id 2 and over H (high) to node id 3
 # 2[4] <0> 3   # in this case the node has variable x4, L goes to leaf *0*, and H goes to 3
 # 3[6] <1> <0> # L goes to leaf *1* and H goes to leaf *0*
-def ABDDtransition(ta: TTreeAut, edge: TTransition) -> str:
-    def writeChild(ta, child) -> str:
-        stateStr = f"{child}"
-        if child in ta.getOutputStates():
-            stateStr = "<" + ta.getOutputEdges(inverse=True)[child][0] + ">"
-        return stateStr
+def abdd_transition(ta: TTreeAut, edge: TTransition) -> str:
+    def write_child(ta, child) -> str:
+        state_str = f"{child}"
+        if child in ta.get_output_states():
+            state_str = "<" + ta.get_output_edges(inverse=True)[child][0] + ">"
+        return state_str
 
-    edgeString = ""
-    if edge.src in ta.getOutputStates():
+    edge_string = ""
+    if edge.src in ta.get_output_states():
         return ""
-    var = edge.info.variable[ta.metaData.variablePrefix:]
-    edgeString += f"{edge.src}[{var}] "
+    var = edge.info.variable[ta.meta_data.var_prefix:]
+    edge_string += f"{edge.src}[{var}] "
     arity = 1
-    childIndex = 0
-    boxStr = ""
-    for box in edge.info.boxArray:
+    child_index = 0
+    box_str = ""
+    for box in edge.info.box_array:
         if box is not None and box != "_":
-            arity = boxCatalogue[f"{box}"].getPortArity()
-            boxStr = f"[{box[3:]}]" if box.startswith("box") else box
+            arity = box_catalogue[f"{box}"].get_port_arity()
+            box_str = f"[{box[3:]}]" if box.startswith("box") else box
         if arity == 1:
-            edgeString += writeChild(ta, edge.children[childIndex])
+            edge_string += write_child(ta, edge.children[child_index])
         if arity > 1:
-            edgeString += f"("
-            for idx in range(len(edge.children[childIndex:arity-1])):
-                edgeString += writeChild(ta, edge.children[idx + childIndex])
-                if idx < childIndex + arity:
-                    edgeString += ', '
-            edgeString += ')'
-        childIndex += arity
-        edgeString += boxStr
-        edgeString += ' '
-    edgeString = edgeString[:-1]
-    return edgeString
+            edge_string += f"("
+            for idx in range(len(edge.children[child_index:arity-1])):
+                edge_string += write_child(ta, edge.children[idx + child_index])
+                if idx < child_index + arity:
+                    edge_string += ', '
+            edge_string += ')'
+        child_index += arity
+        edge_string += box_str
+        edge_string += ' '
+    edge_string = edge_string[:-1]
+    return edge_string
 
 
-def exportTAtoABDD(ta: TTreeAut, filePath: str, name="", comments=False):
+def export_treeaut_to_abdd(ta: TTreeAut, filepath: str, name="", comments=False):
     # variables are expected to have the same prefix
     # DAG as the input is assumed (output states with no transitions)
-    # boxArray is expected to contain only strings (box names)
-    taCopy = deepcopy(ta)
-    taCopy.reformatKeys()
-    taCopy.reformatStates(prefix='', startFrom=1)
-    taCopy.metaData.recompute()
-    file = open(filePath, 'w')
-    ABDDpreamble(taCopy, file, name)
-    edgeStringMaxLen = 0
-    for edge in iterateEdges(taCopy):
-        edgeLen = len(ABDDtransition(taCopy, edge))
-        if edgeStringMaxLen < edgeLen:
-            edgeStringMaxLen = edgeLen
-    for state in iterateStatesBFS(taCopy):
-        for edge in taCopy.transitions[state].values():
-            edgeString = ABDDtransition(taCopy, edge)
-            file.write(edgeString)
+    # box_array is expected to contain only strings (box names)
+    treeaut_copy = deepcopy(ta)
+    treeaut_copy.reformat_keys()
+    treeaut_copy.reformat_states(prefix='', start_from=1)
+    treeaut_copy.meta_data.recompute()
+    file = open(filepath, 'w')
+    abdd_preamble(treeaut_copy, file, name)
+    edge_str_max_len = 0
+    for edge in iterate_edges(treeaut_copy):
+        edge_len = len(abdd_transition(treeaut_copy, edge))
+        if edge_str_max_len < edge_len:
+            edge_str_max_len = edge_len
+    for state in iterate_states_bfs(treeaut_copy):
+        for edge in treeaut_copy.transitions[state].values():
+            edge_str = abdd_transition(treeaut_copy, edge)
+            file.write(edge_str)
             if comments:
-                file.write((edgeStringMaxLen - len(edgeString)) * ' ')
+                file.write((edge_str_max_len - len(edge_str)) * ' ')
                 file.write(f" # {edge}")
-            if comments or edgeString != "":
+            if comments or edge_str != "":
                 file.write('\n')
 
-def importTAfromABDD(source) -> TTreeAut | list:
+def import_treeaut_from_abdd(source) -> TTreeAut | list:
     file = open(source, "r")
     name = Path(source).stem
     results = []
@@ -106,16 +106,16 @@ def importTAfromABDD(source) -> TTreeAut | list:
         i += len(l)
     for pos in positions:
         file.seek(pos)
-        results.append(createTAfromABDD(file, name))
+        results.append(create_treeaut_from_abdd(file, name))
     if len(results) == 1:
         return results[0]
     return results
 
 
-def createTAfromABDD(file, name) -> TTreeAut:
+def create_treeaut_from_abdd(file, name) -> TTreeAut:
     ta = TTreeAut([], {}, name)
     leaves = set()
-    keyCounter = 0
+    key_counter = 0
     preamble = False
     for l in file:
         line = l.split('#')[0]  # strip comments
@@ -125,7 +125,7 @@ def createTAfromABDD(file, name) -> TTreeAut:
         data = line.split()
         if line.startswith('@'):
             if line != "@ABDD" and line != "@BDD":
-                raise Exception(f"importTAfromABDD(): unexpected header: {line}")
+                raise Exception(f"import_treeaut_from_abdd(): unexpected header: {line}")
             if preamble:
                 break
             else:
@@ -133,23 +133,23 @@ def createTAfromABDD(file, name) -> TTreeAut:
                 continue
         if line.startswith('%'):
             if data[0] not in ["%Name", "%Vars", "%Root"]:
-                raise Exception(f"importTAfromABDD(): unexpected metadata: {data[0]}")
+                raise Exception(f"import_treeaut_from_abdd(): unexpected metadata: {data[0]}")
             if data[0] == "%Name":
                 ta.name = data[1]
             if data[0] == "%Vars":
-                maxVar = int(data[1])
+                max_var = int(data[1])
             if data[0] == "%Root":
-                ta.rootStates.append(data[1])
+                ta.roots.append(data[1])
             continue
         if line == "":
             continue
-        srcRe = "(\d+)"
-        varRe = "\[(\d+|)\]"
-        childRe = "(\(\d+(?:\s*,\s*\d+)*\)|<\d+>|\d+)"
-        boxRe = "(\[\w+\]|)"
+        src_regex = "(\d+)"
+        var_regex = "\[(\d+|)\]"
+        child_regex = "(\(\d+(?:\s*,\s*\d+)*\)|<\d+>|\d+)"
+        box_regex = "(\[\w+\]|)"
         # "(\d+)\[(\d+)\]\s*(\(\d+(?:\s*,\s*\d+)*\)|<\d+>|\d+)(\[\w+\]|)\s*(\(\d+(?:\s*,\s*\d+)*\)|<\d+>|\d+)(\[\w+\]|)"
-        allMatchRegex = f"{srcRe}{varRe}\s*{childRe}{boxRe}\s*{childRe}{boxRe}"
-        groups = re.match(allMatchRegex, line)
+        full_regex = f"{src_regex}{var_regex}\s*{child_regex}{box_regex}\s*{child_regex}{box_regex}"
+        groups = re.match(full_regex, line)
         src = groups.group(1)
         var = groups.group(2)
         tgt1 = groups.group(3)
@@ -168,8 +168,8 @@ def createTAfromABDD(file, name) -> TTreeAut:
         edge = TTransition(src, TEdge('LH', [box1, box2], var), children)
         if src not in ta.transitions:
             ta.transitions[src] = {}
-        ta.transitions[src][f"k{keyCounter}"] = edge
-        keyCounter += 1
+        ta.transitions[src][f"k{key_counter}"] = edge
+        key_counter += 1
         if src.startswith('<') and src.endswith('>'):
             leaves.add(src)
         for state in children:
@@ -177,12 +177,12 @@ def createTAfromABDD(file, name) -> TTreeAut:
                 leaves.add(state)
     for leaf in leaves:
         symbol = leaf.lstrip("<").rstrip(">")
-        edge = TTransition(leaf, TEdge(symbol, [], f"{int(maxVar)-1}"), [])
+        edge = TTransition(leaf, TEdge(symbol, [], f"{int(max_var)-1}"), [])
         ta.transitions[leaf] = {}
-        ta.transitions[leaf][f"k{keyCounter}"] = edge
-        keyCounter += 1
+        ta.transitions[leaf][f"k{key_counter}"] = edge
+        key_counter += 1
 
     return ta
-   
+
 
 # End of file format_abdd.py

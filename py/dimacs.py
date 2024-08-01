@@ -2,7 +2,7 @@
 [file] dimacs.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 [description] Simple parser of DIMACS files (import/export).
-[note] Better and faster version using BuDDy library is in ../cpp/
+[note] Better and faster version using "buddy" library is in ../cpp/
 """
 
 import os
@@ -11,7 +11,7 @@ from bdd_apply import *
 from utils import *
 
 
-def isInt(str):
+def is_int(str):
     try:
         int(str)
         return True
@@ -19,13 +19,14 @@ def isInt(str):
         return False
 
 
+# TODO: use this class for dimacs parsing
 class DimacsHelper:
     def __init__(self):
-        self.dimacsType = None
-        self.nodeCounter = 0
-        self.variableCount = 0
-        self.clausuleCount = 0
-        self.branchCount = 0
+        self.dimacs_type = None
+        self.node_counter = 0
+        self.variable_count = 0
+        self.clausule_count = 0
+        self.branch_count = 0
 
 
 # Reads a file in DIMACS format and stores it into a BDD instance.
@@ -33,125 +34,125 @@ class DimacsHelper:
 #   'override' = "cnf"/"dnf" -> treat the file as the specified format
 #       no override will imply the format from the dimacs preamble)
 #   'verbose' = if True, the function will print debug info
-#   'horizontalCut' = None by default => treats the function 'as is'
-#       if horizontalCut is specified (integer value), every variable of 
+#   'horizontal_cut' = None by default => treats the function 'as is'
+#       if horizontal_cut is specified (integer value), every variable of
 #       higher value will be skipped, useful for testing purposes
-#   'maxClausules' = None by default => only processes a certain amount of
+#   'max_clausules' = None by default => only processes a certain amount of
 #       clausules, the rest are skipped (for testing purposes)
-def dimacsRead(
+def dimacs_read(
     source: str,
     override=None,
     verbose=False,
-    horizontalCut=None,
-    maxClausules=None
+    horizontal_cut=None,
+    max_clausules=None
 ) -> BDD:
     # for now, we treat cnf as dnf, as they are more natural to parse as BDDs
     if not source.lower().endswith(('.dnf', '.cnf')):
         Exception("unknown format for dimacs parsing")
     file = open(source, 'r')
     base = os.path.basename(source)
-    bddName = os.path.splitext(base)[0]
-    dimacsType = None
-    nodeCounter = 0
-    variableCount = 0
-    clausuleCount = 0
-    branchCount = 0
+    bdd_name = os.path.splitext(base)[0]
+    dimacs_type = None
+    node_counter = 0
+    variable_count = 0
+    clausule_count = 0
+    branch_count = 0
 
     result: BDD = BDD(None, None)
-    leaf0 = BDDnode(f"t0", 0)
-    leaf1 = BDDnode(f"t1", 1)
+    terminal_0 = BDDnode(f"t0", 0)
+    terminal_1 = BDDnode(f"t1", 1)
 
-    processedClausules = 1
-    for lineNumber, line in enumerate(file, start=1):
+    processed_clausules = 1
+    for line_number, line in enumerate(file, start=1):
         words = line.strip().split()
         if line.startswith("c"):  # comment
             continue
 
-        if line.startswith("p"):  # p dnf variableCount clausuleCount
-            dimacsType = words[1]  # so far all types are treated as dnf
+        if line.startswith("p"):  # p dnf variable_count clausule_count
+            dimacs_type = words[1]  # so far all types are treated as dnf
             if override is not None and override in ['dnf', 'cnf']:
-                dimacsType = override
-            variableCount = int(words[2])
-            clausuleCount = int(words[3])
-            if maxClausules is not None:
-                clausuleCount = maxClausules
+                dimacs_type = override
+            variable_count = int(words[2])
+            clausule_count = int(words[3])
+            if max_clausules is not None:
+                clausule_count = max_clausules
             if verbose:
-                print(f"{dimacsType}, clausules = {clausuleCount}, variables = {variableCount}")
+                print(f"{dimacs_type}, clausules = {clausule_count}, variables = {variable_count}")
             continue
 
         if verbose:
-            print(f"processing clausule {processedClausules} = {words}")
+            print(f"processing clausule {processed_clausules} = {words}")
 
-        if processedClausules > clausuleCount:
-            result.name = bddName
-            result.reformatNodes()
+        if processed_clausules > clausule_count:
+            result.name = bdd_name
+            result.reformat_nodes()
             return result
 
-        if not isInt(words[0]):
+        if not is_int(words[0]):
             eprint(
-                "dimacsRead():",
-                f"skipping unrecoginzed word at line {lineNumber}"
+                "dimacs_read():",
+                f"skipping unrecoginzed word at line {line_number}"
             )
             continue
 
         variables = []
         for word in words:
-            if not isInt(word):
+            if not is_int(word):
                 raise Exception(
-                    "dimacsRead():",
-                    f"Bad value {word} on line {lineNumber}!"
+                    "dimacs_read():",
+                    f"Bad value {word} on line {line_number}!"
                 )
             variables.append(int(word))
 
         variables.pop()  # last 0
-        if horizontalCut is not None:
-            variables = [i for i in variables if abs(i) <= horizontalCut]
+        if horizontal_cut is not None:
+            variables = [i for i in variables if abs(i) <= horizontal_cut]
         if len(variables) < 2:
-            processedClausules += 1
+            processed_clausules += 1
             continue
         variables = sorted(variables, key=abs, reverse=True)
         # print(f" > {variables}")
 
         # bottom-up branch building approach
-        branchCount += 1
-        branch = BDD(f"branch_{branchCount}", None)
-        branch.root: BDDnode = leaf1 if dimacsType == 'dnf' else leaf0
+        branch_count += 1
+        branch = BDD(f"branch_{branch_count}", None)
+        branch.root = terminal_1 if dimacs_type == 'dnf' else terminal_0
 
         for var in variables:
-            current = BDDnode(f"n{nodeCounter}", str(abs(var)))
-            nodeCounter += 1
-            leaf = leaf0 if dimacsType == 'dnf' else leaf1
+            current = BDDnode(f"n{node_counter}", str(abs(var)))
+            node_counter += 1
+            leaf = terminal_0 if dimacs_type == 'dnf' else terminal_1
             if var > 0:
-                if dimacsType == 'dnf':
+                if dimacs_type == 'dnf':
                     current.attach(leaf, branch.root)
                 else:
                     current.attach(branch.root, leaf)
             else:
-                if dimacsType == 'dnf':
+                if dimacs_type == 'dnf':
                     current.attach(branch.root, leaf)
                 else:
                     current.attach(leaf, branch.root)
             branch.root = current
         # print(branch)
-        func = 'or' if dimacsType == 'dnf' else 'and'
+        func = 'or' if dimacs_type == 'dnf' else 'and'
         if verbose:
             print(branch)
             print(f"applying {func}")
             print()
-        result = applyFunction(func, result, branch)
-        processedClausules += 1
+        result = apply_function(func, result, branch)
+        processed_clausules += 1
         if verbose:
             if result.root != None:
                 print(result)
 
-    if clausuleCount != branchCount:
-        eprint("dimacsRead(): clausuleCount != branchCount")
-    result.name = bddName
-    result.reformatNodes()
+    if clausule_count != branch_count:
+        eprint("dimacs_read(): clausule_count != branch_count")
+    result.name = bdd_name
+    result.reformat_nodes()
     return result
 
 
-def cacheDumpDNF(dst, cache):
+def cache_dump_dnf(dst, cache):
     line = ""
     for value, direction in cache:
         if direction == 0:
@@ -165,27 +166,27 @@ def cacheDumpDNF(dst, cache):
 # When a leaf node is reached, prints out the path to the node to 'dst'.
 # For 'dnf', the values and directions taken are directly.
 #   - taking a 'low' branch towards 1 will yield a negation in the clausule.
-def dimacsWriteRecursiveDNF(node: BDDnode, dst, cache: list):
-    if node.isLeaf():
+def dimacs_write_recursive_dnf(node: BDDnode, dst, cache: list):
+    if node.is_leaf():
         if node.value == 1:
-            cacheDumpDNF(dst, cache)
+            cache_dump_dnf(dst, cache)
         return
 
     cache.append((node.value, 0))
-    dimacsWriteRecursiveDNF(node.low, dst, cache)
+    dimacs_write_recursive_dnf(node.low, dst, cache)
     cache.pop()
 
     cache.append((node.value, 1))
-    dimacsWriteRecursiveDNF(node.high, dst, cache)
+    dimacs_write_recursive_dnf(node.high, dst, cache)
     cache.pop()
     return
 
 
-def dimacsWriteIterativeDNF(bdd: BDDnode, dst):
+def dimacs_write_iterative_dnf(bdd: BDDnode, dst):
     pass
 
 
-def cacheDumpCNF(dst, cache):
+def cache_dump_cnf(dst, cache):
     line = ""
     for value, direction in cache:
         if direction == 1:
@@ -199,53 +200,53 @@ def cacheDumpCNF(dst, cache):
 # When a leaf node is reached, prints out the path to the node to 'dst'.
 # For 'cnf' the values and directions taken are 'reversed' in the result.
 #   - taking a 'high' branch towards 0 will yield a negation in the clausule.
-def dimacsWriteRecursiveCNF(node: BDDnode, dst, cache: list):
-    if node.isLeaf():
+def dimacs_write_recursive_cnf(node: BDDnode, dst, cache: list):
+    if node.is_leaf():
         if node.value == 0:
-            cacheDumpCNF(dst, cache)
+            cache_dump_cnf(dst, cache)
         return
     cache.append((node.value, 0))
-    dimacsWriteRecursiveDNF(node.low, dst, cache)
+    dimacs_write_recursive_cnf(node.low, dst, cache)
     cache.pop()
 
     cache.append((node.value, 1))
-    dimacsWriteRecursiveDNF(node.high, dst, cache)
+    dimacs_write_recursive_cnf(node.high, dst, cache)
     cache.pop()
     return
 
 
-def dimacsWriteIterativeCNF(bdd: BDDnode, dst):
+def dimacs_write_iterative_cnf(bdd: BDDnode, dst):
     pass
 
 
 # Exports the BDD into DIMACS format.
 #   'dst' - file name where the BDD will be exported to
-#   'recursive' - uses recursive traversal by default, 
+#   'recursive' - uses recursive traversal by default,
 #       if False, iterative traversal will be used (TODO)
 #   'format' - specifies which normal form will be used ('dnf'/'cnf')
-def dimacsWrite(bdd: BDD, dst, recursive=True, format='cnf'):
+def dimacs_write(bdd: BDD, dst, recursive=True, format='cnf'):
     file = open(dst, "w")
     if recursive is True:
         cache = []
         file.write(f"c {bdd.name}\n")
-        varCount = len(bdd.getVariableList())
+        var_count = len(bdd.get_variable_list())
         if format == 'dnf':
             print("finding 1")
-            file.write(f"p dnf {varCount} {bdd.countBranchesIter(1)}\n")
-            dimacsWriteRecursiveDNF(bdd.root, file, cache)
+            file.write(f"p dnf {var_count} {bdd.count_branches_iter(1)}\n")
+            dimacs_write_recursive_dnf(bdd.root, file, cache)
         elif format == 'cnf':
             print("finding 0")
-            file.write(f"p cnf {varCount} {bdd.countBranchesIter(0)}\n")
-            dimacsWriteRecursiveCNF(bdd.root, file, cache)
+            file.write(f"p cnf {var_count} {bdd.count_branches_iter(0)}\n")
+            dimacs_write_recursive_cnf(bdd.root, file, cache)
     else:
         file.write(f"c {bdd.name}\n")
-        varCount = len(bdd.getVariableList())
+        var_count = len(bdd.get_variable_list())
         if format == 'dnf':
-            file.write(f"p dnf {varCount} {bdd.countBranchesIter(1)}\n")
-            dimacsWriteIterativeDNF(bdd.root, file)
+            file.write(f"p dnf {var_count} {bdd.count_branches_iter(1)}\n")
+            dimacs_write_iterative_dnf(bdd.root, file)
         elif format == 'cnf':
-            file.write(f"p cnf {varCount} {bdd.countBranchesIter(0)}\n")
-            dimacsWriteIterativeCNF(bdd.root, file)
+            file.write(f"p cnf {var_count} {bdd.count_branches_iter(0)}\n")
+            dimacs_write_iterative_cnf(bdd.root, file)
     file.close()
 
 # End of file dimacs.py

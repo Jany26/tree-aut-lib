@@ -10,76 +10,77 @@ conjuntive normal form (CNF) - DIMACS format.
 import os
 import copy
 
-from blif_analysis import testFoldingOnSubBenchmarks, translation, formatBoxCounts
-from utils import boxOrders, createVarOrder
-from folding import treeAutFolding
-from ta_functions import reachableTD
-from format_abdd import importTAfromABDD
-from bdd import addDontCareBoxes
-from simulation import addVariablesBU
-from normalization import treeAutNormalize
+from blif_analysis import test_folding_on_sub_benchmarks, boxname_simplified_translation, formatBoxCounts
+from py.ta_classes import TTreeAut
+from utils import box_orders, create_var_order
+from folding import tree_aut_folding
+from ta_functions import reachable_top_down
+from format_abdd import import_treeaut_from_abdd
+from bdd import add_dont_care_boxes
+from simulation import add_variables_bottom_up
+from normalization import tree_aut_normalize
 from unfolding import unfold
 
-def getFoldedDIMACS(initial, order):
-    vars = int(initial.getVariableOrder()[-1])
-    initialChanged = addDontCareBoxes(initial, vars)
-    unfolded = unfold(initialChanged)
+def get_folded_dimacs(initial: TTreeAut, order):
+    vars = int(initial.get_var_order()[-1])
+    initial_changed = add_dont_care_boxes(initial, vars)
+    unfolded = unfold(initial_changed)
 
     unfolded_extra = copy.deepcopy(unfolded)
-    addVariablesBU(unfolded_extra, vars)
-    var_order = createVarOrder('', vars+2, start=0)
-    normalized = treeAutNormalize(unfolded_extra, var_order)
+    add_variables_bottom_up(unfolded_extra, vars)
+    var_order = create_var_order('', vars+2, start=0)
+    normalized = tree_aut_normalize(unfolded_extra, var_order)
     normalized_clean = copy.deepcopy(normalized)
-    normalized_clean.reformatKeys()
-    normalized_clean.reformatStates()
-    addVariablesBU(normalized_clean, vars+2)
-    normalized.metaData.recompute()
-    normalized_clean.metaData.recompute()
-    folded = treeAutFolding(normalized_clean, boxOrders[order], normalized_clean.getVariableMax())
+    normalized_clean.reformat_keys()
+    normalized_clean.reformat_states()
+    add_variables_bottom_up(normalized_clean, vars+2)
+    normalized.meta_data.recompute()
+    normalized_clean.meta_data.recompute()
+    folded = tree_aut_folding(normalized_clean, box_orders[order], normalized_clean.get_var_max())
     return folded
 
-def createFileOrder(dirPath: str) -> list:
-    dimacsSorter: dict[int, str] = {}
-    for subdir, dirs, files in os.walk(dirPath):
+def create_dimacs_file_order(dir_path: str) -> list:
+    dimacs_sorter: dict[int, str] = {}
+    for subdir, dirs, files in os.walk(dir_path):
         for file in files:
             benchmark = int(file.split('-')[-1].split('.')[0])
-            dimacsSorter[benchmark] = f"{subdir}{file}"
-    return dimacsSorter
+            dimacs_sorter[benchmark] = f"{subdir}{file}"
+    return dimacs_sorter
 
 
-def printBoxCountsDIMACS():
+def print_dimacs_box_counts():
     order = 'full'
-    initialString = f"{'path' :<30} = {'norm' :<5}, {order :<5}, "
-    for val in translation.values():
-        initialString += f"{val :<5}, "
-    print(initialString)
-    dimacsSorter = createFileOrder(f"../data/uf20/")
-    for benchmark in sorted(dimacsSorter.keys()):
-        path = dimacsSorter[benchmark]
+    initial_string = f"{'path' :<30} = {'norm' :<5}, {order :<5}, "
+    for val in boxname_simplified_translation.values():
+        initial_string += f"{val :<5}, "
+    print(initial_string)
+    dimacs_sorter = create_dimacs_file_order(f"../data/uf20/")
+    for benchmark in sorted(dimacs_sorter.keys()):
+        path = dimacs_sorter[benchmark]
         name = path.split('/')[-1]
-        initial = importTAfromABDD(path)
-        folded = getFoldedDIMACS(initial, order)
-        print(f"{name :<30} = {len(initial.getStates()) :<5}, {len(reachableTD(folded)) :<5}, {formatBoxCounts(folded)}")
+        initial = import_treeaut_from_abdd(path)
+        folded = get_folded_dimacs(initial, order)
+        print(f"{name :<30} = {len(initial.get_states()) :<5}, {len(reachable_top_down(folded)) :<5}, {formatBoxCounts(folded)}")
 
 
-def foldingTestDIMACS():
+def folding_test_dimacs():
     report_line = f"{'name of the benchmark' :<30}\t| init\t| unfo\t| norm"
-    for orderName in boxOrders.keys():
-        report_line += f"\t| {orderName}"
+    for order_name in box_orders.keys():
+        report_line += f"\t| {order_name}"
     print(report_line)
 
-    dimacsSorter = createFileOrder("../data/uf20/")
-    for benchmark in sorted(dimacsSorter.keys()):
-        filename = dimacsSorter[benchmark]
+    dimacs_sorter = create_dimacs_file_order("../data/uf20/")
+    for benchmark in sorted(dimacs_sorter.keys()):
+        filename = dimacs_sorter[benchmark]
         print(f"{filename}", end='\r')
 
-        testFoldingOnSubBenchmarks(
+        test_folding_on_sub_benchmarks(
             f"{filename}",
             f"../data/dimacs/uf20/{filename.split('.')[-1]}",
             orders=None,
-            rootNum=None
+            root_num=None
         )
 
 if __name__ == "__main__":
-    # printBoxCountsDIMACS()
-    foldingTestDIMACS()
+    # print_dimacs_box_counts()
+    folding_test_dimacs()

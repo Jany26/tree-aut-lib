@@ -2,7 +2,7 @@
  * blif_parser.h
  * Some helper macros, and used structure definitions plus
  * BlifParser class definition.
- * 
+ *
 */
 #include "bdd.h"
 
@@ -91,7 +91,7 @@ class BlifParser {
         BlifParser(std::string input, std::string output, parsing_type type) {
             this->input_file = input;
             this->output_file = output;
-            
+
             this->name = "";
             this->tokens = {};
             this->inputs = {};
@@ -107,7 +107,7 @@ class BlifParser {
             this->parsing = type;
             this->recursive = false;
             this->smartvars = false;
-            
+
             this->result = bdd_true();
             this->current_bdd = bdd_false();
             this->bdd_map = {};
@@ -122,7 +122,7 @@ class BlifParser {
         void tokenize();
         void initial_parse();
         void create_orders();
-        
+
         std::string get_token();
 
         void characteristic_function_parse();

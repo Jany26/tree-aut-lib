@@ -9,7 +9,7 @@ class PortConnectionInfo:
         self.attach = (None, None)
     def __repr__(self):
         pass
-    
+
 
 AND_table = {
     'X': {

@@ -20,11 +20,11 @@ class BlifParser:
         self.names = []  # contents of the current .names list
 
         # mapping strings from <.inputs> to indices => inferring variable order
-        self.varMap: dict[str, int] = {}
+        self.var_map: dict[str, int] = {}
 
-        self.nodeCounter = 0  # for unique node names
+        self.node_counter = 0  # for unique node names
         self.constructs = 0  # progress/debug (total constructs)
-        self.constructCounter = 0  # progress/debug (done constructs)
+        self.constructs_counter = 0  # progress/debug (done constructs)
 
         self.result = BDD(self.name, None)
         self.bdd = BDD(self.name, None)
@@ -35,12 +35,12 @@ class BlifParser:
     def __repr__(self):
         return "TODO"
 
-    def parse(self, fileName) -> BDD:
-        file = open(fileName, 'r')
+    def parse(self, filepath) -> BDD:
+        file = open(filepath, 'r')
         self.tokenize(file)
         file.close()
-        self.createVariablesCache()
-        self.syntaxAnalysis()
+        self.create_vars_cache()
+        self.syntax_analysis()
         self.result.name = self.name
         pass
 
@@ -54,7 +54,7 @@ class BlifParser:
             self.tokens.extend(words)
             self.tokens.append('\n')
 
-    def createVariablesCache(self):
+    def create_vars_cache(self):
         vars = set()
         i = 0
         while i < len(self.tokens):
@@ -71,106 +71,106 @@ class BlifParser:
             else:
                 i += 1
         vars = list(vars)
-        self.varMap = {}
+        self.var_map = {}
         for i in vars:
             match = re.search(r"\(([^()]*)\)", i)
             if match:
                 result = match.group(0)[1:-1]
-                self.varMap[i] = int(result)
+                self.var_map[i] = int(result)
             else:
-                self.varMap[i] = int(i)
+                self.var_map[i] = int(i)
 
-    def syntaxAnalysis(self):
-        keywords = [".model", ".inputs", ".outputs", ".names", ".end"]
-        def getToken() -> str:
+    def syntax_analysis(self):
+        self.keywords = [".model", ".inputs", ".outputs", ".names", ".end"]
+        def get_token() -> str:
             self.token = self.tokens.pop(0)
             return self.token
 
-        def constructList():
-            getToken()
-            if self.token not in keywords:
+        def construct_list():
+            get_token()
+            if self.token not in self.keywords:
                 raise Exception(f"blif_parser: unsupported construct: {self.token}")
             if self.token == ".end":
-                getToken()
+                get_token()
                 return
             construct()
-            constructList()
+            construct_list()
 
         def construct():
             if self.token == ".model":
-                modelName()
+                model_name()
             if self.token == ".inputs":
-                inputList()
+                input_list()
             if self.token == ".outputs":
-                outputList()
+                output_list()
             if self.token == ".names":
                 self.names = []
-                namesList()
-                namesContent()
-                self.result = applyFunction('and', self.bdd, self.result)
+                names_list()
+                names_content()
+                self.result = apply_function('and', self.bdd, self.result)
                 self.bdd = BDD(self.name, None)
-                self.constructCounter += 1
-                # print(f"{self.constructCounter}/{self.constructs}", end='\r')
+                self.constructs_counter += 1
+                # print(f"{self.constructs_counter}/{self.constructs}", end='\r')
 
-        def modelName():
-            self.name = getToken()
-            getToken()  # '\n'
+        def model_name():
+            self.name = get_token()
+            get_token()  # '\n'
 
-        def inputList():
-            getToken()
+        def input_list():
+            get_token()
             if self.token == "\n":
                 return
             self.inputs.append(self.token)
-            inputList()
+            input_list()
 
-        def outputList():
-            getToken()
+        def output_list():
+            get_token()
             if self.token == "\n":
                 return
             self.outputs.append(self.token)
-            outputList()
+            output_list()
 
-        def namesList():
-            getToken()
+        def names_list():
+            get_token()
             if self.token == "\n":
                 return
-            self.names.append(self.varMap[self.token])
-            namesList()
+            self.names.append(self.var_map[self.token])
+            names_list()
 
-        def namesContent():
-            inputPlane = getToken()
-            output = int(getToken())
-            getToken()  # '\n'
-            assignment = [(self.names[i], int(inputPlane[i])) for i in range(len(self.names) - 1)]
+        def names_content():
+            input_plane = get_token()
+            output = int(get_token())
+            get_token()  # '\n'
+            assignment = [(self.names[i], int(input_plane[i])) for i in range(len(self.names) - 1)]
             assignment.sort(reverse=True)
 
-            straight = BDDnode(self.nodeCounter, f'{self.names[-1]}', self.t0, self.t1)  # 
-            self.nodeCounter += 1
-            complement = BDDnode(self.nodeCounter, f'{self.names[-1]}', self.t1, self.t0)  # complemented form
-            self.nodeCounter += 1
+            straight = BDDnode(self.node_counter, f'{self.names[-1]}', self.t0, self.t1)  #
+            self.node_counter += 1
+            complement = BDDnode(self.node_counter, f'{self.names[-1]}', self.t1, self.t0)  # complemented form
+            self.node_counter += 1
 
             root, dump = (straight, complement) if output == 1 else (complement, straight)
             for var, bit in assignment:
                 low = dump if bit == 1 else root
                 high = root if bit == 1 else dump
-                newRoot = BDDnode(self.nodeCounter, f'{var}', low, high)
-                root = newRoot
-                self.nodeCounter += 1
+                new_root = BDDnode(self.node_counter, f'{var}', low, high)
+                root = new_root
+                self.node_counter += 1
             bdd = BDD(self.names[-1], root)
-            self.bdd = applyFunction('or', bdd, self.bdd)
+            self.bdd = apply_function('or', bdd, self.bdd)
             while self.tokens[0] == '\n':
-                getToken()
+                get_token()
             if self.tokens[0] in ['.names', '.end']:
                 return
-            namesContent()
-        
-        constructList()
+            names_content()
+
+        construct_list()
 
 
-    def checkNames(self, tokens: list):
+    def check_names(self, tokens: list):
         inputs = []
         outputs = []
-        notFound = []
+        not_found = []
         i = 0
         while i < len(tokens):
             if tokens[i] == '.inputs':
@@ -195,20 +195,20 @@ class BlifParser:
                     if tokens[i] == "\\":  # redundant probably
                         i += 1
                     if tokens[i] not in inputs and tokens[i] not in outputs:
-                        if tokens[i] not in notFound:
-                            notFound.append(tokens[i])
+                        if tokens[i] not in not_found:
+                            not_found.append(tokens[i])
                     i += 1
             else:
                 i += 1
                 continue
 
 
-if __name__ == '__main__':
-    blif = BlifParser()
-    blif.parse("../benchmark/blif/C17.blif")
-    print(blif.result.countNodes())
-    self = createTAfromBDD(blif.result)
-    self.reformatStates()
-    exportTAtoVTF(self, "../benchmark/blif/C17.vtf")
+# if __name__ == '__main__':
+#     blif = BlifParser()
+#     blif.parse("../benchmark/blif/C17.blif")
+#     print(blif.result.count_nodes())
+#     self = create_treeaut_from_bdd(blif.result)
+#     self.reformat_states()
+#     export_treeaut_to_vtf(self, "../benchmark/blif/C17.vtf")
 
 # end of blif_parser.py

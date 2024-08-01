@@ -14,7 +14,7 @@ from format_vtf import *
 # "leaf" states are recognized by having at least one transition which
 # has an empty tuple at the end (descendants) -> "output edge"
 
-fullAlphabet = {
+full_alphabet = {
     "LH": 2,
     "0": 0,
     "1": 0,
@@ -29,159 +29,162 @@ fullAlphabet = {
     "Port_HPort1": 0,
 }
 
-boxCatalogue = {
-    "False": importTAfromVTF("../tests/boxes/box0.vtf"),
-    "True": importTAfromVTF("../tests/boxes/box1.vtf"),
-    "X": importTAfromVTF("../tests/boxes/boxX.vtf"),
-    "L0": importTAfromVTF("../tests/boxes/boxL0.vtf"),
-    "L1": importTAfromVTF("../tests/boxes/boxL1.vtf"),
-    "H0": importTAfromVTF("../tests/boxes/boxH0.vtf"),
-    "H1": importTAfromVTF("../tests/boxes/boxH1.vtf"),
-    "LPort": importTAfromVTF("../tests/boxes/boxLPort.vtf"),
-    "HPort": importTAfromVTF("../tests/boxes/boxHPort.vtf"),
-    "IFF0": importTAfromVTF("../tests/boxes/IFF0.vtf"),
-    "IFF1": importTAfromVTF("../tests/boxes/IFF1.vtf"),
-    "IFFPort": importTAfromVTF("../tests/boxes/IFFPort.vtf"),
+box_catalogue = {
+    "False": import_treeaut_from_vtf("../tests/boxes/box0.vtf"),
+    "True": import_treeaut_from_vtf("../tests/boxes/box1.vtf"),
 
-    "boxX": importTAfromVTF("../tests/boxes/boxX.vtf"),
-    "boxL0": importTAfromVTF("../tests/boxes/boxL0.vtf"),
-    "boxL1": importTAfromVTF("../tests/boxes/boxL1.vtf"),
-    "boxH0": importTAfromVTF("../tests/boxes/boxH0.vtf"),
-    "boxH1": importTAfromVTF("../tests/boxes/boxH1.vtf"),
-    "boxLPort": importTAfromVTF("../tests/boxes/boxLPort.vtf"),
-    "boxHPort": importTAfromVTF("../tests/boxes/boxHPort.vtf"),
+    "X": import_treeaut_from_vtf("../tests/boxes/boxX.vtf"),
+    "L0": import_treeaut_from_vtf("../tests/boxes/boxL0.vtf"),
+    "L1": import_treeaut_from_vtf("../tests/boxes/boxL1.vtf"),
+    "H0": import_treeaut_from_vtf("../tests/boxes/boxH0.vtf"),
+    "H1": import_treeaut_from_vtf("../tests/boxes/boxH1.vtf"),
+    "LPort": import_treeaut_from_vtf("../tests/boxes/boxLPort.vtf"),
+    "HPort": import_treeaut_from_vtf("../tests/boxes/boxHPort.vtf"),
+
+    # redundant probably -> can be built using Hx, Lx combinations
+    "IFF0": import_treeaut_from_vtf("../tests/boxes/IFF0.vtf"),
+    "IFF1": import_treeaut_from_vtf("../tests/boxes/IFF1.vtf"),
+    "IFFPort": import_treeaut_from_vtf("../tests/boxes/IFFPort.vtf"),
+
+    "boxX": import_treeaut_from_vtf("../tests/boxes/boxX.vtf"),
+    "boxL0": import_treeaut_from_vtf("../tests/boxes/boxL0.vtf"),
+    "boxL1": import_treeaut_from_vtf("../tests/boxes/boxL1.vtf"),
+    "boxH0": import_treeaut_from_vtf("../tests/boxes/boxH0.vtf"),
+    "boxH1": import_treeaut_from_vtf("../tests/boxes/boxH1.vtf"),
+    "boxLPort": import_treeaut_from_vtf("../tests/boxes/boxLPort.vtf"),
+    "boxHPort": import_treeaut_from_vtf("../tests/boxes/boxHPort.vtf"),
 }
 
-boxX = boxCatalogue["X"]
-boxL0 = boxCatalogue["L0"]
-boxL1 = boxCatalogue["L1"]
-boxH0 = boxCatalogue["H0"]
-boxH1 = boxCatalogue["H1"]
-boxLPort = boxCatalogue["LPort"]
-boxHPort = boxCatalogue["HPort"]
+box_X = box_catalogue["X"]
+box_L0 = box_catalogue["L0"]
+box_L1 = box_catalogue["L1"]
+box_H0 = box_catalogue["H0"]
+box_H1 = box_catalogue["H1"]
+box_LPort = box_catalogue["LPort"]
+box_HPort = box_catalogue["HPort"]
 
 # output edge array for createPrefix()
 
-outputEdgesX = boxX.getOutputSymbols()
-outputEdgesL0 = boxL0.getOutputSymbols()
-outputEdgesL1 = boxL1.getOutputSymbols()
-outputEdgesH0 = boxH0.getOutputSymbols()
-outputEdgesH1 = boxH1.getOutputSymbols()
-outputEdgesLPort = boxLPort.getOutputSymbols()
-outputEdgesHPort = boxHPort.getOutputSymbols()
+output_edges_X = box_X.get_output_symbols()
+output_edges_L0 = box_L0.get_output_symbols()
+output_edges_L1 = box_L1.get_output_symbols()
+output_edges_H0 = box_H0.get_output_symbols()
+output_edges_H1 = box_H1.get_output_symbols()
+output_edges_LPort = box_LPort.get_output_symbols()
+output_edges_HPort = box_HPort.get_output_symbols()
 
 # reachability and useless state removal test data
-testUnreachable1 = importTAfromVTF("../tests/special_cases/testUnreachable1.vtf")
-testUnreachable2 = importTAfromVTF("../tests/special_cases/testUnreachable2.vtf")
-testUnreachable3 = importTAfromVTF("../tests/special_cases/testUnreachable3.vtf")
+test_unreachable_1 = import_treeaut_from_vtf("../tests/special_cases/testUnreachable1.vtf")
+test_unreachable_2 = import_treeaut_from_vtf("../tests/special_cases/testUnreachable2.vtf")
+test_unreachable_3 = import_treeaut_from_vtf("../tests/special_cases/testUnreachable3.vtf")
 
-testNonEmpty1 = importTAfromVTF("../tests/special_cases/testNonEmpty1.vtf")
+test_nonempty_1 = import_treeaut_from_vtf("../tests/special_cases/testNonEmpty1.vtf")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-boxesDict = {
-    "boxX": boxX,
-    "boxL0": boxL0,
-    "boxL1": boxL1,
-    "boxH0": boxH0,
-    "boxH1": boxH1,
-    "boxLPort": boxLPort,
-    "boxHPort": boxHPort,
+boxes_dict = {
+    "boxX": box_X,
+    "boxL0": box_L0,
+    "boxL1": box_L1,
+    "boxH0": box_H0,
+    "boxH1": box_H1,
+    "boxLPort": box_LPort,
+    "boxHPort": box_HPort,
 
-    "unionXL0": treeAutUnion(boxX, boxL0),
-    "unionXL1": treeAutUnion(boxX, boxL1),
-    "unionXH0": treeAutUnion(boxX, boxH0),
-    "unionXH1": treeAutUnion(boxX, boxH1),
-    "unionL0H0": treeAutUnion(boxL0, boxH0),
-    "unionL0H1": treeAutUnion(boxL0, boxH1),
-    "unionL0L1": treeAutUnion(boxL0, boxL1),
-    "unionL1H0": treeAutUnion(boxL1, boxH0),
-    "unionL1H1": treeAutUnion(boxL1, boxH1),
-    "unionH0H1": treeAutUnion(boxH0, boxH1),
+    "unionXL0": tree_aut_union(box_X, box_L0),
+    "unionXL1": tree_aut_union(box_X, box_L1),
+    "unionXH0": tree_aut_union(box_X, box_H0),
+    "unionXH1": tree_aut_union(box_X, box_H1),
+    "unionL0H0": tree_aut_union(box_L0, box_H0),
+    "unionL0H1": tree_aut_union(box_L0, box_H1),
+    "unionL0L1": tree_aut_union(box_L0, box_L1),
+    "unionL1H0": tree_aut_union(box_L1, box_H0),
+    "unionL1H1": tree_aut_union(box_L1, box_H1),
+    "unionH0H1": tree_aut_union(box_H0, box_H1),
 
-    "intersectionXL0": treeAutIntersection(boxX, boxL0),
-    "intersectionXL1": treeAutIntersection(boxX, boxL1),
-    "intersectionXH0": treeAutIntersection(boxX, boxH0),
-    "intersectionXH1": treeAutIntersection(boxX, boxH1),
-    "intersectionL0H0": treeAutIntersection(boxL0, boxH0),
-    "intersectionL0H1": treeAutIntersection(boxL0, boxH1),
-    "intersectionL0L1": treeAutIntersection(boxL0, boxL1),
-    "intersectionL1H0": treeAutIntersection(boxL1, boxH0),
-    "intersectionL1H1": treeAutIntersection(boxL1, boxH1),
-    "intersectionH0H1": treeAutIntersection(boxH0, boxH1),
+    "intersectionXL0": tree_aut_intersection(box_X, box_L0),
+    "intersectionXL1": tree_aut_intersection(box_X, box_L1),
+    "intersectionXH0": tree_aut_intersection(box_X, box_H0),
+    "intersectionXH1": tree_aut_intersection(box_X, box_H1),
+    "intersectionL0H0": tree_aut_intersection(box_L0, box_H0),
+    "intersectionL0H1": tree_aut_intersection(box_L0, box_H1),
+    "intersectionL0L1": tree_aut_intersection(box_L0, box_L1),
+    "intersectionL1H0": tree_aut_intersection(box_L1, box_H0),
+    "intersectionL1H1": tree_aut_intersection(box_L1, box_H1),
+    "intersectionH0H1": tree_aut_intersection(box_H0, box_H1),
 
-    "complementX": treeAutComplement(boxX, fullAlphabet),
-    "complementL0": treeAutComplement(boxL0, fullAlphabet),
-    "complementL1": treeAutComplement(boxL1, fullAlphabet),
-    "complementH0": treeAutComplement(boxH0, fullAlphabet),
-    "complementH1": treeAutComplement(boxH1, fullAlphabet),
-    "complementLPort": treeAutComplement(boxLPort, fullAlphabet),
-    "complementHPort": treeAutComplement(boxHPort, fullAlphabet),
+    "complementX": tree_aut_complement(box_X, full_alphabet),
+    "complementL0": tree_aut_complement(box_L0, full_alphabet),
+    "complementL1": tree_aut_complement(box_L1, full_alphabet),
+    "complementH0": tree_aut_complement(box_H0, full_alphabet),
+    "complementH1": tree_aut_complement(box_H1, full_alphabet),
+    "complementLPort": tree_aut_complement(box_LPort, full_alphabet),
+    "complementHPort": tree_aut_complement(box_HPort, full_alphabet),
 
-    "determinizedX": treeAutDeterminization(boxX, fullAlphabet),
-    "determinizedL0": treeAutDeterminization(boxL0, fullAlphabet),
-    "determinizedL1": treeAutDeterminization(boxL1, fullAlphabet),
-    "determinizedH0": treeAutDeterminization(boxH0, fullAlphabet),
-    "determinizedH1": treeAutDeterminization(boxH1, fullAlphabet),
-    "determinizedLPort": treeAutDeterminization(boxLPort, fullAlphabet),
-    "determinizedHPort": treeAutDeterminization(boxHPort, fullAlphabet),
+    "determinizedX": tree_aut_determinization(box_X, full_alphabet),
+    "determinizedL0": tree_aut_determinization(box_L0, full_alphabet),
+    "determinizedL1": tree_aut_determinization(box_L1, full_alphabet),
+    "determinizedH0": tree_aut_determinization(box_H0, full_alphabet),
+    "determinizedH1": tree_aut_determinization(box_H1, full_alphabet),
+    "determinizedLPort": tree_aut_determinization(box_LPort, full_alphabet),
+    "determinizedHPort": tree_aut_determinization(box_HPort, full_alphabet),
 
-    "Xsuffix": boxX.createSuffix(),
-    "L0suffix": boxL0.createSuffix(),
-    "L1suffix": boxL1.createSuffix(),
-    "H0suffix": boxH0.createSuffix(),
-    "H1suffix": boxH1.createSuffix(),
-    "LPortsuffix": boxLPort.createSuffix(),
+    "Xsuffix": box_X.create_suffix(),
+    "L0suffix": box_L0.create_suffix(),
+    "L1suffix": box_L1.create_suffix(),
+    "H0suffix": box_H0.create_suffix(),
+    "H1suffix": box_H1.create_suffix(),
+    "LPortsuffix": box_LPort.create_suffix(),
 
-    "XprefixForL0": boxX.createPrefix(outputEdgesL0),
-    "XprefixForL1": boxX.createPrefix(outputEdgesL1),
-    "XprefixForH0": boxX.createPrefix(outputEdgesH0),
-    "XprefixForH1": boxX.createPrefix(outputEdgesH0),
-    "XprefixForLPort": boxX.createPrefix(outputEdgesLPort),
-    "XprefixForHPort": boxX.createPrefix(outputEdgesHPort),
+    "XprefixForL0": box_X.create_prefix(output_edges_L0),
+    "XprefixForL1": box_X.create_prefix(output_edges_L1),
+    "XprefixForH0": box_X.create_prefix(output_edges_H0),
+    "XprefixForH1": box_X.create_prefix(output_edges_H0),
+    "XprefixForLPort": box_X.create_prefix(output_edges_LPort),
+    "XprefixForHPort": box_X.create_prefix(output_edges_HPort),
 
-    "L0prefixForX": boxL0.createPrefix(outputEdgesX),
-    "L0prefixForL1": boxL0.createPrefix(outputEdgesL1),
-    "L0prefixForH0": boxL0.createPrefix(outputEdgesH0),
-    "L0prefixForH1": boxL0.createPrefix(outputEdgesH0),
-    "L0prefixForLPort": boxL0.createPrefix(outputEdgesLPort),
+    "L0prefixForX": box_L0.create_prefix(output_edges_X),
+    "L0prefixForL1": box_L0.create_prefix(output_edges_L1),
+    "L0prefixForH0": box_L0.create_prefix(output_edges_H0),
+    "L0prefixForH1": box_L0.create_prefix(output_edges_H0),
+    "L0prefixForLPort": box_L0.create_prefix(output_edges_LPort),
 
-    "L1prefixForX": boxL1.createPrefix(outputEdgesX),
-    "L1prefixForL0": boxL1.createPrefix(outputEdgesL0),
-    "L1prefixForH0": boxL1.createPrefix(outputEdgesH0),
-    "L1prefixForH1": boxL1.createPrefix(outputEdgesH0),
-    "L1prefixForLPort": boxL1.createPrefix(outputEdgesLPort),
+    "L1prefixForX": box_L1.create_prefix(output_edges_X),
+    "L1prefixForL0": box_L1.create_prefix(output_edges_L0),
+    "L1prefixForH0": box_L1.create_prefix(output_edges_H0),
+    "L1prefixForH1": box_L1.create_prefix(output_edges_H0),
+    "L1prefixForLPort": box_L1.create_prefix(output_edges_LPort),
 
-    "H0prefixForX": boxH0.createPrefix(outputEdgesX),
-    "H0prefixForL0": boxH0.createPrefix(outputEdgesL0),
-    "H0prefixForL1": boxH0.createPrefix(outputEdgesL1),
-    "H0prefixForH1": boxH0.createPrefix(outputEdgesH0),
-    "H0prefixForLPort": boxH0.createPrefix(outputEdgesLPort),
+    "H0prefixForX": box_H0.create_prefix(output_edges_X),
+    "H0prefixForL0": box_H0.create_prefix(output_edges_L0),
+    "H0prefixForL1": box_H0.create_prefix(output_edges_L1),
+    "H0prefixForH1": box_H0.create_prefix(output_edges_H0),
+    "H0prefixForLPort": box_H0.create_prefix(output_edges_LPort),
 
-    "H1prefixForX": boxH1.createPrefix(outputEdgesX),
-    "H1prefixForL0": boxH1.createPrefix(outputEdgesL0),
-    "H1prefixForL1": boxH1.createPrefix(outputEdgesL1),
-    "H1prefixForH0": boxH1.createPrefix(outputEdgesH0),
-    "H1prefixForLPort": boxH1.createPrefix(outputEdgesLPort),
+    "H1prefixForX": box_H1.create_prefix(output_edges_X),
+    "H1prefixForL0": box_H1.create_prefix(output_edges_L0),
+    "H1prefixForL1": box_H1.create_prefix(output_edges_L1),
+    "H1prefixForH0": box_H1.create_prefix(output_edges_H0),
+    "H1prefixForLPort": box_H1.create_prefix(output_edges_LPort),
 }
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-functionPtrs = {
-    "matchTreeBU": matchTreeBU,
-    "matchTreeTD": matchTreeTD,
+function_ptrs = {
+    "match_tree_bottom_up": match_tree_bottom_up,
+    "match_tree_top_down": match_tree_top_down,
 
-    "treeAutUnion": treeAutUnion,
-    "treeAutIntersection": treeAutIntersection,
-    "treeAutDeterminization": treeAutDeterminization,
-    "treeAutComplement": treeAutComplement,
+    "tree_aut_union": tree_aut_union,
+    "tree_aut_intersection": tree_aut_intersection,
+    "tree_aut_determinization": tree_aut_determinization,
+    "tree_aut_complement": tree_aut_complement,
 
-    "nonEmptyTD": nonEmptyTD,
-    "nonEmptyBU": nonEmptyBU,
+    "non_empty_top_down": non_empty_top_down,
+    "non_empty_bottom_up": non_empty_bottom_up,
 
-    "reachableTD": reachableTD,
-    "reachableBU": reachableBU,
-    "removeUselessStates": removeUselessStates
+    "reachable_top_down": reachable_top_down,
+    "reachable_bottom_up": reachable_bottom_up,
+    "removeUselessStates": remove_useless_states
 }
 
 # End of file test_data.py

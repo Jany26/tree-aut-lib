@@ -15,7 +15,7 @@ from test_data import *
 import re
 import copy
 
-from render_dot import exportToFile
+from render_dot import export_to_file
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Folding Helper class:
@@ -30,8 +30,8 @@ class FoldingHelper:
         export_vtf: bool,
         export_png: bool,
         output,
-        exportPath,
-        maxVar
+        export_path,
+        max_var
     ):
         self.name = ""
         match = re.search(r"\(([^()]*)\)", ta.name)
@@ -40,22 +40,22 @@ class FoldingHelper:
         else:
             self.name = f"{match.group(1)}"
 
-        # Helpful for storing (state, edgeKey) tuples during intersectoid
+        # Helpful for storing (state, edge_key) tuples during intersectoid
         # construction. If the intersectoid has non-empty language, the items
-        # from this list are moved to the final softFlaggedEdges dictionary
-        self.softFlaggedEdges = {}
-        self.flaggedEdges = set()
-        
-        self.keyCounter = 0
+        # from this list are moved to the final soft_flagged_edges dictionary
+        self.soft_flagged_edges = {}
+        self.flagged_edges = set()
+
+        self.key_counter = 0
 
         # folding options
-        self.maxVar = maxVar
-        self.minVar = 0
-        self.varPrefix = ta.getVariablePrefix()
-        self.stateMap = {}
+        self.max_var = max_var
+        self.min_var = 0
+        self.var_prefix = ta.get_var_prefix()
+        self.state_map = {}
         self.counter = 0
         self.counter2 = 0
-        self.reach: dict[str, set] = getAllStateReachability(ta, reflexive=False)
+        self.reach: dict[str, set] = get_all_state_reachability(ta, reflexive=False)
 
         # export/debug options
         self.intersectoids = []
@@ -63,27 +63,27 @@ class FoldingHelper:
         self.png = export_png
         self.vtf = export_vtf
         self.output = output
-        self.path = exportPath
+        self.path = export_path
 
 
     def __repr__(self):
         result = "[FoldingHelper]\n"
-        srcLen = 0
-        keyLen = 0
-        childLen = 0
-        for state, edges in self.softFlaggedEdges.items():
-            srcLen = max(srcLen, len(state))
-            for childStr, (key, edge) in edges.items():
-                childLen = max(childLen, len(childStr))
-                keyLen = max(keyLen, len(key))
-        for state, edges in self.softFlaggedEdges.items():
-            for childStr, (key, edge) in edges.items():
+        src_len = 0
+        key_len = 0
+        child_len = 0
+        for state, edges in self.soft_flagged_edges.items():
+            src_len = max(src_len, len(state))
+            for child_str, (key, edge) in edges.items():
+                child_len = max(child_len, len(child_str))
+                key_len = max(key_len, len(key))
+        for state, edges in self.soft_flagged_edges.items():
+            for child_str, (key, edge) in edges.items():
                 result += "%-*s -> %-*s : %-*s : %s\n" % (
-                    srcLen, state, childLen, childStr, keyLen, key, edge
+                    src_len, state, child_len, child_str, key_len, key, edge
                 )
-        result += f"minvar = {self.minVar}, maxvar = {self.maxVar}\n"
-        result += f"keycounter = {self.keyCounter}, counter = {self.counter}, counter2 = {self.counter2}\n"
-        result += f"statemap = {self.stateMap}\n"
+        result += f"minvar = {self.min_var}, maxvar = {self.max_var}\n"
+        result += f"keycounter = {self.key_counter}, counter = {self.counter}, counter2 = {self.counter2}\n"
+        result += f"statemap = {self.state_map}\n"
         # result += f"{}\n"
         # result += f"{}\n"
         return result
@@ -95,48 +95,48 @@ class FoldingHelper:
             else:
                 self.output.write(f"{s}\n")
 
-    # def flagEdge(self, key: str, edge: TTransition):
-    #     if edge.src not in self.softFlaggedEdges:
-    #         self.softFlaggedEdges[edge.src] = {}
-    #     childStr = ""
+    # def flag_edge(self, key: str, edge: TTransition):
+    #     if edge.src not in self.soft_flagged_edges:
+    #         self.soft_flagged_edges[edge.src] = {}
+    #     child_str = ""
     #     for i in edge.children:
-    #         childStr += i + " | "
-    #     childStr = childStr[:-3]
-    #     if childStr not in self.softFlaggedEdges[edge.src]:
-    #         self.softFlaggedEdges[edge.src][childStr] = (key, edge)
+    #         child_str += i + " | "
+    #     child_str = child_str[:-3]
+    #     if child_str not in self.soft_flagged_edges[edge.src]:
+    #         self.soft_flagged_edges[edge.src][child_str] = (key, edge)
 
-    # def printFlaggedEdges(self):
-    #     for j in self.softFlaggedEdges.values():
+    # def print_flagged_edges(self):
+    #     for j in self.soft_flagged_edges.values():
     #         for (l, m) in j.values():
     #             print(l, m)
 
     # # ta -> intersectoid
-    # def getFlaggedEdgesFrom(self, ta: TTreeAut):
+    # def get_flagged_edges_from(self, ta: TTreeAut):
     #     for edge in transitions(ta):
     #         if len(edge.children) == 0:
     #             continue
-    #         taState = splitTupleName(edge.src)
-    #         children = [splitTupleName(i) for i in edge.children]
-    #         childrenStr = ','.join(children)
-    #         key = f"{taState}-{edge.info.variable}-{childrenStr}"
-    #         self.flaggedEdges.add(key)
-    
-    def exportUBDA(self, result: TTreeAut, state: str, edgePart: list, box: TTreeAut):
+    #         tree_aut_state = split_tuple_name(edge.src)
+    #         children = [split_tuple_name(i) for i in edge.children]
+    #         children_str = ','.join(children)
+    #         key = f"{tree_aut_state}-{edge.info.variable}-{children_str}"
+    #         self.flagged_edges.add(key)
+
+    def export_ubda(self, result: TTreeAut, state: str, edge_part: list, box: TTreeAut):
         if self.png or self.vtf:
-            temp = f"{state}-{edgePart[1]}:{box.name}-{edgePart[2]}"
+            temp = f"{state}-{edge_part[1]}:{box.name}-{edge_part[2]}"
             temp = f"{self.counter}-{temp}"
             if self.path is None:
                 path = f"results/{self.name}/ubdas/{temp}"
             else:
                 path = f"{self.path}/ubdas/{temp}"
             if self.vtf:
-                exportTAtoVTF(result, format='f', filePath=f"{path}.vtf")
+                export_treeaut_to_vtf(result, format='f', filepath=f"{path}.vtf")
             if self.png:
-                exportToFile(result, path)
+                export_to_file(result, path)
             self.counter += 1
-    
-    # helper.exportIntersectoid(A, root, source, box.name)
-    def exportIntersectoid(self, treeaut: TTreeAut,
+
+    # helper.export_intersectoid(A, root, source, box.name)
+    def export_intersectoid(self, treeaut: TTreeAut,
                            source: str, root: str, box: str):
         self.intersectoids.append(treeaut)
         temp = f"{self.counter}-{source}-{box}-{root}"
@@ -145,9 +145,9 @@ class FoldingHelper:
         else:
             path = f"{self.path}/intersectoids/{temp}"
         if self.vtf:
-            exportTAtoVTF(treeaut, format='f', filePath=f"{path}.vtf")
+            export_treeaut_to_vtf(treeaut, format='f', filepath=f"{path}.vtf")
         if self.png:
-            exportToFile(treeaut, f"{path}")
+            export_to_file(treeaut, f"{path}")
         self.write(treeaut)
 
 
@@ -159,62 +159,62 @@ class FoldingHelper:
 # Returns the first (important notice!) child state (index),
 # to which does the transition lead through the box on index idx.
 #
-# E.g. q0 - [box1, box2] -> (q1, q2, q3, q4) ## consider box1 has portArity = 3
+# E.g. q0 - [box1, box2] -> (q1, q2, q3, q4) ## consider box1 has port_arity = 3
 # idx = 1 (box2)... box1 has port arity 3, so box2 is on the sub-edge leading
 # to state q4, as subedge with box1 encapsulates children q1, q2, q3
 #
 # NOTE: might not work in some special cases of port arity combinations etc.
-def getStateIndexFromBoxIndex(edge: list, idx: int) -> int:
-    if idx >= len(edge.info.boxArray):
-        raise Exception("getStateIndexFromBoxIndex(): idx out of range")
+def get_state_index_from_box_index(edge: list, idx: int) -> int:
+    if idx >= len(edge.info.box_array):
+        raise Exception("get_state_index_from_box_index(): idx out of range")
     result = 0
-    for i, boxStr in enumerate(edge.info.boxArray):
+    for i, box_str in enumerate(edge.info.box_array):
         if i == idx:
             return result
-        if boxStr is None:
+        if box_str is None:
             result += 1
         else:
-            result += boxCatalogue[boxStr].portArity
-    raise Exception("getStateIndexFromBoxIndex(): idx out of range")
+            result += box_catalogue[box_str].port_arity
+    raise Exception("get_state_index_from_box_index(): idx out of range")
 
 
 # Normalizes the box arrays within the ta,
 # so that reducibility checks are consistent.
-def fillBoxArrays(ta: TTreeAut):
-    arities = ta.getSymbolArityDict()
-    for edge in iterateEdges(ta):
-        if edge.info.boxArray == []:
-            edge.info.boxArray = [None] * len(edge.children)
+def fill_box_arrays(ta: TTreeAut):
+    arities = ta.get_symbol_arity_dict()
+    for edge in iterate_edges(ta):
+        if edge.info.box_array == []:
+            edge.info.box_array = [None] * len(edge.children)
         else:
-            boxlen = len(edge.info.boxArray)
+            boxlen = len(edge.info.box_array)
             symlen = arities[edge.info.label]
             if boxlen != symlen:
-                edge.info.boxArray.extend([None] * (symlen - boxlen))
+                edge.info.box_array.extend([None] * (symlen - boxlen))
 
 
 # This function checks whether or not a certain subedge has a box reduction.
-# (subedge is based on 'state' and 'edgeInfo')
+# (subedge is based on 'state' and 'edge_info')
 #
-# NOTE: might be buggy if box arities and boxArrays on edges are inconsistent
-# (consider different index in edgeInfo and boxes with different port arities)
-def isAlreadyReduced(ta: TTreeAut, state: str, edgeInfo: list) -> bool:
-    edge = ta.transitions[state][edgeInfo[0]]  # edgeInfo[0] = key
-    if edgeInfo[2] not in edge.children:
+# NOTE: might be buggy if box arities and box_arrays on edges are inconsistent
+# (consider different index in edge_info and boxes with different port arities)
+def is_already_reduced(ta: TTreeAut, state: str, edge_info: list) -> bool:
+    edge = ta.transitions[state][edge_info[0]]  # edge_info[0] = key
+    if edge_info[2] not in edge.children:
         return True
-    # idx = edge.children.index(edgeInfo[2])
-    # print(edgeInfo[1])
-    idx = edgeInfo[1]
+    # idx = edge.children.index(edge_info[2])
+    # print(edge_info[1])
+    idx = edge_info[1]
     # if box is None => short edge => arity = 1 (1 target state)
-    boxArities = []
-    for boxStr in edge.info.boxArray:
-        if boxStr is None:
-            boxArities.append((None, 1))
+    box_arities = []
+    for box_str in edge.info.box_array:
+        if box_str is None:
+            box_arities.append((None, 1))
         else:
-            box = boxCatalogue[boxStr]
-            boxArities.append((boxStr, box.portArity))
+            box = box_catalogue[box_str]
+            box_arities.append((box_str, box.port_arity))
 
     i = 0
-    for tuple in boxArities:
+    for tuple in box_arities:
         if idx < i + tuple[1]:
             if tuple[0] is not None:
                 return True
@@ -224,24 +224,24 @@ def isAlreadyReduced(ta: TTreeAut, state: str, edgeInfo: list) -> bool:
     return False
 
 
-def removeUselessStatesTD(ta: TTreeAut) -> TTreeAut:
-    workTA = copy.deepcopy(ta)
-    # reachableStatesBU = reachableBU(workTA)
-    # workTA.shrinkTA(reachableStatesBU)
-    reachableStatesTD = reachableTD(workTA)
-    workTA.shrinkTA(reachableStatesTD)
-    return workTA
+def shrink_to_top_down_reachable(ta: TTreeAut) -> TTreeAut:
+    work_treeaut = copy.deepcopy(ta)
+    # reachable_states_bottomup = reachable_states_bottomup(work_treeaut)
+    # work_treeaut.shrink_tree_aut(reachable_states_bottomup)
+    reachable_states_top_down = reachable_top_down(work_treeaut)
+    work_treeaut.shrink_tree_aut(reachable_states_top_down)
+    return work_treeaut
 
 
 def trim(ta: TTreeAut) -> TTreeAut:
-    workTA = removeUselessStatesTD(ta)
-    return removeUselessStates(workTA)
+    work_treeaut = shrink_to_top_down_reachable(ta)
+    return remove_useless_states(work_treeaut)
 
     # remove transitions over variables which are clearly unnecessary
     # TODO: define/explain ^^
     # get all paths from roots to leaves ---> make a function
 
-    return workTA
+    return work_treeaut
 
 
 class EdgePart:
@@ -263,7 +263,7 @@ class EdgePart:
 # - 2: child name,
 # - 3: source state name
 # - 4: the whole edge itself
-def newPrepareEdgeInfo(ta: TTreeAut, state: str):
+def prepare_edge_info(ta: TTreeAut, state: str):
     result = []
     for key, edge in ta.transitions[state].items():
         # we do not fold edges that are self-loops
@@ -277,11 +277,11 @@ def newPrepareEdgeInfo(ta: TTreeAut, state: str):
     return result
 
 
-def tupleName(tuple) -> str:
+def tuple_name(tuple) -> str:
     return f"({tuple[0]},{tuple[1]})"
 
 
-def splitTupleName(string):
+def split_tuple_name(string):
     match = re.search("^\(.*,", string)
     result = match.group(0)[1:-1]
     return result
@@ -292,66 +292,66 @@ def splitTupleName(string):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-def hasOnlyBoxedEdges(ta: TTreeAut, state: str):
-    arityDict = ta.getSymbolArityDict()
+def has_only_boxed_edges(ta: TTreeAut, state: str):
+    arity_dict = ta.get_symbol_arity_dict()
     for edge in ta.transitions[state].values():
-        arity = arityDict[edge.info.label]
+        arity = arity_dict[edge.info.label]
         if arity == 0:
             return False
-        boxCount = 0
-        for box in edge.info.boxArray:
+        box_count = 0
+        for box in edge.info.box_array:
             if box is not None and box != "":
-                boxCount += 1
-        if arity != boxCount:
+                box_count += 1
+        if arity != box_count:
             return False
     return True
 
 
-def removeFlaggedEdgesFix(ta: TTreeAut, helper: FoldingHelper):
-    keyDict = {}
+def remove_flagged_edges_fix(ta: TTreeAut, helper: FoldingHelper):
+    key_dict = {}
     for state, edges in ta.transitions.items():
-        keyDict[state] = set()
+        key_dict[state] = set()
         for key, edge in edges.items():
             if len(edge.children) == 0:
                 continue
-            childStr = ','.join(edge.children)
-            if f"{edge.src}-{edge.info.variable}-{childStr}" in helper.flaggedEdges:
-                keyDict[state].add(key)
-    for state, keySet in keyDict.items():
-        for key in keySet:
+            child_str = ','.join(edge.children)
+            if f"{edge.src}-{edge.info.variable}-{child_str}" in helper.flagged_edges:
+                key_dict[state].add(key)
+    for state, key_set in key_dict.items():
+        for key in key_set:
             ta.transitions[state].pop(key)
 
 
-def removeFlaggedEdges(ta: TTreeAut, helper: FoldingHelper):
-    keyList = []
-    for state, edges in helper.softFlaggedEdges.items():
-        for childStr, (key, edge) in edges.items():
-            originalChildren = childStr.split(" | ")
-            onlyBoxed = True
-            childrenStayed = True
+def remove_flagged_edges(ta: TTreeAut, helper: FoldingHelper):
+    key_list = []
+    for state, edges in helper.soft_flagged_edges.items():
+        for child_str, (key, edge) in edges.items():
+            original_children = child_str.split(" | ")
+            only_boxed = True
+            children_stayed = True
             for i in range(len(edge.children)):
-                if originalChildren[i] != edge.children[i]:
-                    childrenStayed = False
-                if not hasOnlyBoxedEdges(ta, edge.children[i]):
-                    onlyBoxed = False
-            if childrenStayed and not onlyBoxed:
-                keyList.append(key)
+                if original_children[i] != edge.children[i]:
+                    children_stayed = False
+                if not has_only_boxed_edges(ta, edge.children[i]):
+                    only_boxed = False
+            if children_stayed and not only_boxed:
+                key_list.append(key)
                 ta.transitions[state].pop(key)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# probably useless 
+# probably useless
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-# NOTE: this function is redundant, a newer version is used (newPrepareEdgeInfo)
+# NOTE: this function is redundant, a newer version is used (prepare_edge_info)
 # Helper function to create a list of states and some data about them,
 # which will be helpful during main folding procedure.
 # list of all sub-edges (parts of hyper-edge), with indexes to the child.
 #
 # e.g. key-transition pair "key": q0 -> (q1, q2) will be divided into:
 # ["key", 0, q1] and ["key", 1, q2]
-def prepareEdgeInfo(ta: TTreeAut, state: str) -> list:
+def prepare_edge_info_old(ta: TTreeAut, state: str) -> list:
     result = []
     for key, edge in ta.transitions[state].items():
         for i in range(len(edge.children)):
@@ -360,41 +360,41 @@ def prepareEdgeInfo(ta: TTreeAut, state: str) -> list:
 
 
 
-# NOTE: function addVariablesTD is in use for folding
+# NOTE: function add_variables_top_down is in use for folding
 # temporarily copied from simulation.py
-def addVariablesBUFolding(ta: TTreeAut, minVar: int):
-    def convertVars(varList: list, prefix: str) -> dict:
-        return {i: int(i[len(prefix):]) for i in varList}
+def add_variables_bottomup_folding(ta: TTreeAut, min_var: int):
+    def convert_vars(var_list: list, prefix: str) -> dict:
+        return {i: int(i[len(prefix):]) for i in var_list}
 
-    varPrefix = ta.getVariablePrefix()
-    varLookup = convertVars(ta.getVariableOrder(), varPrefix)
-    # varVis = {i: minVar for i in ta.rootStates}
-    varVis = {}
-    for edge in iterateEdges(ta):
+    var_prefix = ta.get_var_prefix()
+    var_lookup = convert_vars(ta.get_var_order(), var_prefix)
+    # var_vis = {i: min_var for i in ta.roots}
+    var_vis = {}
+    for edge in iterate_edges(ta):
         if edge.info.variable == "":
             continue
         if edge.src in edge.children:
             continue
-        if edge.src not in varVis:
-            varVis[edge.src] = f"{varPrefix}{varLookup[edge.info.variable]}"
-    for edge in iterateEdges(ta):
+        if edge.src not in var_vis:
+            var_vis[edge.src] = f"{var_prefix}{var_lookup[edge.info.variable]}"
+    for edge in iterate_edges(ta):
         if edge.info.variable == "":
             continue
         if edge.src in edge.children:
             continue
         for child in edge.children:
-            if child in varVis:
+            if child in var_vis:
                 continue
-            varVis[child] = f"{varPrefix}{varLookup[varVis[edge.src]] + 1}"
+            var_vis[child] = f"{var_prefix}{var_lookup[var_vis[edge.src]] + 1}"
 
-    for edge in iterateEdges(ta):
+    for edge in iterate_edges(ta):
         if edge.info.variable != "":
             continue
         if edge.src in edge.children:
             continue
-        if edge.src in varVis:
-            edge.info.variable = f"{varVis[edge.src]}"
-        pass  # doSth()
+        if edge.src in var_vis:
+            edge.info.variable = f"{var_vis[edge.src]}"
+        pass  # do_sth()
 
 
 # In order to canonically and deterministically fold the unfolded and
@@ -408,8 +408,8 @@ def addVariablesBUFolding(ta: TTreeAut, minVar: int):
 # thus, lexicographically, q1 comes before q2
 #
 # This function takes a
-def lexicographicalOrder(ta: TTreeAut) -> list:
-    def lexOrder(ta: TTreeAut, state: str, path: str, result, open):
+def lexicographical_order(ta: TTreeAut) -> list:
+    def lexicographic_order_recursive(ta: TTreeAut, state: str, path: str, result, open):
         if state not in result:
             result[state] = path
         else:  # probably redundant, as we go depth first from the lowest path
@@ -421,63 +421,63 @@ def lexicographicalOrder(ta: TTreeAut) -> list:
                 if child in open:
                     continue
                 open.add(child)
-                lexOrder(ta, child, path + str(idx), result, open)
+                lexicographic_order_recursive(ta, child, path + str(idx), result, open)
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    pathDict = {}  # state -> path string
+    path_dict = {}  # state -> path string
     open = set()
-    for i in ta.rootStates:
+    for i in ta.roots:
         open.add(i)
-        lexOrder(ta, i, '', pathDict, open)
+        lexicographic_order_recursive(ta, i, '', path_dict, open)
 
     # because some states can be accessed through identical paths,
     # we need to have lists in the reverse path dict.
-    reversePathDict: dict[str, list[str]] = {}  # path -> list of states
-    for state, path in pathDict.items():
-        if path not in reversePathDict:
-            reversePathDict[path] = []
-        reversePathDict[path].append(state)
+    reverse_path_dict: dict[str, list[str]] = {}  # path -> list of states
+    for state, path in path_dict.items():
+        if path not in reverse_path_dict:
+            reverse_path_dict[path] = []
+        reverse_path_dict[path].append(state)
 
-    pathList = [path for path in reversePathDict.keys()]
-    pathList.sort()
+    path_list = [path for path in reverse_path_dict.keys()]
+    path_list.sort()
     result = []
-    for path in pathList:
-        result.extend(reversePathDict[path])
+    for path in path_list:
+        result.extend(reverse_path_dict[path])
     return result
 
 
 # changes box objects on edges to strings of their names ???
-# initial try for compatability with dot/vtf format modules
+# initial try for compatibility with dot/vtf format modules
 # NOTE: redundant
-def stringifyBoxes(ta: TTreeAut):
-    for edge in iterateEdges(ta):
-        newBoxArray = []
-        for box in edge.info.boxArray:
+def stringify_boxes(ta: TTreeAut):
+    for edge in iterate_edges(ta):
+        new_box_array = []
+        for box in edge.info.box_array:
             if type(box) == type(TTreeAut):
-                newBoxArray.append(box.name)
+                new_box_array.append(box.name)
             else:
-                newBoxArray.append(box)
-        edge.info.boxArray = newBoxArray
+                new_box_array.append(box)
+        edge.info.box_array = new_box_array
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # old port-state map creating functions
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def getMappingOld(intersectoid, treeaut):
-    mapping = portToStateMapping(intersectoid)
-    # oldMapping = getMaximalMapping(intersectoid, treeaut, mapping)
-    maxMapping = getMaximalMappingFixed(intersectoid, treeaut, mapping)
-    # ^^ largest rootDistance of "port" nodes (inside intersectoid)
-    finalMapping = {i: splitTupleName(j) for i, j in maxMapping.items()}
-    return finalMapping
+def get_mapping_old(intersectoid, treeaut):
+    mapping = port_to_state_mapping(intersectoid)
+    # old_mapping = get_maximal_mapping(intersectoid, treeaut, mapping)
+    max_mapping = get_maximal_mapping_fixed(intersectoid, treeaut, mapping)
+    # ^^ largest root_distance of "port" nodes (inside intersectoid)
+    final_mapping = {i: split_tuple_name(j) for i, j in max_mapping.items()}
+    return final_mapping
 
 # This function parses an intersectoid and creates a dictionary with all
 # port transitions and all states that begin with them.
 # input:
 # - an intersectoid "TA"
 # output:
-def portToStateMapping(intersectoid: TTreeAut) -> dict:
+def port_to_state_mapping(intersectoid: TTreeAut) -> dict:
     result = {}
-    for edge in iterateEdges(intersectoid):
+    for edge in iterate_edges(intersectoid):
         if edge.info.label.startswith("Port"):
             if edge.info.label not in result:
                 result[edge.info.label] = []
@@ -490,113 +490,113 @@ def portToStateMapping(intersectoid: TTreeAut) -> dict:
 # - an intersectoid "TA",
 # - dictionary of ports and states with port output transitions
 # output:
-def getMaximalMapping(intersectoid: TTreeAut, ta: TTreeAut, ports: dict) -> dict:
+def get_maximal_mapping(intersectoid: TTreeAut, ta: TTreeAut, ports: dict) -> dict:
     mapping = {}
-    for port, stateList in ports.items():
+    for port, state_list in ports.items():
         mapping[port] = None
-        currentDistance = 0  # state, rootDistance
-        for state in stateList:
-            dist = intersectoid.getRootDistance(state)
-            if dist > currentDistance:
+        current_distance = 0  # state, root_distance
+        for state in state_list:
+            dist = intersectoid.get_root_distance(state)
+            if dist > current_distance:
                 mapping[port] = state
-                currentDistance = dist
-            elif dist == currentDistance:
-                currentState = splitTupleName(mapping[port])
-                possibleNewState = splitTupleName(state)
-                currDist = ta.getRootDistance(currentState)
-                newDist = ta.getRootDistance(possibleNewState)
-                if newDist > currDist:
+                current_distance = dist
+            elif dist == current_distance:
+                current_state = split_tuple_name(mapping[port])
+                possible_new_state = split_tuple_name(state)
+                current_distance = ta.get_root_distance(current_state)
+                new_distance = ta.get_root_distance(possible_new_state)
+                if new_distance > current_distance:
                     mapping[port] = state
         if mapping[port] is None:
-            raise Exception(f"getMaximalMapping: {port} mapping not found")
+            raise Exception(f"get_maximal_mapping: {port} mapping not found")
     return mapping
 
 
-def getMaximalMappingFixed(intersectoid: TTreeAut, ta: TTreeAut, ports: dict) -> dict:
+def get_maximal_mapping_fixed(intersectoid: TTreeAut, ta: TTreeAut, ports: dict) -> dict:
     mapping = {}
-    for port, stateList in ports.items():
+    for port, state_list in ports.items():
         temp = {}
         mapping[port] = None
-        for state in stateList:
-            taState = splitTupleName(state)
-            dist = ta.getRootDistance(taState)
+        for state in state_list:
+            treeaut_state = split_tuple_name(state)
+            dist = ta.get_root_distance(treeaut_state)
             if dist not in temp:
                 temp[dist] = set()
             temp[dist].add(state)
-        maxDist = 0
+        max_distance = 0
         for dist in temp.keys():
-            maxDist = max(maxDist, dist)
-        if len(temp[maxDist]) > 1:
+            max_distance = max(max_distance, dist)
+        if len(temp[max_distance]) > 1:
             return {}
-        mapping[port] = list(temp[maxDist])[0]
+        mapping[port] = list(temp[max_distance])[0]
     return mapping
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # different versions of manipulating the edge targets
-# after finding out the mapping (used in treeAutFolding function)
+# after finding out the mapping (used in tree_aut_folding function)
 # ~~deprecated~~, kept for documenting/archiving purposes
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# for i, (mapState, var) in enumerate(mapping.values()):
-#     edge.children.insert(idx + i, mapState)
-#     if var != varVis[mapState]:
+# for i, (map_state, var) in enumerate(mapping.values()):
+#     edge.children.insert(idx + i, map_state)
+#     if var != var_visibility[map_state]:
 #         # create and assign state copy
-#         if f"{mapState}{var}" in helper.stateMap:
-#             mappedState = helper.stateMap[f"{mapState}{var}"]
-#             edge.children[idx + i] = mappedState
-#             # print(mapState, var, mappedState)
+#         if f"{map_state}{var}" in helper.state_map:
+#             mapped_state = helper.state_map[f"{map_state}{var}"]
+#             edge.children[idx + i] = mapped_state
+#             # print(map_state, var, mapped_state)
 #             continue
-#         newState = f"{mapState}_{helper.counter}"
-#         helper.stateMap[f"{mapState}{var}"] = newState
-#         # helper.stateMap[f"{mapState}{var}"] = newState
-#         transitionsCopy = {}
-#         result.transitions[newState] = transitionsCopy
-#         for k, e in result.transitions[mapState].items():
-#             if e.isFullSelfLoop():
+#         new_state = f"{map_state}_{helper.counter}"
+#         helper.state_map[f"{map_state}{var}"] = new_state
+#         # helper.state_map[f"{map_state}{var}"] = new_state
+#         edge_dict_copy = {}
+#         result.transitions[new_state] = edge_dict_copy
+#         for k, e in result.transitions[map_state].items():
+#             if e.is_full_self_loop():
 #                 continue
-#             edgeCopy: TTransition = copy.deepcopy(e)
-#             edgeCopy.src += f'_{helper.counter}'
+#             edge_copy: TTransition = copy.deepcopy(e)
+#             edge_copy.src += f'_{helper.counter}'
 #             for index, child in enumerate(e.children):
 #                 if child == e.src:
-#                     edgeCopy.children[index] += f'_{helper.counter}'
-#             transitionsCopy[f'{k}_{helper.counter}'] = edgeCopy
-#         # for k, e in transitionsCopy.items():
-#             # print("trCopyEdge", e)
-#         edge.children[idx + i] = newState
-#         # print(f"edge.children = {edge.children}, newState = {newState}")
+#                     edge_copy.children[index] += f'_{helper.counter}'
+#             edge_dict_copy[f'{k}_{helper.counter}'] = edge_copy
+#         # for k, e in edge_dict_copy.items():
+#             # print("tr_copy_edge", e)
+#         edge.children[idx + i] = new_state
+#         # print(f"edge.children = {edge.children}, new_state = {new_state}")
 
-#         newEdge = TTransition(newState, TEdge('LH', [], var), [mapState, mapState])
-#         # print("newEdge", newEdge)
+#         new_edge = TTransition(new_state, TEdge('LH', [], var), [map_state, map_state])
+#         # print("new_edge", new_edge)
 #         helper.counter += 1
 #         key = f"temp_{helper.counter2}"
 #         helper.counter2 += 1
-#         # if newState not in result.transitions:
-#         #     result.transitions[newState] = {}
-#         result.transitions[newState][key] = newEdge
+#         # if new_state not in result.transitions:
+#         #     result.transitions[new_state] = {}
+#         result.transitions[new_state][key] = new_edge
 
 
-# for i, (mapState, var) in enumerate(mapping.values()):
+# for i, (map_state, var) in enumerate(mapping.values()):
 #     print(mapping)
-#     edge.children.insert(idx + i, mapState)
-#     if var == varVis[mapState]:
+#     edge.children.insert(idx + i, map_state)
+#     if var == var_visibility[map_state]:
 #         continue
 #     # if var == "":
 #         # continue
-#     print(f"mapstate = {mapState}, {type(mapState)}, var = {var}, {type(var)}, varvis = {varVis[mapState]}")
-#     newState = f"{mapState}-{var}"
-#     print(edge, idx+i, edge.children[idx+i], newState)
-#     edge.children[idx+i] = newState
-#     if newState not in result.transitions:
-#         result.transitions[newState] = {}
-#     newEdge = TTransition(newState, TEdge('LH', [], var), [mapState, mapState])
-#     print(f"newEdge = {newEdge}")
-#     result.transitions[newState][f'{helper.counter2}'] = newEdge
+#     print(f"mapstate = {map_state}, {type(map_state)}, var = {var}, {type(var)}, varvis = {var_visibility[map_state]}")
+#     new_state = f"{map_state}-{var}"
+#     print(edge, idx+i, edge.children[idx+i], new_state)
+#     edge.children[idx+i] = new_state
+#     if new_state not in result.transitions:
+#         result.transitions[new_state] = {}
+#     new_edge = TTransition(new_state, TEdge('LH', [], var), [map_state, map_state])
+#     print(f"new_edge = {new_edge}")
+#     result.transitions[new_state][f'{helper.counter2}'] = new_edge
 #     helper.counter2 += 1
-#     originalVar = int(varVis[mapState][len(helper.varPrefix):])
-#     intersectoidVar = int(var[len(helper.varPrefix):])
-#     print(f'original = {originalVar}, intersectoid = {intersectoidVar}')
-#     if originalVar > intersectoidVar + 1:
-#         newEdge = TTransition(newState, TEdge('LH', [], ""), [newState, newState])
-#         print(f"newEdge = {newEdge}")
-#         result.transitions[newState][f'{helper.counter2}'] = newEdge
+#     original_var = int(var_visibility[map_state][len(helper.var_prefix):])
+#     intersectoid_var = int(var[len(helper.var_prefix):])
+#     print(f'original = {original_var}, intersectoid = {intersectoid_var}')
+#     if original_var > intersectoid_var + 1:
+#         new_edge = TTransition(new_state, TEdge('LH', [], ""), [new_state, new_state])
+#         print(f"new_edge = {new_edge}")
+#         result.transitions[new_state][f'{helper.counter2}'] = new_edge
 #         helper.counter2 += 1

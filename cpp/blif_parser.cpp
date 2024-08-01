@@ -1,7 +1,7 @@
 /**
  * blif_parser.cpp
  * Implementation of all BlifParser methods plus some helper functions.
- * 
+ *
 */
 #include "blif_parser.h"
 
@@ -59,7 +59,7 @@ void BlifParser::tokenize() {
         if (c != '\n') {
             line += c;
             continue;
-        } 
+        }
         if (line.length() == 1 or line[0] == '#') {
             line = "";
             continue;
@@ -101,7 +101,7 @@ void BlifParser::create_orders() {
                 queue.push_back(dependency);
             }
         }
-        
+
         std::cout << i << " => ";
         PRINT_VECTOR("order", order);
     }
@@ -127,7 +127,7 @@ void BlifParser::initial_parse() {
             continue;
         }
         if (this->tokens[i] != ".names") {
-            i++; 
+            i++;
             continue;
         }
         i++; // .names
@@ -160,7 +160,7 @@ void BlifParser::initial_parse() {
         } while (this->tokens[i] != ".names" and this->tokens[i] != ".end");
         this->parsed_constructs[last_variable] = current_construct;
     }
-    
+
     // if smartvars is not used, variables are assigned numbers in random order /
     // order of appearance
     if (!this->smartvars) {
@@ -242,7 +242,7 @@ void BlifParser::export_to_abdd_append_result() {
     }
 
     // for now I could not find a better way to output the BDD
-    // other than outputing the BuDDy format into a temporary file
+    // other than outputting the BuDDy format into a temporary file
     // as BuDDy does not seem to offer any way to parse the bdd itself manually
     bdd_fprinttable(temp, this->result);
     fclose(temp);
@@ -297,7 +297,7 @@ void BlifParser::export_to_abdd_append_result() {
                     low_node = "<" + low_node + ">";
                 if (high_node == "0" or high_node == "1")
                     high_node = "<" + high_node + ">";
-                fprintf(f, "%s[%s] %s %s\n", 
+                fprintf(f, "%s[%s] %s %s\n",
                     current_node.c_str(),
                     variable.c_str(),
                     low_node.c_str(),
@@ -326,7 +326,7 @@ void BlifParser::export_to_vtf() {
         return;
     }
     // for now I could not find a better way to output the BDD
-    // other than outputing the BuDDy format into a temporary file
+    // other than outputting the BuDDy format into a temporary file
     // as BuDDy does not seem to offer any way to parse the bdd itself manually
     bdd_fprinttable(temp, this->result);
     fclose(temp);
@@ -480,13 +480,13 @@ void BlifParser::names_content_characteristic() {
         input_plane = get_token();
         output = get_token();
         assignment = {};
-        // itearting until size - 1 because the last name is output
+        // iterating until size - 1 because the last name is output
         for (int i = 0; i < (int) this->names.size() - 1; ++i) {
             // assignment consists of pairs - (var_number, its_value)
             assignment.push_back(std::make_pair(this->names[i], input_plane[i]));
         }
         std::sort(assignment.begin(), assignment.end());
-        
+
         bdd path = bdd_true();
 
         for (auto &pair : assignment) {
@@ -605,13 +605,13 @@ void BlifParser::names_content_output() {
         input_plane = get_token();
         output = get_token();
         assignment = {};
-        // itearting until size - 1 because the last name is output
+        // iterating until size - 1 because the last name is output
         for (int i = 0; i < (int) this->names.size() - 1; ++i) {
             // assignment consists of pairs - (var_number, its_value)
             assignment.push_back(std::make_pair(this->names[i], input_plane[i]));
         }
         // std::sort(assignment.begin(), assignment.end()); // not sure if needed
-        
+
         bdd path = bdd_true();
 
         for (auto &pair : assignment) {
@@ -733,7 +733,7 @@ void BlifParser::build_var_dependency() {
 void var_label_dfs(
     std::unordered_map<int, std::vector<int>> reference,
     std::unordered_set<int> &visited,
-    std::vector<int> &result, 
+    std::vector<int> &result,
     int variable
 ) {
     if (visited.find(variable) != visited.end())
@@ -783,7 +783,7 @@ int main(int argc, char* argv[]) {
 
     std::string blif_input = argv[1];
     std::string output_file_name = argv[2];
-    
+
     BlifParser parser = BlifParser(blif_input, output_file_name, OUTPUT_FUNCTION);
     parser.recursive = true;
     if (argc > 3 and strcmp(argv[3], "smartvars") == 0) {

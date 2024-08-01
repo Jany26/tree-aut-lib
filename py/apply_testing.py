@@ -1,17 +1,17 @@
 import os
 from enum import Enum
 
-from format_vtf import exportTAtoVTF, importTAfromVTF
-from render_dot import exportToFile, importTA
-from test_data import boxCatalogue
+from format_vtf import export_treeaut_to_vtf, import_treeaut_from_vtf
+from render_dot import export_to_file, import_treeaut
+from test_data import box_catalogue
 from ta_classes import TEdge, TTransition, TTreeAut
 
 from ta_functions import (
-    removeUselessStates,
-    treeAutIntersection,
-    treeAutComplement,
-    nonEmptyBU,
-    nonEmptyTD,
+    remove_useless_states,
+    tree_aut_intersection,
+    tree_aut_complement,
+    non_empty_bottom_up,
+    non_empty_top_down,
 )
 
 import apply_tables_outputs
@@ -62,21 +62,21 @@ def get_transition_name(state: str, treeaut: TTreeAut) -> str:
 
 def apply_intersectoid_create(op: BooleanOperation, aut1: TTreeAut, aut2: TTreeAut):
     # create an intersection
-    result = treeAutIntersection(aut1, aut2)
-    # result.reformatKeys()
+    result = tree_aut_intersection(aut1, aut2)
+    # result.reformat_keys()
 
     # remove any output transition created by the intersection operation
-    result.removeOutputTransitions()
+    result.remove_output_transitions()
 
     # add output transitions to the skeleton based on the operation tables
     apply_intersectoid_add_output_transitions(result, op, aut1, aut2)
     result.name = f"{aut1.name} {op.name} {aut2.name}"
-    return removeUselessStates(result)
+    return remove_useless_states(result)
 
 
-def mapStatesToOutputTransitions(aut: TTreeAut, idx: int) -> dict[str, str]:
+def map_states_to_output_transitions(aut: TTreeAut, idx: int) -> dict[str, str]:
     result = {}
-    for state in aut.getStates():
+    for state in aut.get_states():
         result[state] = "-"
         for tr in aut.transitions[state].values():
             if len(tr.children) != 0:
@@ -87,12 +87,12 @@ def mapStatesToOutputTransitions(aut: TTreeAut, idx: int) -> dict[str, str]:
     return result
 
 
-def getPort(t: TTreeAut) -> str:
-    for sym in t.getOutputSymbols():
+def get_port(t: TTreeAut) -> str:
+    for sym in t.get_output_symbols():
         if sym.startswith("Port"):
             return sym
 
-# def renamePorts(aut: TTreeAut):
+# def rename_ports(aut: TTreeAut):
 #    pass
 
 
@@ -101,66 +101,66 @@ def apply_intersectoid_add_output_transitions(
 ):
     # maps an output transition (-/0/1/Port) to each state for cayley table lookup
     # we assume each state has at most 1 output transition (based on the box correctness criteria)
-    map1: dict[str, str] = mapStatesToOutputTransitions(aut1, 1)
-    map2: dict[str, str] = mapStatesToOutputTransitions(aut2, 2)
+    map1: dict[str, str] = map_states_to_output_transitions(aut1, 1)
+    map2: dict[str, str] = map_states_to_output_transitions(aut2, 2)
     op_table = op_lookup[op]
 
     # cayley table to output edge label mapping
     labels = {
         "0": "0",
         "1": "1",
-        "P1": getPort(aut1),
-        "P2": getPort(aut2),
-        "OP": f"{getPort(aut1)}_{op.name}_{getPort(aut2)}",
-        "!P1": f"{getPort(aut1)}_not",
-        "!P2": f"{getPort(aut2)}_not",
+        "P1": get_port(aut1),
+        "P2": get_port(aut2),
+        "OP": f"{get_port(aut1)}_{op.name}_{get_port(aut2)}",
+        "!P1": f"{get_port(aut1)}_not",
+        "!P2": f"{get_port(aut2)}_not",
     }
 
     # output symbol to matrix/list index mapping (within the cayley table)
     translation = {"-": 0, "0": 1, "1": 2, "P1": 3, "P2": 3}
 
-    keyIdx = result.countEdges() + 1
-    for state in result.getStates():
+    key_idx = result.count_edges() + 1
+    for state in result.get_states():
         [s1, s2] = state.lstrip("(").rstrip(")").split(",")
         output_symbol = op_table[translation[map1[s1]]][translation[map2[s2]]]
         if output_symbol == "-":
             continue
-        result.transitions[state][f"k{keyIdx}"] = TTransition(
+        result.transitions[state][f"k{key_idx}"] = TTransition(
             state, TEdge(labels[output_symbol], [], ""), []
         )
-        keyIdx += 1
+        key_idx += 1
 
 
-def treeAutEqual(aut: TTreeAut, box: TTreeAut, debug=False) -> bool:
-    symbols = box.getSymbolArityDict()
-    symbols.update(aut.getSymbolArityDict())
+def tree_aut_equal(aut: TTreeAut, box: TTreeAut, debug=False) -> bool:
+    symbols = box.get_symbol_arity_dict()
+    symbols.update(aut.get_symbol_arity_dict())
 
     # aut and co-box == empty => aut subseteq box
-    intersection1 = treeAutIntersection(aut, treeAutComplement(box, symbols))
-    witness_BU_1, _ = nonEmptyBU(intersection1)
-    witness_TD_1, _ = nonEmptyTD(intersection1)
+    intersection1 = tree_aut_intersection(aut, tree_aut_complement(box, symbols))
+    witness_BU_1, _ = non_empty_bottom_up(intersection1)
+    witness_TD_1, _ = non_empty_top_down(intersection1)
     aut_subset_of_box = witness_BU_1 is None or witness_TD_1 is None
 
     # box and co-aut == empty => box subseteq aut
-    intersection2 = treeAutIntersection(box, treeAutComplement(aut, symbols))
-    witness_BU_2, _ = nonEmptyBU(intersection2)
-    witness_TD_2, _ = nonEmptyTD(intersection2)
+    intersection2 = tree_aut_intersection(box, tree_aut_complement(aut, symbols))
+    witness_BU_2, _ = non_empty_bottom_up(intersection2)
+    witness_TD_2, _ = non_empty_top_down(intersection2)
     box_subset_of_aut = witness_BU_2 is None or witness_TD_2 is None
     if debug:
         print(f"{aut.name} ==? {box.name}")
         print("witness 1")
-        witness_BU_1.printNode() if witness_BU_1 is not None else "None"
+        witness_BU_1.print_node() if witness_BU_1 is not None else "None"
         print("witness 2")
-        witness_BU_2.printNode() if witness_BU_2 is not None else "None"
+        witness_BU_2.print_node() if witness_BU_2 is not None else "None"
     return aut_subset_of_box and box_subset_of_aut
 
 
 def apply_intersectoid_compare(aut: TTreeAut, debug=False):
     # for boxname in ["X", "L0", "L1", "H0", "H1", "0", "1", "LPort", "HPort"]:
     for boxname in ["X", "L0", "L1", "H0", "H1", "0", "1", "LPort", "HPort", "IFF0", "IFF1", "IFFPort"]:
-        box = boxCatalogue[boxname]
-        box.reformatPorts()
-        equal = treeAutEqual(aut, box, debug)
+        box = box_catalogue[boxname]
+        box.reformat_ports()
+        equal = tree_aut_equal(aut, box, debug)
         if equal:
             return boxname
     return "?"
@@ -172,22 +172,22 @@ def test_all_apply_intersectoids():
         for boxname1 in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort", "IFF0", "IFF1", "IFFPort"]:
             result_dict[boxname1] = {}
             for boxname2 in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort", "IFF0", "IFF1", "IFFPort"]:
-                box1 = boxCatalogue[boxname1]
-                box2 = boxCatalogue[boxname2]
+                box1 = box_catalogue[boxname1]
+                box2 = box_catalogue[boxname2]
                 applied = apply_intersectoid_create(operation, box1, box2)
-                removeUselessStates(applied)
+                remove_useless_states(applied)
                 applied.name = f"{boxname1}_{operation.name}_{boxname2}"
-                applied.reformatPorts()
+                applied.reformat_ports()
                 res = apply_intersectoid_compare(applied)
                 if res == "?":
                     print()
                     applied = apply_intersectoid_create(operation, box1, box2)
-                    removeUselessStates(applied)
+                    remove_useless_states(applied)
                     applied.name = f"{boxname1}_{operation.name}_{boxname2}"
-                    applied.reformatPorts()
+                    applied.reformat_ports()
                     print(applied.get_shortest_state_paths_dict())
-                    exportTAtoVTF(applied, f'../data/apply_tests/{operation.name}/{applied.name}.vtf')
-                    exportToFile(applied, f'../data/apply_tests/{operation.name}/{applied.name}')
+                    export_treeaut_to_vtf(applied, f'../data/apply_tests/{operation.name}/{applied.name}.vtf')
+                    export_to_file(applied, f'../data/apply_tests/{operation.name}/{applied.name}')
                     res = apply_intersectoid_compare(applied, debug=True)
                     print(applied)
                     if not os.path.exists(f'../data/apply_tests/{operation.name}'):

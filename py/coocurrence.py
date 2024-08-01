@@ -13,11 +13,11 @@ from ta_functions import *
 from itertools import product
 
 
-def getCoOccurrentStatesTD(ta: TTreeAut) -> list:
+def get_co_ocurent_states_top_down(ta: TTreeAut) -> list:
 
-    def merge(state, macroList):
+    def merge(state, macro_list):
         result = [state]
-        for item in macroList:
+        for item in macro_list:
             result.extend(item)
         return set(result)
 
@@ -34,13 +34,13 @@ def getCoOccurrentStatesTD(ta: TTreeAut) -> list:
                 process_results.append(process(child, ta, queue[:]))
 
             if edge.children == [] or process_results != []:
-                result.extend([merge(state, macroList) for macroList in product(*process_results)])
+                result.extend([merge(state, macro_list) for macro_list in product(*process_results)])
         return result
 
     # -------------------------------------
 
     temp = []
-    for i in ta.rootStates:
+    for i in ta.roots:
         temp.extend(process(i, ta, []))
 
     result = []
@@ -52,48 +52,48 @@ def getCoOccurrentStatesTD(ta: TTreeAut) -> list:
     return result
 
 
-def produceOutputTuples(ta1: TTreeAut, ta2: TTreeAut) -> dict:
-    outEdges1 = ta1.getOutputEdges(inverse=True)
-    outEdges2 = ta2.getOutputEdges(inverse=True)
+def produce_output_tuples(ta1: TTreeAut, ta2: TTreeAut) -> dict:
+    out_edges_1 = ta1.get_output_edges(inverse=True)
+    out_edges_2 = ta2.get_output_edges(inverse=True)
     result = {}
     for state1 in ta1.transitions:
         for state2 in ta2.transitions:
             key = f"({state1},{state2})"
-            entry1 = outEdges1[state1] if state1 in outEdges1 else []
-            entry2 = outEdges2[state2] if state2 in outEdges2 else []
+            entry1 = out_edges_1[state1] if state1 in out_edges_1 else []
+            entry2 = out_edges_2[state2] if state2 in out_edges_2 else []
             result[key] = (entry1, entry2)
     return result
 
 
-def isExtension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
+def is_extension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
     debug = False
-    product = removeUselessStates(treeAutProduct(ta1, ta2))
-    cooccurrentList = getCoOccurrentStatesTD(product)
-    outputTuples = produceOutputTuples(ta1, ta2)
-    outEdges = product.getOutputEdges(inverse=True)
+    product = remove_useless_states(tree_aut_product(ta1, ta2))
+    co_occurent_list = get_co_ocurent_states_top_down(product)
+    output_tuples = produce_output_tuples(ta1, ta2)
+    out_edges = product.get_output_edges(inverse=True)
 
     if debug:
         print(ta1)
         print(ta2)
         print(product)
-    fullList = []
-    for i in cooccurrentList:
-        tempList = []
+    full_list = []
+    for i in co_occurent_list:
+        temp_list = []
         for j in i:
-            tempList.append((j, outputTuples[j]))
-        fullList.append(tempList)
+            temp_list.append((j, output_tuples[j]))
+        full_list.append(temp_list)
 
     if debug:
-        for i in fullList:
+        for i in full_list:
             for j in i:
                 print(j)
             print()
 
     # CHECKING LEAF-EDGE CONSISTENCY
-    for coocurrence in fullList:
-        checkDict = {}
-        for state, edgeTuple in coocurrence:
-            edges1, edges2 = edgeTuple
+    for coocurrence in full_list:
+        check_dict = {}
+        for state, edge_tuple in coocurrence:
+            edges1, edges2 = edge_tuple
 
             # TODO: GENERALISATION NEEDED
             # e.g. going over all possible leaf-transitions in 1 state
@@ -102,41 +102,41 @@ def isExtension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
             symbol2 = edges2[0] if edges2 != [] else ""
             if symbol1 == "" or symbol2 == "":
                 continue
-            if symbol2 not in checkDict:
-                checkDict[symbol2] = []
-            if symbol1 not in checkDict[symbol2]:
-                checkDict[symbol2].append(symbol1)
-        for port, possibleLeafEdges in checkDict.items():
-            if len(possibleLeafEdges) != 1:
+            if symbol2 not in check_dict:
+                check_dict[symbol2] = []
+            if symbol1 not in check_dict[symbol2]:
+                check_dict[symbol2].append(symbol1)
+        for _, possible_leaf_edges in check_dict.items():
+            if len(possible_leaf_edges) != 1:
                 # print("False")
                 return False
-    fullList = []
-    for stateSet in cooccurrentList:
-        tupleList = []
-        for state in stateSet:
-            symbols = outEdges[state] if state in outEdges else []
-            if (state, symbols) not in tupleList:
-                tupleList.append((state, symbols))
-        if tupleList not in fullList:
-            fullList.append(tupleList)
-    checkList = []
-    for tupleList in fullList:
+    full_list = []
+    for state_set in co_occurent_list:
+        tuple_list = []
+        for state in state_set:
+            symbols = out_edges[state] if state in out_edges else []
+            if (state, symbols) not in tuple_list:
+                tuple_list.append((state, symbols))
+        if tuple_list not in full_list:
+            full_list.append(tuple_list)
+    check_list = []
+    for tuple_list in full_list:
         check = {}
-        for item in tupleList:
+        for item in tuple_list:
             for symbol in item[1]:
                 if symbol.startswith("Port"):
                     if symbol not in check:
                         check[symbol] = []
                     check[symbol].append(item[0])
-        checkList.append(check)
-    for listSet in checkList:
-        for stateList in listSet.values():
+        check_list.append(check)
+    for list_set in check_list:
+        for state_list in list_set.values():
             intersection = None
-            for state in stateList:
-                product.rootStates = [state]
-                intersection = treeAutIntersection(product, intersection)
-            witnessTree, witnessStr = nonEmptyTD(intersection)
-            if witnessTree is not None:
+            for state in state_list:
+                product.roots = [state]
+                intersection = tree_aut_intersection(product, intersection)
+            witness_tree, _ = non_empty_top_down(intersection)
+            if witness_tree is not None:
                 return True
     return False
 

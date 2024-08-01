@@ -4,13 +4,13 @@
 # also a variant that does ignores specificity of port transitions,
 # only looks whether "some" outgoing port transition is present in a state
 
-from format_vtf import importTAfromVTF
+from format_vtf import import_treeaut_from_vtf
 from ta_classes import TTransition, TTreeAut
 from itertools import permutations
 from typing import Generator
 
 
-def generateStateMappings(
+def generate_state_mappings(
     list1: list[str], list2: list[str]
 ) -> Generator[dict[str, str], None, None]:
     for p in permutations(list2):
@@ -64,7 +64,7 @@ def compare_edges(state_map: dict, edge1: TTransition, edge2: TTransition) -> bo
         return False
     if edge1.info.label != edge2.info.label:
         return False
-    if edge1.info.boxArray != edge2.info.boxArray:
+    if edge1.info.box_array != edge2.info.box_array:
         return False
     if edge1.info.variable != edge2.info.variable:
         return False
@@ -78,26 +78,26 @@ def compare_edges(state_map: dict, edge1: TTransition, edge2: TTransition) -> bo
 # when isomorphic, returns a dictionary -> state to state bijection
 # ignore_ports = when True, ports will not be checked literally,
 # but only whether there is a port present or not
-def treeAutIsomorphic(
+def tree_aut_isomorphic(
     aut1: TTreeAut, aut2: TTreeAut, ignore_ports=False
 ) -> dict[str, str]:
     # isomorphic automata have to have the same number of states
-    outputs_1 = aut1.getOutputEdges(inverse=True)
-    outputs_2 = aut2.getOutputEdges(inverse=True)
+    outputs_1 = aut1.get_output_edges(inverse=True)
+    outputs_2 = aut2.get_output_edges(inverse=True)
 
-    edge_counts_1 = aut1.getEdgeCounts()
-    edge_counts_2 = aut2.getEdgeCounts()
+    edge_counts_1 = aut1.get_edge_counts()
+    edge_counts_2 = aut2.get_edge_counts()
 
     # check total state and edge counts
-    states_1 = aut1.getStates()
-    states_2 = aut2.getStates()
+    states_1 = aut1.get_states()
+    states_2 = aut2.get_states()
     if len(states_1) != len(states_2):
         return {}
-    if aut1.countEdges() != aut2.countEdges():
+    if aut1.count_edges() != aut2.count_edges():
         return {}
 
     # early_exit = False
-    for state_map in generateStateMappings(states_1, states_2):
+    for state_map in generate_state_mappings(states_1, states_2):
         if not check_output_edges(state_map, outputs_1, outputs_2, ignore_ports):
             continue
         if not check_edge_counts(state_map, edge_counts_1, edge_counts_2):
@@ -135,4 +135,3 @@ def treeAutIsomorphic(
             continue
         return state_map
     return {}
-

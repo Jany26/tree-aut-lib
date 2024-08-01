@@ -42,14 +42,14 @@ class DimacsParser {
         void print();
         void print_tokens();
         void tokenize();
-        
+
         void parse();
         void preamble();
         void clausule();
 
         void export_to_abdd();
         std::string get_token();
-    
+
 };
 
 void DimacsParser::reset() {
@@ -90,7 +90,7 @@ void DimacsParser::tokenize() {
         if (c != '\n') {
             line += c;
             continue;
-        } 
+        }
         if (line.length() == 1 or line[0] == 'c') {
             line = "";
             continue;
@@ -215,7 +215,7 @@ void DimacsParser::export_to_abdd() {
     }
 
     // for now I could not find a better way to output the BDD
-    // other than outputing the BuDDy format into a temporary file
+    // other than outputting the BuDDy format into a temporary file
     // as BuDDy does not seem to offer any way to parse the bdd itself manually
     bdd_fprinttable(temp, this->result);
     fclose(temp);
@@ -254,7 +254,7 @@ void DimacsParser::export_to_abdd() {
                     low_node = "<" + low_node + ">";
                 if (high_node == "0" or high_node == "1")
                     high_node = "<" + high_node + ">";
-                fprintf(f, "%s[%s] %s %s\n", 
+                fprintf(f, "%s[%s] %s %s\n",
                     current_node.c_str(),
                     variable.c_str(),
                     low_node.c_str(),

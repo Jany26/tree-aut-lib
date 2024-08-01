@@ -16,7 +16,7 @@ import os
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def replaceCommasIn(line: str) -> str:
+def replace_commas_in(line: str) -> str:
     stack = []
     temp = ""
     for i in range(len(line)):
@@ -37,7 +37,7 @@ def replaceCommasIn(line: str) -> str:
     return temp
 
 
-def loadSymbol(line: str):
+def load_symbol(line: str):
     symbol = ""
     rest = ""
     for i in range(len(line)):
@@ -51,19 +51,19 @@ def loadSymbol(line: str):
     return symbol, rest
 
 
-def loadTransitionFromTMB(line: str) -> TTransition:
+def load_transition_from_tmb(line: str) -> TTransition:
     line = line.strip()
-    transitionData = line.split("->")
-    srcState = transitionData[1].strip()
-    rest = transitionData[0].strip()
-    symbol, childrenString = loadSymbol(rest)
-    childStates = replaceCommasIn(childrenString.strip())
-    childStates = childStates.split(';')
-    children = [state for state in childStates if state != ""]
-    return TTransition(srcState, TEdge(symbol, [None] * len(children), ""), children)
+    transition_data = line.split("->")
+    src_state = transition_data[1].strip()
+    rest = transition_data[0].strip()
+    symbol, children_str = load_symbol(rest)
+    child_states = replace_commas_in(children_str.strip())
+    child_states = child_states.split(';')
+    children = [state for state in child_states if state != ""]
+    return TTransition(src_state, TEdge(symbol, [None] * len(children), ""), children)
 
 
-def loadArityFromTMB(line: str) -> dict:
+def load_arity_from_tmb(line: str) -> dict:
     words = line.strip().split()
 
     result = {}
@@ -75,12 +75,12 @@ def loadArityFromTMB(line: str) -> dict:
     return result
 
 
-def consistencyCheckTMB(edges, states, arities) -> bool:
+def consistency_check_tmb(edges, states, arities) -> bool:
     # print(states)
-    for stateName, edgeDict in edges.items():
-        if stateName not in states:
+    for state_name, edge_dict in edges.items():
+        if state_name not in states:
             return False
-        for edge in edgeDict.values():
+        for edge in edge_dict.values():
             if (
                 edge.src not in states
                 or edge.info.label not in arities
@@ -97,117 +97,118 @@ def consistencyCheckTMB(edges, states, arities) -> bool:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def importTAfromTMB(source: str, sourceType='f') -> TTreeAut:
-    if sourceType == 'f':
-        inputStream = open(source, "r")
-    elif sourceType == 's':
-        inputStream = source.split('\n')
+def import_treeaut_from_tmb(source: str, source_type='f') -> TTreeAut:
+    if source_type == 'f':
+        input_stream = open(source, "r")
+    elif source_type == 's':
+        input_stream = source.split('\n')
     else:
-        raise Exception(f"importTAfromTMB(): unsupported source type '{sourceType}'")
+        raise Exception(f"import_treeaut_from_tmb(): unsupported source type '{source_type}'")
 
-    arityDict = {}
-    rootStates = []
-    transitionDict = {}
-    allStates = []
-    rootsProcessed = False
-    arityProcessed = False
-    stateListProcessed = False
-    transitionProcessing = False
+    arity_dict = {}
+    roots = []
+    transition_dict = {}
+    all_states = []
+    roots_done = False
+    arity_done = False
+    statelist_done = False
+    transition_done = False
     name = ""
 
-    for line in inputStream:
+    for line in input_stream:
 
         # skipping comments and empty lines
         line = line.strip()
         if line == "" or line.startswith("#") or line.startswith("//"):
             continue
 
-        if transitionProcessing and not line.startswith('\n'):
-            edge = loadTransitionFromTMB(line)
+        if transition_done and not line.startswith('\n'):
+            edge = load_transition_from_tmb(line)
             if edge == []:
                 continue
-            # if arityProcessed and stateListProcessed:
-            #     consistencyCheckTMB(edge, allStates, arityDict)
-            key = generateKeyFromEdge(edge)
-            if str(edge.src) not in transitionDict:
-                transitionDict[str(edge.src)] = {}
-            transitionDict[str(edge.src)][key] = edge
+            # if arity_done and statelist_done:
+            #     consistency_check_tmb(edge, all_states, arity_dict)
+            key = generate_key_from_edge(edge)
+            if str(edge.src) not in transition_dict:
+                transition_dict[str(edge.src)] = {}
+            transition_dict[str(edge.src)][key] = edge
             continue
 
         if line.startswith("Automaton"):
             name = line[len("Automaton"):].strip()
             continue
         elif line.startswith("Ops"):
-            arityDict = loadArityFromTMB(line)
-            arityProcessed = True
-            # print(arityDict)
+            arity_dict = load_arity_from_tmb(line)
+            arity_done = True
+            # print(arity_dict)
         elif line.startswith("States"):
             words = line.strip().split()
-            allStates = [i.split(":")[0].strip() for i in words[1:]]
-            stateListProcessed = True
-            # print(allStates)
+            all_states = [i.split(":")[0].strip() for i in words[1:]]
+            statelist_done = True
+            # print(all_states)
         elif line.startswith("Final States"):
             words = line.strip().split()
-            rootStates = [str(i.strip()) for i in words[2:]]
-            rootsProcessed = True
-            # print(rootStates)
+            roots = [str(i.strip()) for i in words[2:]]
+            roots_done = True
+            # print(roots)
         elif line.startswith("Transitions"):
-            transitionProcessing = True
+            transition_done = True
         else:
-            raise Exception(f"importTAfromTMB(): Unknown items in TMB file")
+            raise Exception(f"import_treeaut_from_tmb(): Unknown items in TMB file")
     # end for loop
 
-    if arityProcessed and stateListProcessed:
-        if not consistencyCheckTMB(transitionDict, allStates, arityDict):
-            raise Exception(f"importTAfromTMB(): Inconsistent transition data with info in preamble")
+    if arity_done and statelist_done:
+        if not consistency_check_tmb(transition_dict, all_states, arity_dict):
+            raise Exception(f"import_treeaut_from_tmb(): Inconsistent transition data with info in preamble")
 
-    if not rootsProcessed:
+    if not roots_done:
         print("exception M")
         raise Exception(f"List of root states missing")
-    return TTreeAut(rootStates, transitionDict, name)
+    return TTreeAut(roots, transition_dict, name)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS FOR TMB EXPORT - FILE
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def writeAritiesTMBfile(arities, tgt):
+def write_arities_tmb_file(arities, tgt):
     tgt.write("Ops")
     for i in arities:
         tgt.write(f" {i}:{arities[i]}")
     tgt.write("\n\n")
 
 
-def writeNameTMBfile(name, tgt):
+def write_name_tmb_file(name, tgt):
     tgt.write("Automaton ")
     tgt.write(f"{name}") if name != "" else tgt.write("unnamed")
     tgt.write("\n\n")
 
 
-def writeStatesTMBfile(states, tgt):
+def write_states_tmb_file(states, tgt):
     tgt.write("States")
     for i in states:
         tgt.write(f" {i}:0")
     tgt.write("\n\n")
 
 
-def writeRootsTMBfile(states, tgt):
+def write_roots_tmb_file(states, tgt):
     tgt.write("Final States")
     for i in states:
         tgt.write(f" {i}")
     tgt.write("\n\n")
 
 
-def writeTransitionsTMBfile(ta, tgt):
+def write_transitions_tmb_file(ta: TTreeAut, tgt):
     tgt.write("Transitions\n")
-    for transitionDict in ta.transitions.values():
-        for edge in transitionDict.values():
-            tgt.write(f"{edge.info.label}(")
-            arity = len(edge.children)
-            for i in range(arity):
-                tgt.write(f"{edge.children[i]}")
-                tgt.write("," if i < arity - 1 else "")
-            tgt.write(f") -> {edge.src}\n")
+    # for edge_dict in ta.transitions.values():
+    #     for edge in edge_dict.values():
+    for edge in iterate_edges(ta):
+        tgt.write(f"{edge.info.label}(")
+        arity = len(edge.children)
+        for i in range(arity):
+            tgt.write(f"{edge.children[i]}")
+            tgt.write("," if i < arity - 1 else "")
+        tgt.write(f") -> {edge.src}\n")
     tgt.write("\n\n")
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -215,7 +216,7 @@ def writeTransitionsTMBfile(ta, tgt):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def writeAritiesTMBstr(arities):
+def write_arities_tmb_str(arities):
     result = "Ops"
     for i in arities:
         result += f" {i}:{arities[i]}"
@@ -223,11 +224,11 @@ def writeAritiesTMBstr(arities):
     return result
 
 
-def writeNameTMBstr(name):
+def write_name_tmb_str(name):
     return "Automaton " + (f"{name}" if name != "" else "unnamed") + "\n\n"
 
 
-def writeStatesTMBstr(states):
+def write_states_tmb_str(states):
     result = "States"
     for i in states:
         result += f" {i}:0"
@@ -235,7 +236,7 @@ def writeStatesTMBstr(states):
     return result
 
 
-def writeRootsTMBstr(states):
+def write_roots_tmb_str(states):
     result = "Final States"
     for i in states:
         result += f" {i}"
@@ -243,16 +244,17 @@ def writeRootsTMBstr(states):
     return result
 
 
-def writeTransitionsTMBstr(ta):
+def write_transitions_tmb_str(ta):
     result = "Transitions\n"
-    for transitionDict in ta.transitions.values():
-        for edge in transitionDict.values():
-            temp = f"{edge.info.label}("
-            for i in range(len(edge.children)):
-                temp += f"{edge.children[i]}"
-                temp += ", " if (i < len(edge.children) - 1) else ""
-            temp += f") -> {edge.src}\n"
-            result += temp
+    # for edge_dict in ta.transitions.values():
+    #     for edge in edge_dict.values():
+    for edge in iterate_edges(ta):
+        temp = f"{edge.info.label}("
+        for i in range(len(edge.children)):
+            temp += f"{edge.children[i]}"
+            temp += ", " if (i < len(edge.children) - 1) else ""
+        temp += f") -> {edge.src}\n"
+        result += temp
     result += "\n\n"
     return result
 
@@ -261,15 +263,15 @@ def writeTransitionsTMBstr(ta):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def exportTAtoTMB(ta: TTreeAut, fileName):
-    if not os.path.exists(os.path.dirname(fileName)):
-        os.makedirs(os.path.dirname(fileName))
-    result = open(fileName, "w")
-    writeAritiesTMBfile(ta.getSymbolArityDict(), result)
-    writeNameTMBfile(ta.name, result)
-    writeStatesTMBfile(ta.getStates(), result)
-    writeRootsTMBfile(ta.rootStates, result)
-    writeTransitionsTMBfile(ta, result)
+def export_treeaut_to_tmb(ta: TTreeAut, filepath: str):
+    if not os.path.exists(os.path.dirname(filepath)):
+        os.makedirs(os.path.dirname(filepath))
+    result = open(filepath, "w")
+    write_arities_tmb_file(ta.get_symbol_arity_dict(), result)
+    write_name_tmb_file(ta.name, result)
+    write_states_tmb_file(ta.get_states(), result)
+    write_roots_tmb_file(ta.roots, result)
+    write_transitions_tmb_file(ta, result)
     result.close()
 
 # End of file format_tmb.py

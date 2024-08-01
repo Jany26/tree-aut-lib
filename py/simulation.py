@@ -1,7 +1,7 @@
 """
 [file] simulation.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
-[description] Equivalence testing via inputting all possible variable assignments. 
+[description] Equivalence testing via inputting all possible variable assignments.
 [note] Used during developing/debugging the folding procedure.
 """
 
@@ -11,7 +11,7 @@ from ta_classes import *
 from bdd import BDD
 
 
-def assignVariables(num: int, size: int) -> list:
+def assign_variables(num: int, size: int) -> list:
     result = []
     division = num
     for _ in range(size):
@@ -22,7 +22,7 @@ def assignVariables(num: int, size: int) -> list:
     return result
 
 
-def assignVariablesDict(num: int, size: int) -> dict:
+def assign_variables_dict(num: int, size: int) -> dict:
     result = []
     division = num
     for _ in range(size):
@@ -30,44 +30,44 @@ def assignVariablesDict(num: int, size: int) -> dict:
         division = division // 2
         result.append(remainder)
     result.reverse()
-    resultDict = {i+1: result[i] for i in range(size)}
-    return resultDict
+    result_dict = {i+1: result[i] for i in range(size)}
+    return result_dict
 
 
-def getVarPrefix(varList: list) -> str:
-    if varList == []:
+def get_var_prefix(var_list: list) -> str:
+    if var_list == []:
         return ""
-    prefixLen = 0
-    for i in range(len(varList[0])):
-        if not varList[0][i:].isnumeric():
-            prefixLen += 1
-    prefix = varList[0][:prefixLen]
+    prefix_len = 0
+    for i in range(len(var_list[0])):
+        if not var_list[0][i:].isnumeric():
+            prefix_len += 1
+    prefix = var_list[0][:prefix_len]
     return prefix
 
 
 # Creates a lookup table for each variable in a simulated object.
 # The object is expected to have a unified names of variables
 #   - same prefix followed by a number, eg. ['x1', 'x2', 'x3', etc.]
-def getVariableEvaluation(obj: Union[TTreeAut, BDD], assignment: list) -> dict:
-    varList = []
+def get_var_evaluation(obj: Union[TTreeAut, BDD], assignment: list) -> dict:
+    var_list = []
     if type(obj) == BDD:
-        varList = obj.getVariableList()
+        var_list = obj.get_variable_list()
     if type(obj) == TTreeAut:
-        varList = obj.getVariableOrder()
-    assert(varList != [])
-    prefix = getVarPrefix(varList)
+        var_list = obj.get_var_order()
+    assert(var_list != [])
+    prefix = get_var_prefix(var_list)
     vars = {f"{prefix}{i}": val for i, val in enumerate(assignment, 1)}
     return vars
 
 
 
 # Simulates boolean computation of all variable settings.
-def simulateRunBDD(bdd: BDD, assignment: list | dict, verbose=False) -> bool:
+def simulate_run_bdd(bdd: BDD, assignment: list | dict, verbose=False) -> bool:
     if type(assignment) == list:
-        vars = getVariableEvaluation(bdd, assignment)
+        vars = get_var_evaluation(bdd, assignment)
     else:
         vars = assignment
-    
+
     result = None
     node = bdd.root
     if verbose:
@@ -91,32 +91,32 @@ def simulateRunBDD(bdd: BDD, assignment: list | dict, verbose=False) -> bool:
 class SimulationHelper:
     def __init__(self, ta: TTreeAut, assignment, verbose):
         # quick edge lookup (edge keys will be used in path as well)
-        self.edgeLookup = {
+        self.edge_lookup = {
             k: e for ed in ta.transitions.values() for k, e in ed.items()
         }
         # variables and their assigned values lookup
-        # self.varLookup = getVariableEvaluation(ta, assignment)
-        self.varLookup = assignment
+        # self.var_lookup = get_var_evaluation(ta, assignment)
+        self.var_lookup = assignment
         # path = list of tuples (state, key), which were visited during parsing
-        self.path: list(tuple(str, str)) = []
-        self.leafStates = {
-            i: j[0] for i, j in ta.getOutputEdges(inverse=True).items()
+        self.path: list[(str, str)] = []
+        self.leaves = {
+            i: j[0] for i, j in ta.get_output_edges(inverse=True).items()
         }
         self.length = len(assignment)
         self.verbose = verbose
-        self.varVisibility = ta.getVariableVisibility()
-        self.prefix = ta.getVariablePrefix()
+        self.var_visibility = ta.get_var_visibility()
+        self.prefix = ta.get_var_prefix()
         self.vars = [(k, e) for k, e in assignment.items()]
 
     def __repr__(self):
         result = "[Simulation Helper]:\n"
         result += f"> variables:\n"
-        for var, val in self.varLookup.items():
+        for var, val in self.var_lookup.items():
             result += f"  > {var}: {val}\n"
         result += f"> path:\n"
         for s, e in self.path:
             result += f"  > {s} -> {e}\n"
-        result += f"> leaf states: {self.leafStates}\n"
+        result += f"> leaf states: {self.leaves}\n"
         return result
 
 
@@ -124,28 +124,28 @@ class SimulationHelper:
 # given a variable evaluation. Returns a value on a leaf node
 # ... with UBDAs => 1 = true, 0 = false
 # NOTE: So far works with unfolded/normalized UBDA.
-def simulateRunTA(ta: TTreeAut, assignment: list, verbose=False) -> bool:
-    def createSortedEdgeList(edges: dict[str, TTransition]) -> list[str]:
+def simulate_run_treeaut(ta: TTreeAut, assignment: list, verbose=False) -> bool:
+    def create_sorted_edge_list(edges: dict[str, TTransition]) -> list[str]:
         result = []
         for key, edge in edges.items():
-            if not edge.isSelfLoop():
+            if not edge.is_self_loop():
                 result.append(key)
         for key, edge in edges.items():
-            if edge.isSelfLoop():
+            if edge.is_self_loop():
                 result.append(key)
         return result
 
-    def backTrack(ta: TTreeAut, state, idx, sim: SimulationHelper):
-        if idx >= sim.length or state in sim.leafStates:
-            # if state in sim.leafStates and len(ta.transitions[state]) == 1:
+    def backtrack(ta: TTreeAut, state, idx, sim: SimulationHelper):
+        if idx >= sim.length or state in sim.leaves:
+            # if state in sim.leaves and len(ta.transitions[state]) == 1:
             if sim.verbose:
-                print(f"[value = {sim.leafStates[state]}]: {state} = leaf")
-            return sim.leafStates[state]
+                print(f"[value = {sim.leaves[state]}]: {state} = leaf")
+            return sim.leaves[state]
             # return None
         variable, value = sim.vars[idx]
-        edgeKeys = createSortedEdgeList(ta.transitions[state])
-        for key in edgeKeys:
-            edge: TTransition = sim.edgeLookup[key]
+        edge_keys = create_sorted_edge_list(ta.transitions[state])
+        for key in edge_keys:
+            edge: TTransition = sim.edge_lookup[key]
             if len(edge.children) == 0:
                 continue
             if edge.info.variable != "":
@@ -156,22 +156,22 @@ def simulateRunTA(ta: TTreeAut, assignment: list, verbose=False) -> bool:
                     if len(ta.transitions[state]) == 1:
                         if sim.verbose:
                             print(f"[{variable :<2} -> {value}]: skipping")
-                        result = backTrack(ta, state, idx + 1, sim)
+                        result = backtrack(ta, state, idx + 1, sim)
                         if result is not None:
                             return result
                     if sim.verbose:
                         print(f"[{variable} -> {value}]: does not correspond with edge {edge}")
                     continue
-            newState = edge.children[value]
+            new_state = edge.children[value]
             if sim.verbose:
-                print(f"[{variable :<2} -> {value}]:", edge, "to", newState)
-            result = backTrack(ta, newState, idx + 1, sim)
+                print(f"[{variable :<2} -> {value}]:", edge, "to", new_state)
+            result = backtrack(ta, new_state, idx + 1, sim)
             if result is not None:
                 return result
 
     sim = SimulationHelper(ta, assignment, verbose)
-    currentState = ta.rootStates[0]
-    result = backTrack(ta, currentState, 0, sim)
+    current_state = ta.roots[0]
+    result = backtrack(ta, current_state, 0, sim)
     if verbose:
         print(f"result = {result}")
     if result is None:
@@ -179,23 +179,23 @@ def simulateRunTA(ta: TTreeAut, assignment: list, verbose=False) -> bool:
     return bool(int(result))
 
 
-def findFunction(obj: Union[TTreeAut, BDD]):
+def find_function(obj: Union[TTreeAut, BDD]):
     if type(obj) == TTreeAut:
-        return simulateRunTAdict
+        return simulate_run_treeaut_dict
     if type(obj) == BDD:
-        return simulateRunBDD
+        return simulate_run_bdd
     return None
 
 
-def simulateAndCompare(
+def simulate_and_compare(
     obj1: 'TTreeAut | BDD',
     obj2: 'TTreeAut | BDD',
     variables: int,
     debug=False,
     output=None
 ) -> bool:
-    fun1 = findFunction(obj1)
-    fun2 = findFunction(obj2)
+    fun1 = find_function(obj1)
+    fun2 = find_function(obj2)
     # results1 = ""
     # results2 = ""
     same = True
@@ -207,16 +207,16 @@ def simulateAndCompare(
     if output is not None:
         output.write(f"Comparing equivalence of {obj1.name} and {obj2.name}\n\n")
     for i in range(2 ** (variables)):
-        currentAssignment = assignVariablesDict(i, variables)
-        res1 = fun1(obj1, currentAssignment)
-        res2 = fun2(obj2, currentAssignment)
-        # print(currentAssignment, f"1 = {res1}, 2 = {res2}")
+        current_assignment = assign_variables_dict(i, variables)
+        res1 = fun1(obj1, current_assignment)
+        res2 = fun2(obj2, current_assignment)
+        # print(current_assignment, f"1 = {res1}, 2 = {res2}")
         if res1 != res2:
             same = False
             if output is None:
-                print(currentAssignment, f"1 = {res1}, 2 = {res2}")
+                print(current_assignment, f"1 = {res1}, 2 = {res2}")
             else:
-                output.write(f"{currentAssignment}, 1 = {res1}, 2 = {res2}\n")
+                output.write(f"{current_assignment}, 1 = {res1}, 2 = {res2}\n")
                 output.flush()
         if i == progress + step:
             progress += step
@@ -226,54 +226,54 @@ def simulateAndCompare(
                 print(f"{round(i / (2 ** variables) * 100)} %", end='\r')
     # if debug: print('')
     if output is not None:
-        output.write(f"\nEquivalent? = {same}.")
+        output.write(f"\nequivalent? = {same}.")
     return same
 
 
 # For faster/more precise decision making, especially in unfolded UBDAs.
 # TODO: Needs fixing (see results/folding-error-2/...)
-def addVariablesBU(ta: TTreeAut, maxVar: int):
-    def convertVars(varList: list, prefix: str) -> dict:
-        return {i: int(i[len(prefix):]) for i in varList}
-    varVis = ta.getVariableVisibility()
-    trueLeafs = set()
-    varPrefix = getVarPrefix(ta.getVariableOrder())
-    for leaf in ta.getOutputStates():
+def add_variables_bottom_up(ta: TTreeAut, max_var: int):
+    def convert_vars(var_list: list, prefix: str) -> dict:
+        return {i: int(i[len(prefix):]) for i in var_list}
+    var_vis = ta.get_var_visibility()
+    true_leaves = set()
+    var_prefix = get_var_prefix(ta.get_var_order())
+    for leaf in ta.get_output_states():
         if len(ta.transitions[leaf]) == 1:
-            trueLeafs.add(leaf)
+            true_leaves.add(leaf)
 
-    varLookup = convertVars(ta.getVariableOrder(), varPrefix)
+    var_lookup = convert_vars(ta.get_var_order(), var_prefix)
 
-    for edge in iterateEdges(ta):
+    for edge in iterate_edges(ta):
         if edge.info.variable != "" or edge.src in edge.children:
             continue
         for child in edge.children:
-            if child in varVis:
-                var = varLookup[list(varVis[child])[0]]
-                newVar = f"{varPrefix}{int(var)-1}"
-                edge.info.variable = newVar
-            if child in trueLeafs:
-                edge.info.variable = f"{varPrefix}{maxVar}"
+            if child in var_vis:
+                var = var_lookup[list(var_vis[child])[0]]
+                new_var = f"{var_prefix}{int(var)-1}"
+                edge.info.variable = new_var
+            if child in true_leaves:
+                edge.info.variable = f"{var_prefix}{max_var}"
     # end for
 
-def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, startingVar=None):
+def simulate_run_treeaut_dict(ta: TTreeAut, assignment: list | dict, verbose=False, starting_var=None):
     """Description ...
     """
 
-    simHelper = {
+    sim_helper = {
         # 'path': [],
-        'prefix': ta.getVariablePrefix(),
-        'leaves': ta.getOutputEdges(inverse=True),
+        'prefix': ta.get_var_prefix(),
+        'leaves': ta.get_output_edges(inverse=True),
         'length': len(assignment),
-        'vis': ta.getVariableVisibility(),
+        'vis': ta.get_var_visibility(),
         'debug': verbose,
     }
 
-    def sortKeys(ta: TTreeAut, state: str) -> list:
+    def sort_keys(ta: TTreeAut, state: str) -> list:
         result = []
         # NOTE: maybe there is a way to append (tail) and push (head) into the list ...
         for key, edge in ta.transitions[state].items():
-            if edge.info.variable != "" or not edge.isSelfLoop():  # and len(edge.children) != 0:
+            if edge.info.variable != "" or not edge.is_self_loop():  # and len(edge.children) != 0:
                 result.append(key)
         for key, edge in ta.transitions[state].items():
             if edge.info.variable == "":  # and len(edge.children) != 0:
@@ -281,61 +281,61 @@ def simulateRunTAdict(ta: TTreeAut, assignment: list | dict, verbose=False, star
                     result.append(key)
         return result
 
-    def backTrack(ta: TTreeAut, variable: int, state: str, assignment: dict):
-        if state in simHelper['leaves']:  # or variable > sim['length']:
-            if simHelper['debug']:
-                print(f" END -> {simHelper['leaves'][state][0]} : {state} = leaf")
-            return simHelper['leaves'][state][0]
+    def backtrack(ta: TTreeAut, variable: int, state: str, assignment: dict):
+        if state in sim_helper['leaves']:  # or variable > sim['length']:
+            if sim_helper['debug']:
+                print(f" END -> {sim_helper['leaves'][state][0]} : {state} = leaf")
+            return sim_helper['leaves'][state][0]
         if variable not in assignment:
             return None
         try:
             value = assignment[variable]
         except:
             print(assignment)
-        
-        for key in simHelper['keys'][state]:
+
+        for key in sim_helper['keys'][state]:
             edge: TTransition = ta.transitions[state][key]
             if edge.info.variable != "":
-                if f"{simHelper['prefix']}{variable}" != edge.info.variable:
+                if f"{sim_helper['prefix']}{variable}" != edge.info.variable:
                     if len(ta.transitions[state]) == 1:
-                        if simHelper['debug']:
+                        if sim_helper['debug']:
                             print(f" {variable :<3} -> {value} : skipping")
-                        # simHelper['path'].append(state)
-                        result = backTrack(ta, variable + 1, state, assignment)
+                        # sim_helper['path'].append(state)
+                        result = backtrack(ta, variable + 1, state, assignment)
                         if result is not None:
                             return result
-                    if simHelper['debug']: 
+                    if sim_helper['debug']:
                         print(f" {variable :<3} -> {value} : ", end="")
-                        print(f"{ta.getEdgeString(edge)} -> incompatible variable")
+                        print(f"{ta.get_edge_string(edge)} -> incompatible variable")
                     continue
-            newState = edge.children[value]
-            if simHelper['debug']:
-                print(f"[{variable :<3} -> {value}]: {ta.getEdgeString(edge)} -> {newState}")
-            # simHelper['path'].append(newState)
-            result = backTrack(ta, variable + 1, newState, assignment)
+            new_state = edge.children[value]
+            if sim_helper['debug']:
+                print(f"[{variable :<3} -> {value}]: {ta.get_edge_string(edge)} -> {new_state}")
+            # sim_nelper['path'].append(new_state)
+            result = backtrack(ta, variable + 1, new_state, assignment)
             if result is not None:
                 return result
 
-    root = ta.rootStates[0]
-    rootVar = list(simHelper['vis'][root])[0]
-    start = int(rootVar) if startingVar is None else int(startingVar)
-    simHelper['keys'] = {state: sortKeys(ta, state) for state in ta.getStates()}
-    if simHelper['debug']:
+    root = ta.roots[0]
+    root_var = list(sim_helper['vis'][root])[0]
+    start = int(root_var) if starting_var is None else int(starting_var)
+    sim_helper['keys'] = {state: sort_keys(ta, state) for state in ta.get_states()}
+    if sim_helper['debug']:
         print(f"{ta.name} - simulating variable assignment")
-    # simHelper['path'].append(root)
-    result = backTrack(ta, start, root, assignment)
+    # sim_helper['path'].append(root)
+    result = backtrack(ta, start, root, assignment)
     return result
 
 
 def leafify(ta: TTreeAut, state: str, value: str | int):
-    keysToPop = [key for key in ta.transitions[state].keys()]
-    vis = ta.getVariableVisibility()
-    maxVar = max(vis[state])
-    for key in keysToPop:
+    keys_to_pop = [key for key in ta.transitions[state].keys()]
+    vis = ta.get_var_visibility()
+    max_var = max(vis[state])
+    for key in keys_to_pop:
         ta.transitions[state].pop(key)
-    newEdge = TTransition(state, TEdge(str(value), [], f"{maxVar}"), [])
-    ta.transitions[state][keysToPop[0]] = newEdge
-    # newEdge = TTransition(state, TEdge('LH', [], ""), [state, state])
+    new_edge = TTransition(state, TEdge(str(value), [], f"{max_var}"), [])
+    ta.transitions[state][keys_to_pop[0]] = new_edge
+    # new_edge = TTransition(state, TEdge('LH', [], ""), [state, state])
 
 
-# End of file simulation.py    
+# End of file simulation.py

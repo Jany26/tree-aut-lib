@@ -7,7 +7,6 @@ essential algorithms/operations regarding folding.
 [note] mostly redundant or self-explanatory functions
 """
 
-
 from ta_classes import *
 from ta_functions import *
 from test_data import *
@@ -23,16 +22,7 @@ from render_dot import export_to_file
 
 
 class FoldingHelper:
-    def __init__(
-        self,
-        ta: TTreeAut,
-        verbose: bool,
-        export_vtf: bool,
-        export_png: bool,
-        output,
-        export_path,
-        max_var
-    ):
+    def __init__(self, ta: TTreeAut, verbose: bool, export_vtf: bool, export_png: bool, output, export_path, max_var):
         self.name = ""
         match = re.search(r"\(([^()]*)\)", ta.name)
         if match is None:
@@ -65,7 +55,6 @@ class FoldingHelper:
         self.output = output
         self.path = export_path
 
-
     def __repr__(self):
         result = "[FoldingHelper]\n"
         src_len = 0
@@ -78,9 +67,7 @@ class FoldingHelper:
                 key_len = max(key_len, len(key))
         for state, edges in self.soft_flagged_edges.items():
             for child_str, (key, edge) in edges.items():
-                result += "%-*s -> %-*s : %-*s : %s\n" % (
-                    src_len, state, child_len, child_str, key_len, key, edge
-                )
+                result += "%-*s -> %-*s : %-*s : %s\n" % (src_len, state, child_len, child_str, key_len, key, edge)
         result += f"minvar = {self.min_var}, maxvar = {self.max_var}\n"
         result += f"keycounter = {self.key_counter}, counter = {self.counter}, counter2 = {self.counter2}\n"
         result += f"statemap = {self.state_map}\n"
@@ -130,14 +117,13 @@ class FoldingHelper:
             else:
                 path = f"{self.path}/ubdas/{temp}"
             if self.vtf:
-                export_treeaut_to_vtf(result, format='f', filepath=f"{path}.vtf")
+                export_treeaut_to_vtf(result, format="f", filepath=f"{path}.vtf")
             if self.png:
                 export_to_file(result, path)
             self.counter += 1
 
     # helper.export_intersectoid(A, root, source, box.name)
-    def export_intersectoid(self, treeaut: TTreeAut,
-                           source: str, root: str, box: str):
+    def export_intersectoid(self, treeaut: TTreeAut, source: str, root: str, box: str):
         self.intersectoids.append(treeaut)
         temp = f"{self.counter}-{source}-{box}-{root}"
         if self.path is None:
@@ -145,7 +131,7 @@ class FoldingHelper:
         else:
             path = f"{self.path}/intersectoids/{temp}"
         if self.vtf:
-            export_treeaut_to_vtf(treeaut, format='f', filepath=f"{path}.vtf")
+            export_treeaut_to_vtf(treeaut, format="f", filepath=f"{path}.vtf")
         if self.png:
             export_to_file(treeaut, f"{path}")
         self.write(treeaut)
@@ -246,8 +232,8 @@ def trim(ta: TTreeAut) -> TTreeAut:
 
 class EdgePart:
     def __init__(self, key: str, edge: TTransition, index: int):
-        assert(edge.src not in edge.children)
-        assert(edge.info.variable != "")
+        assert edge.src not in edge.children
+        assert edge.info.variable != ""
         self.key = key
         self.edge = edge
         self.index = index
@@ -314,7 +300,7 @@ def remove_flagged_edges_fix(ta: TTreeAut, helper: FoldingHelper):
         for key, edge in edges.items():
             if len(edge.children) == 0:
                 continue
-            child_str = ','.join(edge.children)
+            child_str = ",".join(edge.children)
             if f"{edge.src}-{edge.info.variable}-{child_str}" in helper.flagged_edges:
                 key_dict[state].add(key)
     for state, key_set in key_dict.items():
@@ -359,12 +345,11 @@ def prepare_edge_info_old(ta: TTreeAut, state: str) -> list:
     return result
 
 
-
 # NOTE: function add_variables_top_down is in use for folding
 # temporarily copied from simulation.py
 def add_variables_bottomup_folding(ta: TTreeAut, min_var: int):
     def convert_vars(var_list: list, prefix: str) -> dict:
-        return {i: int(i[len(prefix):]) for i in var_list}
+        return {i: int(i[len(prefix) :]) for i in var_list}
 
     var_prefix = ta.get_var_prefix()
     var_lookup = convert_vars(ta.get_var_order(), var_prefix)
@@ -422,13 +407,14 @@ def lexicographical_order(ta: TTreeAut) -> list:
                     continue
                 open.add(child)
                 lexicographic_order_recursive(ta, child, path + str(idx), result, open)
+
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     path_dict = {}  # state -> path string
     open = set()
     for i in ta.roots:
         open.add(i)
-        lexicographic_order_recursive(ta, i, '', path_dict, open)
+        lexicographic_order_recursive(ta, i, "", path_dict, open)
 
     # because some states can be accessed through identical paths,
     # we need to have lists in the reverse path dict.
@@ -459,6 +445,7 @@ def stringify_boxes(ta: TTreeAut):
                 new_box_array.append(box)
         edge.info.box_array = new_box_array
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # old port-state map creating functions
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -469,6 +456,7 @@ def get_mapping_old(intersectoid, treeaut):
     # ^^ largest root_distance of "port" nodes (inside intersectoid)
     final_mapping = {i: split_tuple_name(j) for i, j in max_mapping.items()}
     return final_mapping
+
 
 # This function parses an intersectoid and creates a dictionary with all
 # port transitions and all states that begin with them.
@@ -530,6 +518,7 @@ def get_maximal_mapping_fixed(intersectoid: TTreeAut, ta: TTreeAut, ports: dict)
             return {}
         mapping[port] = list(temp[max_distance])[0]
     return mapping
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # different versions of manipulating the edge targets

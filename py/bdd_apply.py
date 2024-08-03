@@ -9,9 +9,10 @@ for further testing/experimenting with tree automata.
 from bdd import *
 from utils import *
 
+
 def create_var_order(variables: list, terminals: list) -> dict:
     """
-        Makes the list into a dictionary for easy lookup of indexing
+    Makes the list into a dictionary for easy lookup of indexing
     """
     if variables is not None:
         variables = state_name_sort(variables)
@@ -41,7 +42,7 @@ def create_var_order(variables: list, terminals: list) -> dict:
 class ApplyHelper:
     def __init__(self, bdd1: BDD, bdd2: BDD, vars):
         self.count: int = 0
-        self.cache: 'dict[str, BDDnode]' = {}
+        self.cache: "dict[str, BDDnode]" = {}
         temp = bdd1.get_terminal_symbols_list()
         temp.extend(bdd2.get_terminal_symbols_list())
         self.terminals = list(set(temp))
@@ -62,24 +63,27 @@ class ApplyHelper:
         str += f"cache = {self.cache}"
         return str
 
+
 # Creates a new BDD by applying some logic function on two BDDs.
 def apply_function(func: str, bdd1: BDD, bdd2: BDD, var_order=None) -> BDD:
 
     class ApplyCase:
         """
-            Case a): both trees are leaves
-            Case b): node1 is leaf, node2 is tree
-            Case c): node1 is tree, node2 is leaf
-            Case d): both trees are trees
+        Case a): both trees are leaves
+        Case b): node1 is leaf, node2 is tree
+        Case c): node1 is tree, node2 is leaf
+        Case d): both trees are trees
         """
+
         a = False
         b = False
         c = False
         d = False
+
         def __init__(self, letter):
             self.__setattr__(letter, True)
 
-    def decide_case(node1:BDDnode, node2:BDDnode, data:ApplyHelper) -> ApplyCase:
+    def decide_case(node1: BDDnode, node2: BDDnode, data: ApplyHelper) -> ApplyCase:
         """
         compares node1 node2 and decides according to which scenario
         should continue function apply
@@ -101,9 +105,7 @@ def apply_function(func: str, bdd1: BDD, bdd2: BDD, var_order=None) -> BDD:
 
         return ApplyCase("d")
 
-
-    def apply_from(func: str, node1: BDDnode, node2: BDDnode,
-                  data: ApplyHelper) -> BDDnode:
+    def apply_from(func: str, node1: BDDnode, node2: BDDnode, data: ApplyHelper) -> BDDnode:
         current_case = decide_case(node1, node2, data)
         data.spacing += 2
 
@@ -168,6 +170,7 @@ def apply_function(func: str, bdd1: BDD, bdd2: BDD, var_order=None) -> BDD:
         data.cache[lookup] = result
         data.spacing -= 2
         return result
+
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     if bdd1.root is None and bdd2.root is None:
@@ -179,7 +182,6 @@ def apply_function(func: str, bdd1: BDD, bdd2: BDD, var_order=None) -> BDD:
     data = ApplyHelper(bdd1, bdd2, var_order)
     # print(data.vars)
     new_root = apply_from(func, bdd1.root, bdd2.root, data)
-
 
     return BDD("BDD", new_root)
 
@@ -202,14 +204,15 @@ def leaf_apply_op(operator, bdd1, bdd2) -> int:
         return not (val1 or val2)
 
     lookup = {
-        'or': or_operator,
-        'and': and_operator,
-        'xor': xor_operator,
-        'nor': nor_operator,
-        'nand': nand_operator,
+        "or": or_operator,
+        "and": and_operator,
+        "xor": xor_operator,
+        "nor": nor_operator,
+        "nand": nand_operator,
     }
     func = lookup[str(operator)]
     result = func(bdd1.value, bdd2.value)
     return result
+
 
 # End of file apply.py

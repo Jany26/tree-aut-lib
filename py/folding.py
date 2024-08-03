@@ -36,6 +36,7 @@ def get_state_witness_relation(intersectoid: TTreeAut, port: str):
     [return]
     Relation describing partitions of states that are always encountered together.
     """
+
     def is_edge_unified(children: list):
         return len(set(children)) <= 1
 
@@ -101,11 +102,7 @@ def get_mapping(intersectoid: TTreeAut, varvis, reach: dict[str, set]) -> dict:
     (3) state names are in the format (s1,s2), where s1 comes from the treeaut
     and s2 comes from the box that was used during intersectoid creation)
     """
-    ports = {
-        edge.info.label
-        for edge in iterate_edges(intersectoid)
-        if edge.info.label.startswith("Port")
-    }
+    ports = {edge.info.label for edge in iterate_edges(intersectoid) if edge.info.label.startswith("Port")}
     # varvis = intersectoid.get_var_visibility_cache()
     mapping = {}
     for port in ports:
@@ -135,13 +132,7 @@ def get_mapping(intersectoid: TTreeAut, varvis, reach: dict[str, set]) -> dict:
     return mapping
 
 
-def box_finding(
-    ta: TTreeAut,
-    box: TTreeAut,
-    root: str,
-    helper: FoldingHelper,
-    source: str
-) -> dict:
+def box_finding(ta: TTreeAut, box: TTreeAut, root: str, helper: FoldingHelper, source: str) -> dict:
     """
     [description]
     Main implementation of one step of the folding procedure.
@@ -175,7 +166,7 @@ def box_finding(
     final_mapping = get_mapping(intersectoid, var_visibility, helper.reach)
     if final_mapping == {}:
         return {}
-    split_mapping = {p: (split_tuple_name(s), var_visibility[s]) for p,s in final_mapping.items()}
+    split_mapping = {p: (split_tuple_name(s), var_visibility[s]) for p, s in final_mapping.items()}
     return split_mapping
 
 
@@ -201,6 +192,7 @@ def mapping_is_correct(mapping: dict, var_visibility: dict):
         return False
     return True
 
+
 def get_box_index(edge_part):
     """
     [description]
@@ -223,7 +215,10 @@ def get_box_index(edge_part):
     return current_idx
 
 
-def tree_aut_folding(ta: TTreeAut, boxes: list, max_var: int,
+def tree_aut_folding(
+    ta: TTreeAut,
+    boxes: list,
+    max_var: int,
     verbose=False,
     export_vtf=False,
     export_png=False,
@@ -264,34 +259,32 @@ def tree_aut_folding(ta: TTreeAut, boxes: list, max_var: int,
             edges_to_children = prepare_edge_info(result, state)
             for edge_part in edges_to_children:
                 # edge_part contains 5 items: [
-                    # key :
-                    # child-index :
-                    # child-state :
-                    # source-state :
-                    # edge :
-                    # ]
-                part = 'L' if edge_part[1] == 0 else 'H'
+                # key :
+                # child-index :
+                # child-state :
+                # source-state :
+                # edge :
+                # ]
+                part = "L" if edge_part[1] == 0 else "H"
                 if is_already_reduced(result, state, edge_part):
                     continue
-                helper.min_var = int(edge_part[4].info.variable[len(helper.var_prefix):]) + 1
+                helper.min_var = int(edge_part[4].info.variable[len(helper.var_prefix) :]) + 1
 
                 # skipping self-loop
                 if state in result.transitions[state][edge_part[0]].children:
                     continue
                 if helper.verbose:
-                    print("%s> box_finding(%s-[%s:%s]->%s)" % (
-                        f"{0 * ' '}", state, part, box.name, edge_part[2]
-                    ))
+                    print("%s> box_finding(%s-[%s:%s]->%s)" % (f"{0 * ' '}", state, part, box.name, edge_part[2]))
                 mapping = box_finding(result, box, edge_part[2], helper, state)
                 # phase 0: checking correctness of the mapping
                 # checking if all mapped states have a visible variable
                 # and have lower variables than states in the UBDA
                 if not mapping_is_correct(mapping, var_visibility):
                     continue
-                helper.write("%s> box_finding(%s-[%s:%s]->%s => %s)\n" % (
-                    f"{0 * ' '}", state, 'L' if edge_part[1] == 0 else 'H',
-                    box.name, edge_part[2], mapping
-                ))
+                helper.write(
+                    "%s> box_finding(%s-[%s:%s]->%s => %s)\n"
+                    % (f"{0 * ' '}", state, "L" if edge_part[1] == 0 else "H", box.name, edge_part[2], mapping)
+                )
                 # phase 1: putting the box in the box array
                 edge = result.transitions[edge_part[3]][edge_part[0]]
                 initial_box_list = edge.info.box_array
@@ -315,8 +308,7 @@ def tree_aut_folding(ta: TTreeAut, boxes: list, max_var: int,
                         edge.children[idx + i] = new_state
                     result.transitions[new_state] = {}
                     edge.children[idx + i] = new_state
-                    new_edge = TTransition(new_state, TEdge('LH', [], f"{var}"),
-                                          [map_state, map_state])
+                    new_edge = TTransition(new_state, TEdge("LH", [], f"{var}"), [map_state, map_state])
                     var_visibility[new_state] = var
                     helper.counter += 1
                     key = f"temp_{helper.counter2}"

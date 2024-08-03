@@ -21,6 +21,7 @@ from simulation import add_variables_bottom_up
 from bdd import add_dont_care_boxes
 from utils import *
 
+
 def checkVariableNaming(file):
     variable_map: dict[int, set[str]] = {}
     for idx, line in enumerate(file, start=1):
@@ -98,7 +99,9 @@ def checkDuplicateOutputs(file):
             if output not in output_occurence:
                 output_occurence[output] = idx
             else:
-                print(f"{file.name}:{idx}: duplicate occurrence of {output} as output detected (first on line {output_occurence[output]})")
+                print(
+                    f"{file.name}:{idx}: duplicate occurrence of {output} as output detected (first on line {output_occurence[output]})"
+                )
 
 
 def checkHierarchy(file):
@@ -140,7 +143,7 @@ def getAllNodeCounts(filePath: str) -> dict:
 
 
 def printSubtrees(filePath, reportPath):
-    report = open(f"{reportPath}", 'w')
+    report = open(f"{reportPath}", "w")
     path = f"{filePath}"
     results = getAllNodeCounts(path)
     for taName, taResults in results.items():
@@ -172,6 +175,7 @@ def printSubtrees(filePath, reportPath):
 
 benchmarks = [432, 499, 880, 1355, 1908]
 
+
 def countBoxesOnEdges(treeaut: TTreeAut):
     result = {}
     for edge in iterate_edges(treeaut):
@@ -196,28 +200,28 @@ def test_folding_on_sub_benchmarks(path, export, orders=None, root_num=None):
     test = orders if orders is not None else box_orders.keys()
     if not os.path.exists(export):
         os.makedirs(export)
-    print(f"importing...", end='\r')
+    print(f"importing...", end="\r")
     initial = abdd.import_treeaut_from_abdd(path)
     if root_num is not None:
-        print(f"trimming...", end='\r')
+        print(f"trimming...", end="\r")
         initial.roots = [f"{root_num}"]
         initial = shrink_to_top_down_reachable(initial)
 
     vars = int(initial.get_var_order()[-1])
     initialChanged = add_dont_care_boxes(initial, vars)
-    print(f"unfolding...", end='\r')
+    print(f"unfolding...", end="\r")
     unfolded = unfold(initialChanged)
 
     unfolded_extra = copy.deepcopy(unfolded)
     add_variables_bottom_up(unfolded_extra, vars)
-    var_order = create_var_order('', vars+2, start=0)
-    print(f"normalizing...", end='\r')
+    var_order = create_var_order("", vars + 2, start=0)
+    print(f"normalizing...", end="\r")
     normalized = tree_aut_normalize(unfolded_extra, var_order)
-    print(f"reformatting...", end='\r')
+    print(f"reformatting...", end="\r")
     normalized_clean = copy.deepcopy(normalized)
     normalized_clean.reformat_keys()
     normalized_clean.reformat_states()
-    add_variables_bottom_up(normalized_clean, vars+2)
+    add_variables_bottom_up(normalized_clean, vars + 2)
     normalized.meta_data.recompute()
     normalized_clean.meta_data.recompute()
     result = {
@@ -226,15 +230,15 @@ def test_folding_on_sub_benchmarks(path, export, orders=None, root_num=None):
         "unfolded": unfolded,
         "unfolded_extra": unfolded_extra,
         "normalized": normalized,
-        "normalized_clean": normalized_clean
+        "normalized_clean": normalized_clean,
     }
 
     nums = [len(initial.get_states()), len(unfolded.get_states()), len(normalized_clean.get_states())]
 
     for name in test:
         boxorder = box_orders[name]
-        print(f"folding {name}", end='\r')
-        folded = tree_aut_folding(normalized_clean, boxorder, vars+1)
+        print(f"folding {name}", end="\r")
+        folded = tree_aut_folding(normalized_clean, boxorder, vars + 1)
         nodeCount = len(reachable_top_down(folded))
         nums.append(nodeCount)
     result_print = f"{initial.name :<30}"
@@ -252,28 +256,28 @@ def foldingTestBLIF(test=None):
         report_line += f"\t| {orderName}"
     print(report_line)
     for line in report:
-        if line.startswith('#') or line == "":
+        if line.startswith("#") or line == "":
             continue
-        data = line.strip().split(';')
+        data = line.strip().split(";")
         name = data[0]
-        nameData = name.split('.')
+        nameData = name.split(".")
         benchmark = nameData[0]
         varname = nameData[2]
         root = int(data[2])
-        print(f"{benchmark}.{varname}", end='\r')
+        print(f"{benchmark}.{varname}", end="\r")
         test_folding_on_sub_benchmarks(
             f"../tests/blif/{benchmark}/{name}.abdd",  # import path
             f"../data/blif/{benchmark}/{varname}",  # export path
             # rootNum=None  # root
             orders=test,
-            root_num=root
+            root_num=root,
         )
 
 
 def analyzeNodeCounts():
     benchmarks = [432, 499, 880, 1355, 1908]
-    if not os.path.exists('../data/blif-reports/'):
-        os.makedirs('../data/blif-reports/')
+    if not os.path.exists("../data/blif-reports/"):
+        os.makedirs("../data/blif-reports/")
     for num in benchmarks:
         for subdir, dirs, files in os.walk(f"../data/blif/C{num}"):
             for file in files:
@@ -282,13 +286,13 @@ def analyzeNodeCounts():
 
 
 boxname_simplified_translation = {
-    'boxX': 'X',
-    'boxL0': 'L0',
-    'boxL1': 'L1',
-    'boxLPort': 'L+',
-    'boxH0': 'H0',
-    'boxH1': 'H1',
-    'boxHPort': 'H+',
+    "boxX": "X",
+    "boxL0": "L0",
+    "boxL1": "L1",
+    "boxLPort": "L+",
+    "boxH0": "H0",
+    "boxH1": "H1",
+    "boxHPort": "H+",
 }
 
 
@@ -309,20 +313,22 @@ def printBoxCountsBLIF():
     for val in boxname_simplified_translation.values():
         initialString += f"{val :<5}, "
     print(initialString)
-    report = open(f"../tests/blif-report.txt", 'r')
+    report = open(f"../tests/blif-report.txt", "r")
     for line in report:
-        if line.startswith('#') or line == "":
+        if line.startswith("#") or line == "":
             continue
-        data = line.strip().split(';')
+        data = line.strip().split(";")
         name = data[0]
-        print(name, end='\r')
+        print(name, end="\r")
         ta = import_treeaut_from_vtf(f"../data/blif-normalized/{name}.vtf")
-        folded = tree_aut_folding(ta, box_orders['full'], ta.get_var_max())
-        print(f"{name :<30} = {len(ta.get_states()) :<5}, {len(reachable_top_down(folded)) :<5}, {formatBoxCounts(folded)}")
+        folded = tree_aut_folding(ta, box_orders["full"], ta.get_var_max())
+        print(
+            f"{name :<30} = {len(ta.get_states()) :<5}, {len(reachable_top_down(folded)) :<5}, {formatBoxCounts(folded)}"
+        )
 
 
 def blifConsistencyCheck(path):
-    file = open(path, 'r')
+    file = open(path, "r")
     file.seek(0)
     checkDuplicateOutputs(file)
     file.seek(0)
@@ -335,6 +341,6 @@ def blifConsistencyCheck(path):
 
 if __name__ == "__main__":
     path = "../tests/blif/"
-    #blifConsistencyCheck()
+    # blifConsistencyCheck()
     foldingTestBLIF()
     # printBoxCountsBLIF()

@@ -46,8 +46,8 @@ def unfold_edge(result: TTreeAut, folded_edge: TTransition, counter: int, sub_ta
             continue
         box = copy.deepcopy(box_catalogue[box_name])
 
-        children = edge.children[:box.port_arity]
-        edge.children = edge.children[box.port_arity:]
+        children = edge.children[: box.port_arity]
+        edge.children = edge.children[box.port_arity :]
 
         # unfold the box content into result
         # print(result.name, src_state, box.name, children, counter + unfolded)
@@ -71,12 +71,7 @@ def unfold_edge(result: TTreeAut, folded_edge: TTransition, counter: int, sub_ta
 # box = tree automaton). The cycle creates a new TA from scratch.
 def unfold(ta: TTreeAut, reformat=True) -> TTreeAut:
     # stringification of boxes
-    result = TTreeAut(
-        [i for i in ta.roots],
-        {s: {} for s in ta.roots},
-        "unfolded(" + ta.name + ")",
-        ta.port_arity
-    )
+    result = TTreeAut([i for i in ta.roots], {s: {} for s in ta.roots}, "unfolded(" + ta.name + ")", ta.port_arity)
 
     unfold_counter = 1
     sub_table = {}
@@ -159,5 +154,6 @@ def stringify_boxes(ta: TTreeAut):
             else:
                 new_array.append(box)
         edge.info.box_array = new_array
+
 
 # End of file unfolding.py

@@ -51,7 +51,7 @@ class TTreeNode:
     # If called on root node, prints the whole tree
     def print_node(self, offset: int = 0):
         space = " " * offset
-        temp = space + 2 * self.depth * ' ' + str(self.value)
+        temp = space + 2 * self.depth * " " + str(self.value)
         print(temp + "   --> lv " + str(self.depth))
         for i in self.children:
             i.print_node(offset)
@@ -143,9 +143,7 @@ class TEdge:
         if not box_array_empty:
             result += " ["
             for i in self.box_array:
-                result += "_, " if i is None else (
-                    f"{i}, " if type(i) == str else f"{i.name}, "
-                )
+                result += "_, " if i is None else (f"{i}, " if type(i) == str else f"{i.name}, ")
             result = result[:-2]
             result += "]"
         return result
@@ -154,6 +152,7 @@ class TEdge:
     def shorten_edge(self):
         arity = len(self.box_array)
         self.box_array = [None] * arity
+
 
 class TTransition:
     def __init__(self, src: str, info: TEdge, children: list[str]):
@@ -207,11 +206,7 @@ class TTransition:
 #         - the transition dictionary is referenced by arbitrary keys (for now)
 class TTreeAut:
     def __init__(
-        self,
-        roots: list[str],
-        transitions: dict[str, dict[str, TTransition]],
-        name: str,
-        port_arity: int = 0
+        self, roots: list[str], transitions: dict[str, dict[str, TTransition]], name: str, port_arity: int = 0
     ):
         self.roots: list[str] = roots
         self.transitions: dict[str, dict[str, TTransition]] = transitions
@@ -248,23 +243,17 @@ class TTreeAut:
             result += "%-*s  " % (child_len, f"{child_str[:-2]} {i + 1}")
         if self.print_keys:
             result += "  %-*s" % (key_len, key_str) + "\n"
-            result += "  " + "-" * sum(
-                [src_len, edge_len, key_len, child_len * self.meta_data.arity, 17]
-            ) + '\n'
+            result += "  " + "-" * sum([src_len, edge_len, key_len, child_len * self.meta_data.arity, 17]) + "\n"
         else:
-            result = result[:-2] + '\n'
-            result += "  " + "-" * sum(
-                [src_len, edge_len, child_len * self.meta_data.arity, 13]
-            ) + '\n'
+            result = result[:-2] + "\n"
+            result += "  " + "-" * sum([src_len, edge_len, child_len * self.meta_data.arity, 13]) + "\n"
 
         # printing edges
         for state in iterate_states_bfs(self):
             for k, e in self.transitions[state].items():
                 # note = " <<< LEAF TRANSITION >>>" if e.children == [] else ""
                 # result += f"  > {e.src} -- {e.info} --> {e.children}{note}\n"
-                result += "  > %-*s -- %-*s" % (
-                    src_len, e.src, edge_len, e.info
-                )
+                result += "  > %-*s -- %-*s" % (src_len, e.src, edge_len, e.info)
                 if len(e.children) != 0:
                     result += " --> "
                     for i in e.children:
@@ -292,9 +281,7 @@ class TTreeAut:
 
     def get_edge_string(self, edge: TTransition) -> str:
         result = ""
-        result += "%-*s -- %-*s" % (
-            self.meta_data.state, edge.src, self.meta_data.edge, edge.info
-        )
+        result += "%-*s -- %-*s" % (self.meta_data.state, edge.src, self.meta_data.edge, edge.info)
         if len(edge.children) != 0:
             result += " --> "
             for i in edge.children:
@@ -582,8 +569,7 @@ class TTreeAut:
                         queue.append((child, newpath))
                     elif result[child] > f"{path}{i}":
                         result[child] = f"{path}{i}"
-        return {k: v for k,v in sorted(result.items(), key=lambda item: item[1])}
-
+        return {k: v for k, v in sorted(result.items(), key=lambda item: item[1])}
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Modifying functions # - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -665,7 +651,7 @@ class TTreeAut:
 
     # Creates a better readable state names for more clear images (DOT).
     # Useful after unfolding, determinization/normalization, etc.
-    def reformat_states(self, prefix='q', start_from=0):
+    def reformat_states(self, prefix="q", start_from=0):
         temp = {}  # state -> idx
         i = start_from
         for state in iterate_states_bfs(self):
@@ -692,8 +678,7 @@ class TTreeAut:
             for i in range(len(edge.children)):
                 edge.children[i] = f"{prefix}{temp[edge.children[i]]}"
 
-
-    def reformat_keys(self, prefix='k'):  # k as in 'key'
+    def reformat_keys(self, prefix="k"):  # k as in 'key'
         counter: int = self.count_edges() + 2  # for no collisions
         for state in iterate_states_bfs(self):
             swap = [key for key in self.transitions[state].keys()]
@@ -730,7 +715,6 @@ class TTreeAut:
             if type(edge.info.variable) != var_type:
                 return False
         return True
-
 
     # Shrinks the tree automaton
     # such that it only contain the states from list (reachable states)
@@ -775,11 +759,11 @@ class TTreeAut:
                 non_port_output = False
                 for edge in content.values():
                     label = edge.info.label
-                    if not label.startswith('Port') and len(edge.children) == 0:
+                    if not label.startswith("Port") and len(edge.children) == 0:
                         non_port_output = True
                 # skip adding non-port output edge
                 # if another non-port output present
-                if not temp_edge.info.label.startswith('Port') and non_port_output:
+                if not temp_edge.info.label.startswith("Port") and non_port_output:
                     continue
                 else:
                     content[temp_name] = temp_edge
@@ -793,7 +777,7 @@ class TTreeAut:
             check = True
             for edge in edge_dict.values():
                 edge_label = edge.info.label
-                if (edge_label.startswith("Port")):
+                if edge_label.startswith("Port"):
                     check = False
                     break
             if check and state_name not in result.roots:
@@ -802,9 +786,9 @@ class TTreeAut:
 
     def create_infix(self, extra_output_edges):
         result = copy.deepcopy(self)
-        ports = [sym for sym in extra_output_edges
-                 if (sym.startswith("Port")
-                     and sym not in result.get_output_symbols())]
+        ports = [
+            sym for sym in extra_output_edges if (sym.startswith("Port") and sym not in result.get_output_symbols())
+        ]
         result.name = f"infix({self.name}, {ports})"
 
         for state in result.get_states():
@@ -825,6 +809,7 @@ class TTreeAut:
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # ITERATORS
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 # custom iterator - yields only edges (no keys)
 #  for cleaner code
@@ -899,8 +884,8 @@ def iterate_states_bfs(ta: TTreeAut):
 
 
 class TTreeAutMetaData:
-    """Contains string lengths for tidy formatting (tables, etc.).
-    """
+    """Contains string lengths for tidy formatting (tables, etc.)."""
+
     def __init__(self, ta: TTreeAut):
         self.ta: TTreeAut = ta
 
@@ -919,13 +904,13 @@ class TTreeAutMetaData:
 
     def __repr__(self):
         return (
-            f"[TTreeAutMetaData]\n" +
-            f"Max State Length        = {self.state}\n" +
-            f"Max Child Length        = {self.child}\n" +
-            f"Max Key Length          = {self.key}\n" +
-            f"Max Variable Length     = {self.variable}\n" +
-            f"Max Edge Label Length   = {self.label}\n" +
-            f"Max Box Name Length     = {self.box_name}\n"
+            f"[TTreeAutMetaData]\n"
+            + f"Max State Length        = {self.state}\n"
+            + f"Max Child Length        = {self.child}\n"
+            + f"Max Key Length          = {self.key}\n"
+            + f"Max Variable Length     = {self.variable}\n"
+            + f"Max Edge Label Length   = {self.label}\n"
+            + f"Max Box Name Length     = {self.box_name}\n"
         )
 
     def recompute(self):
@@ -961,5 +946,6 @@ class TTreeAutMetaData:
 
         for arity in self.ta.get_symbol_arity_dict().values():
             self.arity = max(self.arity, arity)
+
 
 # End of file ta_classes.py

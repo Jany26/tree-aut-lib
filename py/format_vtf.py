@@ -8,6 +8,7 @@ where and how it was initially used. 'libVATA' is a C++ library for efficient
 manipulation with non-deterministic finite (tree) automata.
 [link] https://github.com/ondrik/libvata
 """
+
 # format_vtf.py
 # Functions for loading/saving tree automaton from/to VATA format (.vtf)
 # Implementation of tree automata for article about automata-based BDDs
@@ -18,6 +19,7 @@ manipulation with non-deterministic finite (tree) automata.
 from ta_functions import *
 import re
 import os
+
 # from test_data import box_catalogue
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -46,6 +48,7 @@ def load_arity_from_vtf(line: str) -> dict:
         arity = int(items[1].strip())
         result[symbol] = arity
     return result
+
 
 # def load_transition_from_vtf(line:str, treeaut_type='ta') -> list:
 #     line = line.strip()
@@ -100,7 +103,7 @@ def process_edge(edge_info: list) -> Tuple[list, str]:
     return boxes, var_string
 
 
-def load_transition_from_vtf(line: str, taType='ta') -> TTransition:
+def load_transition_from_vtf(line: str, taType="ta") -> TTransition:
     line = line.strip()
     if line == "":
         return None
@@ -178,7 +181,9 @@ def consistency_check_vtf(edges, states, arities, verbose=False) -> bool:
                     elif edge.info.label not in arities:
                         print(f"edge.info.label = {edge.info.label} not in arities = [{arities}]")
                     else:
-                        print(f"children = {edge.children} inconsistent with arity of {edge.info.label} = {int(arities[edge.info.label])}")
+                        print(
+                            f"children = {edge.children} inconsistent with arity of {edge.info.label} = {int(arities[edge.info.label])}"
+                        )
                     print(f"EDGE = {edge}")
                 return False
             for child in edge.children:
@@ -199,17 +204,18 @@ def generate_key_from_edge(edge: list) -> str:
     # children.rstrip(",")
     return f"{edge.src}-{edge.info.label}-[{children}]"
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # VTF IMPORT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def import_treeaut_from_vtf(source, source_type='f', treeaut_type='ta') -> TTreeAut:
-    if source_type == 'f':
+def import_treeaut_from_vtf(source, source_type="f", treeaut_type="ta") -> TTreeAut:
+    if source_type == "f":
         file = open(source, "r")
         treeaut_name = source.split(os.sep)[len(source.split(os.sep)) - 1][:-4]
-    elif source_type == 's':
-        file = source.split('\n')
+    elif source_type == "s":
+        file = source.split("\n")
         treeaut_name = "unnamed"
     else:
         Exception("import_treeaut_from_vtf(): unsupported source_type (only 'f'/'s')")
@@ -257,11 +263,12 @@ def import_treeaut_from_vtf(source, source_type='f', treeaut_type='ta') -> TTree
         if not consistency_check_vtf(transitions, all_states, arity_dict, verbose=True):
             raise Exception(f"import_treeaut_from_vtf(): inconsistent data with the preamble")
 
-    if source_type == 'f':
+    if source_type == "f":
         file.close()
     result = TTreeAut(roots, transitions, str(treeaut_name))
     result.port_arity = result.get_port_arity()
     return result
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # EXPORT TO VTF - HELPER FUNCTIONS (FILE)
@@ -323,6 +330,7 @@ def write_edges_vtf_file(edges, tgt):
                 tgt.write(f" {child}")
             tgt.write(" )\n")
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # EXPORT TO VTF - HELPER FUNCTIONS (STRING)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -362,21 +370,22 @@ def write_edges_vtf_str(edges):
             result += " )\n"
     return result
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # EXPORT TO VTF
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def export_treeaut_to_vtf(ta: TTreeAut, filepath="", format='f'):
-    if format != 'f' or format != 's':
+def export_treeaut_to_vtf(ta: TTreeAut, filepath="", format="f"):
+    if format != "f" or format != "s":
         Exception("export_treeaut_to_vtf(): unsupported format")
 
-    if format == 'f' and filepath == "":
+    if format == "f" and filepath == "":
         Exception("export_treeaut_to_vtf(): filepath needed")
 
-    file = open(filepath, "w") if format == 'f' else ""
+    file = open(filepath, "w") if format == "f" else ""
 
-    if format == 'f':
+    if format == "f":
         file.write("@NTA\n")
         file.write(f"# Automaton {ta.name}\n")
         write_roots_vtf_file(ta.roots, file)
@@ -393,5 +402,6 @@ def export_treeaut_to_vtf(ta: TTreeAut, filepath="", format='f'):
         file += write_edges_vtf_str(ta.transitions)
         return file
     return
+
 
 # End of file format_vtf.py

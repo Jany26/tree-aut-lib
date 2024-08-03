@@ -7,13 +7,14 @@ from format_vtf import import_treeaut_from_vtf
 from ta_classes import TTreeAut
 from test_data import box_catalogue
 
+
 class BoxTreeNode:
     # leaf constructor
     def __init__(self, node: str | None, low=None, high=None):
         # if leaf, node is boxname string
         # if non-leaf, node is state name
         self.node = node
-        self.is_leaf : bool = (low is None) and (high is None)
+        self.is_leaf: bool = (low is None) and (high is None)
         self.low: BoxTreeNode | None = low  # str = boxname (from boxCatalogue)
         self.high: BoxTreeNode | None = high
 
@@ -57,6 +58,7 @@ def boxtree_intersectoid_compare(aut: TTreeAut, root: str) -> str | None:
             return boxname
     aut.roots = roots
     return None
+
 
 def build_box_tree(aut: TTreeAut) -> BoxTreeNode | None:
     def build_box_tree_recursive(aut: TTreeAut, state: str) -> BoxTreeNode | None:

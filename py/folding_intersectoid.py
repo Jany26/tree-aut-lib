@@ -13,7 +13,6 @@ import itertools
 from folding_helpers import *
 
 
-
 def intersectoid_edge_key(e1: list, e2: list) -> str:
     """
     [description]
@@ -36,13 +35,7 @@ def intersectoid_edge_key(e1: list, e2: list) -> str:
     return key
 
 
-
-def create_intersectoid(
-    ta: TTreeAut,
-    box: TTreeAut,
-    root: str,
-    helper: FoldingHelper
-) -> TTreeAut:
+def create_intersectoid(ta: TTreeAut, box: TTreeAut, root: str, helper: FoldingHelper) -> TTreeAut:
     """
     [description]
     Function produces an intersectoid from the 'ta' UBDA and 'box' TA.
@@ -97,10 +90,7 @@ def create_intersectoid(
                     skip = True
             for box_edge in box.transitions[current_tuple[1]].values():  # box edges
                 # skipping differently labeled (e.g. LH and 0) edges
-                if (
-                    ta_edge.info.label != box_edge.info.label and
-                    not box_edge.info.label.startswith("Port")
-                ):
+                if ta_edge.info.label != box_edge.info.label and not box_edge.info.label.startswith("Port"):
                     continue
                 if len(ta_edge.children) == 2 and len(box_edge.children) == 2:
                     if ta_edge.children[0] != ta_edge.children[1] and box_edge.children[0] == box_edge.children[1]:
@@ -150,6 +140,7 @@ def intersectoid_reachability(ta: TTreeAut, var_visibility) -> list:
     This function is used after creating the intersectoid and saturating the
     transitions with variables where possible.
     """
+
     def intersectoid_tuple_gen(state: str, parents: list, var_visibility: dict) -> list:
         possibilities = product(parents, repeat=2)
         result = []
@@ -202,6 +193,7 @@ def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper):
     [note]
     nothing is returned -> the variables are saturated in situ into 'treeaut'
     """
+
     def add_variables(ta: TTreeAut, var: int, state: str, helper: FoldingHelper):
         if var > helper.max_var + 1:
             return
@@ -210,7 +202,7 @@ def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper):
                 return
         for edge in ta.transitions[state].values():
             if edge.info.variable != "":
-                edge_var = int(edge.info.variable[len(helper.var_prefix):])
+                edge_var = int(edge.info.variable[len(helper.var_prefix) :])
                 if edge_var != var:
                     if helper.verbose:
                         print(f"WARNING: add_variables(): edge {edge} does not agree with var {var}")
@@ -249,11 +241,11 @@ def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper):
 
     # propagating variable values to lower edges where possible
     for edge in iterate_edges(treeaut):
-        if edge.src in edge.children: # or edge.info.variable == "":
+        if edge.src in edge.children:  # or edge.info.variable == "":
             continue
         if edge.info.variable == "":
             continue
-        var = int(edge.info.variable[len(helper.var_prefix):])
+        var = int(edge.info.variable[len(helper.var_prefix) :])
         for child in edge.children:
             add_variables(treeaut, var + 1, child, helper)
 
@@ -273,6 +265,7 @@ def reduce_portable_states(intersectoid: TTreeAut):
     are then not considered.
 
     """
+
     def get_port_edge_lookup(intersectoid: TTreeAut):
         # each port has paths to edge lookup (state, key)
         result: dict[str, list[(str, str)]] = {}
@@ -297,14 +290,15 @@ def reduce_portable_states(intersectoid: TTreeAut):
     #             which contain edge lookup info (state, edge-key)
     # edge_storage - for storing/saving removed edges from the intersectoid,
     #               identical structure as TTreeAut transition dictionary
-    def reduce_intersectoid_edges(intersectoid: TTreeAut,
-                                port_mapping: dict[str, tuple[str, str]],
-                                port_edges: dict[str, list[tuple[str, str]]],
-                                edge_storage: dict[str, dict[str, TTransition]]
-                                ):
+    def reduce_intersectoid_edges(
+        intersectoid: TTreeAut,
+        port_mapping: dict[str, tuple[str, str]],
+        port_edges: dict[str, list[tuple[str, str]]],
+        edge_storage: dict[str, dict[str, TTransition]],
+    ):
         for port, path_list in port_edges.items():
             (state_to_stay, key_to_stay) = port_mapping[port]
-            for (state, key) in path_list:
+            for state, key in path_list:
                 if state == state_to_stay and key == key_to_stay:
                     continue
                 if state not in edge_storage:
@@ -312,11 +306,11 @@ def reduce_portable_states(intersectoid: TTreeAut):
                 if key not in edge_storage[state]:
                     edge_storage[state][key] = intersectoid.transitions[state].pop(key)
         # for port1, state, key in port_mapping.items():
+
     def return_reduced_edges(intersectoid: TTreeAut, edge_storage: dict):
         for state, edges in edge_storage.items():
             for key, edge in edges.items():
                 intersectoid.transitions[state][key] = edge
-
 
     port_edges, edge_popper = get_port_edge_lookup(intersectoid)
     edge_storage: dict[str, dict[str, TTransition]] = {}

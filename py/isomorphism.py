@@ -10,9 +10,7 @@ from itertools import permutations
 from typing import Generator
 
 
-def generate_state_mappings(
-    list1: list[str], list2: list[str]
-) -> Generator[dict[str, str], None, None]:
+def generate_state_mappings(list1: list[str], list2: list[str]) -> Generator[dict[str, str], None, None]:
     for p in permutations(list2):
         yield dict(map(lambda i, j: (i, j), list1, list(p)))
 
@@ -26,7 +24,7 @@ def check_output_edges(
     state_map: dict[str, str],
     output_map_1: dict[str, list[str]],
     output_map_2: dict[str, list[str]],
-    ignore_ports: bool
+    ignore_ports: bool,
 ) -> bool:
     if ignore_ports:
         rename_ports(output_map_1)
@@ -78,9 +76,7 @@ def compare_edges(state_map: dict, edge1: TTransition, edge2: TTransition) -> bo
 # when isomorphic, returns a dictionary -> state to state bijection
 # ignore_ports = when True, ports will not be checked literally,
 # but only whether there is a port present or not
-def tree_aut_isomorphic(
-    aut1: TTreeAut, aut2: TTreeAut, ignore_ports=False
-) -> dict[str, str]:
+def tree_aut_isomorphic(aut1: TTreeAut, aut2: TTreeAut, ignore_ports=False) -> dict[str, str]:
     # isomorphic automata have to have the same number of states
     outputs_1 = aut1.get_output_edges(inverse=True)
     outputs_2 = aut2.get_output_edges(inverse=True)
@@ -105,26 +101,16 @@ def tree_aut_isomorphic(
         early_exit = False  # when a state has some edge not found in its equivalent, skip to another mapping
         for s1, s2 in state_map.items():  # check each state to state mapping
             # check non output edges
-            edgeset1 = set(
-                [k for k, e in aut1.transitions[s1].items() if len(e.children) != 0]
-            )
-            edgeset2 = set(
-                [k for k, e in aut2.transitions[s2].items() if len(e.children) != 0]
-            )
+            edgeset1 = set([k for k, e in aut1.transitions[s1].items() if len(e.children) != 0])
+            edgeset2 = set([k for k, e in aut2.transitions[s2].items() if len(e.children) != 0])
             for k1 in edgeset1:
                 pair = None
                 for k2 in edgeset2:
-                    edges_are_equal = compare_edges(
-                        state_map,
-                        aut1.transitions[s1][k1],
-                        aut2.transitions[s2][k2]
-                    )
+                    edges_are_equal = compare_edges(state_map, aut1.transitions[s1][k1], aut2.transitions[s2][k2])
                     if edges_are_equal:  # equivalent edges -> check others
                         pair = k2
                         break
-                if (
-                    pair is None
-                ):  # some edge from s1 has no equivalent edge -> wrong mapping
+                if pair is None:  # some edge from s1 has no equivalent edge -> wrong mapping
                     early_exit = True
                     break
                 else:

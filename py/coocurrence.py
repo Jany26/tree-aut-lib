@@ -6,7 +6,6 @@
 with regards to their language inclusion properties.
 """
 
-
 from ta_classes import *
 from ta_functions import *
 
@@ -139,5 +138,6 @@ def is_extension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
             if witness_tree is not None:
                 return True
     return False
+
 
 # End of cooccurrence.py

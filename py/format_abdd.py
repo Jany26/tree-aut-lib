@@ -1,4 +1,3 @@
-
 """
 [file] format_abdd.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
@@ -12,6 +11,7 @@ from copy import deepcopy
 from test_data import box_catalogue
 import re
 from pathlib import Path
+
 
 # @ABDD     # Automata-based reduction BDDs
 # %Name example-abdd
@@ -44,7 +44,7 @@ def abdd_transition(ta: TTreeAut, edge: TTransition) -> str:
     edge_string = ""
     if edge.src in ta.get_output_states():
         return ""
-    var = edge.info.variable[ta.meta_data.var_prefix:]
+    var = edge.info.variable[ta.meta_data.var_prefix :]
     edge_string += f"{edge.src}[{var}] "
     arity = 1
     child_index = 0
@@ -57,14 +57,14 @@ def abdd_transition(ta: TTreeAut, edge: TTransition) -> str:
             edge_string += write_child(ta, edge.children[child_index])
         if arity > 1:
             edge_string += f"("
-            for idx in range(len(edge.children[child_index:arity-1])):
+            for idx in range(len(edge.children[child_index : arity - 1])):
                 edge_string += write_child(ta, edge.children[idx + child_index])
                 if idx < child_index + arity:
-                    edge_string += ', '
-            edge_string += ')'
+                    edge_string += ", "
+            edge_string += ")"
         child_index += arity
         edge_string += box_str
-        edge_string += ' '
+        edge_string += " "
     edge_string = edge_string[:-1]
     return edge_string
 
@@ -75,9 +75,9 @@ def export_treeaut_to_abdd(ta: TTreeAut, filepath: str, name="", comments=False)
     # box_array is expected to contain only strings (box names)
     treeaut_copy = deepcopy(ta)
     treeaut_copy.reformat_keys()
-    treeaut_copy.reformat_states(prefix='', start_from=1)
+    treeaut_copy.reformat_states(prefix="", start_from=1)
     treeaut_copy.meta_data.recompute()
-    file = open(filepath, 'w')
+    file = open(filepath, "w")
     abdd_preamble(treeaut_copy, file, name)
     edge_str_max_len = 0
     for edge in iterate_edges(treeaut_copy):
@@ -89,10 +89,11 @@ def export_treeaut_to_abdd(ta: TTreeAut, filepath: str, name="", comments=False)
             edge_str = abdd_transition(treeaut_copy, edge)
             file.write(edge_str)
             if comments:
-                file.write((edge_str_max_len - len(edge_str)) * ' ')
+                file.write((edge_str_max_len - len(edge_str)) * " ")
                 file.write(f" # {edge}")
             if comments or edge_str != "":
-                file.write('\n')
+                file.write("\n")
+
 
 def import_treeaut_from_abdd(source) -> TTreeAut | list:
     file = open(source, "r")
@@ -118,12 +119,12 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
     key_counter = 0
     preamble = False
     for l in file:
-        line = l.split('#')[0]  # strip comments
+        line = l.split("#")[0]  # strip comments
         line = line.strip()  # strip leading and trailing whitespaces
         if line == "":
             continue
         data = line.split()
-        if line.startswith('@'):
+        if line.startswith("@"):
             if line != "@ABDD" and line != "@BDD":
                 raise Exception(f"import_treeaut_from_abdd(): unexpected header: {line}")
             if preamble:
@@ -131,7 +132,7 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
             else:
                 preamble = True
                 continue
-        if line.startswith('%'):
+        if line.startswith("%"):
             if data[0] not in ["%Name", "%Vars", "%Root"]:
                 raise Exception(f"import_treeaut_from_abdd(): unexpected metadata: {data[0]}")
             if data[0] == "%Name":
@@ -156,24 +157,24 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
         box1 = groups.group(4)
         tgt2 = groups.group(5)
         box2 = groups.group(6)
-        box1 = box1.lstrip('[').rstrip(']')
-        box2 = box2.lstrip('[').rstrip(']')
+        box1 = box1.lstrip("[").rstrip("]")
+        box2 = box2.lstrip("[").rstrip("]")
         box1 = None if box1 == "" else box1
         box2 = None if box2 == "" else box2
         children = []
-        for j in [i.strip() for i in tgt1.lstrip('(').rstrip(')').split(',')]:
+        for j in [i.strip() for i in tgt1.lstrip("(").rstrip(")").split(",")]:
             children.append(j)
-        for j in [i.strip() for i in tgt2.lstrip('(').rstrip(')').split(',')]:
+        for j in [i.strip() for i in tgt2.lstrip("(").rstrip(")").split(",")]:
             children.append(j)
-        edge = TTransition(src, TEdge('LH', [box1, box2], var), children)
+        edge = TTransition(src, TEdge("LH", [box1, box2], var), children)
         if src not in ta.transitions:
             ta.transitions[src] = {}
         ta.transitions[src][f"k{key_counter}"] = edge
         key_counter += 1
-        if src.startswith('<') and src.endswith('>'):
+        if src.startswith("<") and src.endswith(">"):
             leaves.add(src)
         for state in children:
-            if state.startswith('<') and state.endswith('>'):
+            if state.startswith("<") and state.endswith(">"):
                 leaves.add(state)
     for leaf in leaves:
         symbol = leaf.lstrip("<").rstrip(">")

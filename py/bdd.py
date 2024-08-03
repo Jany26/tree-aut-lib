@@ -45,10 +45,10 @@ class BDDnode:
     def is_root(self):
         if self is None:
             return False
-        return (self.parents is None)
+        return self.parents is None
 
     def is_leaf(self):
-        if (self is not None and (self.low is None or self.high is None)):
+        if self is not None and (self.low is None or self.high is None):
             return True
         return False
 
@@ -114,6 +114,7 @@ class BDDnode:
             elif level > 1:
                 get_nodes_from_level_helper(node.low, level - 1, result)
                 get_nodes_from_level_helper(node.high, level - 1, result)
+
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         result = []
         get_nodes_from_level_helper(self, level, result)
@@ -130,7 +131,7 @@ class BDD:
     def __repr__(self):
         max_node_name_length = len("node")
         max_var_name_length = len("<var>")
-        max_child_name_length = max(len('low'), len('high'))
+        max_child_name_length = max(len("low"), len("high"))
         for i in self.iterate_dfs():
             max_node_name_length = max(len(str(i.name)) + 2, max_node_name_length)
             max_var_name_length = max(len(str(i.value)) + 2, max_var_name_length)
@@ -140,10 +141,17 @@ class BDD:
         result = f"  [BDD]: '{self.name}'\n"
         result += f"  [root]: {self.root.name}\n"
         header_str = "  > %-*s - %-*s -> %-*s %-*s" % (
-            max_node_name_length, 'node', max_var_name_length, '<var>', max_child_name_length, 'low', max_child_name_length, 'high'
+            max_node_name_length,
+            "node",
+            max_var_name_length,
+            "<var>",
+            max_child_name_length,
+            "low",
+            max_child_name_length,
+            "high",
         )
-        result += header_str + '\n'
-        result += '  ' + '-' * (len(header_str) - 2) + '\n'
+        result += header_str + "\n"
+        result += "  " + "-" * (len(header_str) - 2) + "\n"
 
         for i in self.iterate_bfs():
             if i.is_leaf():
@@ -151,7 +159,14 @@ class BDD:
             ln = i.low.name if type(i.low.value) != int else f"[{i.low.value}]"
             hn = i.high.name if type(i.high.value) != int else f"[{i.high.value}]"
             result += "  > %-*s - %-*s -> %-*s %-*s\n" % (
-                max_node_name_length, i.name, max_var_name_length, f"<{i.value}>", max_child_name_length, ln, max_child_name_length, hn
+                max_node_name_length,
+                i.name,
+                max_var_name_length,
+                f"<{i.value}>",
+                max_child_name_length,
+                ln,
+                max_child_name_length,
+                hn,
             )
         return result
 
@@ -170,6 +185,7 @@ class BDD:
             prefix_high = ""  # f"[{node.name}-H->]"
             print_bdd_node(node.low, lvl + 1, prefix_low)
             print_bdd_node(node.high, lvl + 1, prefix_high)
+
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         print(f"> BDD {self.name}")
         print_bdd_node(self.root, 0, "[root]")
@@ -213,6 +229,7 @@ class BDD:
 
             if node.high is not None:
                 yield from DFS(node.high, visited, allow_repeats)
+
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         visited = set()
         return DFS(self.root, visited, allow_repeats)
@@ -247,6 +264,7 @@ class BDD:
                 get_var(node.low, result)
             if node.high is not None:
                 get_var(node.high, result)
+
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         result = set()
         get_var(self.root, result)
@@ -254,7 +272,7 @@ class BDD:
         result.sort()
         return result
 
-    def get_terminal_nodes_list(self) -> 'list[BDDnode]':
+    def get_terminal_nodes_list(self) -> "list[BDDnode]":
         def get_terminal_node(node: BDDnode, result: list):
             if node is None:
                 return
@@ -262,6 +280,7 @@ class BDD:
                 result.append(node)
             get_terminal_node(node.low, result)
             get_terminal_node(node.high, result)
+
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         result = []
         return get_terminal_node(self.root, result)
@@ -275,6 +294,7 @@ class BDD:
             else:
                 get_terminal(node.low, result)
                 get_terminal(node.high, result)
+
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         result = set()
         get_terminal(self.root, result)
@@ -310,7 +330,7 @@ class BDD:
             counter += 1
         return counter
 
-    def reformat_nodes(self, prefix='n'):
+    def reformat_nodes(self, prefix="n"):
         if self.root is None:
             return
         cnt = 0
@@ -375,6 +395,7 @@ def compare_bdds(bdd1: BDD, bdd2: BDD) -> bool:
         ):
             return False
         return True
+
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     return compare_nodes(bdd1.root, bdd2.root)
@@ -417,12 +438,12 @@ def create_tree_aut_from_bdd(bdd: BDD) -> TTreeAut:
         edge = None
         children = []
         if node.is_leaf():
-            edge = TEdge(str(node.value), [], '')
+            edge = TEdge(str(node.value), [], "")
         else:
-            edge = TEdge('LH', [], node.value)
+            edge = TEdge("LH", [], node.value)
             children = [node.low.name, node.high.name]
         new_transition = TTransition(node.name, edge, children)
-        transitions[node.name][f'k{key}'] = new_transition
+        transitions[node.name][f"k{key}"] = new_transition
 
         key += 1
     result = TTreeAut(roots, transitions, bdd.name, 0)
@@ -460,12 +481,14 @@ def add_dont_care_boxes(ta: TTreeAut, vars: int) -> TTreeAut:
             continue
         for idx, child in enumerate(edge.children):
             if (
-                child in leaves and var_visibility[edge.src] != vars or
-                child not in leaves and var_visibility[child] - var_visibility[edge.src] >= 2
+                child in leaves
+                and var_visibility[edge.src] != vars
+                or child not in leaves
+                and var_visibility[child] - var_visibility[edge.src] >= 2
             ):
                 if len(edge.info.box_array) < idx + 1:
                     edge.info.box_array = [None] * len(edge.children)
-                edge.info.box_array[idx] = 'X'
+                edge.info.box_array[idx] = "X"
     for new_state, new_key, new_edge in skipped_var_edges:
         if new_state not in result.transitions:
             result.transitions[new_state] = {}
@@ -473,5 +496,6 @@ def add_dont_care_boxes(ta: TTreeAut, vars: int) -> TTreeAut:
             result.transitions[new_state][new_key] = new_edge
 
     return result
+
 
 # End of file bdd.py

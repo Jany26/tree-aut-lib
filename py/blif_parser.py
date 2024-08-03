@@ -10,6 +10,7 @@ from bdd_apply import *
 from format_vtf import *
 import re
 
+
 class BlifParser:
     def __init__(self):
         self.name = ""  # name of the benchmark = resulting BDD name
@@ -29,14 +30,14 @@ class BlifParser:
         self.result = BDD(self.name, None)
         self.bdd = BDD(self.name, None)
 
-        self.t0 = BDDnode('t0', 0)
-        self.t1 = BDDnode('t1', 1)
+        self.t0 = BDDnode("t0", 0)
+        self.t1 = BDDnode("t1", 1)
 
     def __repr__(self):
         return "TODO"
 
     def parse(self, filepath) -> BDD:
-        file = open(filepath, 'r')
+        file = open(filepath, "r")
         self.tokenize(file)
         file.close()
         self.create_vars_cache()
@@ -52,17 +53,17 @@ class BlifParser:
                 continue
             words = line.split()
             self.tokens.extend(words)
-            self.tokens.append('\n')
+            self.tokens.append("\n")
 
     def create_vars_cache(self):
         vars = set()
         i = 0
         while i < len(self.tokens):
-            if self.tokens[i] in ['.inputs', '.outputs', '.names']:
-                if self.tokens[i] == '.names':
+            if self.tokens[i] in [".inputs", ".outputs", ".names"]:
+                if self.tokens[i] == ".names":
                     self.constructs += 1
                 i += 1
-                while self.tokens[i] != '\n':
+                while self.tokens[i] != "\n":
                     if self.tokens[i] == "\\":  # redundant probably
                         i += 1
                     if self.tokens[i] not in vars:
@@ -82,6 +83,7 @@ class BlifParser:
 
     def syntax_analysis(self):
         self.keywords = [".model", ".inputs", ".outputs", ".names", ".end"]
+
         def get_token() -> str:
             self.token = self.tokens.pop(0)
             return self.token
@@ -107,7 +109,7 @@ class BlifParser:
                 self.names = []
                 names_list()
                 names_content()
-                self.result = apply_function('and', self.bdd, self.result)
+                self.result = apply_function("and", self.bdd, self.result)
                 self.bdd = BDD(self.name, None)
                 self.constructs_counter += 1
                 # print(f"{self.constructs_counter}/{self.constructs}", end='\r')
@@ -144,28 +146,27 @@ class BlifParser:
             assignment = [(self.names[i], int(input_plane[i])) for i in range(len(self.names) - 1)]
             assignment.sort(reverse=True)
 
-            straight = BDDnode(self.node_counter, f'{self.names[-1]}', self.t0, self.t1)  #
+            straight = BDDnode(self.node_counter, f"{self.names[-1]}", self.t0, self.t1)  #
             self.node_counter += 1
-            complement = BDDnode(self.node_counter, f'{self.names[-1]}', self.t1, self.t0)  # complemented form
+            complement = BDDnode(self.node_counter, f"{self.names[-1]}", self.t1, self.t0)  # complemented form
             self.node_counter += 1
 
             root, dump = (straight, complement) if output == 1 else (complement, straight)
             for var, bit in assignment:
                 low = dump if bit == 1 else root
                 high = root if bit == 1 else dump
-                new_root = BDDnode(self.node_counter, f'{var}', low, high)
+                new_root = BDDnode(self.node_counter, f"{var}", low, high)
                 root = new_root
                 self.node_counter += 1
             bdd = BDD(self.names[-1], root)
-            self.bdd = apply_function('or', bdd, self.bdd)
-            while self.tokens[0] == '\n':
+            self.bdd = apply_function("or", bdd, self.bdd)
+            while self.tokens[0] == "\n":
                 get_token()
-            if self.tokens[0] in ['.names', '.end']:
+            if self.tokens[0] in [".names", ".end"]:
                 return
             names_content()
 
         construct_list()
-
 
     def check_names(self, tokens: list):
         inputs = []
@@ -173,25 +174,25 @@ class BlifParser:
         not_found = []
         i = 0
         while i < len(tokens):
-            if tokens[i] == '.inputs':
+            if tokens[i] == ".inputs":
                 i += 1
-                while tokens[i] != '\n':
+                while tokens[i] != "\n":
                     if tokens[i] == "\\":  # redundant probably
                         i += 1
                     if tokens[i] not in inputs:
                         inputs.append(tokens[i])
                     i += 1
-            elif tokens[i] == '.outputs':
+            elif tokens[i] == ".outputs":
                 i += 1
-                while tokens[i] != '\n':
+                while tokens[i] != "\n":
                     if tokens[i] == "\\":  # redundant probably
                         i += 1
                     if tokens[i] not in outputs:
                         outputs.append(tokens[i])
                     i += 1
-            elif tokens[i] == '.names':
+            elif tokens[i] == ".names":
                 i += 1
-                while tokens[i] != '\n':
+                while tokens[i] != "\n":
                     if tokens[i] == "\\":  # redundant probably
                         i += 1
                     if tokens[i] not in inputs and tokens[i] not in outputs:

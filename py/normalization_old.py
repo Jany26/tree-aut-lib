@@ -86,12 +86,7 @@ def filterBadTransitions(ta: TTreeAut, norm: NormalizationHelperOld):
             # CASE 1: q without var can't go to p,
             # if p "sees" another variable and can get to "q"
             case1 = False
-            if (
-                edge.info.variable == "" and
-                canChildrenSeeVar and
-                canSeeSource and
-                not selfLoop
-            ):
+            if edge.info.variable == "" and canChildrenSeeVar and canSeeSource and not selfLoop:
                 case1 = True
 
             # CASE 2: q can't go to p, if they both see the same variable,
@@ -104,31 +99,21 @@ def filterBadTransitions(ta: TTreeAut, norm: NormalizationHelperOld):
             srcVisibleVariable = None
             if edge.src in cacheVarVision:
                 for var in cacheVarVision[edge.src]:
-                    if (
-                        srcVisibleVariable is None or
-                        varIndex[var] > varIndex[srcVisibleVariable]
-                    ):
+                    if srcVisibleVariable is None or varIndex[var] > varIndex[srcVisibleVariable]:
                         srcVisibleVariable = var
                 for var in childrenVisibleVariables:
-                    if (
-                        varIndex[srcVisibleVariable] >= varIndex[var] and
-                        not selfLoop
-                    ):
+                    if varIndex[srcVisibleVariable] >= varIndex[var] and not selfLoop:
 
                         case2 = True
 
             # CASE 3: q can't go to p, if p sees a variable, and the transition
             # also leads back to q, which does not see the variable
             case3 = False
-            if (
-                edge.src not in cacheVarVision and
-                isSrcChild and
-                childrenVisibleVariables != set()
-            ):
+            if edge.src not in cacheVarVision and isSrcChild and childrenVisibleVariables != set():
                 case3 = True
 
             # FINALIZATION ...
-            if (case1 or case2 or case3):
+            if case1 or case2 or case3:
                 if edge.src not in filter:
                     filter[edge.src] = set()
                 filter[edge.src].add(key)
@@ -229,6 +214,7 @@ def procTransitions(data: NormalizationHelperOld, childrenStates: list):
             for sym, states in cont.items():
                 result.append([list(states), sym, var])
         return result
+
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     tr = []
@@ -240,12 +226,7 @@ def procTransitions(data: NormalizationHelperOld, childrenStates: list):
             if edge.children[i] not in childrenStates[i]:
                 childsAreInMacroStates = False
         if childsAreInMacroStates:
-            tr.append([
-                edge.src,
-                edge.info.label,
-                edge.info.variable,
-                edge.children
-            ])
+            tr.append([edge.src, edge.info.label, edge.info.variable, edge.children])
 
     varEdge = False
     novarEdge = False

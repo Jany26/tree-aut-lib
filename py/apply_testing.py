@@ -81,9 +81,7 @@ def map_states_to_output_transitions(aut: TTreeAut, idx: int) -> dict[str, str]:
         for tr in aut.transitions[state].values():
             if len(tr.children) != 0:
                 continue
-            result[state] = (
-                f"P{idx}" if tr.info.label.startswith("Port") else tr.info.label
-            )
+            result[state] = f"P{idx}" if tr.info.label.startswith("Port") else tr.info.label
     return result
 
 
@@ -92,13 +90,12 @@ def get_port(t: TTreeAut) -> str:
         if sym.startswith("Port"):
             return sym
 
+
 # def rename_ports(aut: TTreeAut):
 #    pass
 
 
-def apply_intersectoid_add_output_transitions(
-    result: TTreeAut, op: BooleanOperation, aut1: TTreeAut, aut2: TTreeAut
-):
+def apply_intersectoid_add_output_transitions(result: TTreeAut, op: BooleanOperation, aut1: TTreeAut, aut2: TTreeAut):
     # maps an output transition (-/0/1/Port) to each state for cayley table lookup
     # we assume each state has at most 1 output transition (based on the box correctness criteria)
     map1: dict[str, str] = map_states_to_output_transitions(aut1, 1)
@@ -125,9 +122,7 @@ def apply_intersectoid_add_output_transitions(
         output_symbol = op_table[translation[map1[s1]]][translation[map2[s2]]]
         if output_symbol == "-":
             continue
-        result.transitions[state][f"k{key_idx}"] = TTransition(
-            state, TEdge(labels[output_symbol], [], ""), []
-        )
+        result.transitions[state][f"k{key_idx}"] = TTransition(state, TEdge(labels[output_symbol], [], ""), [])
         key_idx += 1
 
 
@@ -186,17 +181,17 @@ def test_all_apply_intersectoids():
                     applied.name = f"{boxname1}_{operation.name}_{boxname2}"
                     applied.reformat_ports()
                     print(applied.get_shortest_state_paths_dict())
-                    export_treeaut_to_vtf(applied, f'../data/apply_tests/{operation.name}/{applied.name}.vtf')
-                    export_to_file(applied, f'../data/apply_tests/{operation.name}/{applied.name}')
+                    export_treeaut_to_vtf(applied, f"../data/apply_tests/{operation.name}/{applied.name}.vtf")
+                    export_to_file(applied, f"../data/apply_tests/{operation.name}/{applied.name}")
                     res = apply_intersectoid_compare(applied, debug=True)
                     print(applied)
-                    if not os.path.exists(f'../data/apply_tests/{operation.name}'):
-                        os.makedirs(f'../data/apply_tests/{operation.name}')
+                    if not os.path.exists(f"../data/apply_tests/{operation.name}"):
+                        os.makedirs(f"../data/apply_tests/{operation.name}")
                     print()
                 else:
-                    print(box1.name, operation.name, box2.name, '=', res)
+                    print(box1.name, operation.name, box2.name, "=", res)
                 # result_dict[boxname1][boxname2] = res
-        print('----------------------------------------')
+        print("----------------------------------------")
 
 
 if __name__ == "__main__":

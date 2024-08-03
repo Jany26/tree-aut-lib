@@ -23,21 +23,21 @@ inner_edge = "penwidth=1.0, arrowsize=0.5, arrowhead=vee"
 
 
 def root_handle(roots: list, file):
-    file.write(f"\tnode [ label=\"\", {help_point} ];\n")
+    file.write(f'\tnode [ label="", {help_point} ];\n')
     for root in roots:
-        file.write(f"\t\"->{root}\"\n")
+        file.write(f'\t"->{root}"\n')
     file.write("\n\tnode [ shape=circle ];\n")
     for root in roots:
-        file.write(f"\t\"->{root}\" -> \"{root}\" [ {output_edge} ] ;\n")
+        file.write(f'\t"->{root}" -> "{root}" [ {output_edge} ] ;\n')
     file.write("\n")
 
 
 def output_edge_handle(edge: TTransition, file, debug=False):
     if len(edge.children) == 0:
-        file.write(f"\tnode [ label=\"\", {help_point} ];\n")
+        file.write(f'\tnode [ label="", {help_point} ];\n')
         end_name = f"{edge.src}-{edge.info.label}->"
-        file.write(f"\t\"{end_name}\"\n")
-        file.write(f"\t\"{edge.src}\" -> \"{end_name}\" [ {output_edge}, label = \"{edge.info.label}\" ] \n\n")
+        file.write(f'\t"{end_name}"\n')
+        file.write(f'\t"{edge.src}" -> "{end_name}" [ {output_edge}, label = "{edge.info.label}" ] \n\n')
         return True
     return False
 
@@ -48,8 +48,8 @@ def all_states_handle(ta: TTreeAut, file):
     file.write("\tnode [ shape=circle, style=filled ];\n")
 
     for s in states:
-        color = 'khaki' if s in leaves else 'bisque'
-        file.write(f"\t\"{s}\" [fillcolor={color}];\n")
+        color = "khaki" if s in leaves else "bisque"
+        file.write(f'\t"{s}" [fillcolor={color}];\n')
     file.write("\n")
 
 
@@ -57,7 +57,7 @@ def edge_handle(edge: TTransition, file, debug=False):
     if debug:
         print(f"- - edge_handle {edge} - -")
     # if output_edge_handle(edge, file, debug):
-        # return
+    # return
 
     # BUG: trying to make a nicer self-loop
     # (using same rank for the node and arbitrary node)
@@ -68,10 +68,10 @@ def edge_handle(edge: TTransition, file, debug=False):
 
     # case 1 : output edge
     if len(edge.children) == 0:
-        file.write(f"\t\"{connector_node}\" [ {help_point} ];\n")
+        file.write(f'\t"{connector_node}" [ {help_point} ];\n')
         if debug:
             print(f"connector_node {connector_node}")
-        file.write(f"\t\"{edge.src}\" -> \"{connector_node}\" [ label=<<B>[{edge.info.label}]</B>>, {output_edge} ]\n")
+        file.write(f'\t"{edge.src}" -> "{connector_node}" [ label=<<B>[{edge.info.label}]</B>>, {output_edge} ]\n')
         if debug:
             print(f"[{edge.src}] -- {edge.info.label} --> [{connector_node}]", "output_edge")
         return
@@ -82,17 +82,17 @@ def edge_handle(edge: TTransition, file, debug=False):
     connector_node = connector_node[:-1]
 
     # connector node
-    file.write(f"\t\"{connector_node}\" [ {small_point} ];\n")
+    file.write(f'\t"{connector_node}" [ {small_point} ];\n')
     if debug:
         print(f"NODE {connector_node}")
 
-    connector_label = "\""
+    connector_label = '"'
     if edge.info.variable != "":
         connector_label += f"[{edge.info.variable}] "
-    connector_label += f"{edge.info.label}\""
+    connector_label += f'{edge.info.label}"'
 
     # edge: src_state -> connector node
-    file.write(f"\t\"{edge.src}\" -> \"{connector_node}\" [ label={connector_label}, {connector_edge} ]\n")
+    file.write(f'\t"{edge.src}" -> "{connector_node}" [ label={connector_label}, {connector_edge} ]\n')
     if debug:
         print(f"[{edge.src}] -> [{connector_node}]", "connector_edge")
 
@@ -100,12 +100,12 @@ def edge_handle(edge: TTransition, file, debug=False):
     current_child = 0
     current_box = 0
     while current_child < len(edge.children):
-        edge_label = f"\"{current_box}"
+        edge_label = f'"{current_box}'
         has_box = False
         if edge.info.box_array != [] and edge.info.box_array[current_box] is not None:
             has_box = True
             edge_label += f": {edge.info.box_array[current_box]}"
-        edge_label += f"\""
+        edge_label += f'"'
 
         # box handling (mapping more child states to one edge (port_arity can be > 1))
         if has_box:
@@ -114,30 +114,35 @@ def edge_handle(edge: TTransition, file, debug=False):
             if arity > 1:
                 temp = f"{connector_node}_{current_child}_{current_box}"
 
-                file.write(f"\t\"{temp}\" [ {small_point} ];\n")
+                file.write(f'\t"{temp}" [ {small_point} ];\n')
                 if debug:
                     print(f"NODE {temp}")
-                file.write(f"\t\"{connector_node}\" -> \"{temp}\" [ label={edge_label}, {inner_edge} ]\n")
+                file.write(f'\t"{connector_node}" -> "{temp}" [ label={edge_label}, {inner_edge} ]\n')
                 if debug:
                     print(f"[{connector_node}] -> [{temp}]")
 
                 for j in range(arity):
-                    file.write(f"\t\"{temp}\" -> \"{edge.children[current_child]}\" [ label=⊕{j}, {inner_edge} ]\n")
+                    file.write(f'\t"{temp}" -> "{edge.children[current_child]}" [ label=⊕{j}, {inner_edge} ]\n')
                     if debug:
                         print(f"[{temp}] -> [{edge.children[current_child]}]", f"curr_child = {current_child}")
                     current_child += 1
             else:
-                file.write(f"\t\"{connector_node}\" -> \"{edge.children[current_child]}\" [ label={edge_label}, {inner_edge} ]\n")
+                file.write(
+                    f'\t"{connector_node}" -> "{edge.children[current_child]}" [ label={edge_label}, {inner_edge} ]\n'
+                )
                 if debug:
                     print(f"[{connector_node}] -> [{edge.children[current_child]}]", f"curr_child = {current_child}")
                 current_child += 1
         else:
-            file.write(f"\t\"{connector_node}\" -> \"{edge.children[current_child]}\" [ label={current_box}, {inner_edge} ]\n")
+            file.write(
+                f'\t"{connector_node}" -> "{edge.children[current_child]}" [ label={current_box}, {inner_edge} ]\n'
+            )
             if debug:
                 print(f"[{connector_node}] -> [{edge.children[current_child]}]", f"curr_child = {current_box}")
             current_child += 1
 
         current_box += 1
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -152,5 +157,6 @@ def export_treeaut_to_dot(ta: TTreeAut, filepath: str):
     file.write("}\n")
     file.close()
     pass
+
 
 # End of file format_dot.py

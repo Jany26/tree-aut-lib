@@ -105,26 +105,22 @@ test_tree_dict = {
     "treeXtest1": convert_string_to_tree(X_tree_example1),
     "treeXtest2": convert_string_to_tree(X_tree_example2),
     "treeXtest3": convert_string_to_tree(X_tree_example3),
-
     "treeL0test1": convert_string_to_tree(L0_tree_example1),
     "treeL0test2": convert_string_to_tree(L0_tree_example2),
     "treeL0test3": convert_string_to_tree(L0_tree_example3),
     "treeL0test4": convert_string_to_tree(L0_tree_example4),
-
     "treeL1test1": convert_string_to_tree(L1_tree_example1),
     "treeL1test2": convert_string_to_tree(L1_tree_example2),
     "treeL1test3": convert_string_to_tree(L1_tree_example3),
     "treeL1test4": convert_string_to_tree(L1_tree_example4),
-
     "treeH0test1": convert_string_to_tree(H0_tree_example1),
     "treeH0test2": convert_string_to_tree(H0_tree_example2),
     "treeH0test3": convert_string_to_tree(H0_tree_example3),
     "treeH0test4": convert_string_to_tree(H0_tree_example4),
-
     "treeH1test1": convert_string_to_tree(H1_tree_example1),
     "treeH1test2": convert_string_to_tree(H1_tree_example2),
     "treeH1test3": convert_string_to_tree(H1_tree_example3),
-    "treeH1test4": convert_string_to_tree(H1_tree_example4)
+    "treeH1test4": convert_string_to_tree(H1_tree_example4),
 }
 
 # End of file test_trees.py

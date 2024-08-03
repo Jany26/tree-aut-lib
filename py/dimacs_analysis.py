@@ -6,7 +6,6 @@ conjuntive normal form (CNF) - DIMACS format.
 [note] Also gets box usage statistics for ABDD model.
 """
 
-
 import os
 import copy
 
@@ -21,6 +20,7 @@ from simulation import add_variables_bottom_up
 from normalization import tree_aut_normalize
 from unfolding import unfold
 
+
 def get_folded_dimacs(initial: TTreeAut, order):
     vars = int(initial.get_var_order()[-1])
     initial_changed = add_dont_care_boxes(initial, vars)
@@ -28,28 +28,29 @@ def get_folded_dimacs(initial: TTreeAut, order):
 
     unfolded_extra = copy.deepcopy(unfolded)
     add_variables_bottom_up(unfolded_extra, vars)
-    var_order = create_var_order('', vars+2, start=0)
+    var_order = create_var_order("", vars + 2, start=0)
     normalized = tree_aut_normalize(unfolded_extra, var_order)
     normalized_clean = copy.deepcopy(normalized)
     normalized_clean.reformat_keys()
     normalized_clean.reformat_states()
-    add_variables_bottom_up(normalized_clean, vars+2)
+    add_variables_bottom_up(normalized_clean, vars + 2)
     normalized.meta_data.recompute()
     normalized_clean.meta_data.recompute()
     folded = tree_aut_folding(normalized_clean, box_orders[order], normalized_clean.get_var_max())
     return folded
 
+
 def create_dimacs_file_order(dir_path: str) -> list:
     dimacs_sorter: dict[int, str] = {}
     for subdir, dirs, files in os.walk(dir_path):
         for file in files:
-            benchmark = int(file.split('-')[-1].split('.')[0])
+            benchmark = int(file.split("-")[-1].split(".")[0])
             dimacs_sorter[benchmark] = f"{subdir}{file}"
     return dimacs_sorter
 
 
 def print_dimacs_box_counts():
-    order = 'full'
+    order = "full"
     initial_string = f"{'path' :<30} = {'norm' :<5}, {order :<5}, "
     for val in boxname_simplified_translation.values():
         initial_string += f"{val :<5}, "
@@ -57,10 +58,12 @@ def print_dimacs_box_counts():
     dimacs_sorter = create_dimacs_file_order(f"../data/uf20/")
     for benchmark in sorted(dimacs_sorter.keys()):
         path = dimacs_sorter[benchmark]
-        name = path.split('/')[-1]
+        name = path.split("/")[-1]
         initial = import_treeaut_from_abdd(path)
         folded = get_folded_dimacs(initial, order)
-        print(f"{name :<30} = {len(initial.get_states()) :<5}, {len(reachable_top_down(folded)) :<5}, {formatBoxCounts(folded)}")
+        print(
+            f"{name :<30} = {len(initial.get_states()) :<5}, {len(reachable_top_down(folded)) :<5}, {formatBoxCounts(folded)}"
+        )
 
 
 def folding_test_dimacs():
@@ -72,14 +75,12 @@ def folding_test_dimacs():
     dimacs_sorter = create_dimacs_file_order("../data/uf20/")
     for benchmark in sorted(dimacs_sorter.keys()):
         filename = dimacs_sorter[benchmark]
-        print(f"{filename}", end='\r')
+        print(f"{filename}", end="\r")
 
         test_folding_on_sub_benchmarks(
-            f"{filename}",
-            f"../data/dimacs/uf20/{filename.split('.')[-1]}",
-            orders=None,
-            root_num=None
+            f"{filename}", f"../data/dimacs/uf20/{filename.split('.')[-1]}", orders=None, root_num=None
         )
+
 
 if __name__ == "__main__":
     # print_dimacs_box_counts()

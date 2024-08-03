@@ -22,7 +22,7 @@ class NormalizationHelper:
         self.worklist = []  # currently considered (macro)states
         self.next_worklist = []  # which states are considered in next iteration
         self.symbols = {}
-        self.var_worklist: 'dict[str, list]' = {var: [] for var in variables}
+        self.var_worklist: "dict[str, list]" = {var: [] for var in variables}
         for symbol, arity in treeaut.get_symbol_arity_dict().items():
             if arity > 0:
                 self.symbols[symbol] = arity
@@ -55,7 +55,7 @@ class NormalizationHelper:
             result += f"--> {i[3]}\n"
         return result
 
-    def edges_to_process_cache_init(self) -> 'dict[str, set[str]]':
+    def edges_to_process_cache_init(self) -> "dict[str, set[str]]":
         result = {}
         for edge_dict in self.treeaut.transitions.values():
             for key, edge in edge_dict.items():
@@ -67,9 +67,9 @@ class NormalizationHelper:
 
     def check_for_unprocessed_states(self):
         """
-            Checking if some macrostate from current worklist has not yet been fully
-            processed = i.e. some edge leading to some state from the macrostate
-            has not yet been encountered.
+        Checking if some macrostate from current worklist has not yet been fully
+        processed = i.e. some edge leading to some state from the macrostate
+        has not yet been encountered.
         """
         temp = []
         for macrostate in self.worklist:
@@ -101,14 +101,14 @@ class NormalizationHelper:
     def print_edge_lookup(self):
         # cleaning norm.edge_lookup
         to_pop = []
-        for i,j in self.edge_lookup.items():
+        for i, j in self.edge_lookup.items():
             if j == set():
                 to_pop.append(i)
         for item in to_pop:
             self.edge_lookup.pop(item)
 
         result = ""
-        for i,j in self.edge_lookup.items():
+        for i, j in self.edge_lookup.items():
             result += f"{i} = ["
             for key in j:
                 result += f"{key},"
@@ -131,12 +131,7 @@ class NormalizationHelper:
         print(worklist_str)
 
 
-def process_possible_edges(
-    tuple: list,
-    norm: NormalizationHelper,
-    current_var: str,
-    symbol: str
-):
+def process_possible_edges(tuple: list, norm: NormalizationHelper, current_var: str, symbol: str):
     children_lists = [list(i) for i in product(*tuple)]
     new_macrostate = set()
     force_var = False
@@ -178,7 +173,7 @@ def process_possible_edges(
         # if self-loop (even partial), then no variable on edge
         # variable appears only if that was the case in the original UBDA
         if new_macrostate in tuple or not force_var:
-        # if new_macrostate in tuple:
+            # if new_macrostate in tuple:
             added_var = ""
         else:
             added_var = current_var
@@ -254,10 +249,7 @@ def remove_bad_transitions(ta: TTreeAut, vars: list, norm):
     for edge in iterate_edges(ta):
         if edge.info.variable == "":
             continue
-        if (
-            edge.src not in max_var_cache or
-            max_var_cache[edge.src] < var_index[edge.info.variable]
-        ):
+        if edge.src not in max_var_cache or max_var_cache[edge.src] < var_index[edge.info.variable]:
             max_var_cache[edge.src] = var_index[edge.info.variable]
 
     flagged_edges = set()
@@ -294,6 +286,7 @@ def create_treeaut_from_helper(norm: NormalizationHelper) -> TTreeAut:
     result = TTreeAut(roots, transition_dict, name, norm.treeaut.port_arity)
     return result
 
+
 # This function performs a bottom-up check of normalization.
 # Each combination of children is supposed to meet parents through
 # a few transitions. In normalized UBDA the transitions do not repeat the same
@@ -302,9 +295,9 @@ def create_treeaut_from_helper(norm: NormalizationHelper) -> TTreeAut:
 def is_normalized(ta: TTreeAut, verbose=False) -> bool:
     # lookup = edge symbol -> children array key ->
     # set of variables over all transitions from parent to child
-    result: 'dict[str, dict[str, set]]' = {}
+    result: "dict[str, dict[str, set]]" = {}
 
-    duplicateEdges: 'list[TTransition]' = []
+    duplicateEdges: "list[TTransition]" = []
 
     for symbol, arity in ta.get_symbol_arity_dict().items():
         if arity != 0:
@@ -342,5 +335,6 @@ def is_normalized(ta: TTreeAut, verbose=False) -> bool:
             eprint(f"edge {str(edge)[4:]} disrupts normalized property")
 
     return duplicateEdges == []
+
 
 # End of normalization.py

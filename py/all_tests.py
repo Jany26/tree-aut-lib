@@ -44,9 +44,11 @@ def match_test(function: str, ta: str, tree: str, expected_result, failures):
     test_tree = test_tree_dict[tree]
     actual_result = func(box, test_tree)
     if expected_result != actual_result:
-        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
-            f"{function}({ta}, {tree})", str(expected_result), str(actual_result)
-        ))
+        failures.append(
+            "{:<50} | expected = {:>5} | got = {:>5}".format(
+                f"{function}({ta}, {tree})", str(expected_result), str(actual_result)
+            )
+        )
 
 
 def non_empty_test(function: str, ta: str, expected_result, failures):
@@ -55,18 +57,23 @@ def non_empty_test(function: str, ta: str, expected_result, failures):
     test_tree, test_str = func(box)
     actual_result = False if (test_tree is None or test_str == "") else True
     if expected_result != actual_result:
-        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
-            f"{function}({ta})", str(expected_result), str(actual_result)
-        ))
+        failures.append(
+            "{:<50} | expected = {:>5} | got = {:>5}".format(
+                f"{function}({ta})", str(expected_result), str(actual_result)
+            )
+        )
 
 
 def well_defined_test(ta: str, expected_result, err_display, failures):
     box = boxes_dict[ta]
     actual_result = is_well_defined(box, err_display)
     if actual_result != expected_result:
-        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
-            f"is_well_defined({ta})", str(expected_result), str(actual_result)
-        ))
+        failures.append(
+            "{:<50} | expected = {:>5} | got = {:>5}".format(
+                f"is_well_defined({ta})", str(expected_result), str(actual_result)
+            )
+        )
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # TESTS FOR SUBFUNCTIONS
@@ -77,9 +84,9 @@ def get_output_states_tests():
     print(" > SUBUNIT TEST: testing get_output_states_tests() ...")
     failures = []
 
-    if not box_X.get_output_states() == ['q1']:
+    if not box_X.get_output_states() == ["q1"]:
         failures.append("boxX.get_output_states_tests()")
-    if not box_H1.get_output_states() == ['u1', 'u2']:
+    if not box_H1.get_output_states() == ["u1", "u2"]:
         failures.append("boxH1.get_output_states_tests()")
 
     print_failed_tests(failures)
@@ -89,17 +96,17 @@ def get_arity_dict_tests():
     print(" > SUBUNIT TEST: testing get_arity_dict() ...")
     failures = []
 
-    if box_X.get_symbol_arity_dict() != {'LH': 2, 'Port_X': 0}:
+    if box_X.get_symbol_arity_dict() != {"LH": 2, "Port_X": 0}:
         failures.append("boxX.get_symbol_arity_dict()")
-    if box_L0.get_symbol_arity_dict() != {'LH': 2, '0': 0, 'Port_L0': 0}:
+    if box_L0.get_symbol_arity_dict() != {"LH": 2, "0": 0, "Port_L0": 0}:
         failures.append("boxL0.get_symbol_arity_dict()")
-    if box_L1.get_symbol_arity_dict() != {'LH': 2, '1': 0, 'Port_L1': 0}:
+    if box_L1.get_symbol_arity_dict() != {"LH": 2, "1": 0, "Port_L1": 0}:
         failures.append("boxL1.get_symbol_arity_dict()")
-    if box_H0.get_symbol_arity_dict() != {'LH': 2, 'Port_H0': 0, '0': 0}:
+    if box_H0.get_symbol_arity_dict() != {"LH": 2, "Port_H0": 0, "0": 0}:
         failures.append("boxH0.get_symbol_arity_dict()")
-    if box_H1.get_symbol_arity_dict() != {'LH': 2, 'Port_H1': 0, '1': 0}:
+    if box_H1.get_symbol_arity_dict() != {"LH": 2, "Port_H1": 0, "1": 0}:
         failures.append("boxH1.get_symbol_arity_dict()")
-    if box_LPort.get_symbol_arity_dict() != {'LH': 2, 'Port_LPort0': 0, 'Port_LPort1': 0}:
+    if box_LPort.get_symbol_arity_dict() != {"LH": 2, "Port_LPort0": 0, "Port_LPort1": 0}:
         failures.append("boxLPort.get_symbol_arity_dict()")
 
     print_failed_tests(failures)
@@ -110,10 +117,10 @@ def remove_state_tests():
     failures = []
 
     box_L0_without_r2 = copy.deepcopy(box_L0)
-    box_L0_without_r2.remove_state('r2')
+    box_L0_without_r2.remove_state("r2")
     boxes_dict["boxL0withoutR2"] = box_L0_without_r2
     box_L1_without_s0 = copy.deepcopy(box_L1)
-    box_L1_without_s0.remove_state('s0')
+    box_L1_without_s0.remove_state("s0")
     boxes_dict["boxL1withoutS0"] = box_L1_without_s0
 
     match_test("match_tree_top_down", "boxL0withoutR2", "treeL0test1", False, failures)
@@ -133,18 +140,19 @@ def generate_tuples_test():
     print(" > SUBUNIT TEST: testing generator of possible_children_tuples ...")
     failures = []
 
-    if len(generate_possible_children('q0', ['q0', 'q1', 'q2'], 3)) != 19:
+    if len(generate_possible_children("q0", ["q0", "q1", "q2"], 3)) != 19:
         failures.append("generate_possible_children('q0', ['q0', 'q1', 'q2'], 3)")
-    if len(generate_possible_children('q0', ['q0', 'q1'], 3)) != 7:
+    if len(generate_possible_children("q0", ["q0", "q1"], 3)) != 7:
         failures.append("generate_possible_children('q0', ['q0', 'q1'], 3)")
-    if len(generate_possible_children('q0', ['q0', 'q1'], 2)) != 3:
+    if len(generate_possible_children("q0", ["q0", "q1"], 2)) != 3:
         failures.append("generate_possible_children('q0', ['q0', 'q1'], 2)")
-    if len(generate_possible_children('q0', ['q0', 'q1', 'q2', 'q3', 'q4'], 3)) != 61:
+    if len(generate_possible_children("q0", ["q0", "q1", "q2", "q3", "q4"], 3)) != 61:
         failures.append("generate_possible_children('q0', ['q0', 'q1', 'q2', 'q3', 'q4'], 3)")
-    if len(generate_possible_children('q0', ['q0', 'q1'], 4)) != 15:
+    if len(generate_possible_children("q0", ["q0", "q1"], 4)) != 15:
         failures.append("generate_possible_children('q0', ['q0', 'q1'], 4)")
 
     print_failed_tests(failures)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -189,6 +197,7 @@ def match_tests_top_down():
     match_test("match_tree_top_down", "boxH1", "treeH1test4", True, failures)
 
     print_failed_tests(failures)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -235,6 +244,7 @@ def match_tests_bottom_up():
     match_test("match_tree_bottom_up", "boxH1", "treeH1test4", True, failures)
 
     print_failed_tests(failures)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -337,6 +347,7 @@ def sanity_tests():
     f.write("\n---- SANITY TESTS END ----\n")
     f.close()
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -380,6 +391,7 @@ def union_tests():
 
     print_failed_tests(failures)
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -418,6 +430,7 @@ def intersection_tests():
     non_empty_test("non_empty_bottom_up", "intersectionH1H1", True, failures)
 
     print_failed_tests(failures)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -528,6 +541,7 @@ def complement_tests():
 
     print_failed_tests(failures)
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -552,6 +566,7 @@ def non_empty_top_down_tests():
     non_empty_test("non_empty_top_down", "intersectionH0H1", False, failures)
 
     print_failed_tests(failures)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -578,6 +593,7 @@ def non_empty_bottom_up_tests():
 
     print_failed_tests(failures)
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
@@ -585,16 +601,17 @@ def reachability_top_down_tests():
     print(" > SUBUNIT TEST: testing top-down reachability() ...")
     failures = []
 
-    if set(reachable_top_down(test_unreachable_1)) != set(['q0', 'q1']):
+    if set(reachable_top_down(test_unreachable_1)) != set(["q0", "q1"]):
         failures.append("reachable_top_down(test_unreachable_1)")
-    if set(reachable_top_down(test_unreachable_2)) != set(['q0', 'q1', 'q2', 'q3']):
+    if set(reachable_top_down(test_unreachable_2)) != set(["q0", "q1", "q2", "q3"]):
         failures.append("reachable_top_down(test_unreachable_2")
-    if set(reachable_top_down(test_unreachable_3)) != set(['q0', 'q1', 'q2', 'q3']):
+    if set(reachable_top_down(test_unreachable_3)) != set(["q0", "q1", "q2", "q3"]):
         failures.append("reachable_top_down(test_unreachable_3)")
-    if set(reachable_top_down(copy.deepcopy(box_L0))) != set(['r0', 'r1', 'r2']):
+    if set(reachable_top_down(copy.deepcopy(box_L0))) != set(["r0", "r1", "r2"]):
         failures.append("reachable_top_down(boxL0copy)")
 
     print_failed_tests(failures)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -603,16 +620,17 @@ def reachability_bottom_up_tests():
     print(" > SUBUNIT TEST: testing bottom-up reachability() ...")
     failures = []
 
-    if set(reachable_bottom_up(test_unreachable_1)) != set(['q1']):
+    if set(reachable_bottom_up(test_unreachable_1)) != set(["q1"]):
         failures.append("reachable_bottom_up(test_unreachable_1)")
-    if set(reachable_bottom_up(test_unreachable_2)) != set(['q0', 'q1', 'q2', 'q3']):
+    if set(reachable_bottom_up(test_unreachable_2)) != set(["q0", "q1", "q2", "q3"]):
         failures.append("reachable_bottom_up(test_unreachable_2")
-    if set(reachable_bottom_up(test_unreachable_3)) != set(['q0', 'q1', 'q2', 'q3']):
+    if set(reachable_bottom_up(test_unreachable_3)) != set(["q0", "q1", "q2", "q3"]):
         failures.append("reachable_bottom_up(test_unreachable_3)")
-    if set(reachable_bottom_up(copy.deepcopy(box_L0))) != set(['r0', 'r1', 'r2']):
+    if set(reachable_bottom_up(copy.deepcopy(box_L0))) != set(["r0", "r1", "r2"]):
         failures.append("reachable_bottom_up(boxL0copy)")
 
     print_failed_tests(failures)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -627,9 +645,9 @@ def trimming_tests():
 
     if set(clean_test_box_1.get_states()) != set([]):
         failures.append("remove_useless_states(test_unreachable_1)")
-    if set(clean_test_box_2a.get_states()) != set(['q0', 'q1', 'q2', 'q3']):
+    if set(clean_test_box_2a.get_states()) != set(["q0", "q1", "q2", "q3"]):
         failures.append("remove_useless_states(test_unreachable_2)")
-    if set(clean_test_box_2b.get_states()) != set(['q0', 'q1', 'q2', 'q3']):
+    if set(clean_test_box_2b.get_states()) != set(["q0", "q1", "q2", "q3"]):
         failures.append("remove_useless_states(test_unreachable_3)")
 
     # now this test will fail, as edges are not simply strings,
@@ -639,6 +657,7 @@ def trimming_tests():
     #     failures.append("remove_useless_states(copy.deepcopy(boxL0))")
 
     print_failed_tests(failures)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -653,7 +672,7 @@ def vtf_import_tests():
                 continue
             else:
                 try:
-                    test_box = import_treeaut_from_vtf(filepath, 'f')
+                    test_box = import_treeaut_from_vtf(filepath, "f")
                 except Exception as e:
                     failures.append(f"import_treeaut_from_vtf({filepath})")
     print_failed_tests(failures)
@@ -668,10 +687,11 @@ def vtf_export_tests():
 
     for name, box in boxes_dict.items():
         try:
-            export_treeaut_to_vtf(box, f"../data/vtf/{name}.vtf", 'f')
+            export_treeaut_to_vtf(box, f"../data/vtf/{name}.vtf", "f")
         except Exception as e:
             failures.append(f"export_treeaut_to_vtf(out/{name}.vtf)")
     print_failed_tests(failures)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -706,7 +726,7 @@ def dot_export_from_vtf_tests():
                     dot_filepath = "../data/vtf-to-dot/"
                     dot_filepath += file
                     dot_filepath = dot_filepath[:-4] + ".dot"
-                    ta = import_treeaut_from_vtf(filepath, 'f')
+                    ta = import_treeaut_from_vtf(filepath, "f")
                     export_treeaut_to_dot(ta, dot_filepath)
                 except Exception as e:
                     failures.append(f"export_from_vtf_to_dot({filepath}, {dot_filepath})")
@@ -829,13 +849,17 @@ def commutativity_test(ta1: str, ta2: str, expected_result, verbose, failures):
     actual_result1 = are_commutative(box1, box2)
     actual_result2 = are_commutative(box2, box1)
     if expected_result != actual_result1:
-        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
-            f"are_commutative({ta1}, {ta2})", str(expected_result), str(actual_result1)
-        ))
+        failures.append(
+            "{:<50} | expected = {:>5} | got = {:>5}".format(
+                f"are_commutative({ta1}, {ta2})", str(expected_result), str(actual_result1)
+            )
+        )
     if expected_result != actual_result2:
-        failures.append("{:<50} | expected = {:>5} | got = {:>5}".format(
-            f"are_commutative({ta2}, {ta1})", str(expected_result), str(actual_result2)
-        ))
+        failures.append(
+            "{:<50} | expected = {:>5} | got = {:>5}".format(
+                f"are_commutative({ta2}, {ta1})", str(expected_result), str(actual_result2)
+            )
+        )
     if verbose and actual_result1 != actual_result2:
         print("WARNING: commutativity test gives inconsistent results")
 
@@ -895,9 +919,9 @@ def comparability_test_simple(ta1, ta2, exp, failures):
     res = are_comparable(box1, box2)
     # if res != exp:
     if res != exp:
-        failures.append("{:<50} | {:>15} | {:>15}".format(
-            f"comparing... {ta1} > {ta2} ?", f"expected = {exp}", f"result = {res}"
-        ))
+        failures.append(
+            "{:<50} | {:>15} | {:>15}".format(f"comparing... {ta1} > {ta2} ?", f"expected = {exp}", f"result = {res}")
+        )
         # failures[len(failures)-1] += "   err"
 
 
@@ -966,14 +990,13 @@ def product_tests():
     def product_unit_test(ta1, ta2, expect, failures):
         result = tree_aut_product(ta1, ta2)
         witness_tree, witness_str = non_empty_top_down(result)
-        actual = (witness_tree is not None)  # actual = can witness be produced?
+        actual = witness_tree is not None  # actual = can witness be produced?
         if expect != actual:
-            failures.append("{:<50} {:<20} {:<15} {:<15}".format(
-                f"product({ta1.name},{ta2.name})",
-                f"has witness?",
-                f"exp = {expect}",
-                f"got = {actual}"
-            ))
+            failures.append(
+                "{:<50} {:<20} {:<15} {:<15}".format(
+                    f"product({ta1.name},{ta2.name})", f"has witness?", f"exp = {expect}", f"got = {actual}"
+                )
+            )
 
     X = import_treeaut_from_vtf("../tests/boxes-top_downdet/tddetX.vtf")
     LPort = import_treeaut_from_vtf("../tests/boxes-top_downdet/tddetLPort.vtf")
@@ -1024,12 +1047,11 @@ def extension_tests():
     def extension_unit_test(ta1, ta2, expect, failures):
         actual = is_extension(ta1, ta2)
         if expect != actual:
-            failures.append("{:<50} {:<20} {:<15} {:<15}".format(
-                f"extension({ta1.name},{ta2.name})",
-                f"has witness?",
-                f"exp = {expect}",
-                f"got = {actual}"
-            ))
+            failures.append(
+                "{:<50} {:<20} {:<15} {:<15}".format(
+                    f"extension({ta1.name},{ta2.name})", f"has witness?", f"exp = {expect}", f"got = {actual}"
+                )
+            )
 
     X = import_treeaut_from_vtf("../tests/boxes-top_downdet/tddetX.vtf")
     LPort = import_treeaut_from_vtf("../tests/boxes-top_downdet/tddetLPort.vtf")
@@ -1078,13 +1100,11 @@ def extension_tests():
 
 def unfolding_tests():
     def test_unfolding(folded_treeaut_path, exp: bool, failures):
-        ta = import_treeaut_from_vtf(folded_treeaut_path, 'f')
+        ta = import_treeaut_from_vtf(folded_treeaut_path, "f")
         ta = unfold(ta)
         res = is_unfolded(ta)
         if res != exp:
-            failures.append(
-                f"is_unfolded({ta.name}): expected {exp}, got {res}"
-            )
+            failures.append(f"is_unfolded({ta.name}): expected {exp}, got {res}")
 
     print(" > SUBUNIT TEST: testing unfolding ...")
     failures = []
@@ -1099,7 +1119,7 @@ def unfolding_tests():
 
 def normalization_tests():
     def test_normalization(unfolded_treeaut_path, exp: bool, failures, unfolding=False):
-        ta = import_treeaut_from_vtf(unfolded_treeaut_path, 'f')
+        ta = import_treeaut_from_vtf(unfolded_treeaut_path, "f")
         symbols = ta.get_symbol_arity_dict()
         variables = [f"x" + f"{i+1}" for i in range(8)]
         if unfolding:
@@ -1107,18 +1127,14 @@ def normalization_tests():
         ta = tree_aut_normalize(ta, symbols, variables)
         res = is_normalized(ta)
         if res != exp:
-            failures.append(
-                f"is_normalized({ta.name}): expected {exp}, got {res}"
-            )
-    def normalization_unit_test(
-        path, states: list, max_var: int, vars: list, failures: list,
-        unfolded=False
-    ):
+            failures.append(f"is_normalized({ta.name}): expected {exp}, got {res}")
+
+    def normalization_unit_test(path, states: list, max_var: int, vars: list, failures: list, unfolded=False):
         ta = import_treeaut_from_vtf(path)
         if not unfolded:
             ta = unfold(ta)
             ta.reformat_states()
-        ta = tree_aut_normalize(ta, create_var_order('x', max_var))
+        ta = tree_aut_normalize(ta, create_var_order("x", max_var))
         result = True
         if ta.get_var_occurence() != vars:
             result = False
@@ -1145,17 +1161,27 @@ def normalization_tests():
     test_normalization("../tests/normalization/normalizationTest4.vtf", True, failures)
 
     path1 = "../tests/unfolding/unfoldingTest1.vtf"
-    states1 = ['{q0,q1,q2,q3}', '{q1,q2,q3}', '{q3,q4,q5}', '{q6}', '{q7}']
+    states1 = ["{q0,q1,q2,q3}", "{q1,q2,q3}", "{q3,q4,q5}", "{q6}", "{q7}"]
     normalization_unit_test(path1, states1, 4, [1, 3, 4, 4], failures)
 
     path2 = "../tests/normalization/newNormTest5.vtf"
-    states2 = ['{q1}', '{q3}', '{q2,q4}', '{q2}', '{q6}', '{q5}', '{q7}']
+    states2 = ["{q1}", "{q3}", "{q2,q4}", "{q2}", "{q6}", "{q5}", "{q7}"]
     normalization_unit_test(path2, states2, 7, [1, 7, 7], failures, unfolded=True)
 
     path3 = "../tests/normalization/newNormTest4-loops.vtf"
     states3 = [
-        '{q0}', '{q5,q12}', '{q13,q14,q16}', '{q9,q14}', '{q11,q12,q15}', '{q1,q3,q7}',
-        '{q4,q8,q10}', '{q8}', '{q6}', '{q3,q6,q7}', '{q2,q4,q10}', '{q6,q8}'
+        "{q0}",
+        "{q5,q12}",
+        "{q13,q14,q16}",
+        "{q9,q14}",
+        "{q11,q12,q15}",
+        "{q1,q3,q7}",
+        "{q4,q8,q10}",
+        "{q8}",
+        "{q6}",
+        "{q3,q6,q7}",
+        "{q2,q4,q10}",
+        "{q6,q8}",
     ]
     normalization_unit_test(path3, states3, 9, [1, 4, 6, 9, 9], failures)
 
@@ -1167,9 +1193,8 @@ def folding_intersectoid_relation_test():
         map1 = get_maximal_mapping_fixed(intersectoid, ta, port_to_state_mapping(intersectoid))
         map2 = get_mapping(intersectoid, ta)
         if map1 != map2:
-            failures.append(
-                f"compareMappings({ta.name}, {intersectoid.name}): expected {map1}, got {map2}"
-            )
+            failures.append(f"compareMappings({ta.name}, {intersectoid.name}): expected {map1}, got {map2}")
+
     failures = []
     bda1 = import_treeaut_from_vtf(".../tests/reachability/1_bda.vtf")
     bda2 = import_treeaut_from_vtf(".../tests/reachability/2_bda.vtf")
@@ -1193,10 +1218,10 @@ def folding_compare(treeaut: TTreeAut, vars: int, boxorder: list, failures: list
     initial = add_dont_care_boxes(treeaut, vars)
     unfolded = unfold(initial)
     add_variables_bottom_up(unfolded, vars)
-    normalized = tree_aut_normalize(unfolded, create_var_order('', vars+1))
+    normalized = tree_aut_normalize(unfolded, create_var_order("", vars + 1))
     normalized.reformat_keys()
     normalized.reformat_states()
-    folded = tree_aut_folding(normalized, boxorder, vars+1)
+    folded = tree_aut_folding(normalized, boxorder, vars + 1)
     folded = remove_useless_states(folded)
     unfolded = unfold(folded)
     add_variables_bottom_up(unfolded, vars)
@@ -1210,9 +1235,9 @@ def folding_tests():
     def folding_debug_march_8() -> bool:
         ta = import_treeaut_from_vtf("../tests/folding/foldingTest2-ta.vtf")
         box = import_treeaut_from_vtf("../tests/folding/foldingTest2-box.vtf")
-        box.name = 'test'
-        box_catalogue['test'] = box
-        treeaut_folded = tree_aut_folding(ta, ['test'], 8, verbose=False)
+        box.name = "test"
+        box_catalogue["test"] = box
+        treeaut_folded = tree_aut_folding(ta, ["test"], 8, verbose=False)
         treeaut_folded.reformat_keys()
         treeaut_folded.reformat_states()
         boxes = 0
@@ -1225,13 +1250,14 @@ def folding_tests():
         if boxes != 4 or edges != 4 or len(treeaut_folded.get_states()) != 3:
             return False
         return True
+
     print(" > SUBUNIT TEST: testing folding ...")
     failures = []
     treeaut1 = import_treeaut_from_vtf("../tests/folding/folding-error-1.vtf")
     treeaut2 = import_treeaut_from_vtf("../tests/folding/foldingTest1.vtf")
     treeaut3 = import_treeaut_from_vtf("../tests/folding/folding-error-6.vtf")
 
-    boxorder = box_orders['full']
+    boxorder = box_orders["full"]
     res1 = folding_compare(treeaut1, 5, boxorder, failures)
     res2 = folding_compare(treeaut2, 5, boxorder, failures)
     res3 = folding_compare(treeaut3, 5, boxorder, failures)
@@ -1241,39 +1267,38 @@ def folding_tests():
     print_failed_tests(failures)
 
 
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # BDD testing
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def bdd_test():
 
-    a = BDDnode('a', 'x1')
-    b = BDDnode('b', 'x2')
-    c = BDDnode('c', 'x3')
-    d = BDDnode('d', 'x4')
-    e = BDDnode('0', 'x5')
-    f = BDDnode('1', 'x6')
+    a = BDDnode("a", "x1")
+    b = BDDnode("b", "x2")
+    c = BDDnode("c", "x3")
+    d = BDDnode("d", "x4")
+    e = BDDnode("0", "x5")
+    f = BDDnode("1", "x6")
 
     a.attach(b, c)
     b.attach(e, f)
     c.attach(d, e)
     d.attach(f, f)
 
-    bdd1 = BDD('test1', a)
+    bdd1 = BDD("test1", a)
 
-    q0 = BDDnode('e', 'x1')
-    q1 = BDDnode('f', 'x2')
-    q2 = BDDnode('g', 'x3')
-    q3 = BDDnode('h', 'x4')
-    q4 = BDDnode('0', 'x5')
-    q5 = BDDnode('1', 'x6')
+    q0 = BDDnode("e", "x1")
+    q1 = BDDnode("f", "x2")
+    q2 = BDDnode("g", "x3")
+    q3 = BDDnode("h", "x4")
+    q4 = BDDnode("0", "x5")
+    q5 = BDDnode("1", "x6")
 
     q0.attach(q1, q2)
     q1.attach(q4, q5)
     q2.attach(q3, q4)
     q3.attach(q5, q5)
 
-    bdd2 = BDD('test2', q0)
+    bdd2 = BDD("test2", q0)
     print(compare_bdds(bdd1, bdd2))
     bdd1.print_bdd()
     bdd2.print_bdd()
@@ -1281,28 +1306,30 @@ def bdd_test():
 
 
 def apply_test():
-    t0 = BDDnode('t0', 0)
-    t1 = BDDnode('t1', 1)
-    n1 = BDDnode('n1', 'x4', t0, t1)
-    n2 = BDDnode('n2', 'x2', t0, t1)
-    n3 = BDDnode('n3', 'x1', n1, n2)
-    bdd1 = BDD('test1', n3)
+    t0 = BDDnode("t0", 0)
+    t1 = BDDnode("t1", 1)
+    n1 = BDDnode("n1", "x4", t0, t1)
+    n2 = BDDnode("n2", "x2", t0, t1)
+    n3 = BDDnode("n3", "x1", n1, n2)
+    bdd1 = BDD("test1", n3)
     # bdd1.print_bdd()
-    t0 = BDDnode('t0', 0)
-    t1 = BDDnode('t1', 1)
-    n1 = BDDnode('n1', 'x2', t0, t1)
-    n2 = BDDnode('n2', 'x4', t0, t1)
-    n3 = BDDnode('n3', 'x1', n1, n2)
-    bdd2 = BDD('test2', n3)
+    t0 = BDDnode("t0", 0)
+    t1 = BDDnode("t1", 1)
+    n1 = BDDnode("n1", "x2", t0, t1)
+    n2 = BDDnode("n2", "x4", t0, t1)
+    n3 = BDDnode("n3", "x1", n1, n2)
+    bdd2 = BDD("test2", n3)
     # bdd2.print_bdd()
-    bdd3 = apply_function('or', bdd1, bdd2, var_order=None)
+    bdd3 = apply_function("or", bdd1, bdd2, var_order=None)
     print(bdd3)
+
 
 def extra_tests():
     pass
 
+
 def main(config: dict):
-    if "helpers" in config and config['helpers']:
+    if "helpers" in config and config["helpers"]:
         print(">> UNIT TEST: helper functions ...")
         get_output_states_tests()
         get_arity_dict_tests()
@@ -1357,7 +1384,7 @@ def main(config: dict):
         # folding_tests()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     config = {
         "helpers": True,
         "match": True,

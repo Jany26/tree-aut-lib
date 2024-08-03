@@ -58,7 +58,7 @@ def load_transition_from_tmb(line: str) -> TTransition:
     rest = transition_data[0].strip()
     symbol, children_str = load_symbol(rest)
     child_states = replace_commas_in(children_str.strip())
-    child_states = child_states.split(';')
+    child_states = child_states.split(";")
     children = [state for state in child_states if state != ""]
     return TTransition(src_state, TEdge(symbol, [None] * len(children), ""), children)
 
@@ -92,16 +92,17 @@ def consistency_check_tmb(edges, states, arities) -> bool:
                     return False
     return True
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # IMPORT TA FROM TMB FILE/STRING
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def import_treeaut_from_tmb(source: str, source_type='f') -> TTreeAut:
-    if source_type == 'f':
+def import_treeaut_from_tmb(source: str, source_type="f") -> TTreeAut:
+    if source_type == "f":
         input_stream = open(source, "r")
-    elif source_type == 's':
-        input_stream = source.split('\n')
+    elif source_type == "s":
+        input_stream = source.split("\n")
     else:
         raise Exception(f"import_treeaut_from_tmb(): unsupported source type '{source_type}'")
 
@@ -122,7 +123,7 @@ def import_treeaut_from_tmb(source: str, source_type='f') -> TTreeAut:
         if line == "" or line.startswith("#") or line.startswith("//"):
             continue
 
-        if transition_done and not line.startswith('\n'):
+        if transition_done and not line.startswith("\n"):
             edge = load_transition_from_tmb(line)
             if edge == []:
                 continue
@@ -135,7 +136,7 @@ def import_treeaut_from_tmb(source: str, source_type='f') -> TTreeAut:
             continue
 
         if line.startswith("Automaton"):
-            name = line[len("Automaton"):].strip()
+            name = line[len("Automaton") :].strip()
             continue
         elif line.startswith("Ops"):
             arity_dict = load_arity_from_tmb(line)
@@ -165,6 +166,7 @@ def import_treeaut_from_tmb(source: str, source_type='f') -> TTreeAut:
         print("exception M")
         raise Exception(f"List of root states missing")
     return TTreeAut(roots, transition_dict, name)
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS FOR TMB EXPORT - FILE
@@ -210,6 +212,7 @@ def write_transitions_tmb_file(ta: TTreeAut, tgt):
             tgt.write("," if i < arity - 1 else "")
         tgt.write(f") -> {edge.src}\n")
     tgt.write("\n\n")
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS FOR TMB EXPORT - STRING
@@ -258,6 +261,7 @@ def write_transitions_tmb_str(ta):
     result += "\n\n"
     return result
 
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # EXPORT TA TO TMB FILE/STRING
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -273,5 +277,6 @@ def export_treeaut_to_tmb(ta: TTreeAut, filepath: str):
     write_roots_tmb_file(ta.roots, result)
     write_transitions_tmb_file(ta, result)
     result.close()
+
 
 # End of file format_tmb.py

@@ -4,23 +4,23 @@
 [description] some helper utilities used throughout other modules
 """
 
-
 import sys
 
 
 # boxOrder = ['X', 'LPort', 'HPort', 'L0', 'L1', 'H0', 'H1']
 # boxOrder = ['L0', 'L1', 'H0', 'H1', 'X']
-box_order = ['L0', 'L1', 'H0', 'H1', 'LPort', 'HPort']
+box_order = ["L0", "L1", "H0", "H1", "LPort", "HPort"]
 
 box_orders = {
-    "bdd": ['X'],
-    "zbdd": ['H0'],
-    "tbdd": ['X', 'H0'],
-    "cbdd": ['X', 'HPort'],
-    "czdd": ['H0', 'X'],
-    "esr": ['L0', 'H0', 'X'],
-    "full": ['L0', 'H0', 'L1', 'H1', 'X', 'LPort', 'HPort'],
+    "bdd": ["X"],
+    "zbdd": ["H0"],
+    "tbdd": ["X", "H0"],
+    "cbdd": ["X", "HPort"],
+    "czdd": ["H0", "X"],
+    "esr": ["L0", "H0", "X"],
+    "full": ["L0", "H0", "L1", "H1", "X", "LPort", "HPort"],
 }
+
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)

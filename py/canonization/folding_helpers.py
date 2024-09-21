@@ -14,7 +14,7 @@ from tree_automata import TTreeAut, TTransition, iterate_edges, remove_useless_s
 from tree_automata.functions.reachability import get_all_state_reachability
 from formats.render_dot import export_to_file
 from formats.format_vtf import export_treeaut_to_vtf
-from utils import box_catalogue
+from helpers.utils import box_catalogue
 
 
 class FoldingHelper:

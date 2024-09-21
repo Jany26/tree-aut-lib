@@ -7,7 +7,7 @@
 import copy
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges, iterate_states_bfs, shrink_to_top_down_reachable
-from utils import eprint, box_catalogue
+from helpers.utils import eprint, box_catalogue
 
 
 # Returns a list of states which have a port transition.

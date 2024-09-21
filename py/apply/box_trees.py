@@ -3,7 +3,7 @@ import sys
 from apply.apply_testing import tree_aut_equal
 from formats.format_vtf import import_treeaut_from_vtf
 from tree_automata import TTreeAut
-from utils import box_catalogue
+from helpers.utils import box_catalogue
 
 
 class BoxTreeNode:

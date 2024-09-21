@@ -8,7 +8,7 @@ for generating a graphical representation of the TA. (TEXT OUTPUT)
 """
 
 from tree_automata import TTreeAut, TTransition, iterate_edges
-from utils import box_catalogue
+from helpers.utils import box_catalogue
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # DOT FORMAT IMPORT/EXPORT

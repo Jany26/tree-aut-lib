@@ -12,7 +12,7 @@ import copy
 from blif_analysis import test_folding_on_sub_benchmarks, boxname_simplified_translation, formatBoxCounts
 from tree_automata import TTreeAut, reachable_top_down
 from tree_automata.var_manipulation import create_var_order_dict, add_variables_bottom_up
-from utils import box_orders
+from helpers.utils import box_orders
 from canonization.folding import ubda_folding
 from canonization.normalization import ubda_normalize
 from canonization.unfolding import ubda_unfolding

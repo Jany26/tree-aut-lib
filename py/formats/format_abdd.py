@@ -11,7 +11,7 @@ import copy
 import pathlib
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges, iterate_states_bfs
-from utils import box_catalogue
+from helpers.utils import box_catalogue
 
 
 # @ABDD     # Automata-based reduction BDDs

@@ -11,7 +11,7 @@ from canonization.normalization import ubda_normalize
 from experiments.simulation import simulate_and_compare
 from tree_automata.var_manipulation import add_variables_bottom_up
 from helpers.string_manipulation import create_var_order_dict
-from utils import box_catalogue, box_orders
+from helpers.utils import box_catalogue, box_orders
 
 
 class TestABDDFolding(unittest.TestCase):

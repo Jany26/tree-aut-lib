@@ -3,7 +3,7 @@ from enum import Enum
 
 from formats.format_vtf import export_treeaut_to_vtf
 from formats.render_dot import export_to_file
-from utils import box_catalogue
+from helpers.utils import box_catalogue
 from tree_automata import (
     TEdge,
     TTransition,

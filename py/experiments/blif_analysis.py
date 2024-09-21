@@ -22,7 +22,7 @@ from canonization.folding import ubda_folding
 from canonization.unfolding import ubda_unfolding
 
 from bdd.bdd_to_treeaut import add_dont_care_boxes
-from utils import box_orders
+from helpers.utils import box_orders
 
 
 def checkVariableNaming(file):

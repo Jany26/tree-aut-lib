@@ -25,7 +25,7 @@ from canonization.folding_intersectoid import (
     reduce_portable_states,
     add_variables_top_down,
 )
-from utils import box_catalogue
+from helpers.utils import box_catalogue
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

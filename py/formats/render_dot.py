@@ -17,7 +17,7 @@ from bdd.bdd_node import BDDnode
 from formats.format_vtf import import_treeaut_from_vtf, export_treeaut_to_vtf
 from formats.format_tmb import import_treeaut_from_tmb, export_treeaut_to_tmb
 
-from utils import box_catalogue
+from helpers.utils import box_catalogue
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

@@ -8,7 +8,7 @@
 from typing import Union, List, Dict
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges
-from tree_automata.var_manipulation import get_var_prefix, assign_variables_dict
+from helpers.string_manipulation import get_var_prefix, assign_variables_dict
 from bdd.bdd_class import BDD
 
 
@@ -260,9 +260,12 @@ def simulate_run_treeaut_dict(ta: TTreeAut, assignment: list | dict, verbose=Fal
 
 
 def leafify(ta: TTreeAut, state: str, value: str | int):
+    """
+    Turns a state into a leaf - output transition will be labeled with the max variable visible.
+    """
     keys_to_pop = [key for key in ta.transitions[state].keys()]
-    vis = ta.get_var_visibility()
-    max_var = max(vis[state])
+    vars_visible_from_state = ta.get_var_visibility()
+    max_var = max(vars_visible_from_state[state])
     for key in keys_to_pop:
         ta.transitions[state].pop(key)
     new_edge = TTransition(state, TEdge(str(value), [], f"{max_var}"), [])

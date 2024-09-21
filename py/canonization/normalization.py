@@ -12,7 +12,7 @@ import itertools
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges
 from tree_automata.automaton import state_name_sort
-from tree_automata.functions.determinization import det_create_name
+from helpers.string_manipulation import create_string_from_name_set
 
 
 class NormalizationHelper:
@@ -128,7 +128,7 @@ class NormalizationHelper:
                 for key in self.edge_lookup[j]:
                     key_set.add(key)
             key_list = list(key_set)
-            worklist_str += f" | {det_create_name(i)}"
+            worklist_str += f" | {create_string_from_name_set(i)}"
         print(worklist_str)
 
 
@@ -207,17 +207,17 @@ def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTre
         # norm.var_worklist[var].append(state_list)
     if norm.verbose:
         if norm.output is None:
-            print(f"var: {var} | {[det_create_name(i) for i in norm.worklist]}")
+            print(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}")
         else:
-            norm.output.write(f"var: {var} | {[det_create_name(i) for i in norm.worklist]}\n")
+            norm.output.write(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}\n")
     while norm.variables != []:
         old_var = var
         var = norm.variables.pop(0)
         if norm.verbose:
             if norm.output is None:
-                print(f"var: {var} | {[det_create_name(i) for i in norm.worklist]}")
+                print(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}")
             else:
-                norm.output.write(f"var: {var} | {[det_create_name(i) for i in norm.worklist]}\n")
+                norm.output.write(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}\n")
         for sym in norm.symbols:
             tuples = []
             # for i in product(norm.var_worklist[old_var], repeat=norm.symbols[sym]):
@@ -271,14 +271,14 @@ def remove_bad_transitions(ta: TTreeAut, vars: list):
 
 def create_treeaut_from_helper(norm: NormalizationHelper) -> TTreeAut:
     name = f"normalized({norm.treeaut.name})"
-    roots = [det_create_name(i) for i in norm.roots.values()]
+    roots = [create_string_from_name_set(i) for i in norm.roots.values()]
     roots.sort()
     counter = 1
     transition_dict = {}
     for edge in norm.transitions:
-        src_state = det_create_name(edge[0])
+        src_state = create_string_from_name_set(edge[0])
         edge_info = TEdge(edge[1], [], edge[2])
-        children = [det_create_name(i) for i in edge[3]]
+        children = [create_string_from_name_set(i) for i in edge[3]]
         transition = TTransition(src_state, edge_info, children)
         if src_state not in transition_dict:
             transition_dict[src_state] = {}

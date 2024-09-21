@@ -1,14 +1,8 @@
 import copy
 from itertools import product
 
-from tree_automata.automaton import state_name_sort
+from helpers.string_manipulation import create_string_from_name_set
 from tree_automata import TTreeAut, TEdge, TTransition
-
-
-# creates a string (state name) from list of states -- e.g. '{a,b,c}'
-def det_create_name(state_list: list) -> str:
-    my_list = state_name_sort(state_list)
-    return "{" + ",".join(my_list) + "}"
 
 
 # Create a "reverse" transition dictionary, in which parents of specified edges
@@ -81,12 +75,12 @@ def det_create_relation(edge_list: list, alphabet: dict) -> dict:
     # print(f"> ALPHABET\n{alphabet}")
     for edge in edge_list:
         # print(f"  > EDGE = {edge}")
-        source = det_create_name(edge[0])
+        source = create_string_from_name_set(edge[0])
         symbol = TEdge(edge[1], [None] * alphabet[str(edge[1])], "")
         # print(f"    > SRC = {source}")
         # print(f"    > SYM = {edge[1]}")
         # print(f"    > CHI = {edge[2]}")
-        children = [det_create_name(i) for i in edge[2]]
+        children = [create_string_from_name_set(i) for i in edge[2]]
         key = f"{source}-{edge[1]}->({children})"
         if source not in edge_dict:
             edge_dict[source] = {}
@@ -99,7 +93,7 @@ def det_create_roots(done_states: list, roots: list) -> list:
     for done_set in done_states:
         for root in roots:
             if root in done_set:
-                result.add(det_create_name(done_set))
+                result.add(create_string_from_name_set(done_set))
     return list(result)
 
 

@@ -4,7 +4,7 @@ from formats.format_vtf import import_treeaut_from_vtf
 from formats.render_dot import export_to_file
 from canonization.normalization import ubda_normalize, is_normalized
 from tree_automata.functions.trimming import remove_useless_states
-from tree_automata.var_manipulation import create_var_order_dict
+from helpers.string_manipulation import create_var_order_dict
 from canonization.unfolding import ubda_unfolding
 
 

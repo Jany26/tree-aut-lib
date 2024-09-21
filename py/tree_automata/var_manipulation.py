@@ -1,5 +1,8 @@
+from typing import Dict, Tuple, Set, List
+
 from tree_automata.transition import TTransition, TEdge
-from tree_automata.automaton import state_name_sort as var_name_sort, iterate_edges, TTreeAut
+from tree_automata.automaton import iterate_edges, TTreeAut
+from helpers.string_manipulation import get_var_prefix
 
 
 # This is strictly for compacting the UBDA before output for testing purposes.
@@ -43,38 +46,6 @@ def compress_vars(ta: TTreeAut) -> TTreeAut:
     return result
 
 
-def create_var_order_dict(prefix: str, count: int, start=1):
-    return [f"{prefix}{i+start}" for i in range(count)]
-
-
-def create_var_order_apply(variables: list[str], terminals: list) -> dict:
-    """
-    Makes the list into a dictionary for easy lookup of indexing
-    """
-    if variables is not None:
-        variables = var_name_sort(variables)
-    result = {}
-    i = 1
-    for var in variables:
-        if var not in result:
-            result[var] = i
-            i += 1
-    # for t in terminals:
-    #     result[str(t)] = i
-    return result
-
-
-def get_var_prefix(var_list: list[str]) -> str:
-    if var_list == []:
-        return ""
-    prefix_len = 0
-    for i in range(len(var_list[0])):
-        if not var_list[0][i:].isnumeric():
-            prefix_len += 1
-    prefix = var_list[0][:prefix_len]
-    return prefix
-
-
 # For faster/more precise decision making, especially in unfolded UBDAs.
 # TODO: Needs fixing (see results/folding-error-2/...)
 def add_variables_bottom_up(ta: TTreeAut, max_var: int):
@@ -102,30 +73,32 @@ def add_variables_bottom_up(ta: TTreeAut, max_var: int):
     # end for
 
 
-# creates a list of variable truth-values indexed by their order
-# (the order in which they are evaluated during BDD top-down traversal)
-# if an ABDD has a variable range of size 10, this function would be used 2^10 times
-def assign_variables(num: int, size: int) -> list[int]:
-    result = []
-    division = num
-    for _ in range(size):
-        remainder = division % 2
-        division = division // 2
-        result.append(remainder)
-    result.reverse()
-    return result
+def add_variables_fixpoint(ta: TTreeAut, maxvar: int):
+    work_set = []
+
+    # state -> (minimum incoming variable, maximum outgoing variable, loop present)
+    visibility_cache: Dict[str, Tuple[int, int, bool]]
+    fixpoint_changed = True
+    for edge in iterate_edges(ta):
+        if not edge.is_self_loop() and edge.info.variable == "" and len(edge.children) != 0:
+            work_set.append(edge)
+
+    for i in work_set:
+        print(i)
+
+    while fixpoint_changed and work_set != []:
+        fixpoint_changed = False
 
 
-# creates a int (var index) -> int (0/1 = true/false) dictionary from an integer number
-# (iterated number in a cycle)
-# if an ABDD has a variable range of size 10, this function is used 2^10 times
-def assign_variables_dict(num: int, size: int) -> dict[int, int]:
-    result = []
-    division = num
-    for _ in range(size):
-        remainder = division % 2
-        division = division // 2
-        result.append(remainder)
-    result.reverse()
-    result_dict = {i + 1: result[i] for i in range(size)}
-    return result_dict
+def find_useless_loop_transitions(ta: TTreeAut) -> Dict[str, set[str]]:
+    """
+    Useless loop transitions will never be used, since there is only one variable that is checked while within the state.
+
+    E.g.:
+    q0 -- x1 -> (q1, q2)
+    q1 -- __ -> (q1, q1)  == this loop is useless
+    q1 -- x2 -> (q3, q4)  == for variables x3 or higher, the looping transition would not be useless.
+
+    Returns a state name -> set of transition keys dictionary to edges that can be removed.
+    """
+    var_translator = ta.var

@@ -9,7 +9,7 @@ for further testing/experimenting with tree automata.
 from bdd.bdd_class import BDD
 from bdd.bdd_node import BDDnode
 
-from tree_automata.var_manipulation import create_var_order_apply
+from helpers.string_manipulation import create_var_order_apply
 
 
 # This class is for saving and accessing data important for apply function

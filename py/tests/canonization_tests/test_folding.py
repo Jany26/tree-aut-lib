@@ -9,7 +9,8 @@ from canonization.folding import get_mapping, ubda_folding
 from canonization.folding_helpers import get_maximal_mapping_fixed, get_maximal_mapping, port_to_state_mapping
 from canonization.normalization import ubda_normalize
 from experiments.simulation import simulate_and_compare
-from tree_automata.var_manipulation import create_var_order_dict, add_variables_bottom_up
+from tree_automata.var_manipulation import add_variables_bottom_up
+from helpers.string_manipulation import create_var_order_dict
 from utils import box_catalogue, box_orders
 
 
@@ -85,7 +86,7 @@ class TestABDDFolding(unittest.TestCase):
         add_variables_bottom_up(normalized1, var_count)
         normalized1.reformat_keys()
         normalized1.reformat_states()
-        folded1 = remove_useless_states(ubda_folding(normalized1, boxorder, var_count + 1))
+        folded1 = remove_useless_states(ubda_folding(normalized1, boxorder, var_count))
         new_unfolded1 = ubda_unfolding(folded1)
         add_variables_bottom_up(new_unfolded1, var_count)
 
@@ -95,7 +96,8 @@ class TestABDDFolding(unittest.TestCase):
         # unfolded != new_unfolded -> see graphs
         # all var False -> different results
         # {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-        self.assertTrue(simulate_and_compare(unfolded1, new_unfolded1, var_count))
+        x = simulate_and_compare(unfolded1, new_unfolded1, var_count, debug=True)
+        self.assertTrue(x)
 
     def test_folding_compare_4(self):
         boxorder = box_orders["full"]

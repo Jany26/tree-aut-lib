@@ -120,7 +120,7 @@ def get_mapping(intersectoid: TTreeAut, varvis, reach: dict[str, set]) -> dict:
     (3) state names are in the format (s1,s2), where s1 comes from the treeaut
     and s2 comes from the box that was used during intersectoid creation)
     """
-    ports = {edge.info.label for edge in iterate_edges(intersectoid) if edge.info.label.startswith("Port")}
+    ports = set([edge.info.label for edge in iterate_edges(intersectoid) if edge.info.label.startswith("Port")])
     # varvis = intersectoid.get_var_visibility_cache()
     mapping = {}
     for port in ports:

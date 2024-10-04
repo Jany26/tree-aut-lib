@@ -1,33 +1,37 @@
 import copy
-from typing import Generator, Tuple, List, Set, Dict
+from typing import Generator
 
 from tree_automata.transition import TEdge, TTransition
-from helpers.string_manipulation import state_name_sort, get_var_prefix
+from helpers.string_manipulation import state_name_sort, get_var_prefix_from_list
 
 
-# Tree automaton class
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - has two attributes = dictionary of states and root state array
-#     transitions = dict (A) of dicts (B) referenced by state name
-#     inner dicts (B) are then referenced by transition names (arbitrary)
-#     the transition itself is then just a tuple of:
-#         - input state,
-#         - edge object (edge label, edge boxes, edge variable label)
-#         - array of output states (size of array = arity of the node)
-#     * all state and label names are considered as strings
-#
-#     In documentation, the naming convention will be:
-#     - TTreeAut consists of: array of root states and "state" dictionary
-#     - state dictionaries are referenced by names of the states
-#     - each state in the state dictionary references another dictionary
-#         - this will be called "transition" dictionary (for the current state)
-#         - the transition dictionary is referenced by arbitrary keys (for now)
 class TTreeAut:
+    """
+    Tree automaton class has two main attributes
+    1) Root state array.
+    2) Dictionary of states and their transitions.
+    Transitions = dict (A) of dicts (B) referenced by state name.
+    Inner dicts (B) are then referenced by transition names (arbitrary).
+
+    The transition itself consists of:
+    - input state,
+    - edge object (edge label, edge boxes, edge variable label)
+    - array of output states (size of array = arity of the node)
+        * all state and label names are considered as strings
+
+    In documentation, the naming convention will be:
+    - TTreeAut consists of: array of root states and "state" dictionary
+    - state dictionaries are referenced by names of the states
+    - each state in the state dictionary references another dictionary
+        - this will be called "transition" dictionary (for the current state)
+        - the transition dictionary is referenced by arbitrary keys (for now)
+    """
+
     def __init__(
-        self, roots: List[str], transitions: Dict[str, Dict[str, TTransition]], name: str, port_arity: int = 0
+        self, roots: list[str], transitions: dict[str, dict[str, TTransition]], name: str, port_arity: int = 0
     ):
-        self.roots: List[str] = roots
-        self.transitions: Dict[str, Dict[str, TTransition]] = transitions
+        self.roots: list[str] = roots
+        self.transitions: dict[str, dict[str, TTransition]] = transitions
         self.name: str = name
         self.port_arity: int = port_arity
         if self.port_arity == 0:
@@ -38,22 +42,22 @@ class TTreeAut:
 
     def __repr__(self):
         # printing tree automaton header
-        result = ""
+        result: str = ""
         # result = "-" * 78 + '\n'
         result += f"  [TreeAut]: '{self.name}'\n"
         result += f"  > Root States = {self.roots}\n"
 
-        src_str = "source"
-        edge_str = "edge"
-        child_str = "child #"
-        key_str = "key"
+        src_str: str = "source"
+        edge_str: str = "edge"
+        child_str: str = "child #"
+        key_str: str = "key"
 
         # computing lengths
         self.meta_data.recompute()
-        src_len = max(len(src_str), self.meta_data.state)
-        edge_len = max(len(edge_str), self.meta_data.edge)
-        child_len = max(len(child_str), self.meta_data.child)
-        key_len = max(len(key_str), self.meta_data.key)
+        src_len: int = max(len(src_str), self.meta_data.state)
+        edge_len: int = max(len(edge_str), self.meta_data.edge)
+        child_len: int = max(len(child_str), self.meta_data.child)
+        key_len: int = max(len(key_str), self.meta_data.key)
 
         # printing edge table header
         result += "  > %-*s -- %-*s --> " % (src_len, src_str, edge_len, edge_str)
@@ -85,20 +89,27 @@ class TTreeAut:
         # result = "-" * 78 + '\n'
         return result[:-1]  # trim the last '\n'
 
-    # Check if two TAs are equivalent... NOTE: wip
-    # An attempt to create an on-the-fly isomorphism check.
     def __eq__(self, ta):
-        # unique counter value will be used to compare states
-        # states will be stored in two separate hash-maps, values will be counters
-        # need to compare child counts,
-        # different, 'redundant' edges are stored in two separate places (maybe no)
+        """
+        Check if two TAs are equivalent... NOTE: wip
+        An attempt to create an on-the-fly isomorphism check.
+
+        - unique counter value will be used to compare states
+        - states will be stored in two separate hash-maps, values will be counters
+        - need to compare child counts,
+        - different, 'redundant' edges are stored in two separate places (maybe no)
+        """
         if len(self.roots) != len(ta.roots):
             return False
-        state_mapper: Dict[str, (str, str)] = {}
+        state_mapper: dict[str, (str, str)] = {}
         pass
 
     def get_edge_string(self, edge: TTransition) -> str:
-        result = ""
+        """
+        Pretty formatting for an edge, the edge content fields are adjusted
+        based on the maximal lengths across all edges within the automaton object.
+        """
+        result: str = ""
         result += "%-*s -- %-*s" % (self.meta_data.state, edge.src, self.meta_data.edge, edge.info)
         if len(edge.children) != 0:
             result += " --> "
@@ -114,8 +125,11 @@ class TTreeAut:
     # Informative functions # - - - - - - - - - - - - - - - - - - - - - - - - -
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def get_states(self) -> List:
-        result = set()
+    def get_states(self) -> list[str]:
+        """
+        Get a list of all states that are in any way referenced within the TA structure.
+        """
+        result: set[str] = set()
         for state_name in self.roots:
             result.add(state_name)
         for state_name, edges in self.transitions.items():
@@ -127,21 +141,42 @@ class TTreeAut:
         # result.sort()
         return state_name_sort(result)
 
-    # needed for feeding make_prefix() function
-    # generates all edge symbols labeling the output edges from the TA
-    def get_output_symbols(self) -> List[str]:
-        result = []
+    def get_output_symbols(self) -> list[str]:
+        """
+        Get a list of all edge 'symbols' labeling the output edges from the TA.
+        """
+        result: list[str] = []
         for edge in iterate_edges(self):
             if len(edge.children) == 0:
                 result.append(edge.info.label)
         return result
 
-    # needed for feeding tree_aut_determinize() function
-    # generates a dictionary of all output edge symbols
-    # which correspond to a list of states,
-    # from which the transitions with the specific symbol originate
-    def get_output_edges(self, inverse=False) -> Dict[str, List[str]]:
-        result = {}
+    def get_output_states(self) -> list[str]:
+        """
+        Get a list of all states that have an output transition (i.e. transition with 0 child states).
+        """
+        result: list[str] = []
+        for state_name, edges in self.transitions.items():
+            for data in edges.values():
+                if len(data.children) == 0:
+                    result.append(state_name)
+                    break
+        return result
+
+    def get_output_edges(self, inverse=False) -> dict[str, list[str]]:
+        """
+        Get a dictionary of all output edge symbols
+        which correspond to a list of states,
+        from which the transitions with the specific symbol originate.
+
+        note: It is a sort of a combination of
+        `TTreeAut.get_output_symbols()` and
+        `TTreeAut.get_output_states()`.
+
+        * inverse=False: `{symbol: list[states]}`
+        * inverse=True: `{state: list[symbols]}`
+        """
+        result: dict[str, list[str]] = {}
         for edge in iterate_edges(self):
             if len(edge.children) != 0:
                 continue
@@ -157,18 +192,13 @@ class TTreeAut:
             item.sort()
         return result
 
-    # needed for bottom-up reachability -> used in useless state removal
-    def get_output_states(self) -> List[str]:
-        result = []
-        for state_name, edges in self.transitions.items():
-            for data in edges.values():
-                if len(data.children) == 0:
-                    result.append(state_name)
-                    break
-        return result
+    def get_symbol_arity_dict(self) -> dict[str, int]:
+        """
+        Find all edge symbols used within the TA/BDA, along with their arities.
 
-    def get_symbol_arity_dict(self) -> Dict[str, int]:
-        result = {}
+        Note: Arity of a symbol = how many child nodes stem from this symbol.
+        """
+        result: dict[str, int] = {}
         for edges in self.transitions.values():
             for edge in edges.values():
                 if edge.info.label not in result:
@@ -179,7 +209,10 @@ class TTreeAut:
         return result
 
     def get_port_arity(self) -> int:
-        port_set = set()
+        """
+        Count all transitions with different port names.
+        """
+        port_set: set[str] = set()
         for edge in iterate_edges(self):
             sym = edge.info.label
             if sym.startswith("Port"):
@@ -187,116 +220,47 @@ class TTreeAut:
         return len(port_set)
 
     def is_top_down_deterministic(self) -> bool:
+        """
+        Check whether a TA is top-down deterministic, i.e. if for each state and
+        for each edge symbol there is at most one possible transition to do.
+        """
         for edges in self.transitions.values():
-            used_symbols = set()
+            # Now we are checking all transitions stemming from one state.
+            used_symbols: set[str] = set()
             for e in edges.values():
                 if e.info.label in used_symbols:
                     return False
                 used_symbols.add(e.info.label)
         return True
 
-    def get_var_order(self) -> List:
-        vars = set()
-        for edge in iterate_edges(self):
-            vars.add(edge.info.variable)
-        if "" in vars:
-            vars.remove("")
-        return state_name_sort(list(vars))
-
-    def get_var_prefix(self) -> str:
-        """Returns largest prefix of a variable in a TA,
-        that does not contain only numeric symbols.
-
-        Examples:
-            'x1' - returns 'x'
-            'var5ta01 - returns 'var5ta'
+    def is_bottom_up_deterministic(self) -> bool:
         """
-        for edge in iterate_edges(self):
-            if edge.info.variable != "":
-                prefix_len = 0
-                for i in range(len(edge.info.variable)):
-                    if not edge.info.variable[i:].isnumeric():
-                        prefix_len += 1
-                return edge.info.variable[:prefix_len]
-        return ""
+        Check whether a TA is bottom-up deterministic, i.e. if for each edge symbol (with n-arity) and each
+        possible n-tuple of states there is at most one transition that can reach this children n-tuple.
+        """
+        pass
 
     def count_edges(self) -> int:
-        counter = 0
+        counter: int = 0
         for _ in iterate_edges(self):
             counter += 1
         return counter
 
     def count_boxes(self) -> int:
-        boxes = 0
+        boxes: int = 0
         for edge in iterate_edges(self):
             for box in edge.info.box_array:
                 if box is not None and box != "_":
                     boxes += 1
         return boxes
 
-    # Returns a map of states to number of edges starting in that state.
-    def get_edge_counts(self) -> Dict[str, int]:
+    def get_edge_counts(self) -> dict[str, int]:
+        """
+        Returns a map of states to number of edges starting in that state.
+        """
         return {s: len(e) for s, e in self.transitions.items()}
 
-    def get_var_visibility(self, reverse=False) -> Dict:
-        """
-        Returns a dictionary of states, each of which has a set of variables,
-        that the state can "see" = i.e. the state has a transition with
-        this variable. e.g. {'q0': {'x1', 'x2'}, 'q1': {'x5'}}
-        if reverse==True: the dictionary is referenced by variables, and values
-        are lists of states. e.g. {'x1': {'q0'}, 'x2': {'q0'}, 'x5': {'q1'}}
-        """
-        result: Dict[str, Set[str]] = {}
-        for edge in iterate_edges(self):
-            if edge.info.variable == "":
-                continue
-            lookup = edge.info.variable if reverse else edge.src
-            value = edge.src if reverse else edge.info.variable
-            if lookup not in result:
-                result[lookup] = set()
-            result[lookup].add(value)
-        return result
-
-    def get_var_visibility_cache(self) -> Dict:
-        """
-        Works similarly to get_var_visibility(), but instead assigns only one
-        variable to each state (assumes 'determinism' wrt. variable visibility)
-        """
-        result: Dict[str, int] = {}
-        prefix = len(self.get_var_prefix())
-        for state in self.get_states():
-            for edge in self.transitions[state].values():
-                if edge.info.variable != "":
-                    result[state] = int(edge.info.variable[prefix:])
-        return result
-
-    # for testing purposes (normalization checking -> sorted var occurrence)
-    def get_var_occurence(self, sorted=True) -> List:
-        prefix_len = len(self.get_var_prefix())
-        result = []
-        for edge in iterate_edges(self):
-            if edge.info.variable == "":
-                continue
-            var: int = int(edge.info.variable[prefix_len:])
-            result.append(var)
-        if sorted:
-            result.sort()
-        return result
-
-    def get_var_max(self) -> int:
-        max_var = 0
-        prefix_len = len(self.get_var_prefix())
-        for edge in iterate_edges(self):
-            if edge.info.variable != "":
-                var = int(edge.info.variable[prefix_len:])
-                max_var = max(max_var, var)
-        return max_var
-
-    def get_var_lookup(self, maxvar: int) -> Dict[str, int]:
-        prefix = get_var_prefix()
-        pass
-
-    def get_reachable_states_from(self, state: str) -> Set[str]:
+    def get_reachable_states_from(self, state: str) -> set[str]:
         """
         Returns a reachability dictionary: state q -> states reachable from q
 
@@ -306,10 +270,10 @@ class TTreeAut:
         tree viability (a.k.a. each branch needs to end with a leaf transition),
         only which states are accessible through any part of the 'hyper-edges'
         """
-        original_rootstates = [i for i in self.roots]
+        original_rootstates: list[str] = [i for i in self.roots]
         self.roots = [state]
-        result = set()
-        root = True
+        result: set[str] = set()
+        root: bool = True
         for state in iterate_states_bfs(self):
             if root:  # this should be here so that it does not the first 'state'
                 root = False  # is not considered initial upon first exploration, only after a second visit
@@ -332,14 +296,14 @@ class TTreeAut:
     #                     queue.append(child)
     #     return result
 
-    def get_neighbors_of(self, state: str) -> Set[str]:
+    def get_neighbors_of(self, state: str) -> set[str]:
         """
         Returns a list of all states that can be reached through 1 transition
         from a specific state (only one directional)
         """
         if state not in self.transitions:
             return []
-        result = set()
+        result: set[str] = set()
 
         for edge in self.transitions[state].values():
             for child in edge.children:
@@ -347,19 +311,21 @@ class TTreeAut:
                     result.add(child)
         return result
 
-    # Calculates the smallest "hop" distance to the specified state from root
-    # Works similarly to BFS but uses helping list to stop an iteration after
-    # initial stack is exhausted and increases the distance counter
     def get_root_distance(self, state: str) -> int:
-        distance = 0
-        visited = set()  # cuts looping (BFS)
-        worklist = [i for i in self.roots]  # work list =>
-        state_count = len(self.get_states())
+        """
+        Calculates the smallest "hop" distance to the specified state from root
+        Works similarly to BFS but uses helping list to stop an iteration after
+        initial stack is exhausted and increases the distance counter.
+        """
+        distance: int = 0
+        visited: set[str] = set()  # cuts looping (BFS)
+        worklist: list[str] = [i for i in self.roots]  # work list =>
+        state_count: int = len(self.get_states())
 
         while len(visited) != state_count:
-            next_iteration = []
+            next_iteration: list[str] = []
             while worklist != []:
-                current = worklist.pop(0)
+                current: str = worklist.pop(0)
                 if current == state:
                     return distance
                 visited.add(current)
@@ -371,12 +337,15 @@ class TTreeAut:
 
         raise Exception(f"get_root_distance(): {state} not found in {self.name}")
 
-    # Calculates all possible paths (acyclic) through the TA.
-    # Path must begin with a root state and end with a leaf
-    # note: based on DFS
-    # result is a list of paths, path is a lists of states
-    def calculate_paths(self) -> List:
-        def pre_order_dfs(state, path, result):
+    def calculate_paths(self) -> list[list[str]]:
+        """
+        Calculates all possible paths (acyclic) through the TA.
+        Path must begin with a root state and end with a leaf
+        note: based on DFS
+        result is a list of paths, path is a lists of states
+        """
+
+        def pre_order_dfs(state, path: list, result: list[list[str]]) -> None:
             path.append(state)
             if state in leaves:
                 result.append(copy.copy(path))
@@ -385,21 +354,29 @@ class TTreeAut:
                     pre_order_dfs(i, path, result)
             path.pop()
 
-        leaves = set(self.get_output_states())
-        result = []
+        leaves: set[str] = set(self.get_output_states())
+        result: list[list[str]] = []
 
         for root in self.roots:
             pre_order_dfs(root, [], result)
         return result
 
-    # explore the state space (BFS-like) of the TA and remember the paths taken
-    # return the dictionary of state -> paths
-    # paths are represented as strings of '0's and '1's
-    def get_shortest_state_paths_dict(self) -> Dict[str, str]:
-        # note: we assume 'boxes' (tree automata used in ABDDs) need root-uniqueness to be well-defined,
-        # so the state space is not traversed in parallel
-        queue = [(i, "") for i in self.roots]
-        result = {i: "" for i in self.roots}
+    def get_shortest_state_paths_dict(self) -> dict[str, str]:
+        """
+        explore the state space (BFS-like) of the TA and remember the paths taken
+        return the dictionary of state -> paths
+        paths are represented as strings of '0's and '1's
+        note: we assume 'boxes' (tree automata used in ABDDs) need root-uniqueness to be well-defined,
+        so the state space is not traversed in parallel
+
+        note:
+        Since TAs do not have to be deterministic, some states can have the same shortest path
+        thus the state order we obtain is not necessarily total, but only partial
+        that is why the inverted dictionary would have a path pointing to a list (set) of states
+        """
+        # tuple = state, shortest path string
+        queue: list[tuple[str, str]] = [(i, "") for i in self.roots]
+        result: dict[str, str] = {i: "" for i in self.roots}
         while queue != []:
             state, path = queue.pop(0)
             for edge in self.transitions[state].values():
@@ -415,20 +392,139 @@ class TTreeAut:
         return {k: v for k, v in sorted(result.items(), key=lambda item: item[1])}
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # Extract information about variables - - - - - - - - - - - - - - - - - - -
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    def get_var_order(self) -> list[str]:
+        """
+        Return a (lexically sorted) list of variables used within the TA (UBDA) structure.
+        """
+        vars: set[str] = set()
+        for edge in iterate_edges(self):
+            vars.add(edge.info.variable)
+        if "" in vars:
+            vars.remove("")
+        return state_name_sort(list(vars))
+
+    def get_var_prefix(self) -> str:
+        """
+        Returns largest prefix of a variable in a TA,
+        that does not contain only numeric symbols.
+
+        Examples:
+            'x1' - returns 'x'
+            'var5ta01 - returns 'var5ta'
+        """
+        for edge in iterate_edges(self):
+            if edge.info.variable != "":
+                prefix_len = 0
+                for i in range(len(edge.info.variable)):
+                    if not edge.info.variable[i:].isnumeric():
+                        prefix_len += 1
+                return edge.info.variable[:prefix_len]
+        return ""
+
+    def get_var_visibility(self, reverse=False) -> dict[str, set[str]]:
+        """
+        Returns a dictionary of states, each of which has a set of variables,
+        that the state can "see" = i.e. the state has a transition with
+        this variable. e.g. {'q0': {'x1', 'x2'}, 'q1': {'x5'}}
+
+        if reverse==True: the dictionary is referenced by variables, and values
+        are lists of states. e.g. {'x1': {'q0'}, 'x2': {'q0'}, 'x5': {'q1'}}
+        """
+        result: dict[str, set[str]] = {}
+        for edge in iterate_edges(self):
+            if edge.info.variable == "":
+                continue
+            lookup = edge.info.variable if reverse else edge.src
+            value = edge.src if reverse else edge.info.variable
+            if lookup not in result:
+                result[lookup] = set()
+            result[lookup].add(value)
+        return result
+
+    def get_var_visibility_deterministic(self) -> dict[str, int]:
+        """
+        Works similarly to get_var_visibility(), but instead assigns only one
+        variable to each state (assumes 'determinism' wrt. variable visibility)
+
+        NOTE: does not have a "reverse" version, like the 'nondeterministic' counterpart.
+        """
+        result: dict[str, int] = {}
+        prefix = len(self.get_var_prefix())
+        for state in self.get_states():
+            for edge in self.transitions[state].values():
+                if edge.info.variable != "":
+                    result[state] = int(edge.info.variable[prefix:])
+        return result
+
+    def get_var_occurence(self, sorted=True) -> list[int]:
+        """
+        Get a sorted list of all variable indexes found across all transitions of a TTreeAut object.
+
+        E.g. UBDA has 4 transitions with variables 'x4', 'x3', 'x3', 'x1' -> result: [1,3,3,4]
+        """
+        prefix_len: int = len(self.get_var_prefix())
+        result: list[int] = []
+        for edge in iterate_edges(self):
+            if edge.info.variable == "":
+                continue
+            var: int = int(edge.info.variable[prefix_len:])
+            result.append(var)
+        if sorted:
+            result.sort()
+        return result
+
+    def get_var_max(self) -> int:
+        """
+        Omitting any non-numeric prefix, get the index of the highest variable used.
+        E.g. UBDA has 4 transitions with variables 'x7', 'x3', 'x1' -> result: 7
+        """
+        max_var: int = 0
+        prefix_len: int = len(self.get_var_prefix())
+        for edge in iterate_edges(self):
+            if edge.info.variable != "":
+                var: int = int(edge.info.variable[prefix_len:])
+                max_var = max(max_var, var)
+        return max_var
+
+    def get_var_lookup(self, maxvar: int) -> dict[str, int]:
+        """
+        For each variable 'string', get its corresponding index.
+        """
+        prefix = get_var_prefix_from_list()
+        pass
+
+    def check_var_str_consistency(self) -> bool:
+        """
+        Return True if all variables on edges are of type 'str'.
+        """
+        var_type = type("")
+        for edge in iterate_edges(self):
+            if type(edge.info.variable) != var_type:
+                return False
+        return True
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Modifying functions # - - - - - - - - - - - - - - - - - - - - - - - - - -
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    # creates a copy of a state dictionary (with isomorphic edges)
-    # - state: name of the state to copy edges from
-    # - name: state name of the copy
-    # e.g. copying the state a with edges:
-    # original: a  -> (b, c),   a  -> (a,  a )
-    # copy:     a' -> (b, c),   a' -> (a', a')
-    def copy_state(self, state: str, name: str) -> Dict:
+    def copy_state(self, state: str, name: str) -> dict[str, TTransition]:
+        """
+        creates a copy of a state dictionary (with isomorphic edges)
+        - state: name of the state to copy edges from
+        - name: state name of the copy
+        e.g. copying the state a with edges:
+        original: a  -> (b, c),   a  -> (a,  a )
+        copy:     a' -> (b, c),   a' -> (a', a')
+        """
         pass
 
-    # needed for union (and testing) - name collision resolving
-    def rename_state(self, old_name: str, new_name: str):
+    def rename_state(self, old_name: str, new_name: str) -> None:
+        """
+        Needed for union (and testing) - name collision resolving.
+        """
         # renaming state in roots array (1st layer)
         if old_name in self.roots:
             self.roots.remove(old_name)
@@ -449,7 +545,7 @@ class TTreeAut:
                 if edge.children[i] == old_name:
                     edge.children[i] = new_name
 
-    def remove_state(self, state: str):
+    def remove_state(self, state: str) -> None:
         if state in self.roots:
             self.roots.remove(state)
 
@@ -464,39 +560,46 @@ class TTreeAut:
             for key in keys_to_delete:
                 content.pop(key)
 
-    def remove_transition(self, state: str, key: str):
+    def remove_transition(self, state: str, key: str) -> None:
         if state not in self.transitions:
             return
         if key not in self.transitions[state]:
             return
         self.transitions[state].pop(key)
 
-    def remove_output_transitions(self):
+    def remove_output_transitions(self) -> None:
         for state in self.get_states():
-            keys = []
+            keys: list[str] = []
             for k, tr in self.transitions[state].items():
                 if len(tr.children) == 0:
                     keys.append(k)
             for k in keys:
                 self.remove_transition(state, k)
 
-    # Removes total or partial self looping transitions.
-    # If soft is True, self loops are only removed if there is a viable
-    # non-self looping transition present within a state.
-    def remove_self_loops(self, soft=False):
+    def remove_self_loops(self, soft=False) -> None:
+        """
+        Removes total or partial self looping transitions.
+        If soft is True, self loops are only removed if there is a viable
+        non-self looping transition present within a state.
+        """
         for state, edges in self.transitions.items():
-            keys_to_delete = []
+            keys_to_delete: list[str] = []
             for k, edge in edges.items():
                 if edge.src in edge.children:
                     keys_to_delete.append(k)
             for k in keys_to_delete:
                 self.transitions[state].pop(k)
 
-    # Creates a better readable state names for more clear images (DOT).
-    # Useful after unfolding, determinization/normalization, etc.
-    def reformat_states(self, prefix="q", start_from=0):
-        temp = {}  # state -> idx
-        i = start_from
+    def reformat_states(self, prefix="q", start_from=0) -> None:
+        """
+        Creates a better readable state names for more clear images (DOT).
+        Useful after unfolding, determinization/normalization, etc.
+
+        NOTE: Make sure all unreachable states are removed before renaming,
+        since this works using BFS traversal of states (which are top-down reachable).
+        """
+        temp: dict[str, int] = {}  # state -> idx
+        i: int = start_from
         for state in iterate_states_bfs(self):
             if state not in temp:
                 temp[state] = i
@@ -508,11 +611,11 @@ class TTreeAut:
         #     self.rename_state(f"temporary_name{idx}", f"{prefix}{idx}")
 
         # optimized version:
-        new_roots = []
+        new_roots: list[str] = []
         for root in self.roots:
             new_roots.append(f"{prefix}{temp[root]}")
         self.roots = new_roots
-        new_transitions = {}
+        new_transitions: dict[str, dict[str, TTransition]] = {}
         for state, edges in self.transitions.items():
             new_transitions[f"{prefix}{temp[state]}"] = edges
         self.transitions = new_transitions
@@ -521,7 +624,7 @@ class TTreeAut:
             for i in range(len(edge.children)):
                 edge.children[i] = f"{prefix}{temp[edge.children[i]]}"
 
-    def reformat_keys(self, prefix="k"):  # k as in 'key'
+    def reformat_keys(self, prefix="k") -> None:  # k as in 'key'
         counter: int = self.count_edges() + 2  # for no collisions
         for state in iterate_states_bfs(self):
             swap = [key for key in self.transitions[state].keys()]
@@ -537,13 +640,9 @@ class TTreeAut:
                 counter += 1
                 self.transitions[state][new_key] = self.transitions[state].pop(old_key)
 
-    # note:
-    # since TAs do not have to be deterministic, some states can have the same shortest path
-    # thus the state order we obtain is not necessarily total, but only partial
-    # that is why the inverted dictionary will have a path pointing to a list (set) of states
-    def reformat_ports(self):
-        paths_dict = self.get_shortest_state_paths_dict()
-        counter = 0
+    def reformat_ports(self) -> None:
+        paths_dict: dict[str, str] = self.get_shortest_state_paths_dict()
+        counter: int = 0
 
         # we assume max one port transition per state
         for state in paths_dict.keys():
@@ -552,17 +651,11 @@ class TTreeAut:
                     edge.info.label = f"Port_{counter}"
                     counter += 1
 
-    def check_var_type(self):
-        var_type = type("")
-        for edge in iterate_edges(self):
-            if type(edge.info.variable) != var_type:
-                return False
-        return True
-
-    # Shrinks the tree automaton
-    # such that it only contain the states from list (reachable states)
-    def shrink_tree_aut(self, reachable: List):
-        to_delete = [x for x in self.roots if x not in reachable]
+    def shrink_tree_aut(self, reachable: list[str]) -> None:
+        """
+        Shrinks the tree automaton, such that it only contain the states from list (reachable states).
+        """
+        to_delete: list[str] = [x for x in self.roots if x not in reachable]
         for state_name, content in self.transitions.items():
             if state_name not in reachable:
                 to_delete.append(state_name)
@@ -585,23 +678,23 @@ class TTreeAut:
     # Creating a total order over the box alphabet is necessary for canonical
     # form of folding/unfolding algorithms.
 
-    def create_prefix(self, extra_output_edges):
-        result = copy.deepcopy(self)
+    def create_prefix(self, extra_output_edges: list[str]) -> "TTreeAut":
+        result: TTreeAut = copy.deepcopy(self)
 
         result.name = f"prefix({self.name}, {extra_output_edges})"
 
         for state_name, content in result.transitions.items():
-            temp_dict = {}
+            temp_dict: dict[str, TTransition] = {}
             if state_name in self.roots:
                 continue
             for symbol in extra_output_edges:
-                temp_str = str(state_name) + "-" + str(symbol) + "-()"
+                temp_str: str = str(state_name) + "-" + str(symbol) + "-()"
                 temp_dict[temp_str] = TTransition(state_name, TEdge(symbol, [], ""), [])
             for temp_name, temp_edge in temp_dict.items():
                 # checking for non-port output edge
-                non_port_output = False
+                non_port_output: bool = False
                 for edge in content.values():
-                    label = edge.info.label
+                    label: str = edge.info.label
                     if not label.startswith("Port") and len(edge.children) == 0:
                         non_port_output = True
                 # skip adding non-port output edge
@@ -613,11 +706,11 @@ class TTreeAut:
         result.port_arity = result.get_port_arity()
         return result
 
-    def create_suffix(self):
-        result = copy.deepcopy(self)
+    def create_suffix(self) -> "TTreeAut":
+        result: TTreeAut = copy.deepcopy(self)
         result.name = f"suffix({result.name})"
         for state_name, edge_dict in result.transitions.items():
-            check = True
+            check: bool = True
             for edge in edge_dict.values():
                 edge_label = edge.info.label
                 if edge_label.startswith("Port"):
@@ -627,9 +720,9 @@ class TTreeAut:
                 result.roots.append(state_name)
         return result
 
-    def create_infix(self, extra_output_edges: Dict[str, List[str]]):
+    def create_infix(self, extra_output_edges: dict[str, list[str]]) -> "TTreeAut":
         result: TTreeAut = copy.deepcopy(self)
-        ports = [
+        ports: list[str] = [
             sym for sym in extra_output_edges if (sym.startswith("Port") and sym not in result.get_output_symbols())
         ]
         result.name = f"infix({self.name}, {ports})"
@@ -641,30 +734,26 @@ class TTreeAut:
 
             # B) add output ports from extra_output_edges to every state
             for i in ports:
-                key = f"{state}-{i}->()"
-                edge = [state, TEdge(i, [], ""), []]
+                key: str = f"{state}-{i}->()"
+                edge = TTransition(state, TEdge(i, [], ""), [])
                 result.transitions[state][key] = edge
         result.port_arity = result.get_port_arity()
         return result
 
 
-# TODO: rewrite this to be TTreeAut methods
+# TODO: rewrite this sometime to be TTreeAut methods
 
 
-def iterate_edges(obj) -> Generator[TTransition, None, None]:
-    dict_obj = obj
-    if isinstance(obj, TTreeAut):
-        dict_obj = obj.transitions
+def iterate_edges(obj: TTreeAut) -> Generator[TTransition, None, None]:
+    if not isinstance(obj, TTreeAut):
+        raise ValueError("iterate_edges() can only work with TTreeAut.")
 
-    for inner_obj in dict_obj.values():
-        if isinstance(inner_obj, dict):
-            for edge in iterate_edges(inner_obj):
-                yield edge
-        else:
-            yield inner_obj
+    for edge_dict in obj.transitions.values():
+        for edge in edge_dict.values():
+            yield edge
 
 
-def iterate_key_edge_tuples(obj) -> Generator[Tuple[str, TTransition], None, None]:
+def iterate_key_edge_tuples(obj: TTreeAut) -> Generator[tuple[str, TTransition], None, None]:
     if not isinstance(obj, TTreeAut):
         raise ValueError("iterate_key_edge_tuples can only work with TTreeAut.")
 
@@ -673,7 +762,7 @@ def iterate_key_edge_tuples(obj) -> Generator[Tuple[str, TTransition], None, Non
             yield key, edge
 
 
-def iterate_keys(obj) -> Generator[str, None, None]:
+def iterate_keys(obj: TTreeAut) -> Generator[str, None, None]:
     if not isinstance(obj, TTreeAut):
         raise ValueError("iterate_keys can only work with TTreeAut.")
     for edges in obj.transitions.values():
@@ -681,20 +770,22 @@ def iterate_keys(obj) -> Generator[str, None, None]:
             yield key
 
 
-def iterate_edges_from_state(obj, state):
-    dict_obj = obj
+def iterate_edges_from_state(obj: TTreeAut, state: str) -> Generator[TTransition, None, None]:
     if isinstance(obj, TTreeAut):
-        for edge in dict_obj.transitions[state].values():
+        for edge in obj.transitions[state].values():
             yield edge
 
 
-# Depth-first search iterator over states of a tree automaton
-def iterate_states_dfs(ta: TTreeAut):
-    stack = [root for root in ta.roots]
+def iterate_states_dfs(ta: TTreeAut) -> Generator[str, None, None]:
+    """
+    Depth-first-like search iterator over states of a tree automaton.
+    Every state is visited max. once.
+    """
+    stack: list[str] = [root for root in ta.roots]
     stack.reverse()
-    visited = set()
+    visited: set[str] = set()
     while stack:
-        state = stack.pop()
+        state: str = stack.pop()
         if state in visited:
             continue
         visited.add(state)
@@ -705,12 +796,15 @@ def iterate_states_dfs(ta: TTreeAut):
                     stack.append(child)
 
 
-# Breadth-first search iterator over states of a tree automaton
-def iterate_states_bfs(ta: TTreeAut):
-    queue = [root for root in ta.roots]
-    visited = set()
+def iterate_states_bfs(ta: TTreeAut) -> Generator[str, None, None]:
+    """
+    Breadth-first-like search iterator over states of a tree automaton.
+    Every state is visited max. once.
+    """
+    queue: list[str] = [root for root in ta.roots]
+    visited: set[str] = set()
     while queue:
-        state = queue.pop(0)
+        state: str = queue.pop(0)
         if state in visited:
             continue
         visited.add(state)
@@ -722,7 +816,9 @@ def iterate_states_bfs(ta: TTreeAut):
 
 
 class TTreeAutMetaData:
-    """Contains string lengths for tidy formatting (tables, etc.)."""
+    """
+    Contains string lengths for tidy formatting (tables, etc.).
+    """
 
     def __init__(self, ta: TTreeAut):
         self.ta: TTreeAut = ta
@@ -751,7 +847,7 @@ class TTreeAutMetaData:
             + f"Max Box Name Length     = {self.box_name}\n"
         )
 
-    def recompute(self):
+    def recompute(self) -> None:
         def get_prefix_len(string: str) -> int:
             prefix_len = 0
             for i in range(len(string)):

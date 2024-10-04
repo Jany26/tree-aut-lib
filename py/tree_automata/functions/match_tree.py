@@ -1,84 +1,91 @@
 from tree_automata import TTreeAut, TTreeNode
 
 
-# # Logical equivalent to function accept(DFA, string)
-#   works recursively, as all children from array have to be matched
-def match_tree_top_down(ta: TTreeAut, root: TTreeNode) -> bool:
+def match_top_down_helper(ta: TTreeAut, node: TTreeNode, state: str) -> bool:
+    """
+    Helper function for recursion in match_tree_top_down().
+    """
+    child_tuples = []
 
-    # Helper function for match_tree_top_down  - - - - - - - - - - - - - - - - -
+    for state_name, edge in ta.transitions.items():
+        for data in edge.values():
+            if state_name == state and node.value == data.info.label:
+                child_tuples.append(data.children)
 
-    def match_top_down(ta: TTreeAut, node: TTreeNode, state: str) -> bool:
-        child_tuples = []
-
-        for state_name, edge in ta.transitions.items():
-            for data in edge.values():
-                if state_name == state and node.value == data.info.label:
-                    child_tuples.append(data.children)
-
-        for tuple in child_tuples:
-            b = True
-            # when tree unexpected amount children than expected
-            if len(tuple) != len(node.children):
+    for tuple in child_tuples:
+        b = True
+        # when tree unexpected amount children than expected
+        if len(tuple) != len(node.children):
+            break
+        for i in range(len(tuple)):
+            # recursive matching for all children
+            b = match_top_down_helper(ta, node.children[i], tuple[i])
+            if not b:
                 break
-            for i in range(len(tuple)):
-                # recursive matching for all children
-                b = match_top_down(ta, node.children[i], tuple[i])
-                if not b:
-                    break
-            if b:
-                return True
-        return False
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    for r in ta.roots:
-        if match_top_down(ta, root, r) is True:
+        if b:
             return True
     return False
 
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+def match_tree_top_down(ta: TTreeAut, root: TTreeNode) -> bool:
+    """
+    Check whether a given tree (starting at 'root' node) can be generated
+    by the given tree automaton 'ta'.
+
+    This check works recursively, starting at some root node and tries to
+    follow the tree structure while expanding the transitions of a TA.
+
+    Recursion is ended unsuccessfully at failed match (no transition possible)
+    or successfully at reaching a leaf node (and a matching output transition of the TA).
+
+    Logical equivalent to function accept(DFA, string)
+    works recursively, as all children from array have to be matched
+    """
+    for r in ta.roots:
+        if match_top_down_helper(ta, root, r) is True:
+            return True
+    return False
 
 
-# Logical equivalent to function accept(DFA, string)
-#  works recursively, but starts the matching process from the leaves
-#  instead of starting from the root
-def match_tree_bottom_up(ta: TTreeAut, root: TTreeNode) -> bool:
-    # Helper function for match_tree_bottomup - - - - - - - - - - - - - - - - -
-    def match_bottom_up(ta: TTreeAut, root: TTreeNode) -> list:
-        result = []
-        if len(root.children) == 0:
-            for state_name, edge in ta.transitions.items():
-                for data in edge.values():
-                    if (
-                        data.info.label == root.value  # or symbol
-                        and len(data.children) == 0
-                        and state_name not in result
-                    ):
+def match_bottom_up_helper(ta: TTreeAut, root: TTreeNode) -> list[str]:
+    """
+    Helper function for recursion in match_tree_bottomup().
+    """
+    result: list[str] = []
+    if len(root.children) == 0:
+        for state_name, edge in ta.transitions.items():
+            for data in edge.values():
+                if data.info.label == root.value and len(data.children) == 0 and state_name not in result:  # or symbol
+                    result.append(state_name)
+        return result
+
+    else:
+        child_symbols: list[str] = []
+        for i in range(len(root.children)):
+            child_symbols.append(match_bottom_up_helper(ta, root.children[i]))
+        for state_name, edge in ta.transitions.items():
+            for data in edge.values():
+                if data.info.label == root.value:  # or symbol
+                    all_children_matched: bool = True
+                    for i in range(len(data.children)):
+                        if data.children[i] not in child_symbols[i]:
+                            all_children_matched = False
+                            break
+                    if all_children_matched:
                         result.append(state_name)
-            return result
+        return result
 
-        else:
-            child_symbols = []
-            for i in range(len(root.children)):
-                child_symbols.append(match_bottom_up(ta, root.children[i]))
-            for state_name, edge in ta.transitions.items():
-                for data in edge.values():
-                    if data.info.label == root.value:  # or symbol
-                        x = True
-                        for i in range(len(data.children)):
-                            if data.children[i] not in child_symbols[i]:
-                                x = False
-                                break
-                        if x:
-                            result.append(state_name)
-            return result
 
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    result = match_bottom_up(ta, root)
-    temp = []
-    for value in result:
-        if value in ta.roots:
-            temp.append(value)
+def match_tree_bottom_up(ta: TTreeAut, root: TTreeNode) -> bool:
+    """
+    Logical equivalent to function accept(DFA, string).
+    Check whether a tree (starting at 'root') can be generated by the given tree automaton 'ta'.
+    Works recursively, but starts the matching process from the leaves
+    instead of starting from the root.
+    """
+    result: list[str] = match_bottom_up_helper(ta, root)
+    temp: list[str] = []
+    for potential_root in result:
+        if potential_root in ta.roots:
+            temp.append(potential_root)
     return len(temp) != 0

@@ -14,21 +14,23 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-bdd_box_order = ["X"]
-zbdd_box_order = ["H0"]
-tbdd_box_order = ["X", "H0"]
-cbdd_box_order = ["X", "HPort"]
-czdd_box_order = ["H0", "X"]
-esr_box_order = ["L0", "H0", "X"]
-full_box_order = ["L0", "H0", "L1", "H1", "X", "LPort", "HPort"]
+bdd_box_order: list = ["X"]
+zbdd_box_order: list = ["H0"]
+tbdd_box_order: list = ["X", "H0"]
+cbdd_box_order: list = ["X", "HPort"]
+czdd_box_order: list = ["H0", "X"]
+esr_box_order: list = ["L0", "H0", "X"]
+full_box_order: list = ["L0", "H0", "L1", "H1", "X", "LPort", "HPort"]
+cesr_box_order: list = ["L0", "H0", "L1", "H1", "X"]
 
-box_orders = {
+box_orders: dict[str, list[str]] = {
     "bdd": bdd_box_order,
     "zbdd": zbdd_box_order,
     "tbdd": tbdd_box_order,
     "cbdd": cbdd_box_order,
     "czdd": czdd_box_order,
     "esr": esr_box_order,
+    "cesr": cesr_box_order,
     "full": full_box_order,
 }
 
@@ -42,7 +44,7 @@ box_h0: TTreeAut = import_treeaut_from_vtf("../tests/boxes/boxH0.vtf")
 box_h1: TTreeAut = import_treeaut_from_vtf("../tests/boxes/boxH1.vtf")
 box_hport: TTreeAut = import_treeaut_from_vtf("../tests/boxes/boxHPort.vtf")
 
-box_catalogue = {
+box_catalogue: dict[str, TTreeAut] = {
     "False": box_false,
     "True": box_true,
     "X": box_x,

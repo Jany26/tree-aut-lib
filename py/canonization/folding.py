@@ -7,13 +7,13 @@
 import re
 import copy
 import os
-from typing import List, Dict, Set
+from typing import List, Dict, Optional, Set, Tuple
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges, non_empty_bottom_up, iterate_edges_from_state
 from tree_automata.functions.trimming import trim
 from canonization.folding_helpers import (
     FoldingHelper,
-    split_tuple_name,
+    get_first_name_from_tuple_str,
     is_already_reduced,
     prepare_edge_info,
     get_state_index_from_box_index,
@@ -55,11 +55,11 @@ def get_state_witness_relation(intersectoid: TTreeAut, port: str):
     Relation describing partitions of states that are always encountered together.
     """
 
-    def is_edge_unified(children: List):
+    def is_edge_unified(children: List) -> bool:
         return len(set(children)) <= 1
 
     def get_relation_step(state: str, intersectoid: TTreeAut):
-        res = []
+        res: List[Set[str]] = []
 
         for edge in intersectoid.transitions[state].values():
             if edge.src in edge.children:
@@ -73,7 +73,7 @@ def get_state_witness_relation(intersectoid: TTreeAut, port: str):
                 res.extend(get_relation_step(edge.children[0], intersectoid))
                 continue
 
-            sub_result = set()
+            sub_result: Set[str] = set()
             for child in edge.children:
                 for child_set in get_relation_step(child, intersectoid):
                     sub_result = sub_result.union(child_set)
@@ -81,13 +81,13 @@ def get_state_witness_relation(intersectoid: TTreeAut, port: str):
             res.append(sub_result)
         return res
 
-    result = []
+    result: List[Set[str]] = []
     for root in intersectoid.roots:
         result.extend(get_relation_step(root, intersectoid))
     return result
 
 
-def get_mapping(intersectoid: TTreeAut, varvis, reach: dict[str, set]) -> dict:
+def get_mapping(intersectoid: TTreeAut, varvis: Dict[str, int], reach: Dict[str, Set[str]]) -> Dict[str, str]:
     """
     [description]
     This function finds all different port types in intersectoid and assigns
@@ -120,21 +120,25 @@ def get_mapping(intersectoid: TTreeAut, varvis, reach: dict[str, set]) -> dict:
     (3) state names are in the format (s1,s2), where s1 comes from the treeaut
     and s2 comes from the box that was used during intersectoid creation)
     """
-    ports = set([edge.info.label for edge in iterate_edges(intersectoid) if edge.info.label.startswith("Port")])
+    ports: Set[str] = set(
+        [edge.info.label for edge in iterate_edges(intersectoid) if edge.info.label.startswith("Port")]
+    )
     # varvis = intersectoid.get_var_visibility_cache()
-    mapping = {}
+    mapping: Dict[str, str] = {}  # port_name -> state_name
     for port in ports:
-        relation = [(varvis[list(s)[0]], s) for s in get_state_witness_relation(intersectoid, port)]
+        relation: list[tuple[int, set[str]]] = [
+            (varvis[list(s)[0]], s) for s in get_state_witness_relation(intersectoid, port)
+        ]
         relation.sort(reverse=True)  #
         for var, stateset in relation:
-            skip = False
+            skip: bool = False
             for state in stateset:
-                s = split_tuple_name(state)
-                infimum = True
+                s: str = get_first_name_from_tuple_str(state)
+                infimum: bool = True
                 for state2 in stateset:
                     if state == state2:
                         continue
-                    s2 = split_tuple_name(state2)
+                    s2: str = get_first_name_from_tuple_str(state2)
                     if s in reach[s2] and not s2 in reach[s]:
                         continue
                     else:
@@ -150,7 +154,9 @@ def get_mapping(intersectoid: TTreeAut, varvis, reach: dict[str, set]) -> dict:
     return mapping
 
 
-def box_finding(ta: TTreeAut, box: TTreeAut, root: str, helper: FoldingHelper, source: str) -> dict:
+def box_finding(
+    ta: TTreeAut, box: TTreeAut, root: str, helper: FoldingHelper, source: str
+) -> Dict[str, Tuple[str, int]]:
     """
     [description]
     Main implementation of one step of the folding procedure.
@@ -160,7 +166,9 @@ def box_finding(ta: TTreeAut, box: TTreeAut, root: str, helper: FoldingHelper, s
     [parameters]
     'ta' - UBDA on which we try to apply reduction
     'box' - specifies which tree automaton should be applied
-    'root' - which state is the starting point of the procedure
+    'root' - which state is the starting point of the procedure (child node)
+    'helper' - FoldingHelper class with additional context information, debugging/exporting, etc.
+    'source' - source node of the edge that will contain the reduction box
 
     [return]
       - dictionary which specifies mapping of the output ports of the 'box'
@@ -175,20 +183,22 @@ def box_finding(ta: TTreeAut, box: TTreeAut, root: str, helper: FoldingHelper, s
 
     add_variables_top_down(intersectoid, helper)
     helper.export_intersectoid(intersectoid, source, root, box.name)
-    var_visibility = intersectoid.get_var_visibility_cache()
-    reach = intersectoid_reachability(intersectoid, var_visibility)
+    var_visibility: dict[str, int] = intersectoid.get_var_visibility_deterministic()
+    reach: list[str] = intersectoid_reachability(intersectoid, var_visibility)
     intersectoid.shrink_tree_aut(reach)
     if intersectoid.get_port_arity() > 1:
         reduce_portable_states(intersectoid)
         intersectoid = trim(intersectoid)
-    final_mapping = get_mapping(intersectoid, var_visibility, helper.reach)
+    final_mapping: dict[str, str] = get_mapping(intersectoid, var_visibility, helper.reach)
     if final_mapping == {}:
         return {}
-    split_mapping = {p: (split_tuple_name(s), var_visibility[s]) for p, s in final_mapping.items()}
+    split_mapping: dict[str, str] = {
+        p: (get_first_name_from_tuple_str(s), var_visibility[s]) for p, s in final_mapping.items()
+    }
     return split_mapping
 
 
-def mapping_is_correct(mapping: dict, var_visibility: dict) -> bool:
+def mapping_is_correct(mapping: dict[str, str], var_visibility: dict[str, int]) -> bool:
     """
     [description]
     Checks if the mapped states and variables they see are consistent.
@@ -197,13 +207,13 @@ def mapping_is_correct(mapping: dict, var_visibility: dict) -> bool:
     """
     if mapping == {}:
         return False
-    bigger_var = False
-    none_var = False
+    bigger_var: bool = False
+    none_var: bool = False
     for i, (map_state, var) in enumerate(mapping.values()):
         if var == "":
             none_var = True
-        original_var = int(var_visibility[map_state])
-        intersectoid_var = int(var)
+        original_var: int = int(var_visibility[map_state])
+        intersectoid_var: int = int(var)
         if intersectoid_var > original_var:
             bigger_var = True
     if bigger_var or none_var:
@@ -211,7 +221,7 @@ def mapping_is_correct(mapping: dict, var_visibility: dict) -> bool:
     return True
 
 
-def get_box_index(edge_part):
+def get_box_index(edge_part: Tuple[str, int, str, str, TTransition]) -> int:
     """
     [description]
     Since children list of transitions is merged and does not have to be
@@ -221,7 +231,7 @@ def get_box_index(edge_part):
     to the edge_part child-index.
     """
     # edge_part contains 5 items: [key, child-index, child-state, source-state, edge]
-    current_idx = 0
+    current_idx: int = 0
 
     for idx, box in enumerate(edge_part[4].info.box_array):
         if current_idx == edge_part[1]:
@@ -237,11 +247,11 @@ def ubda_folding(
     ta: TTreeAut,
     boxes: List[str],
     max_var: int,
-    verbose=False,
-    export_vtf=False,
-    export_png=False,
-    output=None,
-    export_path=None,
+    verbose: bool = False,
+    export_vtf: bool = False,
+    export_png: bool = False,
+    output: Optional[str] = None,
+    export_path: Optional[str] = None,
 ) -> TTreeAut:
     """
     [description]
@@ -256,8 +266,7 @@ def ubda_folding(
     [return]
     (folded) UBDA with applied reductions (same language as the input)
     """
-
-    result = copy.deepcopy(ta)
+    result: TTreeAut = copy.deepcopy(ta)
     fill_box_arrays(result)  # in case of [None, None] and [] discrepancies
     helper: FoldingHelper = FoldingHelper(ta, verbose, export_vtf, export_png, output, export_path, max_var)
     if helper.vtf or helper.png:
@@ -265,16 +274,17 @@ def ubda_folding(
             os.makedirs(f"{helper.path}/ubdas/")
         if not os.path.exists(f"{helper.path}/intersectoids/"):
             os.makedirs(f"{helper.path}/intersectoids/")
-    var_visibility = result.get_var_visibility_cache()
+    var_visibility: Dict[str, int] = result.get_var_visibility_deterministic()
     for box_name in boxes:
-        box = box_catalogue[box_name]
-        worklist = [root for root in ta.roots]
-        visited = set()
+        box: TTreeAut = box_catalogue[box_name]
+        worklist: List[str] = [root for root in ta.roots]
+        visited: Set[str] = set()
         while worklist != []:
-            state = worklist.pop(0)
+            state: str = worklist.pop(0)
             if state in visited:
                 continue
-            edges_to_children = prepare_edge_info(result, state)
+            # TODO: simplify working with edge info -> just use the variable names listed below
+            edges_to_children: List[Tuple[str, int, str, str, TTransition]] = prepare_edge_info(result, state)
             for edge_part in edges_to_children:
                 # edge_part contains 5 items: [
                 # key :
@@ -283,6 +293,12 @@ def ubda_folding(
                 # source-state :
                 # edge :
                 # ]
+
+                # work_key
+                # child_index
+                # source_state
+                # target_state
+
                 part = "L" if edge_part[1] == 0 else "H"
                 if is_already_reduced(result, state, edge_part):
                     continue
@@ -294,6 +310,7 @@ def ubda_folding(
                 if helper.verbose:
                     print("%s> box_finding(%s-[%s:%s]->%s)" % (f"{0 * ' '}", state, part, box.name, edge_part[2]))
                 mapping = box_finding(result, box, edge_part[2], helper, state)
+
                 # phase 0: checking correctness of the mapping
                 # checking if all mapped states have a visible variable
                 # and have lower variables than states in the UBDA
@@ -303,15 +320,17 @@ def ubda_folding(
                     "%s> box_finding(%s-[%s:%s]->%s => %s)\n"
                     % (f"{0 * ' '}", state, "L" if edge_part[1] == 0 else "H", box.name, edge_part[2], mapping)
                 )
+
                 # phase 1: putting the box in the box array
                 edge = result.transitions[edge_part[3]][edge_part[0]]
-                initial_box_list = edge.info.box_array
+                initial_box_list: List[str] = edge.info.box_array
                 symbol = edge.info.label
                 box_list = [None] * ta.get_symbol_arity_dict()[symbol]
                 for idx in range(len(initial_box_list)):
                     box_list[idx] = initial_box_list[idx]
                 box_list[get_box_index(edge_part)] = box.name
                 edge.info.box_array = box_list
+
                 # phase 2: fill the box-port children in the child array
                 idx = get_state_index_from_box_index(edge, get_box_index(edge_part))
                 edge.children.pop(idx)
@@ -321,7 +340,7 @@ def ubda_folding(
                         # NOTE: here, possibly remove self-loop(s) in map_state
                         # in case of identical variables (ta, intersectoid)
                         continue
-                    new_state = f"{map_state}-{var}"
+                    new_state: str = f"{map_state}-{var}"
                     if new_state in result.transitions:
                         edge.children[idx + i] = new_state
                     result.transitions[new_state] = {}
@@ -329,7 +348,7 @@ def ubda_folding(
                     new_edge = TTransition(new_state, TEdge("LH", [], f"{var}"), [map_state, map_state])
                     var_visibility[new_state] = var
                     helper.counter += 1
-                    key = f"temp_{helper.counter2}"
+                    key: str = f"temp_{helper.counter2}"
                     helper.counter2 += 1
                     result.transitions[new_state][key] = new_edge
                 # for state in mapping

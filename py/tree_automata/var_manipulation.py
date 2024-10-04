@@ -2,7 +2,7 @@ from typing import Dict, Tuple, Set, List
 
 from tree_automata.transition import TTransition, TEdge
 from tree_automata.automaton import iterate_edges, TTreeAut
-from helpers.string_manipulation import get_var_prefix
+from helpers.string_manipulation import get_var_prefix_from_list
 
 
 # This is strictly for compacting the UBDA before output for testing purposes.
@@ -54,7 +54,7 @@ def add_variables_bottom_up(ta: TTreeAut, max_var: int):
 
     var_vis = ta.get_var_visibility()
     true_leaves = set()
-    var_prefix = get_var_prefix(ta.get_var_order())
+    var_prefix = get_var_prefix_from_list(ta.get_var_order())
     for leaf in ta.get_output_states():
         if len(ta.transitions[leaf]) == 1:
             true_leaves.add(leaf)

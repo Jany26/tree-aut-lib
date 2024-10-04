@@ -1,10 +1,9 @@
 import unittest
 
 from formats.format_vtf import import_treeaut_from_vtf
-from formats.render_dot import export_to_file
 from canonization.normalization import ubda_normalize, is_normalized
 from tree_automata.functions.trimming import remove_useless_states
-from helpers.string_manipulation import create_var_order_dict
+from helpers.string_manipulation import create_var_order_list
 from canonization.unfolding import ubda_unfolding
 
 
@@ -18,7 +17,7 @@ class TestUBDANormalization(unittest.TestCase):
         test_bda_4 = import_treeaut_from_vtf("../tests/unfolding/unfoldingTest4.vtf")
         test_bda_5 = import_treeaut_from_vtf("../tests/unfolding/unfoldingTest5.vtf")
 
-        variables = create_var_order_dict("x", 8)
+        variables = create_var_order_list("x", 8)
 
         unfolded_bda_1 = ubda_unfolding(test_bda_1)
         unfolded_bda_2 = ubda_unfolding(test_bda_2)
@@ -36,8 +35,6 @@ class TestUBDANormalization(unittest.TestCase):
         self.assertTrue(is_normalized(normalized_bda_2))
         self.assertTrue(is_normalized(normalized_bda_3))
         self.assertTrue(is_normalized(normalized_bda_4))
-        # export_to_file(unfolded_bda_5, f"temp1")
-        # export_to_file(normalized_bda_5, f"temp2")
         self.assertTrue(is_normalized(normalized_bda_5))
 
     def test_only_normalization(self):
@@ -46,7 +43,7 @@ class TestUBDANormalization(unittest.TestCase):
         test_bda_3 = import_treeaut_from_vtf("../tests/normalization/normalizationTest3.vtf")
         test_bda_4 = import_treeaut_from_vtf("../tests/normalization/normalizationTest4.vtf")
 
-        variables = create_var_order_dict("x", 8)
+        variables = create_var_order_list("x", 8)
         normalized_bda_1 = ubda_normalize(test_bda_1, variables)
         normalized_bda_2 = ubda_normalize(test_bda_2, variables)
         normalized_bda_3 = ubda_normalize(test_bda_3, variables)
@@ -63,7 +60,7 @@ class TestUBDANormalization(unittest.TestCase):
         unfolded.reformat_keys()
         unfolded.reformat_states()
 
-        normalized = ubda_normalize(unfolded, create_var_order_dict("x", 4))
+        normalized = ubda_normalize(unfolded, create_var_order_list("x", 4))
         self.assertTrue(is_normalized(normalized))
         states = set(["{q0,q1,q2,q3}", "{q1,q2,q3}", "{q3,q4,q5}", "{q6}", "{q7}"])
         # self.assertSetEqual(set(normalized.get_states()), states)
@@ -73,7 +70,7 @@ class TestUBDANormalization(unittest.TestCase):
         initial = import_treeaut_from_vtf("../tests/normalization/newNormTest5.vtf")
         states = set(["{q1}", "{q3}", "{q2,q4}", "{q2}", "{q6}", "{q5}", "{q7}"])
 
-        normalized = ubda_normalize(initial, create_var_order_dict("x", 7))
+        normalized = ubda_normalize(initial, create_var_order_list("x", 7))
         self.assertTrue(is_normalized(normalized))
         self.assertSetEqual(set(normalized.get_states()), states)
         self.assertListEqual(normalized.get_var_occurence(), [1, 7, 7])
@@ -107,7 +104,7 @@ class TestUBDANormalization(unittest.TestCase):
         unfolded.reformat_keys()
         unfolded.reformat_states()
 
-        normalized = ubda_normalize(unfolded, create_var_order_dict("x", 9))
+        normalized = ubda_normalize(unfolded, create_var_order_list("x", 9))
         self.assertTrue(is_normalized(normalized))
         self.assertSetEqual(set(normalized.get_states()), states)
         self.assertListEqual(normalized.get_var_occurence(), [1, 4, 6, 9, 9])

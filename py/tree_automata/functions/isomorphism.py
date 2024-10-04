@@ -4,20 +4,19 @@
 # also a variant that does ignores specificity of port transitions,
 # only looks whether "some" outgoing port transition is present in a state
 
-from itertools import permutations
-from typing import Generator
+import itertools
+from typing import Generator, Optional
 
 from tree_automata import TTransition, TTreeAut
 
 
 def generate_state_mappings(list1: list[str], list2: list[str]) -> Generator[dict[str, str], None, None]:
-    for p in permutations(list2):
+    """
+    Generate mappings from states of the first tree automaton to states of the second automaton.
+    Afterwards, these mappings will be checked to see if isomorphism holds.
+    """
+    for p in itertools.permutations(list2):
         yield dict(map(lambda i, j: (i, j), list1, list(p)))
-
-
-# we check every possible bijection -> O(n!) complexity
-# since we will use this mainly for checking "boxes" (small - max. 10 states),
-# it is sufficient, since it is simple to implement
 
 
 def check_output_edges(
@@ -26,6 +25,10 @@ def check_output_edges(
     output_map_2: dict[str, list[str]],
     ignore_ports: bool,
 ) -> bool:
+    """
+    Before checking transitions with arity >= 1, check whether there is a way
+    to map output transitions to each other (1:1 bijection).
+    """
     if ignore_ports:
         rename_ports(output_map_1)
         rename_ports(output_map_2)
@@ -44,6 +47,10 @@ def check_output_edges(
 
 
 def rename_ports(output_map):
+    """
+    If the isomorphism check ignores ports, this function will rename all port transitions
+    to the same label = "Port", thus ignoring semantics hidden within their indices etc.
+    """
     for _, out_edges in output_map.items():
         for i in range(len(out_edges)):
             if out_edges[i].startswith("Port"):
@@ -51,6 +58,10 @@ def rename_ports(output_map):
 
 
 def check_edge_counts(state_map: dict, edge_map_1: dict, edge_map_2: dict) -> bool:
+    """
+    Preliminary check of isomorphism comparing edge counts of states from the given mapping.
+    Allows for early exit in many cases.
+    """
     for s1, s2 in state_map.items():
         if edge_map_1[s1] != edge_map_2[s2]:
             return False
@@ -58,6 +69,9 @@ def check_edge_counts(state_map: dict, edge_map_1: dict, edge_map_2: dict) -> bo
 
 
 def compare_edges(state_map: dict, edge1: TTransition, edge2: TTransition) -> bool:
+    """
+    Return True if the edges are the same with regards to the given state mapping.
+    """
     if edge2.src != state_map[edge1.src]:
         return False
     if edge1.info.label != edge2.info.label:
@@ -72,21 +86,31 @@ def compare_edges(state_map: dict, edge1: TTransition, edge2: TTransition) -> bo
     return True
 
 
-# when not isomorphic, returns empty dictionary {}
-# when isomorphic, returns a dictionary -> state to state bijection
-# ignore_ports = when True, ports will not be checked literally,
-# but only whether there is a port present or not
 def tree_aut_isomorphic(aut1: TTreeAut, aut2: TTreeAut, ignore_ports=False) -> dict[str, str]:
-    # isomorphic automata have to have the same number of states
-    outputs_1 = aut1.get_output_edges(inverse=True)
-    outputs_2 = aut2.get_output_edges(inverse=True)
+    """
+    Check the isomorphism of two tree automata/UBDAs.
+    When not isomorphic, returns empty dictionary {}
+    when isomorphic, returns a dictionary -> state to state bijection
 
-    edge_counts_1 = aut1.get_edge_counts()
-    edge_counts_2 = aut2.get_edge_counts()
+    ignore_ports = when True, ports will not be checked literally,
+    but only whether there is a port present or not (if "Port" prefix is present).
+
+    Note:
+    Check every possible bijection -> O(n!) complexity.
+    Since we will use this mainly for checking "boxes" (small - max. 10 states),
+    it is sufficient, since this is the simplest way to implement isomorphism checks.
+    """
+
+    # isomorphic automata have to have the same number of states
+    outputs_1: dict[str, list[str]] = aut1.get_output_edges(inverse=True)
+    outputs_2: dict[str, list[str]] = aut2.get_output_edges(inverse=True)
+
+    edge_counts_1: dict[str, int] = aut1.get_edge_counts()
+    edge_counts_2: dict[str, int] = aut2.get_edge_counts()
 
     # check total state and edge counts
-    states_1 = aut1.get_states()
-    states_2 = aut2.get_states()
+    states_1: list[str] = aut1.get_states()
+    states_2: list[str] = aut2.get_states()
     if len(states_1) != len(states_2):
         return {}
     if aut1.count_edges() != aut2.count_edges():
@@ -98,13 +122,13 @@ def tree_aut_isomorphic(aut1: TTreeAut, aut2: TTreeAut, ignore_ports=False) -> d
             continue
         if not check_edge_counts(state_map, edge_counts_1, edge_counts_2):
             continue
-        early_exit = False  # when a state has some edge not found in its equivalent, skip to another mapping
+        early_exit: bool = False  # when a state has some edge not found in its equivalent, skip to another mapping
         for s1, s2 in state_map.items():  # check each state to state mapping
-            # check non output edges
-            edgeset1 = set([k for k, e in aut1.transitions[s1].items() if len(e.children) != 0])
-            edgeset2 = set([k for k, e in aut2.transitions[s2].items() if len(e.children) != 0])
+            # check non output edges (edgesets only contain edges with arity > 0)
+            edgeset1: set[str] = set([k for k, e in aut1.transitions[s1].items() if len(e.children) != 0])
+            edgeset2: set[str] = set([k for k, e in aut2.transitions[s2].items() if len(e.children) != 0])
             for k1 in edgeset1:
-                pair = None
+                pair: Optional[str] = None
                 for k2 in edgeset2:
                     edges_are_equal = compare_edges(state_map, aut1.transitions[s1][k1], aut2.transitions[s2][k2])
                     if edges_are_equal:  # equivalent edges -> check others

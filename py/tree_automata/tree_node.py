@@ -1,4 +1,5 @@
-from typing import Generator
+from optparse import Option
+from typing import Generator, Optional
 import re
 
 
@@ -21,10 +22,10 @@ class TTreeNode:
     """
 
     def __init__(self, value):
-        self.value = value
-        self.parent = None
-        self.children = []
-        self.depth = 0
+        self.value: str = value
+        self.parent: Optional[TTreeNode] = None
+        self.children: list[TTreeNode] = []
+        self.depth: int = 0
 
     # TODO pretty print of a tree
     def __repr__(self):
@@ -44,43 +45,58 @@ class TTreeNode:
         # we use postorder DFS traversal in reverse order of child nodes (from 1 down to 0)
         pass
 
-    # Recursively prints the whole node in somehow structured manner.
-    # If called on root node, prints the whole tree
-    def print_node(self, offset: int = 0):
-        space = " " * offset
-        temp = space + 2 * self.depth * " " + str(self.value)
+    def print_node(self, offset: int = 0) -> None:
+        """
+        Recursively prints the whole node in somehow structured manner.
+        If called on root node, prints the whole tree
+        """
+        space: str = " " * offset
+        temp: str = space + 2 * self.depth * " " + str(self.value)
         print(temp + "   --> lv " + str(self.depth))
         for i in self.children:
             i.print_node(offset)
 
-    def update_depth(self, new_root_depth: int):
+    def update_depth(self, new_root_depth: int) -> None:
+        """
+        Recursively recompute the depth of all nodes of a Tree, starting with root node at `new_root_depth`.
+        """
         self.depth = new_root_depth
         for i in self.children:
             i.update_depth(new_root_depth + 1)
 
-    # Creates a child node with a specific value.
-    # Connects the created node to the current node/parent.
-    def add_child(self, value):
+    def add_child(self, value) -> None:
+        """
+        Creates a child node with a specific value.
+        Connects the created node to the current node/parent.
+        """
         new_child = TTreeNode(value)
         new_child.parent = self
         new_child.update_depth(self.depth + 1)
         self.children.append(new_child)
 
-    # Connects a specific node to current node
-    def connect_child(self, node):
+    def connect_child(self, node: "TTreeNode") -> None:
+        """
+        Connects a specific node to current node.
+        """
         self.children.append(node)
         node.parent = self
         node.update_depth(self.depth + 1)
 
-    # removes the "leftest" 1 child with specified value.
-    def remove_child(self, value):
+    def remove_child(self, value: str) -> None:
+        """
+        Removes the first child from the 'left' that matches the specified value.
+        If no child is matched, nothing happens.
+        """
         for i in range(len(self.children)):
             if self.children[i].value == value:
                 self.children.pop(i)
                 return
 
     def get_depth(self) -> int:
-        result = self.depth + 1
+        """
+        Compute the depth of the tree (using recursion).
+        """
+        result: int = self.depth + 1
         for i in self.children:
             temp = i.get_depth()
             if temp > result:
@@ -89,14 +105,24 @@ class TTreeNode:
 
     # Maybe redundant functions #
 
-    def find_from_left(self, value_to_find):
+    def find_from_left(self, value_to_find: str) -> Optional["TTreeNode"]:
+        """
+        Recursive search for a node with a specified value.
+        Finds the first left-most occurrence.
+        If not found, None is returned.
+        """
         for i in self.children:
             x = i.find_from_left(value_to_find)
             if x is not None:
                 return x
         return self if (self.value == value_to_find) else None
 
-    def find_from_right(self, value_to_find):
+    def find_from_right(self, value_to_find: str) -> Optional["TTreeNode"]:
+        """
+        Recursive search for a node with a specified value.
+        Finds the first right-most occurrence.
+        If not found, None is returned.
+        """
         temp_list = self.children[::-1]
         for i in temp_list:
             x = i.find_from_right(value_to_find)
@@ -104,30 +130,44 @@ class TTreeNode:
                 return x
         return self if (self.value == value_to_find) else None
 
+    def treenode_iterate_bfs(self) -> Generator["TTreeNode", None, None]:
+        pass
 
-def treenode_iterate_bfs(self) -> Generator[TTreeNode, None, None]:
-    pass
-
-
-def treenode_iterate_dfs(self) -> Generator[TTreeNode, None, None]:
-    pass
+    def treenode_iterate_dfs(self) -> Generator["TTreeNode", None, None]:
+        pass
 
 
 def convert_string_to_tree(string: str) -> TTreeNode:
+    """
+    Convert a structured string into the tree structure.
+    Special characters are `[ ] ;` -- brackets enclose children nodes, semicolons separate children node values.
 
-    # Does not cover edge cases! (e.g. wrong string structure)
-    def get_node_from_string(string: str):
+    Note: Node names are expected to only contain
+    alphanumeric characters (no whitespaces or special characters) for guaranteed functionality.
+
+    E.g. x[y;z] will create a tree rooted at node x with children y, z.
+    """
+
+    def get_node_from_string(string: str) -> tuple[TTreeNode, str]:
+        """
+        Carve out a part of the structured string enough to define a new tree node.
+        Return the created node and the rest of the structured string covering the rest of the tree structure.
+
+        Node: Does not cover edge cases! (e.g. wrong string structure)
+        """
         string = string.strip()
         node_name = re.match("^[\w]+", string).group()
         string = string.lstrip(str(node_name))
         node = TTreeNode(node_name)
         return node, string
 
-    # Recursive function to generate a tree from a structured string
-    # XYZ [...] = node with list of children following (can be nested)
-    # [ node1 ; node2 [...] ; node3 ; ... ] = list of children of a previous node
     def build_tree_from_string(current_node: TTreeNode, string: str) -> TTreeNode:
-        string = string.strip()  # skipping whitespaces
+        """
+        Recursive function to generate a tree from a structured string
+        XYZ [...] = node with list of children following (can be nested)
+        [ node1 ; node2 [...] ; node3 ; ... ] = list of children of a previous node
+        """
+        string: str = string.strip()  # skipping whitespaces
 
         # empty string - ending recursion
         if len(string) == 0:
@@ -159,13 +199,15 @@ def convert_string_to_tree(string: str) -> TTreeNode:
     return build_tree_from_string(None, string)
 
 
-# Reverse of the buildTreeFromString function
-# Creates a concise (string) representation of a tree from its structure
 def convert_tree_to_string(node: TTreeNode) -> str:
+    """
+    Reverse of the convert_string_to_tree() function.
+    Creates a concise (string) representation of a tree from its structure
+    """
     if len(node.children) == 0:
         return str(node.value)
     else:
-        temp = node.value + "["
+        temp: str = node.value + "["
         for i in range(len(node.children)):
             temp += str(convert_tree_to_string(node.children[i]))
             if i < len(node.children) - 1:

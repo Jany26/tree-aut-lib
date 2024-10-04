@@ -5,14 +5,16 @@
 [note] Better and faster version using "buddy" library is in ../cpp/
 """
 
+from io import TextIOWrapper
 import os
+from typing import Optional, Union
 
 from bdd.bdd_class import BDD
 from bdd.bdd_node import BDDnode
 from bdd.bdd_apply import apply_function
 
 
-def is_int(str):
+def is_int(str) -> bool:
     try:
         int(str)
         return True
@@ -22,64 +24,62 @@ def is_int(str):
 
 # TODO: use this class for dimacs parsing for cleaner code
 class DimacsHelper:
-    def __init__(self):
-        self.dimacs_type = None
-        self.node_counter = 0
-        self.variable_count = 0
-        self.clausule_count = 0
-        self.branch_count = 0
+    def __init__(self, source: str):
+        self.dimacs_type: Optional[str] = None
+        self.node_counter: int = 0
+        self.variable_count: int = 0
+        self.clausule_count: int = 0
+        self.branch_count: int = 0
+        self.processed_clausules: int = 1
+        self.bdd_name: str = os.path.splitext(os.path.basename(source))[0]
 
 
-# Reads a file in DIMACS format and stores it into a BDD instance.
-#   'source' = path to the file in dimacs format (accepting .dnf and .cnf suffix)
-#   'override' = "cnf"/"dnf" -> treat the file as the specified format
-#       no override will imply the format from the dimacs preamble)
-#   'verbose' = if True, the function will print debug info
-#   'horizontal_cut' = None by default => treats the function 'as is'
-#       if horizontal_cut is specified (integer value), every variable of
-#       higher value will be skipped, useful for testing purposes
-#   'max_clausules' = None by default => only processes a certain amount of
-#       clausules, the rest are skipped (for testing purposes)
 def dimacs_read(source: str, override=None, verbose=False, horizontal_cut=None, max_clausules=None) -> BDD:
+    """
+    Reads a file in DIMACS format and stores it into a BDD instance.
+    - source            ... path to the file in dimacs format (accepting .dnf and .cnf suffix)
+    - override          ... "cnf"/"dnf" -> treat the file as the specified format
+                            no override will imply the format from the dimacs preamble)
+    - verbose           ... if True, the function will print debug info
+    - horizontal_cut    ... None by default => treats the function 'as is'
+                            if horizontal_cut is specified (integer value), every variable of
+                            higher value will be skipped, useful for testing purposes
+    'max_clausules'     ... None by default => only processes a certain amount of
+                            clausules, the rest are skipped (for testing purposes)
+    """
+
     # for now, we treat cnf as dnf, as they are more natural to parse as BDDs
     if not source.lower().endswith((".dnf", ".cnf")):
         Exception("unknown format for dimacs parsing")
     file = open(source, "r")
-    base = os.path.basename(source)
-    bdd_name = os.path.splitext(base)[0]
-    dimacs_type = None
-    node_counter = 0
-    variable_count = 0
-    clausule_count = 0
-    branch_count = 0
+    info = DimacsHelper(source)
 
     result: BDD = BDD(None, None)
     terminal_0 = BDDnode(f"t0", 0)
     terminal_1 = BDDnode(f"t1", 1)
 
-    processed_clausules = 1
     for line_number, line in enumerate(file, start=1):
-        words = line.strip().split()
+        words: list[str] = line.strip().split()
         if line.startswith("c"):  # comment
             continue
 
         if line.startswith("p"):  # p dnf variable_count clausule_count
-            dimacs_type = words[1]  # so far all types are treated as dnf
+            info.dimacs_type = words[1]  # so far all types are treated as dnf
             if override is not None and override in ["dnf", "cnf"]:
-                dimacs_type = override
-            variable_count = int(words[2])
-            clausule_count = int(words[3])
+                info.dimacs_type = override
+            info.variable_count = int(words[2])
+            info.clausule_count = int(words[3])
             if max_clausules is not None:
-                clausule_count = max_clausules
+                info.clausule_count = max_clausules
             if verbose:
-                print(f"{dimacs_type}, clausules = {clausule_count}, variables = {variable_count}")
+                print(f"{info.dimacs_type}, clausules = {info.clausule_count}, variables = {info.variable_count}")
             continue
 
         if verbose:
-            print(f"processing clausule {processed_clausules} = {words}")
+            print(f"processing clausule {info.processed_clausules} = {words}")
 
-        if processed_clausules > clausule_count:
-            result.name = bdd_name
+        if info.processed_clausules > info.clausule_count:
+            result.name = info.bdd_name
             result.reformat_nodes()
             return result
 
@@ -87,7 +87,7 @@ def dimacs_read(source: str, override=None, verbose=False, horizontal_cut=None, 
             print("dimacs_read():", f"skipping unrecoginzed word at line {line_number}")
             continue
 
-        variables = []
+        variables: list[int] = []
         for word in words:
             if not is_int(word):
                 raise Exception("dimacs_read():", f"Bad value {word} on line {line_number}!")
@@ -97,52 +97,52 @@ def dimacs_read(source: str, override=None, verbose=False, horizontal_cut=None, 
         if horizontal_cut is not None:
             variables = [i for i in variables if abs(i) <= horizontal_cut]
         if len(variables) < 2:
-            processed_clausules += 1
+            info.processed_clausules += 1
             continue
         variables = sorted(variables, key=abs, reverse=True)
         # print(f" > {variables}")
 
         # bottom-up branch building approach
-        branch_count += 1
-        branch = BDD(f"branch_{branch_count}", None)
-        branch.root = terminal_1 if dimacs_type == "dnf" else terminal_0
+        info.branch_count += 1
+        branch = BDD(f"branch_{info.branch_count}", None)
+        branch.root = terminal_1 if info.dimacs_type == "dnf" else terminal_0
 
         for var in variables:
-            current = BDDnode(f"n{node_counter}", str(abs(var)))
-            node_counter += 1
-            leaf = terminal_0 if dimacs_type == "dnf" else terminal_1
+            current = BDDnode(f"n{info.node_counter}", str(abs(var)))
+            info.node_counter += 1
+            leaf: BDDnode = terminal_0 if info.dimacs_type == "dnf" else terminal_1
             if var > 0:
-                if dimacs_type == "dnf":
+                if info.dimacs_type == "dnf":
                     current.attach(leaf, branch.root)
                 else:
                     current.attach(branch.root, leaf)
             else:
-                if dimacs_type == "dnf":
+                if info.dimacs_type == "dnf":
                     current.attach(branch.root, leaf)
                 else:
                     current.attach(leaf, branch.root)
             branch.root = current
         # print(branch)
-        func = "or" if dimacs_type == "dnf" else "and"
+        func: str = "or" if info.dimacs_type == "dnf" else "and"
         if verbose:
             print(branch)
             print(f"applying {func}")
             print()
-        result = apply_function(func, result, branch)
-        processed_clausules += 1
+        result: BDD = apply_function(func, result, branch)
+        info.processed_clausules += 1
         if verbose:
             if result.root != None:
                 print(result)
 
-    if clausule_count != branch_count:
+    if info.clausule_count != info.branch_count:
         print("dimacs_read(): clausule_count != branch_count")
-    result.name = bdd_name
+    result.name = info.bdd_name
     result.reformat_nodes()
     return result
 
 
-def cache_dump_dnf(dst, cache):
-    line = ""
+def cache_dump_dnf(dst: TextIOWrapper, cache: list[tuple[Union[str, int], int]]) -> None:
+    line: str = ""
     for value, direction in cache:
         if direction == 0:
             line += "-"
@@ -151,11 +151,13 @@ def cache_dump_dnf(dst, cache):
     dst.write(line)
 
 
-# Traverses the BDD recursively, while storing the path in 'cache'.
-# When a leaf node is reached, prints out the path to the node to 'dst'.
-# For 'dnf', the values and directions taken are directly.
-#   - taking a 'low' branch towards 1 will yield a negation in the clausule.
-def dimacs_write_recursive_dnf(node: BDDnode, dst, cache: list):
+def dimacs_write_recursive_dnf(node: BDDnode, dst, cache: list[tuple[Union[int, str], int]]) -> None:
+    """
+    Traverses the BDD recursively, while storing the path in 'cache'.
+    When a leaf node is reached, prints out the path to the node to 'dst'.
+    For 'dnf', the values and directions taken are directly.
+    - taking a 'low' branch towards 1 will yield a negation in the clausule.
+    """
     if node.is_leaf():
         if node.value == 1:
             cache_dump_dnf(dst, cache)
@@ -171,12 +173,12 @@ def dimacs_write_recursive_dnf(node: BDDnode, dst, cache: list):
     return
 
 
-def dimacs_write_iterative_dnf(bdd: BDDnode, dst):
+def dimacs_write_iterative_dnf(bdd: BDDnode, dst) -> None:
     pass
 
 
-def cache_dump_cnf(dst, cache):
-    line = ""
+def cache_dump_cnf(dst: TextIOWrapper, cache: list[tuple[Union[str, int], int]]) -> None:
+    line: str = ""
     for value, direction in cache:
         if direction == 1:
             line += "-"
@@ -185,11 +187,13 @@ def cache_dump_cnf(dst, cache):
     dst.write(line)
 
 
-# Traverses the BDD recursively, while storing the path in 'cache'.
-# When a leaf node is reached, prints out the path to the node to 'dst'.
-# For 'cnf' the values and directions taken are 'reversed' in the result.
-#   - taking a 'high' branch towards 0 will yield a negation in the clausule.
-def dimacs_write_recursive_cnf(node: BDDnode, dst, cache: list):
+def dimacs_write_recursive_cnf(node: BDDnode, dst, cache: list[tuple[Union[str, int], int]]) -> None:
+    """
+    Traverses the BDD recursively, while storing the path in 'cache'.
+    When a leaf node is reached, prints out the path to the node to 'dst'.
+    For 'cnf' the values and directions taken are 'reversed' in the result.
+      - taking a 'high' branch towards 0 will yield a negation in the clausule.
+    """
     if node.is_leaf():
         if node.value == 0:
             cache_dump_cnf(dst, cache)
@@ -204,19 +208,21 @@ def dimacs_write_recursive_cnf(node: BDDnode, dst, cache: list):
     return
 
 
-def dimacs_write_iterative_cnf(bdd: BDDnode, dst):
+def dimacs_write_iterative_cnf(bdd: BDDnode, dst) -> None:
     pass
 
 
-# Exports the BDD into DIMACS format.
-#   'dst' - file name where the BDD will be exported to
-#   'recursive' - uses recursive traversal by default,
-#       if False, iterative traversal will be used (TODO)
-#   'format' - specifies which normal form will be used ('dnf'/'cnf')
-def dimacs_write(bdd: BDD, dst, recursive=True, format="cnf"):
-    file = open(dst, "w")
+def dimacs_write(bdd: BDD, dst: str, recursive=True, format="cnf"):
+    """
+    Exports the BDD into DIMACS format.
+    'dst' - file name where the BDD will be exported to
+    'recursive' - uses recursive traversal by default,
+        if False, iterative traversal will be used (TODO)
+    'format' - specifies which normal form will be used ('dnf'/'cnf')
+    """
+    file: TextIOWrapper = open(dst, "w")
     if recursive is True:
-        cache = []
+        cache: list[tuple[Union[str, int], int]] = []  # (node.value, ) tuples
         file.write(f"c {bdd.name}\n")
         var_count = len(bdd.get_variable_list())
         if format == "dnf":

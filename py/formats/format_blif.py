@@ -5,7 +5,9 @@
 [note] Better and faster version using BuDDy library is in ../cpp/
 """
 
+from io import TextIOWrapper
 import re
+from typing import Optional
 
 from bdd.bdd_apply import apply_function
 from bdd.bdd_class import BDD
@@ -14,31 +16,31 @@ from bdd.bdd_node import BDDnode
 
 class BlifParser:
     def __init__(self):
-        self.name = ""  # name of the benchmark = resulting BDD name
+        self.name: str = ""  # name of the benchmark = resulting BDD name
         self.tokens: list[str] = []
-        self.token = None  # current token
-        self.inputs = []  # contents of the .inputs list
-        self.outputs = []  # contents of the .outputs list
-        self.names = []  # contents of the current .names list
+        self.token: Optional[str] = None  # current token
+        self.inputs: list[str] = []  # contents of the .inputs list
+        self.outputs: list[str] = []  # contents of the .outputs list
+        self.names: list[str] = []  # contents of the current .names list
 
         # mapping strings from <.inputs> to indices => inferring variable order
         self.var_map: dict[str, int] = {}
 
-        self.node_counter = 0  # for unique node names
-        self.constructs = 0  # progress/debug (total constructs)
-        self.constructs_counter = 0  # progress/debug (done constructs)
+        self.node_counter: int = 0  # for unique node names
+        self.constructs: int = 0  # progress/debug (total constructs)
+        self.constructs_counter: int = 0  # progress/debug (done constructs)
 
-        self.result = BDD(self.name, None)
-        self.bdd = BDD(self.name, None)
+        self.result: BDD = BDD(self.name, None)
+        self.bdd: BDD = BDD(self.name, None)
 
-        self.t0 = BDDnode("t0", 0)
-        self.t1 = BDDnode("t1", 1)
+        self.t0: BDDnode = BDDnode("t0", 0)
+        self.t1: BDDnode = BDDnode("t1", 1)
 
     def __repr__(self):
         return "TODO"
 
-    def parse(self, filepath) -> BDD:
-        file = open(filepath, "r")
+    def parse(self, filepath: str) -> BDD:
+        file: TextIOWrapper = open(filepath, "r")
         self.tokenize(file)
         file.close()
         self.create_vars_cache()
@@ -46,7 +48,7 @@ class BlifParser:
         self.result.name = self.name
         pass
 
-    def tokenize(self, file):
+    def tokenize(self, file: TextIOWrapper):
         self.tokens = []
         for line in file:
             line.strip()
@@ -57,8 +59,8 @@ class BlifParser:
             self.tokens.append("\n")
 
     def create_vars_cache(self):
-        vars = set()
-        i = 0
+        vars: set[str] = set()
+        i: int = 0
         while i < len(self.tokens):
             if self.tokens[i] in [".inputs", ".outputs", ".names"]:
                 if self.tokens[i] == ".names":
@@ -72,12 +74,12 @@ class BlifParser:
                     i += 1
             else:
                 i += 1
-        vars = list(vars)
+        vars: list = list(vars)
         self.var_map = {}
         for i in vars:
             match = re.search(r"\(([^()]*)\)", i)
             if match:
-                result = match.group(0)[1:-1]
+                result: str = match.group(0)[1:-1]
                 self.var_map[i] = int(result)
             else:
                 self.var_map[i] = int(i)
@@ -141,15 +143,17 @@ class BlifParser:
             names_list()
 
         def names_content():
-            input_plane = get_token()
-            output = int(get_token())
+            input_plane: str = get_token()
+            output: int = int(get_token())
             get_token()  # '\n'
-            assignment = [(self.names[i], int(input_plane[i])) for i in range(len(self.names) - 1)]
+            assignment: list[tuple[str, int]] = [
+                (self.names[i], int(input_plane[i])) for i in range(len(self.names) - 1)
+            ]
             assignment.sort(reverse=True)
 
-            straight = BDDnode(self.node_counter, f"{self.names[-1]}", self.t0, self.t1)  #
+            straight: BDDnode = BDDnode(self.node_counter, f"{self.names[-1]}", self.t0, self.t1)  #
             self.node_counter += 1
-            complement = BDDnode(self.node_counter, f"{self.names[-1]}", self.t1, self.t0)  # complemented form
+            complement: BDDnode = BDDnode(self.node_counter, f"{self.names[-1]}", self.t1, self.t0)  # complemented form
             self.node_counter += 1
 
             root, dump = (straight, complement) if output == 1 else (complement, straight)
@@ -170,10 +174,10 @@ class BlifParser:
         construct_list()
 
     def check_names(self, tokens: list):
-        inputs = []
-        outputs = []
-        not_found = []
-        i = 0
+        inputs: list[str] = []
+        outputs: list[str] = []
+        not_found: list[str] = []
+        i: int = 0
         while i < len(tokens):
             if tokens[i] == ".inputs":
                 i += 1
@@ -205,12 +209,12 @@ class BlifParser:
                 continue
 
 
-# if __name__ == '__main__':
-#     blif = BlifParser()
-#     blif.parse("../benchmark/blif/C17.blif")
-#     print(blif.result.count_nodes())
-#     self = create_treeaut_from_bdd(blif.result)
-#     self.reformat_states()
-#     export_treeaut_to_vtf(self, "../benchmark/blif/C17.vtf")
+# Usage example:
+# blif = BlifParser()
+# blif.parse("../benchmark/blif/C17.blif")
+# print(blif.result.count_nodes())
+# temp = create_treeaut_from_bdd(blif.result)
+# temp.reformat_states()
+# export_treeaut_to_vtf(temp, "../benchmark/blif/C17.vtf")
 
 # end of blif_parser.py

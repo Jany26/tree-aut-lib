@@ -11,7 +11,7 @@ import copy
 
 from blif_analysis import test_folding_on_sub_benchmarks, boxname_simplified_translation, formatBoxCounts
 from tree_automata import TTreeAut, reachable_top_down
-from tree_automata.var_manipulation import create_var_order_dict, add_variables_bottom_up
+from tree_automata.var_manipulation import create_var_order_list, add_variables_bottom_up
 from helpers.utils import box_orders
 from canonization.folding import ubda_folding
 from canonization.normalization import ubda_normalize
@@ -27,7 +27,7 @@ def get_folded_dimacs(initial: TTreeAut, order):
 
     unfolded_extra = copy.deepcopy(unfolded)
     add_variables_bottom_up(unfolded_extra, vars)
-    var_order = create_var_order_dict("", vars + 2, start=0)
+    var_order = create_var_order_list("", vars + 2, start=0)
     normalized = ubda_normalize(unfolded_extra, var_order)
     normalized_clean = copy.deepcopy(normalized)
     normalized_clean.reformat_keys()

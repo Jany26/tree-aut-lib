@@ -7,6 +7,7 @@ for generating a graphical representation of the TA. (TEXT OUTPUT)
 [link] https://graphviz.org/
 """
 
+from io import TextIOWrapper
 from tree_automata import TTreeAut, TTransition, iterate_edges
 from helpers.utils import box_catalogue
 
@@ -15,14 +16,14 @@ from helpers.utils import box_catalogue
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-help_point = "shape=point, width=0.001, height=0.001"
-small_point = "shape=point, width=0.05, height=0.05"
-connector_edge = "splines=true, overlap=false, penwidth=1.0, arrowhead=empty"
-output_edge = "penwidth=2.0, arrowsize=0.5"
-inner_edge = "penwidth=1.0, arrowsize=0.5, arrowhead=vee"
+help_point: str = "shape=point, width=0.001, height=0.001"
+small_point: str = "shape=point, width=0.05, height=0.05"
+connector_edge: str = "splines=true, overlap=false, penwidth=1.0, arrowhead=empty"
+output_edge: str = "penwidth=2.0, arrowsize=0.5"
+inner_edge: str = "penwidth=1.0, arrowsize=0.5, arrowhead=vee"
 
 
-def root_handle(roots: list, file):
+def root_handle(roots: list[str], file: TextIOWrapper) -> None:
     file.write(f'\tnode [ label="", {help_point} ];\n')
     for root in roots:
         file.write(f'\t"->{root}"\n')
@@ -32,19 +33,21 @@ def root_handle(roots: list, file):
     file.write("\n")
 
 
-def output_edge_handle(edge: TTransition, file, debug=False):
+def output_edge_handle(edge: TTransition, connector_node: str, file: TextIOWrapper, debug=False) -> bool:
     if len(edge.children) == 0:
-        file.write(f'\tnode [ label="", {help_point} ];\n')
-        end_name = f"{edge.src}-{edge.info.label}->"
-        file.write(f'\t"{end_name}"\n')
-        file.write(f'\t"{edge.src}" -> "{end_name}" [ {output_edge}, label = "{edge.info.label}" ] \n\n')
+        file.write(f'\t"{connector_node}" [ {help_point} ];\n')
+        if debug:
+            print(f"connector_node {connector_node}")
+        file.write(f'\t"{edge.src}" -> "{connector_node}" [ label=<<B>[{edge.info.label}]</B>>, {output_edge} ]\n')
+        if debug:
+            print(f"[{edge.src}] -- {edge.info.label} --> [{connector_node}]", "output_edge")
         return True
     return False
 
 
-def all_states_handle(ta: TTreeAut, file):
-    states = ta.get_states()
-    leaves = {s: None for s in ta.get_output_states()}
+def all_states_handle(ta: TTreeAut, file: TextIOWrapper) -> None:
+    states: list[str] = ta.get_states()
+    leaves: set[str] = set(ta.get_output_states())
     file.write("\tnode [ shape=circle, style=filled ];\n")
 
     for s in states:
@@ -53,7 +56,7 @@ def all_states_handle(ta: TTreeAut, file):
     file.write("\n")
 
 
-def edge_handle(edge: TTransition, file, debug=False):
+def edge_handle(edge: TTransition, file: TextIOWrapper, debug=False) -> None:
     if debug:
         print(f"- - edge_handle {edge} - -")
     # if output_edge_handle(edge, file, debug):
@@ -64,16 +67,10 @@ def edge_handle(edge: TTransition, file, debug=False):
     # creates an unexpected error for Graphviz in some cases
     # - solution was to remove special treatment of self-loops
 
-    connector_node = f"{edge.src}-{edge.info.label}->"
+    connector_node: str = f"{edge.src}-{edge.info.label}->"
 
     # case 1 : output edge
-    if len(edge.children) == 0:
-        file.write(f'\t"{connector_node}" [ {help_point} ];\n')
-        if debug:
-            print(f"connector_node {connector_node}")
-        file.write(f'\t"{edge.src}" -> "{connector_node}" [ label=<<B>[{edge.info.label}]</B>>, {output_edge} ]\n')
-        if debug:
-            print(f"[{edge.src}] -- {edge.info.label} --> [{connector_node}]", "output_edge")
+    if output_edge_handle(edge, connector_node, file, debug):
         return
 
     # case 2 : regular edge (connector node needed)
@@ -86,7 +83,7 @@ def edge_handle(edge: TTransition, file, debug=False):
     if debug:
         print(f"NODE {connector_node}")
 
-    connector_label = '"'
+    connector_label: str = '"'
     if edge.info.variable != "":
         connector_label += f"[{edge.info.variable}] "
     connector_label += f'{edge.info.label}"'
@@ -97,11 +94,11 @@ def edge_handle(edge: TTransition, file, debug=False):
         print(f"[{edge.src}] -> [{connector_node}]", "connector_edge")
 
     # edge: connector node -> children
-    current_child = 0
-    current_box = 0
+    current_child: int = 0
+    current_box: int = 0
     while current_child < len(edge.children):
-        edge_label = f'"{current_box}'
-        has_box = False
+        edge_label: str = f'"{current_box}'
+        has_box: bool = False
         if edge.info.box_array != [] and edge.info.box_array[current_box] is not None:
             has_box = True
             edge_label += f": {edge.info.box_array[current_box]}"
@@ -109,8 +106,8 @@ def edge_handle(edge: TTransition, file, debug=False):
 
         # box handling (mapping more child states to one edge (port_arity can be > 1))
         if has_box:
-            box_name = edge.info.box_array[current_box]
-            arity = box_catalogue[box_name].port_arity
+            box_name: str = edge.info.box_array[current_box]
+            arity: int = box_catalogue[box_name].port_arity
             if arity > 1:
                 temp = f"{connector_node}_{current_child}_{current_box}"
 
@@ -147,8 +144,8 @@ def edge_handle(edge: TTransition, file, debug=False):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def export_treeaut_to_dot(ta: TTreeAut, filepath: str):
-    file = open(filepath, "w")
+def export_treeaut_to_dot(ta: TTreeAut, filepath: str) -> None:
+    file: TextIOWrapper = open(filepath, "w")
     file.write("digraph G {\n")
     all_states_handle(ta, file)
     root_handle(ta.roots, file)
@@ -156,7 +153,6 @@ def export_treeaut_to_dot(ta: TTreeAut, filepath: str):
         edge_handle(edge, file, debug=False)
     file.write("}\n")
     file.close()
-    pass
 
 
 # End of file format_dot.py

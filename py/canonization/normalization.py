@@ -17,31 +17,40 @@ from helpers.string_manipulation import create_string_from_name_set
 
 class NormalizationHelper:
     def __init__(self, treeaut: TTreeAut, variables: list, verbose: bool, output):
-        self.treeaut = treeaut  # copy of the initial TA (un-normalized)
-        self.roots = {}
-        self.transitions = []  # these will be in the final TA/UBDA
-        self.worklist = []  # currently considered (macro)states
-        self.next_worklist = []  # which states are considered in next iteration
-        self.symbols = {}
+        self.treeaut: TTreeAut = treeaut  # copy of the initial TA (un-normalized)
+        self.roots: dict[str, list[str]] = {}
+
+        # transition => (src_macrostate, symbol, variable, list of child macrostates)
+        # these transitions after normalization are correct, and will be in the final TA/UBDA
+        self.transitions: list[tuple[list[str], str, str, list[list[str]]]] = []
+        self.worklist: list[list[str]] = []  # currently considered (macro)states
+        self.next_worklist: list[list[str]] = []  # which states are considered in next iteration
+        self.symbols: dict[str, int] = {}
         self.var_worklist: "dict[str, list]" = {var: [] for var in variables}
         for symbol, arity in treeaut.get_symbol_arity_dict().items():
             if arity > 0:
                 self.symbols[symbol] = arity
-        self.lookup = {}
-        self.edge_lookup = self.edges_to_process_cache_init()
+        self.lookup: dict[str, list[tuple[str, TTransition]]] = {}  #
+
+        # NOTE: norm.edge_lookup is mostly redundant, no?
+        # since it basically just mirrors self.treeaut.transitions
+        # except the lowest level is not a dict key->transition, but a set of keys.
+        self.edge_lookup: dict[str, set[str]] = self.edges_to_process_cache_init()
         for edge_dict in treeaut.transitions.values():
             for key, edge in edge_dict.items():
                 if str(edge.children) not in self.lookup:
                     self.lookup[str(edge.children)] = []
                 self.lookup[str(edge.children)].append((key, edge))
-        self.processed_edges = set()
-        self.keys = set()
+        self.processed_edges: set[str] = set()
+
+        # norm.keys = all keys of the initial tree automaton, mostly debugging, now redundant
+        self.keys: set[str] = set()
         for edge_dict in treeaut.transitions.values():
             for k in edge_dict.keys():
                 self.keys.add(k)
-        self.variables = variables[::-1]
-        self.verbose = verbose
-        self.output = output
+        self.variables: list[str] = variables[::-1]
+        self.verbose: bool = verbose
+        self.output: str = output
 
     def __repr__(self):
         result = ""
@@ -56,8 +65,11 @@ class NormalizationHelper:
             result += f"--> {i[3]}\n"
         return result
 
-    def edges_to_process_cache_init(self) -> "dict[str, set[str]]":
-        result = {}
+    def edges_to_process_cache_init(self) -> dict[str, set[str]]:
+        """
+        Return a dictionary that assigns to each state a set of transition keys that start from that state.
+        """
+        result: dict[str, set[str]] = {}
         for edge_dict in self.treeaut.transitions.values():
             for key, edge in edge_dict.items():
                 for child in edge.children:
@@ -72,10 +84,10 @@ class NormalizationHelper:
         processed = i.e. some edge leading to some state from the macrostate
         has not yet been encountered.
         """
-        temp = []
+        temp: list[str] = []
         for macrostate in self.worklist:
             # NOTE: check subset, (to not create redundant "single" states that can be represented by )
-            is_fully_processed = True
+            is_fully_processed: bool = True
             for state in macrostate:
                 if len(self.edge_lookup[state]) != 0:
                     for k in self.edge_lookup[state]:
@@ -132,8 +144,10 @@ class NormalizationHelper:
         print(worklist_str)
 
 
-def process_possible_edges(tuple: list, norm: NormalizationHelper, current_var: str, symbol: str):
-    children_lists = [list(i) for i in itertools.product(*tuple)]
+def process_possible_edges(
+    children_macrostates: list[list[str]], norm: NormalizationHelper, current_var: str, symbol: str
+):
+    children_lists = [list(i) for i in itertools.product(*children_macrostates)]
     new_macrostate = set()
     force_var = False
     keys_to_process = []
@@ -173,36 +187,45 @@ def process_possible_edges(tuple: list, norm: NormalizationHelper, current_var: 
 
         # if self-loop (even partial), then no variable on edge
         # variable appears only if that was the case in the original UBDA
-        if new_macrostate in tuple or not force_var:
+        if new_macrostate in children_macrostates or not force_var:
             # if new_macrostate in tuple:
             added_var = ""
         else:
             added_var = current_var
 
-        lookup_str = str([new_macrostate, symbol, added_var, tuple])
+        lookup_str = str([new_macrostate, symbol, added_var, children_macrostates])
         if lookup_str not in norm.processed_edges:
             norm.processed_edges.add(lookup_str)
-            norm.transitions.append([new_macrostate, symbol, added_var, tuple])
+            norm.transitions.append(tuple([new_macrostate, symbol, added_var, children_macrostates]))
             if norm.verbose:
                 if norm.output is None:
-                    print("[!] edge =", [new_macrostate, symbol, added_var, tuple])
+                    print("[!] edge =", [new_macrostate, symbol, added_var, children_macrostates])
                 else:
-                    norm.output.write(f"[!] edge = {[new_macrostate, symbol, added_var, tuple]}\n")
+                    norm.output.write(f"[!] edge = {[new_macrostate, symbol, added_var, children_macrostates]}\n")
                 # print("  [keys] =", keys_to_process)
             for root in norm.treeaut.roots:
                 if root in new_macrostate:
                     norm.roots[str(new_macrostate)] = new_macrostate
 
 
-# Another approach to normalization. This approach also goes bottom-up,
-# but remembers current variable, and always decreases the variable with each
-# iteration until it reaches the root.
-# This approach mostly does not create unnecessary transitions.
 def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTreeAut:
+    """
+    Another approach to normalization. This approach also goes bottom-up,
+    but remembers current variable, and always decreases the variable with each
+    iteration until it reaches the root.
+    This approach mostly does not create unnecessary transitions.
+
+    Normalization is similar to determinization, thus works with sets of states
+    (represented as lists ordered using state_name_sort()).
+    """
     norm = NormalizationHelper(ta, vars, verbose, output)
-    var = norm.variables.pop(0)  # discrepancy about variables on output edges
+
+    # NOTE: discrepancy about variables on output edges
+    # if the BDA is defined over variables x(1) to x(n),
+    # then output edges will have variable x(n+1)
+    var: str = norm.variables.pop(0)
     for symbol, state_list in ta.get_output_edges().items():
-        norm.transitions.append([state_list, symbol, var, []])
+        norm.transitions.append(tuple([state_list, symbol, var, []]))
         norm.worklist.append(state_list)
         # norm.var_worklist[var].append(state_list)
     if norm.verbose:
@@ -211,15 +234,15 @@ def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTre
         else:
             norm.output.write(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}\n")
     while norm.variables != []:
-        old_var = var
-        var = norm.variables.pop(0)
+        old_var: str = var
+        var: str = norm.variables.pop(0)
         if norm.verbose:
             if norm.output is None:
                 print(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}")
             else:
                 norm.output.write(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}\n")
         for sym in norm.symbols:
-            tuples = []
+            tuples: list[list[list[str]]] = []
             # for i in product(norm.var_worklist[old_var], repeat=norm.symbols[sym]):
             for i in itertools.product(norm.worklist, repeat=norm.symbols[sym]):
                 tuples.append(list(i))
@@ -230,6 +253,9 @@ def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTre
                     else:
                         norm.output.write(f"   > tuple = {t}\n")
                 process_possible_edges(t, norm, var, sym)
+                # NOTE: some sort of optimization is needed for redundant edges
+                # e.g. cycles through variables, or edges from higher variable states "back" to lower variable states
+                # that semantically mean deciding over the same variables more than once
             # norm.optimize_redundant_states()
             # norm.check_for_unprocessed_states()
         norm.worklist = norm.next_worklist
@@ -241,19 +267,21 @@ def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTre
     return ta
 
 
-# remove edges that do not comply with the "variable order"
-#   - either edges that create a chain of same variable edges (x1, x1)
-#   - or edges that create a chain of unordered variable edges (x2, x1)
-def remove_bad_transitions(ta: TTreeAut, vars: list):
-    var_index = {j: i for i, j in enumerate(vars, start=1)}
-    max_var_cache = {}
+def remove_bad_transitions(ta: TTreeAut, vars: list[str]) -> None:
+    """
+    Remove edges that do not comply with the "variable order":
+    - either edges that create a chain of same variable edges (x1, x1)
+    - or edges that create a chain of disordered variable edges (x2, x1) if the order is x1 -> x2 -> ...
+    """
+    var_index: dict[int, str] = {j: i for i, j in enumerate(vars, start=1)}
+    max_var_cache: dict[str, str] = {}  # state -> (max) variable found, which will be kept in the final UBDA
     for edge in iterate_edges(ta):
         if edge.info.variable == "":
             continue
         if edge.src not in max_var_cache or max_var_cache[edge.src] < var_index[edge.info.variable]:
             max_var_cache[edge.src] = var_index[edge.info.variable]
 
-    flagged_edges = set()
+    flagged_edges: set[tuple[str, str]] = set()  # state, key tuple for edge lookup
 
     for edge_dict in ta.transitions.values():
         for key, edge in edge_dict.items():
@@ -270,15 +298,19 @@ def remove_bad_transitions(ta: TTreeAut, vars: list):
 
 
 def create_treeaut_from_helper(norm: NormalizationHelper) -> TTreeAut:
-    name = f"normalized({norm.treeaut.name})"
-    roots = [create_string_from_name_set(i) for i in norm.roots.values()]
+    """
+    Build the result using the stored data in the normalization helper.
+    Mainly turn the macrostates (lists of states) into state "strings".
+    """
+    name: str = f"normalized({norm.treeaut.name})"
+    roots: list[str] = [create_string_from_name_set(i) for i in norm.roots.values()]
     roots.sort()
-    counter = 1
-    transition_dict = {}
+    counter: int = 1
+    transition_dict: dict[str, dict[str, TTransition]] = {}
     for edge in norm.transitions:
-        src_state = create_string_from_name_set(edge[0])
+        src_state: str = create_string_from_name_set(edge[0])
         edge_info = TEdge(edge[1], [], edge[2])
-        children = [create_string_from_name_set(i) for i in edge[3]]
+        children: list[str] = [create_string_from_name_set(i) for i in edge[3]]
         transition = TTransition(src_state, edge_info, children)
         if src_state not in transition_dict:
             transition_dict[src_state] = {}
@@ -288,23 +320,25 @@ def create_treeaut_from_helper(norm: NormalizationHelper) -> TTreeAut:
     return result
 
 
-# This function performs a bottom-up check of normalization.
-# Each combination of children is supposed to meet parents through
-# a few transitions. In normalized UBDA the transitions do not repeat the same
-# variable. Either the edges to the specific children list have all
-# the variables once or have one "variable-less" edge. (empty string as var)
 def is_normalized(ta: TTreeAut, verbose=False) -> bool:
-    # lookup = edge symbol -> children array key ->
-    # set of variables over all transitions from parent to child
-    result: "dict[str, dict[str, set]]" = {}
+    """
+    This function performs a bottom-up check of normalization.
+    Each combination of children is supposed to meet parents through
+    a few transitions. In normalized UBDA the transitions do not repeat the same
+    variable. Either the edges to the specific children tuple have all
+    the variables once or have one "variable-less" edge. (empty string as var)
+    """
+    # lookup = edge symbol -> children array key -> set of variables
+    # over all transitions from parent to child (empty string "" for unlabeled transitions)
+    result: dict[str, dict[str, set[str]]] = {}
 
-    duplicateEdges: "list[TTransition]" = []
+    duplicateEdges: list[TTransition] = []
 
     for symbol, arity in ta.get_symbol_arity_dict().items():
         if arity != 0:
             result[symbol] = {}
-    queue = [i for i in ta.roots]
-    visited = set()
+    queue: list[str] = [i for i in ta.roots]
+    visited: set[str] = set()
     while queue != []:
         parent = queue.pop(0)
         if parent in visited:
@@ -315,11 +349,11 @@ def is_normalized(ta: TTreeAut, verbose=False) -> bool:
             for child in edge.children:
                 if child not in visited:
                     queue.append(child)
-            symbol = edge.info.label
-            childStr = str(edge.children)
+            symbol: str = edge.info.label
+            childStr: str = str(edge.children)
             if childStr not in result[symbol]:
                 result[symbol][childStr] = set()
-            var = edge.info.variable
+            var: str = edge.info.variable
             if (
                 var in result[symbol][childStr]
                 or (var == "" and len(result[symbol][childStr]) != 0)

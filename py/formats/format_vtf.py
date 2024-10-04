@@ -9,132 +9,92 @@ manipulation with non-deterministic finite (tree) automata.
 [link] https://github.com/ondrik/libvata
 """
 
-# format_vtf.py
-# Functions for loading/saving tree automaton from/to VATA format (.vtf)
-# Implementation of tree automata for article about automata-based BDDs
-# Author: Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
-
-# import sys
-# import os
+from io import TextIOWrapper
 import re
 import os
-from typing import Tuple
+from typing import Optional, Tuple
 
 from tree_automata import TTransition, TEdge, TTreeAut
 
-# from test_data import box_catalogue
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def load_roots_from_vtf(line: str) -> list:
+def load_roots_from_vtf(line: str) -> list[str]:
     return [i for i in line.strip().split() if i != "%Root"]
 
 
-def load_states_from_vtf(line: str) -> list:
-    words = line.strip().split()
+def load_states_from_vtf(line: str) -> list[str]:
+    words: list[str] = line.strip().split()
     return [i.split(":")[0].strip() for i in words if i != "%States"]
 
 
-def load_arity_from_vtf(line: str) -> dict:
-    words = line.strip().split()
-    result = {}
+def load_arity_from_vtf(line: str) -> dict[str, int]:
+    words: list[str] = line.strip().split()
+    result: dict[str, int] = {}
 
     for i in words:
         if i.startswith("%Alphabet"):
             continue
-        items = i.split(":")
-        symbol = str(items[0].strip())
-        arity = int(items[1].strip())
+        items: list[str] = i.split(":")
+        symbol: str = str(items[0].strip())
+        arity: int = int(items[1].strip())
         result[symbol] = arity
     return result
 
 
-# def load_transition_from_vtf(line:str, treeaut_type='ta') -> list:
-#     line = line.strip()
-#     if line == "":
-#         return []
-#     words = line.split()
-#     state = words.pop(0)
-#     symbol = words.pop(0)
-
-#     children = []
-#     for i in words[0:]:
-#         temp = words.pop(0)
-#         if i == "(": continue
-#         if i == ")": break
-#         children.append(str(temp))
-
-#     boxes = []
-#     if words != [] and words[0] == "[":
-#         for i in words[0:]:
-#             temp = words.pop(0)
-#             if i == "[": continue
-#             if i == "]": break
-#             boxes.append(str(temp)) if i != "_" else boxes.append(None)
-
-#     var = str(words.pop()) if words != [] else ""
-#     # print([state, TEdge(symbol, boxes, var), children])
-#     return [state, TEdge(symbol, boxes, var), children]
-
-
-def process_edge(edge_info: list) -> Tuple[list, str]:
+def process_edge(edge_info: list[str]) -> Tuple[list[Optional[str]], str]:
     if len(edge_info) == 0:
         return [], ""
 
-    string = " ".join(edge_info)
+    string: str = " ".join(edge_info)
     string = string.lstrip("<").lstrip().rstrip(">").rstrip()
     boxes_match = re.search("\[.*\]", string)
 
-    boxes = []
-    var_string = ""
+    boxes: list[str] = []
+    var_string: str = ""
 
-    if boxes_match:
-        match_string = boxes_match.group(0)
-        box_array_string = match_string.lstrip("[").rstrip("]")
-        var_string = string.replace(match_string, "")
-        box_array = box_array_string.lstrip().rstrip().split()
+    if boxes_match:  # is not None
+        match_string: str = boxes_match.group(0)
+        box_array_string: str = match_string.lstrip("[").rstrip("]")
+        var_string: str = string.replace(match_string, "")
+        box_array: list[str] = box_array_string.lstrip().rstrip().split()
 
-        var_string = var_string.lstrip().rstrip()
-        boxes = [str(box) if box != "_" else None for box in box_array]
+        var_string: str = var_string.lstrip().rstrip()
+        boxes: list[Optional[str]] = [str(box) if box != "_" else None for box in box_array]
     else:
         var_string = string
 
     return boxes, var_string
 
 
-def load_transition_from_vtf(line: str, taType="ta") -> TTransition:
-    line = line.strip()
+def load_transition_from_vtf(line: str) -> Optional[TTransition]:
+    line: str = line.strip()
     if line == "":
         return None
-    words = line.split()
-    state = words.pop(0)
-    symbol = words.pop(0)
+    words: list[str] = line.split()
+    state: str = words.pop(0)
+    symbol: str = words.pop(0)
 
-    edge_info = []
+    edge_info: list[str] = []
     for i in words[0:]:
         if i.startswith("("):
             break
         edge_info.append(i)
         words.pop(0)
-    boxes, var = process_edge(edge_info)
+    box_var_tuple: tuple[list[Optional[str]], str] = process_edge(edge_info)
+    boxes, var = box_var_tuple
 
-    rest_of_string = " ".join(words[0:])
-    # print(restOfString)
+    rest_of_string: str = " ".join(words[0:])
     rest_of_string = rest_of_string.rstrip().lstrip("(").rstrip(")")
-    children = rest_of_string.split()
-    # for i in words[0:]:
-    #     temp = words.pop(0)
-    #     if i == "(": continue
-    #     if i == ")": break
-    #     children.append(str(temp))
+    children: list[str] = rest_of_string.split()
 
     return TTransition(state, TEdge(symbol, boxes, var), children)
 
 
-def consistency_check(data: list, states: list, arity_dict: dict):
+def consistency_check(data: list, states: list, arity_dict: dict) -> None:
     if data.src not in states:
         raise Exception(f"consistency_check(): src state '{data.src}' not in preamble")
     if data.info.label not in arity_dict:
@@ -146,23 +106,30 @@ def consistency_check(data: list, states: list, arity_dict: dict):
             raise Exception(f"consistency_check(): child state '{i}' not in preamble")
 
 
-# def check_children_arity(edge: TTransition, arity_dict: dict):
-#     # NOTE: cannot be used - cyclical dependencies of initial box_catalogue imports
-#     arity = arity_dict[edge.info.label]
-#     box_port_count = 0
-#     box_count = 0
-#     for box in edge.info.box_array:
-#         box_count += 1
-#         box_port_count += box_catalogue[box].port_arity if box is not None else 1
-#     if box_count != arity:
-#         return False
-#     if box_port_count != len(edge.children):
-#         return False
-#     return True
+def check_children_arity(edge: TTransition, arity_dict: dict[str, int]) -> bool:
+    box_arities: dict[str, int] = {
+        "X": 1,
+        "L0": 1,
+        "L1": 1,
+        "H0": 1,
+        "H1": 1,
+        "LPort": 2,
+        "HPort": 2,
+    }
+    arity: int = arity_dict[edge.info.label]
+    box_port_count: int = 0
+    box_count: int = 0
+    for box in edge.info.box_array:
+        box_count += 1
+        box_port_count += box_arities[box] if box is not None else 1
+    if box_count != arity:
+        return False
+    if box_port_count != len(edge.children):
+        return False
+    return True
 
 
-def consistency_check_vtf(edges, states, arities, verbose=False) -> bool:
-    # print(states)
+def consistency_check_vtf(edges: dict, states, arities, verbose=False) -> bool:
     for state_name, edge_dict in edges.items():
 
         if state_name not in states:
@@ -198,7 +165,7 @@ def consistency_check_vtf(edges, states, arities, verbose=False) -> bool:
 
 
 def generate_key_from_edge(edge: list) -> str:
-    children = ""
+    children: str = ""
     for i in range(len(edge.children)):
         children += str(edge.children[i])
         if i < len(edge.children) - 1:
@@ -212,29 +179,29 @@ def generate_key_from_edge(edge: list) -> str:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def import_treeaut_from_vtf(source, source_type="f", treeaut_type="ta") -> TTreeAut:
+def import_treeaut_from_vtf(source: str, source_type="f", treeaut_type="ta") -> TTreeAut:
     if source_type == "f":
-        file = open(source, "r")
+        file: TextIOWrapper = open(source, "r")
         treeaut_name = source.split(os.sep)[len(source.split(os.sep)) - 1][:-4]
     elif source_type == "s":
-        file = source.split("\n")
+        file: str = source.split("\n")
         treeaut_name = "unnamed"
     else:
         Exception("import_treeaut_from_vtf(): unsupported source_type (only 'f'/'s')")
 
-    arity_dict = {}
-    roots = []
-    transitions = {}
-    all_states = []
-    roots_done = False
-    arity_done = False
-    statelist_done = False
+    arity_dict: dict[str, int] = {}
+    roots: list[str] = []
+    transitions: dict[str, dict[str, TTransition]] = {}
+    all_states: list[str] = []
+    roots_done: bool = False
+    arity_done: bool = False
+    statelist_done: bool = False
 
     for line in file:
         if line.startswith("#"):
             continue
-        parts = line.split("#")
-        line = parts[0]
+        parts: list[str] = line.split("#")
+        line: str = parts[0]
         if line.startswith("@"):
             if not line.startswith("@NTA"):
                 raise Exception(f"import_treeaut_from_vtf(): unexpected structure format {line}")
@@ -251,7 +218,7 @@ def import_treeaut_from_vtf(source, source_type="f", treeaut_type="ta") -> TTree
             else:
                 raise Exception(f"import_treeaut_from_vtf(): unexpected preamble '{line.strip()}'")
         else:
-            edge = load_transition_from_vtf(line, treeaut_type)
+            edge: TTransition = load_transition_from_vtf(line)
             if edge is None:
                 continue
             # checking state and arity consistency - comparing with data from "preamble"
@@ -277,32 +244,32 @@ def import_treeaut_from_vtf(source, source_type="f", treeaut_type="ta") -> TTree
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def write_roots_vtf_file(roots, tgt):
+def write_roots_vtf_file(roots: list[str], tgt: TextIOWrapper) -> None:
     tgt.write("%Root")
     for root in roots:
         tgt.write(f" {root}")
     tgt.write("\n")
 
 
-def write_states_vtf_file(states, tgt):
+def write_states_vtf_file(states: list[str], tgt: TextIOWrapper) -> None:
     tgt.write("%States")
     for i in states:
         tgt.write(f" {i}:0")
     tgt.write("\n")
 
 
-def write_arities_vtf_file(arities, tgt):
+def write_arities_vtf_file(arities: dict[str, int], tgt: TextIOWrapper) -> None:
     tgt.write("%Alphabet")
-    for symbol in arities:
-        tgt.write(f" {symbol}:{arities[symbol]}")
+    for symbol, arity in arities.items():
+        tgt.write(f" {symbol}:{arity}")
     tgt.write("\n\n")
 
 
-def write_edges_vtf_file(edges, tgt):
+def write_edges_vtf_file(edges: dict[str, dict[str, TTransition]], tgt: TextIOWrapper) -> None:
     for edge in edges.values():
         for data in edge.values():
-            box_array = []
-            found_box = False
+            box_array: list[str] = []
+            found_box: bool = False
             for box in data.info.box_array:
                 if box is None:
                     box_array.append("_")
@@ -312,7 +279,7 @@ def write_edges_vtf_file(edges, tgt):
                         box_array.append(box)
                     else:
                         box_array.append(box.name)
-            box_str = ""
+            box_str: str = ""
             if found_box:
                 box_str += "["
                 for box in box_array:
@@ -320,7 +287,7 @@ def write_edges_vtf_file(edges, tgt):
                 box_str = box_str[:-1]
                 box_str += "]"
 
-            edge_str = ""
+            edge_str: str = ""
             if box_array != [] or data.info.variable != "":
                 edge_str = f"<{box_str}"
                 if box_str != "":
@@ -338,32 +305,32 @@ def write_edges_vtf_file(edges, tgt):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def write_roots_vtf_str(roots):
-    result = "%Root"
+def write_roots_vtf_str(roots: list[str]) -> str:
+    result: str = "%Root"
     for i in roots:
         result += f" {i}"
     result += "\n"
     return result
 
 
-def write_states_vtf_str(states):
-    result = "%States"
+def write_states_vtf_str(states: list[str]) -> str:
+    result: str = "%States"
     for i in states:
         result += f" {i}:0"
     result += "\n"
     return result
 
 
-def write_arities_vtf_str(arities):
-    result = "%Alphabet"
+def write_arities_vtf_str(arities) -> str:
+    result: str = "%Alphabet"
     for symbol in arities:
         result += f" {symbol}:{arities[symbol]}"
     result += "\n\n"
     return result
 
 
-def write_edges_vtf_str(edges):
-    result = "# Transitions\n\n"
+def write_edges_vtf_str(edges) -> str:
+    result: str = "# Transitions\n\n"
     for edge in edges.values():
         for data in edge.values():
             result += f"{data.src} {data.info.label} ("

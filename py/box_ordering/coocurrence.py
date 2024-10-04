@@ -7,23 +7,34 @@ with regards to their language inclusion properties.
 """
 
 from itertools import product
+from typing import List, Set, Dict
 
 from tree_automata import TTreeAut, remove_useless_states, tree_aut_intersection, non_empty_top_down
 from box_ordering.product import tree_aut_product
 
 
-def get_co_ocurent_states_top_down(ta: TTreeAut) -> list:
-    def merge(state, macro_list):
-        result = [state]
+def get_co_ocurent_states_top_down(ta: TTreeAut) -> List:
+    """
+    Docstring TBD
+    """
+
+    def merge(state, macro_list) -> Set[str]:
+        """
+        Docstring TBD
+        """
+        result: List[str] = [state]
         for item in macro_list:
             result.extend(item)
         return set(result)
 
-    def process(state, ta, queue):
+    def process(state, ta, queue) -> List[str]:
+        """
+        Docstring TBD
+        """
         queue.append(state)
-        result = []
+        result: List[str] = []
         for edge in ta.transitions[state].values():
-            process_results = []
+            process_results: List = []
             for child in edge.children:
                 if child == state:
                     continue
@@ -43,7 +54,7 @@ def get_co_ocurent_states_top_down(ta: TTreeAut) -> list:
 
     result = []
     for i in temp:
-        x = list(i)
+        x: List = list(i)
         x.sort()
         if x not in result:
             result.append(x)
@@ -51,6 +62,9 @@ def get_co_ocurent_states_top_down(ta: TTreeAut) -> list:
 
 
 def produce_output_tuples(ta1: TTreeAut, ta2: TTreeAut) -> dict:
+    """
+    Docstring TBD
+    """
     out_edges_1 = ta1.get_output_edges(inverse=True)
     out_edges_2 = ta2.get_output_edges(inverse=True)
     result = {}
@@ -64,8 +78,11 @@ def produce_output_tuples(ta1: TTreeAut, ta2: TTreeAut) -> dict:
 
 
 def tree_aut_is_extension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
-    debug = False
-    product = remove_useless_states(tree_aut_product(ta1, ta2))
+    """
+    Docstring TBD
+    """
+    debug: bool = False
+    product: TTreeAut = remove_useless_states(tree_aut_product(ta1, ta2))
     co_occurent_list = get_co_ocurent_states_top_down(product)
     output_tuples = produce_output_tuples(ta1, ta2)
     out_edges = product.get_output_edges(inverse=True)
@@ -74,7 +91,7 @@ def tree_aut_is_extension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
         print(ta1)
         print(ta2)
         print(product)
-    full_list = []
+    full_list: List = []
     for i in co_occurent_list:
         temp_list = []
         for j in i:

@@ -1,9 +1,11 @@
-from typing import List
+import re
 
 
-# sorts the state names while ignoring the prefix
-# also works with variables that have a non-numeric prefix
-def state_name_sort(states: List[str]) -> List:
+def state_name_sort(states: list[str]) -> list[str]:
+    """
+    Sort the state names while ignoring the prefix.
+    Also used with variables that have a non-numeric prefix.
+    """
     if states == []:
         return []
 
@@ -21,68 +23,60 @@ def state_name_sort(states: List[str]) -> List:
     return result
 
 
-def create_var_order_dict(prefix: str, count: int, start=1):
+def create_var_order_list(prefix: str, count: int, start=1) -> list[str]:
     return [f"{prefix}{i+start}" for i in range(count)]
 
 
-def create_var_order_apply(variables: list[str], terminals: list) -> dict:
-    """
-    Makes the list into a dictionary for easy lookup of indexing
-    """
-    if variables is not None:
-        variables = state_name_sort(variables)
-    result = {}
-    i = 1
-    for var in variables:
-        if var not in result:
-            result[var] = i
-            i += 1
-    # for t in terminals:
-    #     result[str(t)] = i
-    return result
-
-
-def get_var_prefix(var_list: list[str]) -> str:
+def get_var_prefix_from_list(var_list: list[str]) -> str:
     if var_list == []:
         return ""
-    prefix_len = 0
+    prefix_len: int = 0
     for i in range(len(var_list[0])):
         if not var_list[0][i:].isnumeric():
             prefix_len += 1
-    prefix = var_list[0][:prefix_len]
+    prefix: str = var_list[0][:prefix_len]
     return prefix
 
 
-# creates a list of variable truth-values indexed by their order
-# (the order in which they are evaluated during BDD top-down traversal)
-# if an ABDD has a variable range of size 10, this function would be used 2^10 times
-def assign_variables(num: int, size: int) -> list[int]:
-    result = []
-    division = num
-    for _ in range(size):
-        remainder = division % 2
-        division = division // 2
-        result.append(remainder)
-    result.reverse()
+def create_string_from_name_set(state_list: list[str]) -> str:
+    """
+    Create a string (state name) from list of states -- e.g. '{a,b,c}'
+    """
+    my_list: list[str] = state_name_sort(state_list)
+    return "{" + ",".join(my_list) + "}"
+
+
+def create_string_from_name_list(state_list: list) -> str:
+    """
+    Create a tuple-like (i.e. ordereed) string representation of a list of states.
+
+    E.g: [s1, s2, s3] -> '(s1,s2,s3)'
+    """
+    result: str = "("
+    for i in range(len(state_list)):
+        result += state_list[i]
+        if i < len(state_list) - 1:
+            result += ","
+    result += ")"
     return result
 
 
-# creates a int (var index) -> int (0/1 = true/false) dictionary from an integer number
-# (iterated number in a cycle)
-# if an ABDD has a variable range of size 10, this function is used 2^10 times
-def assign_variables_dict(num: int, size: int) -> dict[int, int]:
-    result = []
-    division = num
-    for _ in range(size):
-        remainder = division % 2
-        division = division // 2
-        result.append(remainder)
-    result.reverse()
-    result_dict = {i + 1: result[i] for i in range(size)}
-    return result_dict
+def tuple_name(tup: tuple[str, str]) -> str:
+    """
+    Create a string from a 2-tuple of strings.
+    Used in intersection, and similar product-like automata operations.
+    E.g.: (s1, s2) -> '(s1,s2)'
+    """
+    return f"({tup[0]},{tup[1]})"
 
 
-# creates a string (state name) from list of states -- e.g. '{a,b,c}'
-def create_string_from_name_set(state_list: list) -> str:
-    my_list = state_name_sort(state_list)
-    return "{" + ",".join(my_list) + "}"
+def get_first_name_from_tuple_str(string: str) -> str:
+    """
+    Extract the first statename from a tuple-like string format.
+    Useful in functions that work with cartesian product of states (intersection etc.).
+
+    E.g.: '(s1,s2)' -> 's1'
+    """
+    match = re.search("^\(.*,", string)
+    result = match.group(0)[1:-1]
+    return result

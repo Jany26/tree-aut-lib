@@ -5,30 +5,37 @@
 [note] Needed in order to parse DIMACS format (read as DNF* for simplification).
 """
 
-from typing import Optional, Union
+from typing import Optional, Union, List, Set, Dict, Tuple, Generator, Any
 from bdd.bdd_node import BDDnode
 
 
-# Binary decision diagram. open for expansion (more attributes etc.)
 class BDD:
-    def __init__(self, name: str, root: BDDnode):
-        self.name = name
-        self.root = root
+    """
+    Binary decision diagram. Sometimes referred to as ROBDD (reduced ordered BDD).
 
-    # List-like output format for a BDD
+    Note: open for expansion (more attributes etc.)
+    """
+
+    def __init__(self, name: str, root: BDDnode):
+        self.name: str = name
+        self.root: BDDnode = root
+
     def __repr__(self):
-        max_node_name_length = len("node")
-        max_var_name_length = len("<var>")
-        max_child_name_length = max(len("low"), len("high"))
+        """
+        List-like output format for a BDD
+        """
+        max_node_name_length: int = len("node")
+        max_var_name_length: int = len("<var>")
+        max_child_name_length: int = max(len("low"), len("high"))
         for i in self.iterate_dfs():
             max_node_name_length = max(len(str(i.name)) + 2, max_node_name_length)
             max_var_name_length = max(len(str(i.value)) + 2, max_var_name_length)
             max_child_name_length = max(len(str(i.value)), max_child_name_length)
             if i.is_leaf():
                 max_child_name_length = max(len(f"<{i.value}>"), max_child_name_length)
-        result = f"  [BDD]: '{self.name}'\n"
+        result: str = f"  [BDD]: '{self.name}'\n"
         result += f"  [root]: {self.root.name}\n"
-        header_str = "  > %-*s - %-*s -> %-*s %-*s" % (
+        header_str: str = "  > %-*s - %-*s -> %-*s %-*s" % (
             max_node_name_length,
             "node",
             max_var_name_length,
@@ -44,8 +51,8 @@ class BDD:
         for i in self.iterate_bfs():
             if i.is_leaf():
                 continue
-            ln = i.low.name if type(i.low.value) != int else f"[{i.low.value}]"
-            hn = i.high.name if type(i.high.value) != int else f"[{i.high.value}]"
+            ln: str = i.low.name if type(i.low.value) != int else f"[{i.low.value}]"
+            hn: str = i.high.name if type(i.high.value) != int else f"[{i.high.value}]"
             result += "  > %-*s - %-*s -> %-*s %-*s\n" % (
                 max_node_name_length,
                 i.name,
@@ -58,19 +65,22 @@ class BDD:
             )
         return result
 
-    # Tree-like format of outputting/printing a BDD
-    def print_bdd(self):
-        def print_bdd_node(node: Optional[BDDnode], lvl: int, prefix: str):
+    def print_bdd(self) -> None:
+        """
+        Tree-like format of outputting/printing a BDD
+        """
+
+        def print_bdd_node(node: Optional[BDDnode], lvl: int, prefix: str) -> None:
             if node is None:
                 return
-            spaces = " " * 2 * lvl
-            value = f"<{node.value}>"
+            spaces: str = " " * 2 * lvl
+            value: str = f"<{node.value}>"
             if type(node.value) == int:
                 value = f"[{node.value}]"
-            is_leaf = "LEAF" if node.low is None or node.high is None else ""
+            is_leaf: str = "LEAF" if node.low is None or node.high is None else ""
             print(f"{spaces}{prefix} {value} {node.name} {is_leaf}")
-            prefix_low = ""  # f"[{node.name}-L->]"
-            prefix_high = ""  # f"[{node.name}-H->]"
+            prefix_low: str = ""  # f"[{node.name}-L->]"
+            prefix_high: str = ""  # f"[{node.name}-H->]"
             print_bdd_node(node.low, lvl + 1, prefix_low)
             print_bdd_node(node.high, lvl + 1, prefix_high)
 
@@ -78,18 +88,20 @@ class BDD:
         print(f"> BDD {self.name}")
         print_bdd_node(self.root, 0, "[root]")
 
-    # Breadth first traversal of BDD nodes (iterator)
-    # if allow_repeats=False: each node is only visited once (leaf nodes etc.)
-    # by having repeats on, the tree traversal may be more understandable
-    def iterate_bfs(self, allow_repeats=False):
+    def iterate_bfs(self, allow_repeats=False) -> Generator[Any, Any, BDDnode]:
+        """
+        Breadth first traversal of BDD nodes (node generator)
+        if allow_repeats=False: each node is only visited once (leaf nodes etc.)
+        by having repeats on, the tree traversal may be more understandable
+        """
         if self.root is None:
             return
 
-        visited = set()
-        queue = [self.root]
+        visited: Set[BDDnode] = set()
+        queue: List[BDDnode] = [self.root]
 
         while len(queue) > 0:
-            node = queue.pop(0)
+            node: BDDnode = queue.pop(0)
             if node is None:
                 continue
             if not allow_repeats:
@@ -101,10 +113,13 @@ class BDD:
             queue.append(node.low)
             queue.append(node.high)
 
-    # Depth first traversal of BDD nodes (iterator)
-    # see iterate_bfs() for explanation of allow_repeats
-    def iterate_dfs_recursive(self, allow_repeats=False):
-        def DFS(node, visited, allow_repeats):
+    def iterate_dfs_recursive(self, allow_repeats=False) -> Generator[Any, Any, BDDnode]:
+        """
+        Depth first traversal of BDD nodes (node generator).
+        See iterate_bfs() for explanation of allow_repeats.
+        """
+
+        def DFS(node: BDDnode, visited: Set[BDDnode], allow_repeats: bool) -> Generator[Any, Any, BDDnode]:
             if not allow_repeats:
                 if node in visited:
                     return
@@ -119,18 +134,18 @@ class BDD:
                 yield from DFS(node.high, visited, allow_repeats)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        visited = set()
+        visited: Set[BDDnode] = set()
         return DFS(self.root, visited, allow_repeats)
 
-    def iterate_dfs(self, allow_repeats=False):
+    def iterate_dfs(self, allow_repeats=False) -> Generator[Any, Any, BDDnode]:
         if self.root is None:
             return
 
-        visited = set()
-        stack = [self.root]
+        visited: Set[BDDnode] = set()
+        stack: List[BDDnode] = [self.root]
 
         while len(stack) > 0:
-            node = stack.pop()
+            node: BDDnode = stack.pop()
             if node is None:
                 continue
 
@@ -143,8 +158,8 @@ class BDD:
             stack.append(node.high)
             stack.append(node.low)
 
-    def get_variable_list(self) -> list:
-        def get_var(node: BDDnode, result: set):
+    def get_variable_list(self) -> List[int | str]:
+        def get_var(node: BDDnode, result: set) -> None:
             if node.is_leaf():
                 return
             result.add(node.value)
@@ -154,53 +169,56 @@ class BDD:
                 get_var(node.high, result)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        result = set()
+        result: Set[BDDnode] = set()
         get_var(self.root, result)
-        result = list(result)
-        result.sort()
+        result: List[BDDnode] = list(result)
+        result.sort()  # NOTE: might need to be done wrt. a specified variable order
         return result
 
-    def get_terminal_nodes_list(self) -> "list[BDDnode]":
-        def get_terminal_node(node: Optional[BDDnode], result: list):
+    def get_terminal_nodes_list(self) -> List[BDDnode]:
+        def accumulate_terminal_nodes(node: Optional[BDDnode], result: List[BDDnode]) -> None:
             if node is None:
                 return
             if node.is_leaf():
                 result.append(node)
-            get_terminal_node(node.low, result)
-            get_terminal_node(node.high, result)
+            accumulate_terminal_nodes(node.low, result)
+            accumulate_terminal_nodes(node.high, result)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        result = []
-        return get_terminal_node(self.root, result)
+        node_accumulator = []
+        accumulate_terminal_nodes(self.root, node_accumulator)
+        return list(set(node_accumulator))
 
-    def get_terminal_symbols_list(self) -> list:
-        def get_terminal(node: BDDnode, result: set):
+    def get_terminal_symbols_list(self) -> List[int | str]:
+        def accumulate_terminal_symbols(node: BDDnode, result: set) -> None:
             if node is None:
                 return
             if node.is_leaf():
                 result.add(node.value)
             else:
-                get_terminal(node.low, result)
-                get_terminal(node.high, result)
+                accumulate_terminal_symbols(node.low, result)
+                accumulate_terminal_symbols(node.high, result)
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        result = set()
-        get_terminal(self.root, result)
-        return list(result)
+        node_accumulator: Set[BDDnode] = set()
+        accumulate_terminal_symbols(self.root, node_accumulator)
+        return list(node_accumulator)
 
-    # DFS counting the number of paths leading to a specific symbol - usually
-    # a leaf. Used to count how many dimacs clausules is the BDD made of.
-    def count_branches_iter(self, symbol) -> int:
-        counter = 0
+    def count_branches_iter(self, symbol: int | str) -> int:
+        """
+        DFS counting the number of paths leading to a specific symbol - usually
+        a leaf. Used to count how many dimacs clausules is the BDD made of.
+        """
+        counter: int = 0
 
         if self.root is None:
             return
 
         # visited = set()
-        stack = [self.root]
+        stack: List[BDDnode] = [self.root]
 
         while len(stack) > 0:
-            node = stack.pop()
+            node: BDDnode = stack.pop()
             if node is None:
                 continue
 
@@ -213,27 +231,31 @@ class BDD:
         return counter
 
     def count_nodes(self) -> int:
-        counter = 0
-        for node in self.iterate_dfs():
+        counter: int = 0
+        for _ in self.iterate_dfs():
             counter += 1
         return counter
 
     def reformat_nodes(self, prefix="n"):
+        """
+        Reformat node names using counting during a BFS-like traversal starting from 0.
+        Node name prefix can be specified.
+        """
         if self.root is None:
             return
-        cnt = 0
-        visited = set()
-        queue = [self.root]
+        counter: int = 0
+        visited: Set[BDDnode] = set()
+        queue: List[BDDnode] = [self.root]
 
         while len(queue) > 0:
-            node = queue.pop(0)
+            node: BDDnode = queue.pop(0)
             if node is None:
                 continue
             if node in visited:
                 continue
 
-            node.rename_node(f"{prefix}{cnt}")
-            cnt += 1
+            node.rename_node(f"{prefix}{counter}")
+            counter += 1
 
             visited.add(node)
             if node.low is not None:
@@ -242,19 +264,27 @@ class BDD:
                 queue.append(node.high)
 
     def is_valid(self) -> bool:
+        """
+        Return true whether the BDD structure is okay (otherwise false). This means:
+        - each node either has 2 child nodes (is an inner node) or 0 child nodes (is a leaf).
+        - inner nodes have a consistent value type (either a string or an integer)
+        - from root to leaf nodes, the node value (order of the variable) has a consistent order (is increasing).
+        """
+
         def var_check(val1: Union[str, int], val2: Union[str, int]) -> bool:
             type_str: bool = type(val1) is int and type(val2) is int
             type_int: bool = type(val1) is str and type(val2) is str
-            return val1 <= val2 and (type_str or type_int)
+            # short-circuit evaluation is utilized to check type consistency first:
+            return (type_str or type_int) and val1 <= val2
 
         if self.root is None:
             return
 
-        visited = set()
-        stack = [self.root]
+        visited: Set[BDDnode] = set()
+        stack: List[BDDnode] = [self.root]
 
         while len(stack) > 0:
-            node = stack.pop()
+            node: BDDnode = stack.pop()
             if node is None:
                 continue
             if node in visited:
@@ -272,9 +302,16 @@ class BDD:
         return True
 
 
-# Deep recursive check if two BDD structures are equal.
-# Does not check names of the nodes, only values and overall structure.
 def compare_bdds(bdd1: BDD, bdd2: BDD) -> bool:
+    """
+    Deep recursive check if two BDD structures are equal.
+    Does not check names of the nodes, only values and overall structure.
+
+    Note:
+    This function does not account for BDDs that are isomorphic,
+    but do not share the variable/node value ordering.
+    """
+
     def compare_nodes(node1: Optional[BDDnode], node2: Optional[BDDnode]) -> bool:
         if (node1 is None) != (node2 is None):
             return False

@@ -1,49 +1,56 @@
-from itertools import product
+import itertools
 
 from tree_automata import TTreeAut, iterate_edges
 from tree_automata.functions.helpers import generate_possible_children
 from tree_automata.functions.emptiness import non_empty_bottom_up
 from tree_automata.functions.reachability import reachable_top_down, reachable_bottom_up
+from tree_automata.transition import TTransition
 
 
-# One of the rule-checks for a well-defined tree automaton (box).
-#  Implements bottom-up search and keeps information about all reachable port
-#  combinations from a given state.
-#
-#  Each root state has to be able to reach a precise amount of ports, which is
-#  given by TAs port-arity.
+def create_port_set(port_dict: dict[str, list[set[str]]], state_list: list[str]) -> list[set[str]]:
+    """
+    Helper function, creates a list of sets,
+    which correspond to all possible reachable combinations of ports
+    (or output symbols) from a given list of states.
+    Also takes a current state of port dictionary for looking up data.
+
+    - port_dict = dictionary of reachable ports from each state
+    - state_list = list of states, from which reachable ports are searched
+    """
+    all_set_lists = []
+    for i in state_list:
+        all_set_lists.append(port_dict[i])
+    # create cartesian product of setlists
+    # => list of tuples of lists of sets
+    tuple_list = itertools.product(all_set_lists, repeat=len(all_set_lists))
+    result: list[set[str]] = []
+    for t in tuple_list:  # iterate over each tuple of lists of sets
+        for set_list in t:  # iterate over each list of sets:
+            union_set = set()  # create a union of each set from the setlist
+            for unit_set in set_list:  # iterate over each set
+                union_set |= unit_set
+            if union_set not in result:
+                result.append(union_set)
+    return result
+
+
 def port_consistency_check(ta: TTreeAut) -> bool:
+    """
+    One of the rule-checks for a well-defined tree automaton (box).
+    Implements bottom-up search and keeps information about all reachable port
+    combinations from a given state.
 
-    # Helper function, creates a list of sets,
-    # which correspond to all possible reachable combinations of ports
-    # (or output symbols) from a given list of states.
-    # Also takes a current state of port dictionary for looking up data.
-    #
-    #   - port_dict = dictionary of reachable ports from each state
-    #   - state_list = list of states, from which reachable ports are searched
-    def create_port_set(port_dict: dict, state_list) -> set:
-        all_set_lists = []
-        for i in state_list:
-            all_set_lists.append(port_dict[i])
-        # create cartesian product of setlists
-        # => list of tuples of lists of sets
-        tuple_list = product(all_set_lists, repeat=len(all_set_lists))
-        result = []
-        for tuple in tuple_list:  # iterate over each tuple of lists of sets
-            for set_list in tuple:  # iterate over each list of sets:
-                union_set = set()  # create a union of each set from the setlist
-                for unit_set in set_list:  # iterate over each set
-                    union_set |= unit_set
-                if union_set not in result:
-                    result.append(union_set)
-        return result
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+    Each root state has to be able to reach a precise amount of ports, which is
+    given by TAs port-arity.
+    """
     # initialization phase
-    worklist = ta.get_output_states()
-    done = {}
-    arity_dict = ta.get_symbol_arity_dict()
+    worklist: list[str] = ta.get_output_states()
+    # done: state -> list of sets of reachable ports
+
+    # TODO: explain why is 'done' a dictionary of state to <<list of sets of ports>> ?
+    # wouldn't state -> set of ports suffice ?
+    done: dict[str, list[set[str]]] = {}
+    arity_dict: dict[str, int] = ta.get_symbol_arity_dict()
     for symbol, state_list in ta.get_output_edges().items():
         if not symbol.startswith("Port"):
             continue
@@ -55,7 +62,7 @@ def port_consistency_check(ta: TTreeAut) -> bool:
 
     # bottom-up parsing phase
     while len(worklist) > 0:
-        state = worklist.pop()
+        state: str = worklist.pop()
         if state in ta.roots and state in done:
             if len(done[state]) != ta.port_arity:
                 return False
@@ -63,12 +70,12 @@ def port_consistency_check(ta: TTreeAut) -> bool:
             if arity_dict[symbol] == 0:
                 continue
             # all possible combinations of children with 'state' in there
-            tuples = generate_possible_children(state, list(done), arity)
+            possible_child_tuples: list[list[str]] = generate_possible_children(state, list(done), arity)
 
             # for edge.src, edgeDict in ta.transitions.items():
             #     for edge in edgeDict.values():
             for edge in iterate_edges(ta):
-                if edge.info.label != symbol or edge.children not in tuples:
+                if edge.info.label != symbol or edge.children not in possible_child_tuples:
                     continue
                 if edge.src not in done:
                     done[edge.src] = []
@@ -81,6 +88,20 @@ def port_consistency_check(ta: TTreeAut) -> bool:
 
 
 def is_well_defined(ta: TTreeAut, display_errors=False) -> bool:
+    """
+    Check all conditions of a well-defined box.
+    Box is a tree automaton that can be used in ABDDs as a reduction rule.
+    For it to be effective and easy to use, we need to have some restrictions
+    or conditions for boxes.
+
+    1) Box cannot have an empty language.
+    2) Box does not contain 'useless' states -- i.e. is trimmed.
+    3) Each root state has to be able to reach a precise number of ports -- port arity of the box.
+    4) There is one root state.
+    5) Box cannot generate trivial trees (ones that can reach a port transition in 0 steps).
+    6) For each tree generated by the TA, there has to always be only one possible way to assign ports.
+    7) There is only one possible TA traversal for matching every tree accepted by the box.
+    """
 
     conditions = {
         "1-non-emptiness": True,
@@ -98,7 +119,7 @@ def is_well_defined(ta: TTreeAut, display_errors=False) -> bool:
         conditions["1-non-emptiness"] = False
 
     # 2) Trimness - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    all_states = ta.get_states()
+    all_states: list[str] = ta.get_states()
     if set(reachable_bottom_up(ta)) != set(all_states) or set(reachable_top_down(ta)) != set(all_states):
         conditions["2-trimness"] = False
 
@@ -112,14 +133,14 @@ def is_well_defined(ta: TTreeAut, display_errors=False) -> bool:
 
     # 5) Non-vacuity  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     for i in ta.roots:
-        edges_from_root = ta.transitions[i]
+        edges_from_root: dict[str, TTransition] = ta.transitions[i]
         for edge in edges_from_root.values():
             if len(edge.children) == 0 and edge.info.label.startswith("Port"):
                 conditions["5-non-vacuity"] = False
 
     # 6) Port-uniqueness  - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    output_edges = ta.get_output_edges()
-    port_counter = 0
+    output_edges: dict[str, list[str]] = ta.get_output_edges()
+    port_counter: int = 0
     for symbol in output_edges:
         if symbol.startswith("Port"):
             port_counter += 1
@@ -134,8 +155,8 @@ def is_well_defined(ta: TTreeAut, display_errors=False) -> bool:
         conditions["7-unambiguity"] = True
 
     # Final processing  - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    result = True
-    error_msg = f"   > is_well_defined('{ta.name}'): failed conditions = "
+    result: bool = True
+    error_msg: str = f"   > is_well_defined('{ta.name}'): failed conditions = "
     for condition, value in conditions.items():
         if value is False:
             error_msg += f"{condition} "

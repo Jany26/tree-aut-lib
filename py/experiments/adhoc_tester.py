@@ -10,7 +10,7 @@ import copy
 from typing import Tuple
 
 from tree_automata import TTreeAut, iterate_edges, remove_useless_states, reachable_top_down
-from tree_automata.var_manipulation import create_var_order_dict, add_variables_bottom_up
+from tree_automata.var_manipulation import create_var_order_list, add_variables_bottom_up
 from helpers.utils import box_orders, full_box_order as box_order
 from bdd.bdd_to_treeaut import create_tree_aut_from_bdd, add_dont_care_boxes
 from simulation import simulate_and_compare
@@ -169,7 +169,7 @@ def canonize_benchmark(initial: TTreeAut, options: TestOptions):
         print(f"\r{'Normalizing (5/8)...': <80}", end="")
     normalization_log = open(f"{path}/log_normalization.txt", "w")
     normalization_log.write(f"INPUT\n\n{unfolded_extra}\n\n")
-    var_order = create_var_order_dict("", options.vars + 2, start=0)
+    var_order = create_var_order_list("", options.vars + 2, start=0)
     # print(var_order)
     normalized = ubda_normalize(unfolded_extra, var_order, verbose=options.debug, output=normalization_log)
     normalized_clean = copy.deepcopy(normalized)
@@ -325,7 +325,7 @@ def simulate_benchmark(input_path: str, vars: int, output_path, simulate=False, 
     results["03-unfold-extra"] = copy.deepcopy(results["02-unfold"])
     add_variables_bottom_up(results["03-unfold-extra"], vars)
     results["04-normal"] = ubda_normalize(
-        results["03-unfold-extra"], create_var_order_dict("", vars + 1), verbose=True, output=log1
+        results["03-unfold-extra"], create_var_order_list("", vars + 1), verbose=True, output=log1
     )
     results["05-normal-clean"] = copy.deepcopy(results["04-normal"])
     results["05-normal-clean"].reformat_keys()
@@ -518,8 +518,8 @@ def is_bdd_convertible(treeaut: TTreeAut) -> bool:
 def bdd_isomorphic_check(ta1: TTreeAut, ta2: TTreeAut) -> bool:
     outputs1 = ta1.get_output_edges(inverse=True)
     outputs2 = ta2.get_output_edges(inverse=True)
-    var_visibility_1 = ta1.get_var_visibility_cache()
-    var_visibility_2 = ta2.get_var_visibility_cache()
+    var_visibility_1 = ta1.get_var_visibility_deterministic()
+    var_visibility_2 = ta2.get_var_visibility_deterministic()
 
     def compare_node(ta1: TTreeAut, ta2: TTreeAut, state1: str, state2: str):
         found1 = state1 in outputs1

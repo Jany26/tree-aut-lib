@@ -12,7 +12,7 @@ import os
 import copy
 
 from tree_automata import TTreeAut, iterate_edges, iterate_states_bfs, shrink_to_top_down_reachable, reachable_top_down
-from tree_automata.var_manipulation import create_var_order_dict, add_variables_bottom_up
+from tree_automata.var_manipulation import create_var_order_list, add_variables_bottom_up
 
 import formats.format_abdd as abdd
 from formats.format_vtf import import_treeaut_from_vtf
@@ -217,7 +217,7 @@ def test_folding_on_sub_benchmarks(path, export, orders=None, root_num=None):
 
     unfolded_extra = copy.deepcopy(unfolded)
     add_variables_bottom_up(unfolded_extra, vars)
-    var_order = create_var_order_dict("", vars + 2, start=0)
+    var_order = create_var_order_list("", vars + 2, start=0)
     print(f"normalizing...", end="\r")
     normalized = ubda_normalize(unfolded_extra, var_order)
     print(f"reformatting...", end="\r")

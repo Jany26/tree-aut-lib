@@ -7,6 +7,7 @@ for generating a graphical representation of the TA. (IMAGE OUTPUT)
 [link] https://graphviz.readthedocs.io/en/stable/manual.html
 """
 
+from typing import Union
 import graphviz
 
 from tree_automata import TTreeAut, TTransition, TTreeNode
@@ -24,39 +25,40 @@ from helpers.utils import box_catalogue
 # IMPORT/EXPORT INTEGRATION WITH JUPYTER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+# vtf and tmb versions are usually used directly, so these two functions are obsolete:
 
-def import_treeaut(source: str, format_type: str = "", source_type: str = "f") -> TTreeAut:
-    if format_type == "" and source_type == "f":
-        if source.endswith(".vtf"):
-            format_type = "vtf"
-        elif source.endswith(".tmb"):
-            format_type = "tmb"
-        else:
-            raise Exception(f"import_treeaut(): unknown format_type")
+# def import_treeaut(source: str, format_type: str = "", source_type: str = "f") -> TTreeAut:
+#     if format_type == "" and source_type == "f":
+#         if source.endswith(".vtf"):
+#             format_type = "vtf"
+#         elif source.endswith(".tmb"):
+#             format_type = "tmb"
+#         else:
+#             raise Exception(f"import_treeaut(): unknown format_type")
 
-    if format_type == "vtf":
-        return import_treeaut_from_vtf(source, source_type)
-    elif format_type == "tmb":
-        return import_treeaut_from_tmb(source, source_type)
-    else:
-        raise Exception(f"import_treeaut(): unsupported format '{format_type}'")
+#     if format_type == "vtf":
+#         return import_treeaut_from_vtf(source, source_type)
+#     elif format_type == "tmb":
+#         return import_treeaut_from_tmb(source, source_type)
+#     else:
+#         raise Exception(f"import_treeaut(): unsupported format '{format_type}'")
 
 
 # target can be either a filepath or a string variable, where
-def export_treeaut(ta: TTreeAut, format_type: str, target_type: str, filepath: str = ""):
-    if format_type != "vtf" and format_type != "tmb":
-        raise Exception(f"export_treeaut(): unsupported format_type '{format_type}'")
-    if target_type != "f" and target_type != "s":
-        raise Exception(f"export_treeaut(): unsupported target_type '{target_type}'")
+# def export_treeaut(ta: TTreeAut, format_type: str, target_type: str, filepath: str = ""):
+#     if format_type != "vtf" and format_type != "tmb":
+#         raise Exception(f"export_treeaut(): unsupported format_type '{format_type}'")
+#     if target_type != "f" and target_type != "s":
+#         raise Exception(f"export_treeaut(): unsupported target_type '{target_type}'")
 
-    if target_type == "f":
-        ta.name = "unnamed" if ta.name == "" else ta.name
-        filepath = f"./{ta.name}.{format_type}" if filepath == "" else filepath
+#     if target_type == "f":
+#         ta.name = "unnamed" if ta.name == "" else ta.name
+#         filepath = f"./{ta.name}.{format_type}" if filepath == "" else filepath
 
-    if format_type == "vtf":
-        return export_treeaut_to_vtf(ta, target_type, filepath)
-    else:
-        return export_treeaut_to_tmb(ta, target_type, filepath)
+#     if format_type == "vtf":
+#         return export_treeaut_to_vtf(ta, target_type, filepath)
+#     else:
+#         return export_treeaut_to_tmb(ta, target_type, filepath)
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -64,8 +66,8 @@ def export_treeaut(ta: TTreeAut, format_type: str, target_type: str, filepath: s
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def dot_transition_handle(graph, edge: TTransition, key: str, verbose=False):
-    use_low_high = False
+def dot_transition_handle(graph: graphviz.Digraph, edge: TTransition, key: str, verbose=False) -> None:
+    use_low_high: bool = False
     if verbose:
         print(
             "{:<60} {:<120}".format(
@@ -103,13 +105,8 @@ def dot_transition_handle(graph, edge: TTransition, key: str, verbose=False):
         print("middle/connector node", name)
 
     # EDGE: src_state -> connector node
-    connector_label = ""
-    if edge.info.variable != "":
-        connector_label += f"[{edge.info.variable}]"
-    if use_low_high:
-        if edge.info.label != "LH":
-            connector_label += f" {edge.info.label}"
-    else:
+    connector_label: str = "" if edge.info.variable == "" else f"[{edge.info.variable}]"
+    if (use_low_high and edge.info.label != "LH") or (not use_low_high):
         connector_label += f" {edge.info.label}"
 
     graph.edge(
@@ -120,15 +117,15 @@ def dot_transition_handle(graph, edge: TTransition, key: str, verbose=False):
         print("connector edge", edge.src, "->", name)
 
     # EDGE: connector node -> children
-    current_child = 0
-    current_box = 0
+    current_child: int = 0
+    current_box: int = 0
     while current_child < len(edge.children):
         if edge.info.label == "LH" and use_low_high:
-            edge_label = "L" if current_box == 0 else "H"
+            edge_label: str = "L" if current_box == 0 else "H"
         else:
             # dead code - other non-nullar symbols other than LH are not used
             edge_label = f"{current_box}"
-        has_box = False
+        has_box: bool = False
         if edge.info.box_array != [] and edge.info.box_array[current_box] is not None:
             has_box = True
             if type(edge.info.box_array[current_box]) == str:
@@ -148,7 +145,7 @@ def dot_transition_handle(graph, edge: TTransition, key: str, verbose=False):
                 box_name = edge.info.box_array[current_box]
             else:
                 box_name = edge.info.box_array[current_box].name
-            arity = box_catalogue[box_name].port_arity
+            arity: int = box_catalogue[box_name].port_arity
             if arity > 1:
                 temp = f"{name}_{current_child}_{current_box}"
 
@@ -201,7 +198,7 @@ def dot_transition_handle(graph, edge: TTransition, key: str, verbose=False):
         current_box += 1
 
 
-def dot_state_handle(graph, state, leaves, roots):
+def dot_state_handle(graph: graphviz.Digraph, state: str, leaves: list[str], roots: list[str]) -> None:
     # NODE: inner node (state of TA)
     graph.node(f"{state}", shape="circle", style="filled", fillcolor="khaki" if state in leaves else "bisque")
 
@@ -216,7 +213,7 @@ def dot_state_handle(graph, state, leaves, roots):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def convert_to_dot(src, source_type="a", verbose=False, caption=False) -> graphviz.Digraph:
+def convert_to_dot(src: Union[TTreeAut, TTreeNode, str, BDD], verbose=False, caption=False) -> graphviz.Digraph:
     if type(src) is TTreeAut:
         return treeaut_to_dot(src, verbose, caption)
     elif type(src) is TTreeNode:
@@ -231,7 +228,7 @@ def treeaut_to_dot(ta: TTreeAut, verbose=False, caption=False) -> graphviz.Digra
     dot = graphviz.Digraph(comment=f"Tree Automaton {ta.name}")
     if caption:
         dot.attr(label=f"{ta.name}")
-    output_states = ta.get_output_states()
+    output_states: list[str] = ta.get_output_states()
 
     for state in ta.get_states():
         dot_state_handle(dot, state, output_states, ta.roots)
@@ -249,9 +246,9 @@ def treeaut_to_dot(ta: TTreeAut, verbose=False, caption=False) -> graphviz.Digra
 
 
 def draw_children(graph: graphviz.Digraph, root: TTreeNode, root_idx: int) -> int:
-    node_idx = root_idx + 1
+    node_idx: int = root_idx + 1
     for i in range(len(root.children)):
-        current_idx = node_idx
+        current_idx: int = node_idx
         graph.node(str(current_idx), label=f"{root.children[i].value}", style="filled")
         node_idx = draw_children(graph, root.children[i], node_idx)
         graph.edge(str(root_idx), str(current_idx), label=f"{i}", penwidth="1.0", arrowsize="0.5", arrowhead="vee")
@@ -279,7 +276,7 @@ def tree_to_dot(root: TTreeNode) -> graphviz.Digraph:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def draw_bdd_node(graph: graphviz.Graph, node: BDDnode, parent: BDDnode, cache: set, low=False):
+def draw_bdd_node(graph: graphviz.Graph, node: BDDnode, parent: BDDnode, cache: set[str], low=False) -> None:
     if node is None:
         return
 
@@ -308,13 +305,13 @@ def draw_bdd_node(graph: graphviz.Graph, node: BDDnode, parent: BDDnode, cache: 
     return
 
 
-def bdd_to_dot(bdd: BDD) -> graphviz.Graph:
+def bdd_to_dot(bdd: BDD) -> graphviz.Digraph:
     dot = graphviz.Digraph()
     dot.attr(label=f"BDD - {bdd.name}")
 
     # dictionary: "node_name": set of nodes, to which there exists an edge
     # in the currently drawn BDD -> this is to avoid duplicate drawing
-    cache: set = set()
+    cache: set[str] = set()
 
     if bdd.root is None:
         return dot
@@ -335,7 +332,7 @@ def bdd_to_dot(bdd: BDD) -> graphviz.Graph:
     return dot
 
 
-def export_to_file(obj: object, path: str, format="png", caption=True):
+def export_to_file(obj: object, path: str, format="png", caption=True) -> None:
     dot = convert_to_dot(obj, caption=caption)
     dot.render(path, format=format, cleanup=True)
 

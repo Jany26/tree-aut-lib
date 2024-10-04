@@ -1,18 +1,21 @@
 import copy
+from typing import Dict, List, Optional, Set, Tuple
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges
 from bdd.bdd_class import BDD
 
 
-# Convert a BDD to a tree automaton.
 def create_tree_aut_from_bdd(bdd: BDD) -> TTreeAut:
-    roots = [bdd.root.name]
-    transitions = {}
-    key = 0
+    """
+    Convert a BDD structure to a tree automaton.
+    """
+    roots: List[str] = [bdd.root.name]
+    transitions: Dict[str, Dict[str, TTransition]] = {}
+    key: int = 0
     for node in bdd.iterate_bfs():
         transitions[node.name] = {}
-        edge = None
-        children = []
+        edge: Optional[TEdge] = None
+        children: List[str] = []
         if node.is_leaf():
             edge = TEdge(str(node.value), [], "")
         else:
@@ -22,25 +25,29 @@ def create_tree_aut_from_bdd(bdd: BDD) -> TTreeAut:
         transitions[node.name][f"k{key}"] = new_transition
 
         key += 1
+
+    # A BDA/UBDA created from a BDD has no ports, since it is not a 'box'.
     result = TTreeAut(roots, transitions, bdd.name, 0)
     result.port_arity = result.get_port_arity()
     return result
 
 
-# Parses the tree automaton (freshly after dimacs parsing) and adds X boxes
-# to the places which make sense.
-#   - case 1: when an edge skips some variables
-#       * e.g. node deciding by x1 leads to x4 (as opposed to x2)
-#   - case 2: when a node that does not contain last variable
-#       leads straight to a leaf node
-#       * e.g deciding by var x5, but there are 10 variables)
 def add_dont_care_boxes(ta: TTreeAut, vars: int) -> TTreeAut:
-    result = copy.deepcopy(ta)
-    var_visibility = {i: int(list(j)[0]) for i, j in ta.get_var_visibility().items()}
-    leaves = set(ta.get_output_states())
-    counter = 0
-    skipped_var_edges = []
-    var_prefix = ta.get_var_prefix()
+    """
+    Parses the tree automaton (freshly after dimacs parsing) and adds X boxes
+    to the places which make sense.
+      - case 1: when an edge skips some variables
+          * e.g. node deciding by x1 leads to x4 (as opposed to x2)
+      - case 2: when a node that does not contain last variable
+          leads straight to a leaf node (basically a variation of case 1)
+          * e.g deciding by var x5, but there are 10 variables)
+    """
+    result: TTreeAut = copy.deepcopy(ta)
+    var_visibility: Dict[str, int] = {i: int(list(j)[0]) for i, j in ta.get_var_visibility().items()}
+    leaves: Set[str] = set(ta.get_output_states())
+    counter: int = 0
+    skipped_var_edges: List[Tuple[str, str, TTransition]] = []
+    var_prefix: str = ta.get_var_prefix()
     for edge in iterate_edges(result):
         if edge.is_self_loop():
             continue

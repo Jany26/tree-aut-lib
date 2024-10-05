@@ -4,6 +4,6 @@
 # %States q0:0 q1:0 q2:0
 # %Alphabet LH:2 Port_H0:0 0:0
 
-q0 LH <[ LPort _ ]> ( q1 q2 q2 )
+q0 LH <[ LPort X ] 1> ( q1 q2 q2 )
 q1 0 ( )
 q2 1 ( )

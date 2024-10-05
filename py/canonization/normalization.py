@@ -16,7 +16,7 @@ from helpers.string_manipulation import create_string_from_name_set
 
 
 class NormalizationHelper:
-    def __init__(self, treeaut: TTreeAut, variables: list, verbose: bool, output):
+    def __init__(self, treeaut: TTreeAut, variables: list[str], verbose: bool, output):
         self.treeaut: TTreeAut = treeaut  # copy of the initial TA (un-normalized)
         self.roots: dict[str, list[str]] = {}
 

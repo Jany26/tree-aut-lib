@@ -437,8 +437,8 @@ class TTreeAut:
         for edge in iterate_edges(self):
             if edge.info.variable == "":
                 continue
-            lookup = edge.info.variable if reverse else edge.src
-            value = edge.src if reverse else edge.info.variable
+            lookup: str = edge.info.variable if reverse else edge.src
+            value: str = edge.src if reverse else edge.info.variable
             if lookup not in result:
                 result[lookup] = set()
             result[lookup].add(value)

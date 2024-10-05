@@ -48,14 +48,14 @@ class TestABDDFolding(unittest.TestCase):
         var_count = 4
         var_order = create_var_order_list("", var_count + 1)
         treeaut2 = import_treeaut_from_vtf("../tests/folding/foldingTest1.vtf")
-        unfolded2 = ubda_unfolding(add_dont_care_boxes(treeaut2, var_count))
+        unfolded2 = ubda_unfolding(add_dont_care_boxes(treeaut2, var_count), 5)
         add_variables_bottom_up(unfolded2, var_count)
         normalized2 = remove_useless_states(ubda_normalize(unfolded2, var_order))
         add_variables_bottom_up(normalized2, var_count)
         normalized2.reformat_keys()
         normalized2.reformat_states()
         folded2 = remove_useless_states(ubda_folding(normalized2, boxorder, var_count + 1))
-        new_unfolded2 = ubda_unfolding(folded2)
+        new_unfolded2 = ubda_unfolding(folded2, 5)
         add_variables_bottom_up(new_unfolded2, var_count)
 
         # recursion depth exceeded for some reason ??
@@ -83,13 +83,13 @@ class TestABDDFolding(unittest.TestCase):
         var_order = create_var_order_list("", var_count + 1)
 
         treeaut1 = import_treeaut_from_vtf("../tests/folding/folding-error-1.vtf")
-        unfolded1 = ubda_unfolding(add_dont_care_boxes(treeaut1, var_count))
+        unfolded1 = ubda_unfolding(add_dont_care_boxes(treeaut1, var_count), 6)
         normalized1 = remove_useless_states(ubda_normalize(unfolded1, var_order))
         add_variables_bottom_up(normalized1, var_count)
         normalized1.reformat_keys()
         normalized1.reformat_states()
         folded1 = remove_useless_states(ubda_folding(normalized1, boxorder, var_count))
-        new_unfolded1 = ubda_unfolding(folded1)
+        new_unfolded1 = ubda_unfolding(folded1, 6)
         add_variables_bottom_up(new_unfolded1, var_count)
 
         x = simulate_and_compare(unfolded1, new_unfolded1, var_count, debug=True)
@@ -102,7 +102,7 @@ class TestABDDFolding(unittest.TestCase):
 
         treeaut1 = import_treeaut_from_vtf("../tests/folding/folding-error-6.vtf")
         # NOTE: unfolding produces a different result when using the new definition of the "don't care" box X
-        unfolded1 = ubda_unfolding(add_dont_care_boxes(treeaut1, var_count))
+        unfolded1 = ubda_unfolding(add_dont_care_boxes(treeaut1, var_count), 6)
 
         # TODO: make a better (fixpoint) algorithm for variable fill where applicable
 
@@ -114,6 +114,6 @@ class TestABDDFolding(unittest.TestCase):
         normalized1.reformat_states()
         folded1 = ubda_folding(normalized1, boxorder, var_count + 1)
         folded1 = remove_useless_states(folded1)
-        new_unfolded1 = ubda_unfolding(folded1)
+        new_unfolded1 = ubda_unfolding(folded1, 6)
         add_variables_bottom_up(new_unfolded1, var_count)
         self.assertTrue(simulate_and_compare(unfolded1, new_unfolded1, var_count))

@@ -6,22 +6,22 @@
 
 import sys
 
-from formats.format_vtf import import_treeaut_from_vtf
 from tree_automata.automaton import TTreeAut
+from formats.format_vtf import import_treeaut_from_vtf
 
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-bdd_box_order: list = ["X"]
-zbdd_box_order: list = ["H0"]
-tbdd_box_order: list = ["X", "H0"]
-cbdd_box_order: list = ["X", "HPort"]
-czdd_box_order: list = ["H0", "X"]
-esr_box_order: list = ["L0", "H0", "X"]
-full_box_order: list = ["L0", "H0", "L1", "H1", "X", "LPort", "HPort"]
-cesr_box_order: list = ["L0", "H0", "L1", "H1", "X"]
+bdd_box_order: list[str] = ["X"]
+zbdd_box_order: list[str] = ["H0"]
+tbdd_box_order: list[str] = ["X", "H0"]
+cbdd_box_order: list[str] = ["X", "HPort"]
+czdd_box_order: list[str] = ["H0", "X"]
+esr_box_order: list[str] = ["L0", "H0", "X"]
+full_box_order: list[str] = ["L0", "H0", "L1", "H1", "X", "LPort", "HPort"]
+cesr_box_order: list[str] = ["L0", "H0", "L1", "H1", "X"]
 
 box_orders: dict[str, list[str]] = {
     "bdd": bdd_box_order,

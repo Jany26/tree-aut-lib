@@ -94,7 +94,7 @@ def load_transition_from_vtf(line: str) -> Optional[TTransition]:
     return TTransition(state, TEdge(symbol, boxes, var), children)
 
 
-def consistency_check(data: list, states: list, arity_dict: dict) -> None:
+def consistency_check(data: TTransition, states: list[str], arity_dict: dict[str, int]) -> None:
     if data.src not in states:
         raise Exception(f"consistency_check(): src state '{data.src}' not in preamble")
     if data.info.label not in arity_dict:
@@ -164,7 +164,7 @@ def consistency_check_vtf(edges: dict, states, arities, verbose=False) -> bool:
     return True
 
 
-def generate_key_from_edge(edge: list) -> str:
+def generate_key_from_edge(edge: TTransition) -> str:
     children: str = ""
     for i in range(len(edge.children)):
         children += str(edge.children[i])

@@ -13,10 +13,10 @@ class TestUBDAUnfolding(unittest.TestCase):
         test_3: TTreeAut = import_treeaut_from_vtf("../tests/unfolding/unfoldingTest3.vtf")
         test_4: TTreeAut = import_treeaut_from_vtf("../tests/unfolding/unfoldingTest4.vtf")
 
-        unfolded_1 = ubda_unfolding(test_1)
-        unfolded_2 = ubda_unfolding(test_2)
-        unfolded_3 = ubda_unfolding(test_3)
-        unfolded_4 = ubda_unfolding(test_4)
+        unfolded_1 = ubda_unfolding(test_1, 4)
+        unfolded_2 = ubda_unfolding(test_2, 8)
+        unfolded_3 = ubda_unfolding(test_3, 5)
+        unfolded_4 = ubda_unfolding(test_4, 4)
 
         self.assertTrue(is_unfolded(unfolded_1))
         self.assertTrue(is_unfolded(unfolded_2))

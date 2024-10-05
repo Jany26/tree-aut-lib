@@ -41,10 +41,21 @@ class TEdge:
             result += "]"
         return result
 
-    # makes the hyper-edge 'short' (all parts of the edge)
     def shorten_edge(self):
+        """
+        Make the hyper-edge 'short' (all parts of the edge)
+        """
         arity: int = len(self.box_array)
         self.box_array = [None] * arity
+
+    def check_edge_for_boxes(self) -> bool:
+        """
+        Return True if there is a box instance on the edge.
+        """
+        for value in self.box_array:
+            if value is not None and value != "":
+                return True
+        return False
 
 
 class TTransition:
@@ -62,12 +73,12 @@ class TTransition:
         # comment = " <<< LEAF TRANSITION >>>" if self.children == [] else ""
         return f"{self.src} -- {self.info} --> {self.children}"
 
-    def is_self_loop(self):
+    def is_self_loop(self) -> bool:
         if self.src in self.children:
             return True
         return False
 
-    def is_full_self_loop(self):
+    def is_full_self_loop(self) -> bool:
         if self.children == []:
             return False
         for i in self.children:

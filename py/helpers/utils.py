@@ -45,6 +45,8 @@ box_h1: TTreeAut = import_treeaut_from_vtf("../tests/boxes/boxH1.vtf")
 box_hport: TTreeAut = import_treeaut_from_vtf("../tests/boxes/boxHPort.vtf")
 
 box_catalogue: dict[str, TTreeAut] = {
+    "0": box_false,
+    "1": box_true,
     "False": box_false,
     "True": box_true,
     "X": box_x,

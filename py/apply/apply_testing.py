@@ -15,7 +15,9 @@ from tree_automata import (
     non_empty_top_down,
 )
 
+from apply.equality import tree_aut_equal
 import apply.apply_tables_outputs as tables
+from apply.box_trees import build_box_tree, BoxTreeNode
 
 
 class BooleanOperation(Enum):
@@ -41,24 +43,18 @@ op_lookup = {
 }
 
 
-# NOTE: probably redundant: more port transitions will later be needed probably
-# class OutputTransition(Enum):
-#     NO_TRANSITION = 0
-#     ZERO_TRANSITION = 1
-#     ONE_TRANSITION = 2
-#     PORT_TRANSITION_FIRST = 3
-#     PORT_TRANSITION_SECOND = 4
-#     PORT_TRANSITION_FIRST_NEGATED = 5
-#     PORT_TRANSITION_SECOND_NEGATED = 6
-#     OPERATION = 7
-
-
 def get_transition_name(state: str, treeaut: TTreeAut) -> str:
     for tr in treeaut.transitions[state].values():
         tr: TTransition
         if len(tr.children) == 0:
             return tr.info.label
     return "-"
+
+
+# TODO: somewhere add a map of port-states to ApplyEffect() instances or something similar,
+# some data structure saying:
+#   - what state is mapped where
+#   - and how (negated, not-negated, recursive apply follow)
 
 
 def apply_intersectoid_create(op: BooleanOperation, aut1: TTreeAut, aut2: TTreeAut):
@@ -92,7 +88,9 @@ def get_port(t: TTreeAut) -> str:
             return sym
 
 
-def apply_intersectoid_add_output_transitions(result: TTreeAut, op: BooleanOperation, aut1: TTreeAut, aut2: TTreeAut):
+def apply_intersectoid_add_output_transitions(
+    result: TTreeAut, op: BooleanOperation, aut1: TTreeAut, aut2: TTreeAut
+) -> None:
     # maps an output transition (-/0/1/Port) to each state for cayley table lookup
     # we assume each state has at most 1 output transition (based on the box correctness criteria)
     map1: dict[str, str] = map_states_to_output_transitions(aut1, 1)
@@ -123,73 +121,17 @@ def apply_intersectoid_add_output_transitions(result: TTreeAut, op: BooleanOpera
         key_idx += 1
 
 
-def tree_aut_equal(aut: TTreeAut, box: TTreeAut, debug=False) -> bool:
-    symbols = box.get_symbol_arity_dict()
-    symbols.update(aut.get_symbol_arity_dict())
-
-    # aut and co-box == empty => 'aut subseteq box'
-    intersection1 = tree_aut_intersection(aut, tree_aut_complement(box, symbols))
-    witness_BU_1, _ = non_empty_bottom_up(intersection1)
-    witness_TD_1, _ = non_empty_top_down(intersection1)
-    aut_subset_of_box = witness_BU_1 is None or witness_TD_1 is None
-
-    # box and co-aut == empty => 'box subseteq aut'
-    intersection2 = tree_aut_intersection(box, tree_aut_complement(aut, symbols))
-    witness_BU_2, _ = non_empty_bottom_up(intersection2)
-    witness_TD_2, _ = non_empty_top_down(intersection2)
-    box_subset_of_aut = witness_BU_2 is None or witness_TD_2 is None
-    if debug:
-        print(f"{aut.name} ==? {box.name}")
-        print("witness 1")
-        witness_BU_1.print_node() if witness_BU_1 is not None else "None"
-        print("witness 2")
-        witness_BU_2.print_node() if witness_BU_2 is not None else "None"
-    return aut_subset_of_box and box_subset_of_aut
-
-
-def apply_intersectoid_compare(aut: TTreeAut, debug=False):
-    # for boxname in ["X", "L0", "L1", "H0", "H1", "0", "1", "LPort", "HPort"]:
-    for boxname in ["X", "L0", "L1", "H0", "H1", "0", "1", "LPort", "HPort", "IFF0", "IFF1", "IFFPort"]:
-        box = box_catalogue[boxname]
-        box.reformat_ports()
-        equal = tree_aut_equal(aut, box, debug)
-        if equal:
-            return boxname
-    return "?"
-
-
 def test_all_apply_intersectoids():
     result_dict: dict[str, dict[str, str]] = {}
     for operation, _ in op_lookup.items():
-        for boxname1 in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort", "IFF0", "IFF1", "IFFPort"]:
+        for boxname1 in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
             result_dict[boxname1] = {}
-            for boxname2 in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort", "IFF0", "IFF1", "IFFPort"]:
+            for boxname2 in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
                 box1 = box_catalogue[boxname1]
                 box2 = box_catalogue[boxname2]
                 applied = apply_intersectoid_create(operation, box1, box2)
                 remove_useless_states(applied)
                 applied.name = f"{boxname1}_{operation.name}_{boxname2}"
                 applied.reformat_ports()
-                res = apply_intersectoid_compare(applied)
-                if res == "?":
-                    print()
-                    applied = apply_intersectoid_create(operation, box1, box2)
-                    remove_useless_states(applied)
-                    applied.name = f"{boxname1}_{operation.name}_{boxname2}"
-                    applied.reformat_ports()
-                    print(applied.get_shortest_state_paths_dict())
-                    export_treeaut_to_vtf(applied, f"../data/apply_tests/{operation.name}/{applied.name}.vtf")
-                    export_to_file(applied, f"../data/apply_tests/{operation.name}/{applied.name}")
-                    res = apply_intersectoid_compare(applied, debug=True)
-                    print(applied)
-                    if not os.path.exists(f"../data/apply_tests/{operation.name}"):
-                        os.makedirs(f"../data/apply_tests/{operation.name}")
-                    print()
-                else:
-                    print(box1.name, operation.name, box2.name, "=", res)
-                # result_dict[boxname1][boxname2] = res
+                print(box1.name, operation.name, box2.name, "=", build_box_tree(applied))
         print("----------------------------------------")
-
-
-if __name__ == "__main__":
-    test_all_apply_intersectoids()

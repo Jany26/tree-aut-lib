@@ -1,6 +1,6 @@
 import sys
 
-from apply.apply_testing import tree_aut_equal
+from apply.equality import tree_aut_equal
 from formats.format_vtf import import_treeaut_from_vtf
 from tree_automata import TTreeAut
 from helpers.utils import box_catalogue
@@ -17,11 +17,11 @@ class BoxTreeNode:
         self.high: BoxTreeNode | None = high
 
     def __repr__(self):
-        children = "" if self.is_leaf else f" ({self.low} {self.high})"
-        return "'" + self.node + "'" + children
-        # return f"{self.node} '({self.low if self.low is not None else ''} {self.high if self.high is not None else ''})"
-
-        # return f"{self.node}{self.low if self.low is not None else ''}{self.high if self.high is not None else ''}"
+        result = "n" if not self.is_leaf else self.node
+        result += f"({self.low}" if self.low is not None else ""
+        result += ";" if self.low is not None and self.high is not None else ""
+        result += f"{self.high})" if self.high is not None else ""
+        return result
 
 
 # maybe not needed, since recursive solution seems more elegant
@@ -66,29 +66,16 @@ def build_box_tree(aut: TTreeAut) -> BoxTreeNode | None:
             return BoxTreeNode(boxname)
 
         # inner node case
-        print(" state", state)
         for edge in aut.transitions[state].values():
-            print("  edge", edge)
-            # for child in edge.children:
             if len(edge.children) == 2:
                 low: BoxTreeNode | None = build_box_tree_recursive(aut, edge.children[0])
                 high: BoxTreeNode | None = build_box_tree_recursive(aut, edge.children[1])
-                print("   low", low.node if low is not None else "none")
-                print("   high", high.node if high is not None else "none")
                 if (low is not None) and (high is not None):
                     result = BoxTreeNode(state, low, high)
-                    print(f" returning result {state} {edge}")
                     return result
-        print(" returning none")
         return None
 
     for i in aut.roots:
         box_tree = build_box_tree_recursive(aut, i)
         if box_tree is not None:
             return box_tree
-
-
-if __name__ == "__main__":
-    ta = import_treeaut_from_vtf(sys.argv[1])
-    print(ta)
-    print(build_box_tree(ta))

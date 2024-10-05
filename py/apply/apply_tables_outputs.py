@@ -1,28 +1,26 @@
 # from apply_op_merging import OutputTransition
+from typing import Optional
 
-# TODO: use a structure/class to represent the resulting output transition:
-# - attributes:
-#
-#       - output: bool
-#               (if true, consider output_value, if false, consider port)
-#
-#       - output_value: bool
-#               (true / false) => if output == True, output_value is relevant
-#               true => '1' port transition, false => '0' port transition
-#
-#       - port: bool
-#               (if true, consider port_placement)
-#
-#       - port_placement: enum
-#               - enum: NONE (default, error), FIRST (ignore the second operand, use the ), Second, Combination (recursively apply boolean function on both)
-#
-#       - port_to_state map
-#               - correctly map the output states to the port (maybe rethink port flag/port_placement enum/port_to_state map)
-#
-#       - negation flag: bool
-#               - if true, the result is recursively propagated downwards (apply
-#                   function used from here on out will flip transitions to zero-output
-#                   nodes so that they lead to one-output nodes and vice-versa
+
+class ApplyEffect:
+    def __init__(self, out: Optional[int], port: Optional[int], negation: bool = False, operate: bool = False):
+        self.output = out  # If None, assume neither 0 nor 1
+        self.port = port  # If None, assume none of { P1, P2, !P1, !P2 }
+        self.negation = negation  # If True, negate the result (redirect transitions from 0 to 1 and vice-versa)
+        self.operate = operate  # If True, assume OP => recursively continue with the operation
+
+
+effects: dict[str, ApplyEffect] = {
+    "-": ApplyEffect(None, None),
+    "0": ApplyEffect(0, None),
+    "1": ApplyEffect(1, None),
+    "P1": ApplyEffect(None, 0),
+    "P2": ApplyEffect(None, 1),
+    "!P1": ApplyEffect(None, 0, negation=True),
+    "!P2": ApplyEffect(None, 1, negation=True),
+    "OP": ApplyEffect(None, None, operate=True),
+}
+
 
 AND_table = [
     ["-", "0", "-", "-"],
@@ -34,6 +32,9 @@ AND_table = [
 # the top-right and bottom-left corners are ambiguous in the following operations
 # we are not sure whether a port transition is applicable in some cases,
 # so we leave it empty for now
+
+# most probably, the whole first row and column should be '-', since we logically
+# cannot perform a binary operation on a 'None' type operand
 
 OR_table = [
     ["-", "-", "1", "-"],

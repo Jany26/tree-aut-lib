@@ -352,6 +352,10 @@ def export_treeaut_to_vtf(ta: TTreeAut, filepath="", format="f"):
     if format == "f" and filepath == "":
         Exception("export_treeaut_to_vtf(): filepath needed")
 
+    dir_path = os.path.dirname(filepath)
+    if dir_path:
+        os.makedirs(dir_path, exist_ok=True)
+
     file = open(filepath, "w") if format == "f" else ""
 
     if format == "f":

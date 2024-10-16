@@ -8,7 +8,11 @@ if they were considered roots)
 are considered a part of the edge-symbol).
 """
 
+from io import TextIOWrapper
 import itertools
+import sys
+import os
+from typing import Any, Optional
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges
 from tree_automata.automaton import state_name_sort
@@ -16,7 +20,7 @@ from helpers.string_manipulation import create_string_from_name_set
 
 
 class NormalizationHelper:
-    def __init__(self, treeaut: TTreeAut, variables: list[str], verbose: bool, output):
+    def __init__(self, treeaut: TTreeAut, variables: list[str], verbose: bool, output=None):
         self.treeaut: TTreeAut = treeaut  # copy of the initial TA (un-normalized)
         self.roots: dict[str, list[str]] = {}
 
@@ -50,7 +54,16 @@ class NormalizationHelper:
                 self.keys.add(k)
         self.variables: list[str] = variables[::-1]
         self.verbose: bool = verbose
-        self.output: str = output
+        if output is not None:
+            dir_path = os.path.dirname(output)
+            if dir_path:
+                os.makedirs(dir_path, exist_ok=True)
+        self.output: TextIOWrapper = sys.stdout if output is None else open(output, "w")
+
+        # child macrostate str -> variable
+        # this is used for checking, if the currently considered transition is viable
+        # if source state variable is greater than any child variable, the considered edge is not added to the result
+        self.var_cache: dict[str, int] = {}
 
     def __repr__(self):
         result = ""
@@ -64,6 +77,14 @@ class NormalizationHelper:
             result += f"<{i[2]}> " if i[2] != "" else ""
             result += f"--> {i[3]}\n"
         return result
+
+    def debug_print(self, out: Any) -> None:
+        if self.verbose:
+            if self.output is None:
+                print(out)
+            else:
+                self.output.write(out)
+                self.output.write("\n")
 
     def edges_to_process_cache_init(self) -> dict[str, set[str]]:
         """
@@ -146,7 +167,7 @@ class NormalizationHelper:
 
 def process_possible_edges(
     children_macrostates: list[list[str]], norm: NormalizationHelper, current_var: str, symbol: str
-):
+) -> None:
     children_lists = [list(i) for i in itertools.product(*children_macrostates)]
     new_macrostate = set()
     force_var = False
@@ -156,56 +177,66 @@ def process_possible_edges(
             continue
         possible_edges = norm.lookup[str(c)]
         for key, edge in possible_edges:
-            if norm.verbose:
-                if norm.output is None:
-                    print("      > EDGE =", edge)
-                else:
-                    norm.output.write(f"      > EDGE = {edge}\n")
-            if edge.info.variable == "" or edge.info.variable == current_var:
-                var_string = ""
-                if edge.info.variable == current_var:
-                    var_string = f" through {current_var}"
-                    force_var = True
-                new_macrostate.add(edge.src)
-                for child in edge.children:
-                    if key in norm.edge_lookup[child]:
-                        # print(f"  [!] processed edge {key} leading to {child}{var_string}")
-                        norm.edge_lookup[child].remove(key)
-                        if key in norm.keys:
-                            # print(f"  [!] removing key {key}")
-                            norm.keys.remove(key)
-                            keys_to_process.append(key)
-    if len(new_macrostate) != 0:
-        new_macrostate = list(new_macrostate)
-        new_macrostate = state_name_sort(new_macrostate)
-        if new_macrostate not in norm.next_worklist:
-            # print(f"    > appending {new_macrostate}")
-            norm.next_worklist.append(new_macrostate)
+            norm.debug_print(f"      > EDGE = {edge}")
+            if edge.info.variable not in ["", current_var]:
+                continue
+            new_macrostate.add(edge.src)
+            for child in edge.children:
+                if key not in norm.edge_lookup[child]:
+                    continue
+                # print(f"  [!] processed edge {key} leading to {child}{var_string}")
+                norm.edge_lookup[child].remove(key)
+                if key not in norm.keys:
+                    continue
+                # print(f"  [!] removing key {key}")
+                norm.keys.remove(key)
+                keys_to_process.append(key)
 
-        # if new_macrostate not in norm.var_worklist[current_var]:
-        #     norm.var_worklist[current_var].append(new_macrostate)
+    if len(new_macrostate) == 0:
+        return
+    new_macrostate = state_name_sort(list(new_macrostate))
+    if new_macrostate not in norm.next_worklist:
+        # print(f"    > appending {new_macrostate}")
+        norm.next_worklist.append(new_macrostate)
 
-        # if self-loop (even partial), then no variable on edge
-        # variable appears only if that was the case in the original UBDA
-        if new_macrostate in children_macrostates or not force_var:
-            # if new_macrostate in tuple:
-            added_var = ""
-        else:
-            added_var = current_var
+    # if self-loop (even partial), then no variable on edge
+    # variable appears only if that was the case in the original UBDA
+    added_var = "" if new_macrostate in children_macrostates else current_var
 
-        lookup_str = str([new_macrostate, symbol, added_var, children_macrostates])
-        if lookup_str not in norm.processed_edges:
-            norm.processed_edges.add(lookup_str)
-            norm.transitions.append(tuple([new_macrostate, symbol, added_var, children_macrostates]))
-            if norm.verbose:
-                if norm.output is None:
-                    print("[!] edge =", [new_macrostate, symbol, added_var, children_macrostates])
-                else:
-                    norm.output.write(f"[!] edge = {[new_macrostate, symbol, added_var, children_macrostates]}\n")
-                # print("  [keys] =", keys_to_process)
-            for root in norm.treeaut.roots:
-                if root in new_macrostate:
-                    norm.roots[str(new_macrostate)] = new_macrostate
+    # debug print info
+    source: str = macrostring(new_macrostate)
+    low: str = macrostring(children_macrostates[0])
+    high: str = macrostring(children_macrostates[1])
+    source_var: Optional[str] = norm.var_cache[source] if source in norm.var_cache else None
+    low_var: str = norm.var_cache[low]
+    high_var: str = norm.var_cache[high]
+
+    # checking for edge relevancy => if failed, edge would disrupt semantics, so it won't be added
+    if source in norm.var_cache:
+        src_var = norm.var_cache[source]
+        for child in children_macrostates:
+            child_var = norm.var_cache[macrostring(child)]
+            if src_var > child_var:
+                if norm.verbose:
+                    pass
+                return
+    # however, cache is only updated at the end of the iteration
+    lookup_str = str([new_macrostate, symbol, added_var, children_macrostates])
+    if lookup_str in norm.processed_edges:
+        norm.debug_print(f"{lookup_str}: already in the result")
+        return
+
+    norm.debug_print(f"[var check OK]: -> {source} : {source_var} -> [ {low} : {low_var} , {high} : {high_var} ]")
+    norm.processed_edges.add(lookup_str)
+    norm.transitions.append(tuple([new_macrostate, symbol, added_var, children_macrostates]))
+    norm.debug_print(f"[!] edge = {new_macrostate, symbol, added_var, children_macrostates}")
+    for root in norm.treeaut.roots:
+        if root in new_macrostate:
+            norm.roots[str(new_macrostate)] = new_macrostate
+
+
+def macrostring(macrostate: list[str]) -> str:
+    return create_string_from_name_set(state_name_sort(macrostate))
 
 
 def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTreeAut:
@@ -227,41 +258,24 @@ def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTre
     for symbol, state_list in ta.get_output_edges().items():
         norm.transitions.append(tuple([state_list, symbol, var, []]))
         norm.worklist.append(state_list)
-        # norm.var_worklist[var].append(state_list)
-    if norm.verbose:
-        if norm.output is None:
-            print(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}")
-        else:
-            norm.output.write(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}\n")
+        norm.var_cache[macrostring(state_list)] = var
+    norm.debug_print(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}")
     while norm.variables != []:
-        old_var: str = var
         var: str = norm.variables.pop(0)
-        if norm.verbose:
-            if norm.output is None:
-                print(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}")
-            else:
-                norm.output.write(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}\n")
+        norm.debug_print(f"var: {var} | {[create_string_from_name_set(i) for i in norm.worklist]}")
         for sym in norm.symbols:
             tuples: list[list[list[str]]] = []
-            # for i in product(norm.var_worklist[old_var], repeat=norm.symbols[sym]):
             for i in itertools.product(norm.worklist, repeat=norm.symbols[sym]):
                 tuples.append(list(i))
             for t in tuples:
-                if norm.verbose:
-                    if norm.output is None:
-                        print(f"   > tuple = {t}")
-                    else:
-                        norm.output.write(f"   > tuple = {t}\n")
+                norm.debug_print(f"   > tuple = {t}")
                 process_possible_edges(t, norm, var, sym)
-                # NOTE: some sort of optimization is needed for redundant edges
-                # e.g. cycles through variables, or edges from higher variable states "back" to lower variable states
-                # that semantically mean deciding over the same variables more than once
-            # norm.optimize_redundant_states()
-            # norm.check_for_unprocessed_states()
         norm.worklist = norm.next_worklist
         norm.next_worklist = []
-        if norm.variables == []:
-            break
+        for macrostate in norm.worklist:
+            norm.var_cache[macrostring(macrostate)] = var
+        # if norm.variables == []:
+        #     break
     ta = create_treeaut_from_helper(norm)
     remove_bad_transitions(ta, vars)
     return ta
@@ -359,7 +373,7 @@ def is_normalized(ta: TTreeAut, verbose=False) -> bool:
                 or (var == "" and len(result[symbol][childStr]) != 0)
                 or (var != "" and "" in result[symbol][childStr])
             ):
-                print("DUPLICATE", edge)
+                print("DUPLICATE", edge, f"[ sym={symbol} child={childStr} res={result[symbol][childStr]}]")
                 duplicateEdges.append(edge)
             else:
                 result[symbol][childStr].add(var)
@@ -368,7 +382,7 @@ def is_normalized(ta: TTreeAut, verbose=False) -> bool:
     if verbose:
         for edge in duplicateEdges:
             print("is_normalized():", end="")
-            print(f"edge {str(edge)[4:]} disrupts normalized property")
+            print(f"edge {str(edge)} disrupts normalized property")
 
     return duplicateEdges == []
 

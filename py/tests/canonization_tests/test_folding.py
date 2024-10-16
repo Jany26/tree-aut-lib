@@ -6,9 +6,9 @@ from bdd.bdd_to_treeaut import add_dont_care_boxes
 from canonization.unfolding import ubda_unfolding
 from canonization.folding import get_mapping, ubda_folding
 from canonization.folding_helpers import get_maximal_mapping_fixed, get_maximal_mapping, port_to_state_mapping
-from canonization.normalization import ubda_normalize
+from canonization.normalization import is_normalized, ubda_normalize
 from experiments.simulation import simulate_and_compare
-from tree_automata.var_manipulation import add_variables_bottom_up
+from tree_automata.var_manipulation import add_variables_bottom_up, check_variable_overlap
 from helpers.string_manipulation import create_var_order_list
 from helpers.utils import box_catalogue, box_orders
 
@@ -88,6 +88,8 @@ class TestABDDFolding(unittest.TestCase):
         add_variables_bottom_up(normalized1, var_count)
         normalized1.reformat_keys()
         normalized1.reformat_states()
+        self.assertTrue(simulate_and_compare(unfolded1, normalized1, var_count))  # pass
+        self.assertTrue(check_variable_overlap(normalized1))  # pass
         folded1 = remove_useless_states(ubda_folding(normalized1, boxorder, var_count))
         new_unfolded1 = ubda_unfolding(folded1, 6)
         add_variables_bottom_up(new_unfolded1, var_count)
@@ -112,6 +114,8 @@ class TestABDDFolding(unittest.TestCase):
         add_variables_bottom_up(normalized1, var_count)
         normalized1.reformat_keys()
         normalized1.reformat_states()
+        self.assertTrue(simulate_and_compare(unfolded1, normalized1, var_count))  # pass
+        self.assertTrue(is_normalized(normalized1))  # fail
         folded1 = ubda_folding(normalized1, boxorder, var_count + 1)
         folded1 = remove_useless_states(folded1)
         new_unfolded1 = ubda_unfolding(folded1, 6)

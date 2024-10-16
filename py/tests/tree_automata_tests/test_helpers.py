@@ -101,7 +101,3 @@ class TestTreeAutomatonGenerateTuples(unittest.TestCase):
         self.assertEqual(len(test_3), 3)
         self.assertEqual(len(test_4), 61)
         self.assertEqual(len(test_5), 15)
-
-
-if __name__ == "__main__":
-    unittest.main()

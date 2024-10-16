@@ -7,7 +7,9 @@ for generating a graphical representation of the TA. (IMAGE OUTPUT)
 [link] https://graphviz.readthedocs.io/en/stable/manual.html
 """
 
+import os
 from typing import Union
+
 import graphviz
 
 from tree_automata import TTreeAut, TTransition, TTreeNode
@@ -333,6 +335,9 @@ def bdd_to_dot(bdd: BDD) -> graphviz.Digraph:
 
 
 def export_to_file(obj: object, path: str, format="png", caption=True) -> None:
+    dir_path = os.path.dirname(path)
+    if dir_path:
+        os.makedirs(dir_path, exist_ok=True)
     dot = convert_to_dot(obj, caption=caption)
     dot.render(path, format=format, cleanup=True)
 

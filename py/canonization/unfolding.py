@@ -10,6 +10,7 @@ from typing import Optional
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges, iterate_states_bfs, shrink_to_top_down_reachable
 from helpers.utils import eprint, box_catalogue
+from tree_automata.var_manipulation import saturate_box_edges_with_variables
 from tree_automata.automaton import iterate_key_edge_tuples
 
 
@@ -67,97 +68,6 @@ def get_outgoing_variables(helper: UnfoldingHelper, edge: TTransition) -> list[i
             result.append(int(edge2.info.variable[helper.prefix_len :]))
             break
     return result
-
-
-def saturate_box_edges_with_variables(
-    box: TTreeAut, prefix: str, min_var: int, out_vars: list[int], max_var: int
-) -> None:
-    variable_map: dict[str, int] = {}
-    # store state-key pairs of edges that "can" and should be saturated, basically non-self-loops
-    work_set: set[tuple[str, str]] = set()
-    selflooping_states: set[str] = set()
-    # assign root variable
-    for root in box.roots:
-        variable_map[root] = min_var
-
-    ports_states_list: list[tuple[str, str]] = []
-    # get information about port transitions -- tuple (portname, statename)
-    # initialize set of selflooping states and set of saturable edges
-    for key, edge in iterate_key_edge_tuples(box):
-        if edge.info.label.startswith("Port"):
-            ports_states_list.append(tuple((edge.info.label, edge.src)))
-        if edge.is_self_loop():
-            selflooping_states.add(edge.src)
-        else:
-            work_set.add(tuple((edge.src, key)))
-
-    # lexicographically sort portnames and assign variables from ordered out_vars array
-    ports_states_list = sorted(ports_states_list, key=lambda x: x[0])
-    for idx, (_, state) in enumerate(ports_states_list, start=0):
-        variable_map[state] = out_vars[idx]
-
-    for edge in iterate_edges(box):
-        # saturate port edges with variables (using the var map)
-        if edge.info.label.startswith("Port"):
-            edge.info.variable = f"{prefix}{variable_map[edge.src]}"
-            continue
-        # saturate non-port output edges with variables
-        if not edge.info.label.startswith("Port") and len(edge.children) == 0:
-            edge.info.variable = f"{prefix}{max_var}"
-            variable_map[edge.src] = max_var
-            continue
-    # fixpoint-like algorithm that saturates the edges top-down and bottom-up
-    while True:
-        # top-down saturation
-        used_edges: set[tuple[str, str]] = set()
-        for state, key in work_set:
-            edge: TTransition = box.transitions[state][key]
-            if edge.is_self_loop() or edge.src in selflooping_states:
-                continue
-            if edge.info.variable != "":
-                continue
-            if state not in variable_map:
-                continue
-            # At this point, we have an edge that:
-            #   - its source state does not have any self loop,
-            #   - has not yet been labeled with a variable,
-            #   - its source state is assigned a variable
-            # So now we can:
-            #   - add the variable to the edge,
-            #   - propagate the variable information to children, where possible,
-            #   - store a flag for removing this edge from a work_set.
-            edge.info.variable = f"{prefix}{variable_map[state]}"
-            for child in edge.children:
-                if child not in variable_map:
-                    variable_map[child] = variable_map[state] + 1
-            used_edges.add(tuple((state, key)))
-        work_set = work_set - used_edges
-
-        # bottom-up saturation
-        for state, key in work_set:
-            edge: TTransition = box.transitions[state][key]
-            if edge.is_self_loop():
-                continue
-            if edge.info.variable != "":
-                continue
-            if state not in variable_map:
-                continue
-            var_to_add: Optional[int] = None
-            for child in edge.children:
-                if child not in selflooping_states and child in variable_map:
-                    var_to_add = variable_map[child] - 1
-            # We want to saturate variables bottom-up only when:
-            #   - the edge itself is not a self loop
-            #   - the edge
-            #   - some child is non-self-looping and has an assigned variable
-            if var_to_add is not None:
-                edge.info.variable = f"{prefix}{var_to_add}"
-                variable_map[edge.src] = var_to_add
-                used_edges.add(tuple((state, key)))
-        work_set = work_set - used_edges
-
-        if len(used_edges) == 0:  # if no progress is done, terminate.
-            break
 
 
 def unfold_edge(helper: UnfoldingHelper, folded_edge: TTransition) -> tuple[int, TTransition]:

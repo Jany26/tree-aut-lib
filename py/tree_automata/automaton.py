@@ -755,7 +755,7 @@ def iterate_edges(obj: TTreeAut) -> Generator[TTransition, None, None]:
 
 def iterate_key_edge_tuples(obj: TTreeAut) -> Generator[tuple[str, TTransition], None, None]:
     if not isinstance(obj, TTreeAut):
-        raise ValueError("iterate_key_edge_tuples can only work with TTreeAut.")
+        raise ValueError("iterate_key_edge_tuples() can only work with TTreeAut.")
 
     for edges in obj.transitions.values():
         for key, edge in edges.items():
@@ -764,16 +764,28 @@ def iterate_key_edge_tuples(obj: TTreeAut) -> Generator[tuple[str, TTransition],
 
 def iterate_keys(obj: TTreeAut) -> Generator[str, None, None]:
     if not isinstance(obj, TTreeAut):
-        raise ValueError("iterate_keys can only work with TTreeAut.")
+        raise ValueError("iterate_keys() can only work with TTreeAut.")
     for edges in obj.transitions.values():
         for key in edges.keys():
             yield key
 
 
 def iterate_edges_from_state(obj: TTreeAut, state: str) -> Generator[TTransition, None, None]:
-    if isinstance(obj, TTreeAut):
+    if not isinstance(obj, TTreeAut):
+        raise ValueError("iterate_edges_from_state() can only work with TTreeAut")
+
+    for edge in obj.transitions[state].values():
+        yield edge
+
+
+def iterate_output_edges(obj: TTreeAut) -> Generator[TTransition, None, None]:
+    if not isinstance(obj, TTreeAut):
+        raise ValueError("iterate_output_edges() can only work with TTreeAut")
+
+    for state in obj.get_output_states():
         for edge in obj.transitions[state].values():
-            yield edge
+            if len(edge.children) == 0:
+                yield edge
 
 
 def iterate_states_dfs(ta: TTreeAut) -> Generator[str, None, None]:

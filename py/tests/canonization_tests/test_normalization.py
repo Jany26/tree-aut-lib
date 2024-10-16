@@ -1,10 +1,12 @@
 import unittest
 
+from experiments.simulation import simulate_and_compare
 from formats.format_vtf import import_treeaut_from_vtf
 from canonization.normalization import ubda_normalize, is_normalized
 from tree_automata.functions.trimming import remove_useless_states
 from helpers.string_manipulation import create_var_order_list
 from canonization.unfolding import ubda_unfolding
+from tree_automata.var_manipulation import add_variables_bottom_up, add_variables_fixpoint, check_variable_overlap
 
 
 # TODO: update detailed normalization tests
@@ -29,11 +31,17 @@ class TestUBDANormalization(unittest.TestCase):
         normalized_bda_4 = remove_useless_states(ubda_normalize(unfolded_bda_4, create_var_order_list("", 4)))
         normalized_bda_5 = remove_useless_states(ubda_normalize(unfolded_bda_5, create_var_order_list("x", 8)))
 
-        self.assertTrue(is_normalized(normalized_bda_1))
-        self.assertTrue(is_normalized(normalized_bda_2))
-        self.assertTrue(is_normalized(normalized_bda_3))
-        self.assertTrue(is_normalized(normalized_bda_4))
-        self.assertTrue(is_normalized(normalized_bda_5))
+        self.assertTrue(simulate_and_compare(unfolded_bda_1, normalized_bda_1, 4))
+        self.assertTrue(simulate_and_compare(unfolded_bda_2, normalized_bda_2, 8))
+        self.assertTrue(simulate_and_compare(unfolded_bda_3, normalized_bda_3, 5))
+        self.assertTrue(simulate_and_compare(unfolded_bda_4, normalized_bda_4, 4))
+        self.assertTrue(simulate_and_compare(unfolded_bda_5, normalized_bda_5, 8))
+
+        self.assertTrue(check_variable_overlap(normalized_bda_1, 5))
+        self.assertTrue(check_variable_overlap(normalized_bda_2, 9))
+        self.assertTrue(check_variable_overlap(normalized_bda_3, 6))
+        self.assertTrue(check_variable_overlap(normalized_bda_4, 5))
+        self.assertTrue(check_variable_overlap(normalized_bda_5, 9))
 
     def test_only_normalization(self):
         test_bda_1 = import_treeaut_from_vtf("../tests/normalization/normalizationTest1.vtf")
@@ -59,50 +67,23 @@ class TestUBDANormalization(unittest.TestCase):
         unfolded.reformat_states()
 
         normalized = ubda_normalize(unfolded, create_var_order_list("x", 4))
-        self.assertTrue(is_normalized(normalized))
-        states = set(["{q0,q1,q2,q3}", "{q1,q2,q3}", "{q3,q4,q5}", "{q6}", "{q7}"])
-        # self.assertSetEqual(set(normalized.get_states()), states)
-        # self.assertListEqual(normalized.get_var_occurence(), [1, 3, 4, 4])
+        self.assertTrue(simulate_and_compare(unfolded, normalized, 4))
+        self.assertTrue(check_variable_overlap(normalized))
 
     def test_normalization_detailed_2(self):
         initial = import_treeaut_from_vtf("../tests/normalization/newNormTest5.vtf")
-        states = set(["{q1}", "{q3}", "{q2,q4}", "{q2}", "{q6}", "{q5}", "{q7}"])
+        add_variables_fixpoint(initial, 7)
 
         normalized = ubda_normalize(initial, create_var_order_list("x", 7))
-        self.assertTrue(is_normalized(normalized))
-        self.assertSetEqual(set(normalized.get_states()), states)
-        self.assertListEqual(normalized.get_var_occurence(), [1, 7, 7])
+        self.assertTrue(simulate_and_compare(initial, normalized, 6))
+        self.assertTrue(check_variable_overlap(normalized))
 
     def test_normalization_detailed_3(self):
-        # failing for the same reason as the test_normalization_after_unfolding
-        # possible reasons:
-        # - too many macrostate tuples are considered (probably not)
-        # - variable saturation before normalization is not good enough (TODO)
-        # - merging variable and non-variable transitions (or not differentiating between them) - see log
-        #       - maybe 'force' a variable in case of non-self-looping transitions
-
-        states = set(
-            [
-                "{q0}",
-                "{q5,q12}",
-                "{q13,q14,q16}",
-                "{q9,q14}",
-                "{q11,q12,q15}",
-                "{q1,q3,q7}",
-                "{q4,q8,q10}",
-                "{q8}",
-                "{q6}",
-                "{q3,q6,q7}",
-                "{q2,q4,q10}",
-                "{q6,q8}",
-            ]
-        )
         initial = import_treeaut_from_vtf("../tests/normalization/newNormTest4-loops.vtf")
         unfolded = ubda_unfolding(initial, 9)
         unfolded.reformat_keys()
         unfolded.reformat_states()
 
         normalized = ubda_normalize(unfolded, create_var_order_list("x", 9))
-        self.assertTrue(is_normalized(normalized))
-        self.assertSetEqual(set(normalized.get_states()), states)
-        self.assertListEqual(normalized.get_var_occurence(), [1, 4, 6, 9, 9])
+        self.assertTrue(simulate_and_compare(unfolded, normalized, 8))
+        self.assertTrue(check_variable_overlap(normalized))

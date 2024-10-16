@@ -273,6 +273,19 @@ class SimHelperTreeAutDict:
         self.keys: dict[str, list[str]] = {state: sort_keys(ta, state) for state in ta.get_states()}
         # self.path: list[str] = []
 
+    def __repr__(self):
+        result += "-" * 80
+        result = "SimHelper:" + "\n"
+        result += "prefix = " + self.prefix + "\n"
+        result += "leaves = " + "\n"
+        for leaf, symbols in self.leaves.items():
+            result += "  > " + leaf + " -> " + symbols + "\n"
+        result += "var visibility = " + "\n"
+        for state, vars in self.vis.items():
+            result += "  > " + state + " -> " + vars + "\n"
+        result += "-" * 80
+        return result
+
 
 def sort_keys(ta: TTreeAut, state: str) -> list:
     """
@@ -340,7 +353,10 @@ def simulate_run_treeaut_dict(ta: TTreeAut, assignment: dict[int, int], verbose=
 
     root: str = ta.roots[0]
     root_var: str = list(sim_helper.vis[root])[0]
-    start: int = int(root_var) if starting_var is None else int(starting_var)
+
+    start: int = (
+        int(root_var[len(sim_helper.prefix) :]) if starting_var is None else int(starting_var[len(sim_helper.prefix) :])
+    )
     if sim_helper.debug:
         print(f"{ta.name} - simulating variable assignment")
     # sim_helper.path.append(root)

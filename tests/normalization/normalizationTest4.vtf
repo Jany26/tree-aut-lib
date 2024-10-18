@@ -7,7 +7,7 @@
 q0 LH <x1> ( q1 q2 )
 q1 LH <x3> ( q3 q4 )
 q1 LH ( q1 q1 )
-q2 LH ( q3 q4 )
+q2 LH <x2> ( q3 q4 )
 q2 LH ( q2 q2 )
 q3 0 ( )
 q4 1 ( )

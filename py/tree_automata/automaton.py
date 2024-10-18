@@ -141,6 +141,13 @@ class TTreeAut:
         # result.sort()
         return state_name_sort(result)
 
+    def get_self_looping_states(self) -> set[str]:
+        result: set[str] = set()
+        for edge in iterate_edges(self):
+            if edge.src in edge.children:
+                result.add(edge.src)
+        return result
+
     def get_output_symbols(self) -> list[str]:
         """
         Get a list of all edge 'symbols' labeling the output edges from the TA.
@@ -273,10 +280,13 @@ class TTreeAut:
         original_rootstates: list[str] = [i for i in self.roots]
         self.roots = [state]
         result: set[str] = set()
+        # because by default, the root state (origin) is explored first,
+        # and since we only want it to be considered reachable if there is a non-trivial path from 'state' to itself,
+        # we introduce this flag, so that only if it is reached
         root: bool = True
         for state in iterate_states_bfs(self):
-            if root:  # this should be here so that it does not the first 'state'
-                root = False  # is not considered initial upon first exploration, only after a second visit
+            if root:
+                root = False
                 continue
             result.add(state)
         self.roots = original_rootstates
@@ -447,16 +457,21 @@ class TTreeAut:
     def get_var_visibility_deterministic(self) -> dict[str, int]:
         """
         Works similarly to get_var_visibility(), but instead assigns only one
-        variable to each state (assumes 'determinism' wrt. variable visibility)
+        variable to each state (assumes 'determinism' wrt. variable visibility).
+        Throws an exception if more variables are visible from one state.
 
         NOTE: does not have a "reverse" version, like the 'nondeterministic' counterpart.
         """
         result: dict[str, int] = {}
         prefix = len(self.get_var_prefix())
-        for state in self.get_states():
-            for edge in self.transitions[state].values():
-                if edge.info.variable != "":
-                    result[state] = int(edge.info.variable[prefix:])
+        # for state in self.get_states():
+        for edge in iterate_edges(self):
+            if edge.info.variable == "":
+                continue
+            var = int(edge.info.variable[prefix:])
+            if edge.src in result and result[edge.src] != var:
+                raise ValueError(f"get_var_visibility_deterministic() -> state {edge.src} sees >1 variables")
+            result[edge.src] = var
         return result
 
     def get_var_occurence(self, sorted=True) -> list[int]:

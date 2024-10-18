@@ -1,17 +1,19 @@
 @NTA
 # Automaton normalizationTest2
-%Root a
-%States a:0 b:0 c:0 d:0 e:0 f:0
+%Root q0
+%States q0:0 q1:0 q2:0 q3:0 q4:0 q5:0
 %Alphabet LH:2 0:0 1:0
+# some transitions were omitted, because this test case was suited for the old
+# version of normalization, which allowed loops through the same variable, etc.
 
-a LH <x1> ( b c )
-b LH <x3> ( c d )
-c LH ( d b )
-e LH ( f e )
-c LH ( e f )
-c LH <x5> ( e f )
-c LH <x4> ( d e )
-c LH <x4> ( c e )
-d 0 ( )
-e 1 ( )
-f 0 ( )
+q0 LH <x1> ( q1 q2 )
+q1 LH <x3> ( q2 q3 )
+# q2 LH ( q3 q1 )
+# q4 LH ( q5 q4 )
+# q2 LH ( q4 q5 )
+# q2 LH <x5> ( q4 q5 )
+q2 LH <x4> ( q3 q4 )
+# q2 LH <x4> ( q2 q4 )
+q3 0 ( )
+q4 1 ( )
+# q5 0 ( )

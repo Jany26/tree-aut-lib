@@ -1,5 +1,5 @@
 @NTA
-# Automaton newNormTest3-simple
+# Automaton newNormTest6
 %Root q0
 
 q0 LH <[X _] x1> ( q1 q2 )

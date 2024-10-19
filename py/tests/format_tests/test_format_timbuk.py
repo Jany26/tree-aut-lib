@@ -2,7 +2,7 @@ import unittest
 import os
 
 from formats.format_tmb import export_treeaut_to_tmb, import_treeaut_from_tmb
-from apply.apply_testing import tree_aut_equal
+from apply.equality import tree_aut_equal
 from tree_automata.functions.isomorphism import tree_aut_isomorphic
 from tree_automata.automaton import TTreeAut, iterate_edges, iterate_states_bfs
 import tests.tree_automata_examples as ta

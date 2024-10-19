@@ -13,7 +13,7 @@ from io import TextIOWrapper
 from typing import Optional
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges, iterate_states_bfs
-from helpers.utils import box_catalogue
+from helpers.utils import box_arities
 
 
 # @ABDD     # Automata-based reduction BDDs
@@ -60,7 +60,7 @@ def abdd_transition(ta: TTreeAut, edge: TTransition) -> str:
     box_str: str = ""
     for box in edge.info.box_array:
         if box is not None and box != "_":
-            arity: int = box_catalogue[f"{box}"].get_port_arity()
+            arity: int = box_arities[f"{box}"]
             box_str: str = f"[{box[3:]}]" if box.startswith("box") else box
         if arity == 1:
             edge_string += write_child(ta, edge.children[child_index])

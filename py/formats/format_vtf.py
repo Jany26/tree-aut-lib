@@ -63,6 +63,16 @@ def process_edge(edge_info: list[str]) -> Tuple[list[Optional[str]], str]:
         box_array: list[str] = box_array_string.lstrip().rstrip().split()
 
         var_string: str = var_string.lstrip().rstrip()
+
+        # we assume we either get no information about the box array (input is a tree automaton, or unfolded, etc...)
+        # or we get complete box-array information - for ABDDs that means two box names like:
+        # <[ 'low_edge_box_name' 'high_edge_box_name' ] 'var_name'>
+        # examples:
+        # <[ LPort X ] 1>
+        # <[ _ X ] 1>
+        # <x3>
+        # <[X L0] x4>
+        # <[ _ _ ] x8>
         boxes: list[Optional[str]] = [str(box) if box != "_" else None for box in box_array]
     else:
         var_string = string
@@ -90,6 +100,9 @@ def load_transition_from_vtf(line: str) -> Optional[TTransition]:
     rest_of_string: str = " ".join(words[0:])
     rest_of_string = rest_of_string.rstrip().lstrip("(").rstrip(")")
     children: list[str] = rest_of_string.split()
+
+    if len(boxes) == 0 and symbol == "LH":
+        boxes = [None] * 2
 
     return TTransition(state, TEdge(symbol, boxes, var), children)
 

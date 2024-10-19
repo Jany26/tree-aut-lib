@@ -1,10 +1,10 @@
 import copy
 from typing import Dict, List, Optional, Set, Tuple
 
+from helpers.utils import box_arities
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges
 from bdd.bdd_class import BDD
 from tree_automata.automaton import iterate_output_edges
-from helpers.utils import box_catalogue
 
 
 def create_tree_aut_from_bdd(bdd: BDD) -> TTreeAut:
@@ -108,9 +108,7 @@ def fill_dont_care_boxes(ta: TTreeAut, max_var: int) -> None:
         high_check = True if (len(edge.info.box_array) > 1 and edge.info.box_array[1] in [None, ""]) else False
         low_idx: int = 0
         high_idx: int = (
-            1
-            if (low_check or edge.info.box_array[0] in [None, ""])
-            else box_catalogue[edge.info.box_array[0]].port_arity
+            1 if (low_check or edge.info.box_array[0] in [None, ""]) else box_arities[edge.info.box_array[0]]
         )
 
         for box_idx, (check, child_idx) in enumerate([(low_check, low_idx), (high_check, high_idx)]):

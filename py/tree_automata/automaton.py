@@ -226,6 +226,19 @@ class TTreeAut:
                 port_set.add(sym)
         return len(port_set)
 
+    def get_statename_prefix(self) -> str:
+        res: set[str] = set()
+        for state in self.get_states():
+            prefix_len = 0
+            for char_idx in range(len(state)):
+                if not state[char_idx:].isnumeric():
+                    prefix_len += 1
+            res.add(state[:prefix_len])
+        if len(res) > 1:
+            raise ValueError("Inconsistent prefix")
+        el: str = res.pop()
+        return el
+
     def is_top_down_deterministic(self) -> bool:
         """
         Check whether a TA is top-down deterministic, i.e. if for each state and
@@ -425,14 +438,19 @@ class TTreeAut:
             'x1' - returns 'x'
             'var5ta01 - returns 'var5ta'
         """
+        res: set[str] = set()
         for edge in iterate_edges(self):
             if edge.info.variable != "":
                 prefix_len = 0
                 for i in range(len(edge.info.variable)):
                     if not edge.info.variable[i:].isnumeric():
                         prefix_len += 1
-                return edge.info.variable[:prefix_len]
-        return ""
+                var = edge.info.variable[:prefix_len]
+                res.add(var)
+        if len(res) > 1:
+            raise ValueError("inconsistent variable prefix")
+        el: str = res.pop()
+        return el
 
     def get_var_visibility(self, reverse=False) -> dict[str, set[str]]:
         """

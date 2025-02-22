@@ -1,0 +1,8 @@
+@NTA
+%Root x1
+# abdd apply test from consultation
+
+x1 LH <[ L0 L1 ] 1> ( x7 t0 )
+x7 LH <[ L0 H0 ] 7>  ( t1 t1 )
+t0 0 ( )
+t1 1 ( )

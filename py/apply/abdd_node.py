@@ -28,10 +28,13 @@ class ABDDNode:
     parents_through_low: set["ABDDNode"]  # if root, both parent lists are []
     parents_through_high: set["ABDDNode"]
 
-    def __init__(self, name: str, state_prefix_len: int = 1):
+    def __init__(self, name: Union[str, int], state_prefix_len: int = 1):
         # in ABDD-like structures, one node should always have one outgoing edge, which allows us to definitely
         # infer all information about one ABDD node from exactly one edge of the ABDD-like structure (reduced BDA).
-        self.node = int(name[state_prefix_len:])
+        if type(name) == str:
+            self.node = int(name[state_prefix_len:])
+        if type(name) == int:
+            self.node = name
         self.var = 0  # normally, we start indexing variables from 1
 
         self.is_leaf = True
@@ -45,6 +48,71 @@ class ABDDNode:
         self.high_box = None
         self.high = None
         self.parents_through_high = set()
+
+    def __repr__(self):
+        if self.is_leaf:
+            return f"{self.node} [{self.leaf_val}]"
+        result: str = f"{self.node} <{self.var}> "
+        result += f"[L:{self.low_box if self.low_box is not None else 'S'}]"
+
+        result += f"{self.low.node} "
+
+        result += f"[H:{self.low_box if self.low_box is not None else 'S'}]"
+
+        result += f"{self.high.node}"
+
+        return result
+
+    def __hash__(self):
+        return hash(
+            (
+                self.node,
+                self.var,
+                self.leaf_val if self.is_leaf else None,
+                self.low.node if self.low else None,
+                self.low_box,
+                self.high.node if self.low else None,
+                self.high_box,
+            )
+        )
+
+    def __eq__(self, other: "ABDDNode"):
+        if any(
+            [
+                not isinstance(other, ABDDNode),
+                # node indices do not differentiate the semantics of a BDD node
+                # self.node != other.node:
+                self.var != other.var,
+                self.is_leaf != other.is_leaf,
+                self.is_leaf and self.leaf_val != other.leaf_val,
+                self.low_box != other.low_box,
+                self.high_box != other.high_box,
+            ]
+        ):
+            return False
+        if self.is_leaf:
+            if self.low is not None or self.high is not None:
+                return False
+        else:
+            if isinstance(self.low, list) and isinstance(other.low, list):
+                if len(self.low) != len(other.low):
+                    return False
+                for a, b in zip(self.low, other.low):
+                    if a != b:
+                        return False
+            elif self.low != other.low:
+                return False
+
+            if isinstance(self.high, list) and isinstance(other.high, list):
+                if len(self.high) != len(other.high):
+                    return False
+                for a, b in zip(self.high, other.high):
+                    if a != b:
+                        return False
+            elif self.high != other.high:
+                return False
+
+        return True
 
     def set_node_info_from_ta_transition(
         self, edge: TTransition, node_map: dict[str, "ABDDNode"], var_prefix_len: int = 1
@@ -85,6 +153,14 @@ class ABDDNode:
             self.var = int(edge.info.variable[var_prefix_len:])
         self.is_leaf = True
         self.leaf_val = int(edge.info.label)
+
+    def set_as_leaf(self, leaf_val: int) -> None:
+        self.is_leaf = True
+        self.leaf_val = leaf_val
+        self.low_box = None
+        self.high_box = None
+        self.low = None
+        self.high = None
 
     def iterate_children(self, low=False, high=False) -> Generator["ABDDNode", None, None]:
         targets = []
@@ -201,6 +277,9 @@ class ABDDNode:
         self.parents_through_low.add(node)
 
     def connect_to_parent_from_high(self, node: "ABDDNode") -> None:
+        """
+        From POV of child node P, connect it as a high node to parent node P (argument 'node').
+        """
         new_high: ABDDNode | list[ABDDNode]
         if node.high is None:
             new_high = self
@@ -211,16 +290,45 @@ class ABDDNode:
         node.high = new_high
         self.parents_through_high.add(node)
 
-    def __repr__(self):
-        if self.is_leaf:
-            return f"{self.node} [{self.leaf_val}]"
-        result: str = f"{self.node} <{self.var}> "
-        result += f"[L:{self.low_box if self.low_box is not None else 'S'}]"
+    def explore_subtree_bfs(self, repeat=False) -> Generator["ABDDNode", None, None]:
+        queue: list[ABDDNode] = [self]
+        visited = set()
+        while queue != []:
+            node = queue.pop(0)
+            if not repeat and node in visited:
+                continue
+            yield node
+            visited.add(node)
+            if type(node.low) == ABDDNode:
+                queue.append(node.low)
+            if type(node.low) == list:
+                queue.extend(node.low)
+            if type(node.high) == ABDDNode:
+                queue.append(node.high)
+            if type(node.high) == list:
+                queue.extend(node.high)
 
-        result += f"{self.low.node} "
+    def explore_subtree_dfs(self, repeat=False) -> Generator["ABDDNode", None, None]:
+        stack: list[ABDDNode] = [self]
+        visited = set()
+        while stack != []:
+            node = stack.pop()
+            if not repeat and node in visited:
+                continue
+            yield node
+            # we have to insert nodes in a reverse order
+            visited.add(node)
+            if type(node.high) == ABDDNode:
+                stack.append(node.low)
+            if type(node.high) == list:
+                stack.extend(reversed(node.low))
+            if type(node.low) == ABDDNode:
+                stack.append(node.high)
+            if type(node.low) == list:
+                stack.extend(reversed(node.high))
 
-        result += f"[H:{self.low_box if self.low_box is not None else 'S'}]"
-
-        result += f"{self.high.node}"
-
-        return result
+    def find_terminal(self, target: int) -> Optional["ABDDNode"]:
+        for i in self.explore_subtree_bfs():
+            if i.is_leaf and i.leaf_val == target:
+                return i
+        return None

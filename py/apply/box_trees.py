@@ -1,7 +1,7 @@
-import sys
+import copy
 
+from apply.apply_tables_boxes import PortConnectionInfo
 from apply.equality import tree_aut_equal
-from formats.format_vtf import import_treeaut_from_vtf
 from tree_automata import TTreeAut
 from helpers.utils import box_catalogue
 
@@ -12,6 +12,8 @@ class BoxTreeNode:
         # if leaf, node is boxname string
         # if non-leaf, node is state name
         self.node = node
+        # portname -> structure of information
+        self.port_info: dict[str, PortConnectionInfo]
         self.is_leaf: bool = (low is None) and (high is None)
         self.low: BoxTreeNode | None = low  # str = boxname (from boxCatalogue)
         self.high: BoxTreeNode | None = high
@@ -49,9 +51,9 @@ def boxtree_intersectoid_compare(aut: TTreeAut, root: str) -> str | None:
     aut.roots = [root]
     aut.reformat_ports()
     for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort", "False", "True"]:
-        box = box_catalogue[boxname]
-        box.reformat_ports()
-        if tree_aut_equal(aut, box):
+        box_copy = copy.deepcopy(box_catalogue[boxname])
+        box_copy.reformat_ports()
+        if tree_aut_equal(aut, box_copy):
             aut.roots = roots
             return boxname
     aut.roots = roots
@@ -75,6 +77,7 @@ def build_box_tree(aut: TTreeAut) -> BoxTreeNode | None:
                     return result
         return None
 
+    aut_copy = copy.deepcopy(aut)
     for i in aut.roots:
         box_tree = build_box_tree_recursive(aut, i)
         if box_tree is not None:

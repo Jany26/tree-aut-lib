@@ -1,6 +1,8 @@
-import os
 from enum import Enum
+from typing import Optional, Tuple
 
+from apply.apply_tables_boxes import PortConnectionInfo
+from apply.apply_tables_outputs import ApplyEffect, effects
 from formats.format_vtf import export_treeaut_to_vtf
 from formats.render_dot import export_to_file
 from helpers.utils import box_catalogue
@@ -10,14 +12,10 @@ from tree_automata import (
     TTreeAut,
     remove_useless_states,
     tree_aut_intersection,
-    tree_aut_complement,
-    non_empty_bottom_up,
-    non_empty_top_down,
 )
 
-from apply.equality import tree_aut_equal
 import apply.apply_tables_outputs as tables
-from apply.box_trees import build_box_tree, BoxTreeNode
+from apply.box_trees import build_box_tree
 
 
 class BooleanOperation(Enum):
@@ -98,15 +96,15 @@ def apply_intersectoid_add_output_transitions(
     op_table = op_lookup[op]
 
     # cayley table to output edge label mapping
-    labels = {
-        "0": "0",
-        "1": "1",
-        "P1": get_port(aut1),
-        "P2": get_port(aut2),
-        "OP": f"{get_port(aut1)}_{op.name}_{get_port(aut2)}",
-        "!P1": f"{get_port(aut1)}_not",
-        "!P2": f"{get_port(aut2)}_not",
-    }
+    # labels = {
+    #     "0": "0",
+    #     "1": "1",
+    #     "P1": get_port(aut1),
+    #     "P2": get_port(aut2),
+    #     "OP": f"{get_port(aut1)}_{op.name}_{get_port(aut2)}",
+    #     "!P1": f"{get_port(aut1)}_not",
+    #     "!P2": f"{get_port(aut2)}_not",
+    # }
 
     # output symbol to matrix/list index mapping (within the cayley table)
     translation = {"-": 0, "0": 1, "1": 2, "P1": 3, "P2": 3}
@@ -117,21 +115,65 @@ def apply_intersectoid_add_output_transitions(
         output_symbol = op_table[translation[map1[s1]]][translation[map2[s2]]]
         if output_symbol == "-":
             continue
-        result.transitions[state][f"k{key_idx}"] = TTransition(state, TEdge(labels[output_symbol], [], ""), [])
+        # result.transitions[state][f"k{key_idx}"]
+        portinfo, portname = decide_on_port_name(aut1, aut2, s1, s2, output_symbol)
+        result.transitions[state][f"k{key_idx}"] = TTransition(state, TEdge(portname, [], ""), [])
         key_idx += 1
+
+
+def decide_on_port_name(
+    aut1: TTreeAut, aut2: TTreeAut, state1: str, state2: str, sym: str
+) -> Tuple[Optional[PortConnectionInfo], str]:
+    if sym in ["0", "1"]:
+        return (None, sym)
+    if sym in ["P1", "!P1"]:
+        for edge in aut1.transitions[state1].values():
+            if edge.info.label.startswith("Port"):
+                return (PortConnectionInfo(state1, None, negation=(sym == "!P1")), edge.info.label)
+    if sym in ["P2", "!P2"]:
+        for edge in aut2.transitions[state2].values():
+            if edge.info.label.startswith("Port"):
+                return (PortConnectionInfo(None, state2, negation=(sym == "!P2")), edge.info.label)
+    if sym == "OP":
+        port1 = aut1.get_output_edges(inverse=True)[state1][0]
+        port2 = aut2.get_output_edges(inverse=True)[state2][0]
+        return (PortConnectionInfo(state1, state2, recursion=True), f"{port1}_OP_{port2}")
+    raise KeyError("Unknown lookup symbol")
+
+
+translate: dict[str, str] = {
+    "X": "x_node",
+    "L0": "l0_node",
+    "L1": "l1_node",
+    "H0": "h0_node",
+    "H1": "h1_node",
+    "LPort": "lport_node",
+    "HPort": "hport_node",
+    "n(HPort;LPort)": "iffport_node",
+    "n(H0;L0)": "iff0_node",
+    "n(H1;L1)": "iff1_node",
+    "False": "0",
+    "True": "1",
+}
 
 
 def test_all_apply_intersectoids():
     result_dict: dict[str, dict[str, str]] = {}
     for operation, _ in op_lookup.items():
+        print(f"box_table_{operation.name} = [")
+        print(f"    # X             L0            L1            H0            H1            LPort         HPort")
         for boxname1 in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
+            strtemp = f"ROW {boxname1}:"
+            print(f"    [ ", end="")
             result_dict[boxname1] = {}
             for boxname2 in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
                 box1 = box_catalogue[boxname1]
                 box2 = box_catalogue[boxname2]
                 applied = apply_intersectoid_create(operation, box1, box2)
-                remove_useless_states(applied)
-                applied.name = f"{boxname1}_{operation.name}_{boxname2}"
-                applied.reformat_ports()
-                print(box1.name, operation.name, box2.name, "=", build_box_tree(applied))
-        print("----------------------------------------")
+                print(f"{translate[str(build_box_tree(applied))] :<12}", end=", ")
+                export_to_file(applied, f"../data/apply_boxes_tests/png/{operation.name.lower()}/{applied.name}")
+                export_treeaut_to_vtf(
+                    applied, f"../data/apply_boxes_tests/vtf/{operation.name.lower()}/{applied.name}.vtf"
+                )
+            print(f"], # {boxname1}")
+        print(f"]")

@@ -36,7 +36,7 @@ class NormalizationHelper:
                 self.symbols[symbol] = arity
         self.lookup: dict[str, list[tuple[str, TTransition]]] = {}  #
 
-        # NOTE: norm.edge_lookup is mostly redundant, no?
+        # NOTE: norm.edge_lookup is redundant
         # since it basically just mirrors self.treeaut.transitions
         # except the lowest level is not a dict key->transition, but a set of keys.
         self.edge_lookup: dict[str, set[str]] = self.edges_to_process_cache_init()
@@ -182,10 +182,11 @@ def process_possible_edges(
                 continue
             new_macrostate.add(edge.src)
             for child in edge.children:
-                if key not in norm.edge_lookup[child]:
-                    continue
+                # norm.edge_lookup checking is redundant (tests pass even without this)
+                # if key not in norm.edge_lookup[child]:
+                #     continue
                 # print(f"  [!] processed edge {key} leading to {child}{var_string}")
-                norm.edge_lookup[child].remove(key)
+                # norm.edge_lookup[child].remove(key)
                 if key not in norm.keys:
                     continue
                 # print(f"  [!] removing key {key}")
@@ -277,7 +278,7 @@ def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTre
         # if norm.variables == []:
         #     break
     ta = create_treeaut_from_helper(norm)
-    remove_bad_transitions(ta, vars)
+    # remove_bad_transitions(ta, vars)
     return ta
 
 

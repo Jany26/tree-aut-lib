@@ -44,7 +44,7 @@ def port_consistency_check(ta: TTreeAut) -> bool:
     given by TAs port-arity.
     """
     # initialization phase
-    worklist: list[str] = ta.get_output_states()
+    worklist: list[str] = list(ta.get_output_states())
     # done: state -> list of sets of reachable ports
 
     # TODO: explain why is 'done' a dictionary of state to <<list of sets of ports>> ?

@@ -170,10 +170,10 @@ def non_empty_bottom_up(ta: TTreeAut, verbose=False) -> tuple[Optional[TTreeNode
         counter = 0
 
     # initialization phase (finding all output starting points)
-    worklist: list[str] = ta.get_output_states()
+    worklist: list[str] = list(ta.get_output_states())
     size: int = len(ta.get_states())
     done: dict[str, TTransition] = {}
-    done_set: list[str] = ta.get_output_states()
+    done_set: list[str] = list(ta.get_output_states())
     arity_dict: dict[str, int] = ta.get_symbol_arity_dict()
     for state in worklist:
         for edge in ta.transitions[state].values():

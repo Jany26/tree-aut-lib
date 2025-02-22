@@ -52,7 +52,7 @@ def add_dont_care_boxes(ta: TTreeAut, vars: int) -> TTreeAut:
             edge.info.variable = f"{var_prefix}{vars}"
     var_visibility: dict[str, int] = result.get_var_visibility_deterministic()
     # print(var_visibility)
-    leaves: Set[str] = set(ta.get_output_states())
+    leaves: Set[str] = ta.get_output_states()
     # print(leaves)
     # counter: int = 0
     skipped_var_edges: List[Tuple[str, str, TTransition]] = []

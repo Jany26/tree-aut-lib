@@ -47,7 +47,7 @@ def output_edge_handle(edge: TTransition, connector_node: str, file: TextIOWrapp
 
 def all_states_handle(ta: TTreeAut, file: TextIOWrapper) -> None:
     states: list[str] = ta.get_states()
-    leaves: set[str] = set(ta.get_output_states())
+    leaves: set[str] = ta.get_output_states()
     file.write("\tnode [ shape=circle, style=filled ];\n")
 
     for s in states:

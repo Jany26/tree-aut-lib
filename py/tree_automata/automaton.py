@@ -158,15 +158,15 @@ class TTreeAut:
                 result.append(edge.info.label)
         return result
 
-    def get_output_states(self) -> list[str]:
+    def get_output_states(self) -> set[str]:
         """
-        Get a list of all states that have an output transition (i.e. transition with 0 child states).
+        Get a set of all states that have an output transition (i.e. transition with 0 child states).
         """
-        result: list[str] = []
+        result: set[str] = set()
         for state_name, edges in self.transitions.items():
             for data in edges.values():
                 if len(data.children) == 0:
-                    result.append(state_name)
+                    result.add(state_name)
                     break
         return result
 
@@ -197,6 +197,40 @@ class TTreeAut:
                 result[edge.info.label].append(edge.src)
         for item in result.values():
             item.sort()
+        return result
+
+    def get_terminable_transitions(self) -> set[TTransition]:
+        """
+        Find all transitions, whose children (>=1) have some output edge.
+        Returned as a set of (statename, transition key) tuples.
+
+        Terminable != Output edges.
+        Terminable transitions have at least the arity of 1.
+        And all child states of this transition have output edges,
+        i.e. transitions with 0 children.
+        """
+        leaves = self.get_output_states()
+        result = set()
+        for tr in iterate_edges(self):
+            # all states have to be able to terminate, ie. have an output transition
+            if all([c in leaves for c in tr.children]):
+                result.add(tr)
+        return result
+
+    def get_loopable_transitions(self) -> set[TTransition]:
+        """
+        Find all transitions, such that all children can self-loop.
+
+        Note: a transition can be loopable and terminable at the same time.
+        I.e. in case of Lport, Hport, X boxes -> the "sink" state has to be able to loop,
+        so that it can reach the final variable, and then can terminate with a port transition, or 0/1.
+        """
+        loopstates = self.get_self_looping_states()
+        result = set()
+        for tr in iterate_edges(self):
+            # all states have to be able to loop, otherwise we could get unbalanced
+            if all([c in loopstates for c in tr.children]):
+                result.add(tr)
         return result
 
     def get_symbol_arity_dict(self) -> dict[str, int]:
@@ -377,7 +411,7 @@ class TTreeAut:
                     pre_order_dfs(i, path, result)
             path.pop()
 
-        leaves: set[str] = set(self.get_output_states())
+        leaves: set[str] = self.get_output_states()
         result: list[list[str]] = []
 
         for root in self.roots:

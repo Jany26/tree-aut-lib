@@ -200,7 +200,7 @@ def dot_transition_handle(graph: graphviz.Digraph, edge: TTransition, key: str, 
         current_box += 1
 
 
-def dot_state_handle(graph: graphviz.Digraph, state: str, leaves: list[str], roots: list[str]) -> None:
+def dot_state_handle(graph: graphviz.Digraph, state: str, leaves: set[str], roots: list[str]) -> None:
     # NODE: inner node (state of TA)
     graph.node(f"{state}", shape="circle", style="filled", fillcolor="khaki" if state in leaves else "bisque")
 
@@ -230,7 +230,7 @@ def treeaut_to_dot(ta: TTreeAut, verbose=False, caption=False) -> graphviz.Digra
     dot = graphviz.Digraph(comment=f"Tree Automaton {ta.name}")
     if caption:
         dot.attr(label=f"{ta.name}")
-    output_states: list[str] = ta.get_output_states()
+    output_states: set[str] = ta.get_output_states()
 
     for state in ta.get_states():
         dot_state_handle(dot, state, output_states, ta.roots)

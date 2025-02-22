@@ -81,8 +81,8 @@ def reachable_bottom_up(ta: TTreeAut) -> list[str]:
     q1--b-->()        # because even though q2 has an output transition, thus is bottom-up reachable,
     q2--x-->(q2, q2)  # there is no output transition for q2 (only a "self-loop") - tree generation cannot terminate.
     """
-    worklist: list[str] = ta.get_output_states()
-    result: list[str] = ta.get_output_states()
+    worklist: list[str] = list(ta.get_output_states())
+    result: list[str] = list(ta.get_output_states())
     arity_dict: dict[str, int] = ta.get_symbol_arity_dict()
     extended_arity_dict: dict[str, dict[str, list[int]]] = create_state_arity_dict(ta)
     while len(worklist) > 0:

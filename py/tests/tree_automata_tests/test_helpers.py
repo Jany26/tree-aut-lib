@@ -12,12 +12,12 @@ import tests.tree_node_examples as tn
 class TestTreeAutomatonGetOutputStates(unittest.TestCase):
     def test_get_output_states_x(self):
         x_output_states = set(["q1"])
-        result = set(ta.box_x.get_output_states())
+        result = ta.box_x.get_output_states()
         self.assertSetEqual(result, x_output_states)
 
     def test_get_output_states_h1(self):
         h1_output_states = set(["u1", "u2"])
-        result = set(ta.box_h1.get_output_states())
+        result = ta.box_h1.get_output_states()
         self.assertSetEqual(result, h1_output_states)
 
 

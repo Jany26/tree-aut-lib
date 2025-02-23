@@ -1,0 +1,10 @@
+@ABDD     # Automata-based reduction BDDs
+# materialization testing - HPort edge leading to levels 7,13
+
+%Name hport-7-13
+%Vars 15
+%Root 1
+
+1[1] (2, 3)[HPort] <0>[X]
+2[7] <1>[X] <0>[X]
+3[13] <0>[X] <1>[X]

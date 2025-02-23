@@ -1,0 +1,9 @@
+@ABDD     # Automata-based reduction BDDs
+# materialization testing - X edge leading to level 4
+
+%Name x-4
+%Vars 15
+%Root 1
+
+1[1] 2[X] <0>[X]
+2[4] <1>[X] <0>[X]

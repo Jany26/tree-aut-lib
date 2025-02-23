@@ -1,0 +1,14 @@
+@ABDD     # Automata-based reduction BDDs
+# materialization testing - intermediate output
+# when LPort-10-7 is applied with HPort-4-13
+
+%Name lport-4-7-10-4-7
+%Vars 15
+%Root 1
+
+1[1] (4, 6)[LPort] <1>[X]
+2[10] <1>[X] <0>[X]
+3[7] <0>[X] <1>[X]
+4[4] 5[X] 5[X]
+5[7] 2[X] 2[X]
+6[4] 5[X] (5, 3)[LPort]

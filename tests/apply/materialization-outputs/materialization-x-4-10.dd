@@ -1,0 +1,11 @@
+@ABDD     # Automata-based reduction BDDs
+# materialization testing - intermediate output
+# when X-10 is applied with something leading to level 4
+
+%Name x-4-10
+%Vars 15
+%Root 1
+
+1[1] 3[X] <0>[X]
+2[10] <1>[X] <0>[X]
+3[4] 2[X] 2[X]

@@ -1,18 +1,21 @@
+# Python cache
 __debug__
 __pycache__
 *.py[cod]
 *$py.class
 
-src/vtf
-src/dot
-src/vtf-to-dot
-src/tmb
-src/dimacs-out
-data
+# Local Configurations
 .vscode
-cpp/bin
+.venv
 
-0-adHocTests.ipynb
+# Generated data or test outputs, images, intermediate results, etc.
+data
 *.png
 
-.venv
+# Compiled binaries
+cpp/bin
+
+# Exclude any top-level source code -> usually ad-hoc and temporary random tests
+py/*.py
+0-adHocTests.ipynb
+

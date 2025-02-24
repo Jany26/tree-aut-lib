@@ -48,6 +48,7 @@ class ABDD:
     def __repr__(self):
         result = f"  [ABDD]: '{self.name}'\n"
         result += f"  > Root = {self.root.node}\n"
+        result += f"  > Vars = {self.variable_count}\n"
         result += "  > %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n" % (
             8,
             "nodeID",
@@ -68,14 +69,8 @@ class ABDD:
         for i in self.root.explore_subtree_bfs(repeat=False):
             if i.is_leaf:
                 continue
-            if type(i.low) == list:
-                lowStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else str(n.node) for n in i.low])
-            else:
-                lowStr = f"<{i.low.leaf_val}>" if i.low.is_leaf else i.low.node if i.low is not None else "-"
-            if type(i.high) == list:
-                highStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else str(n.node) for n in i.high])
-            else:
-                highStr = f"<{i.high.leaf_val}>" if i.high.is_leaf else i.high.node if i.high is not None else "-"
+            lowStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else str(n.node) for n in i.low])
+            highStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else str(n.node) for n in i.high])
             leaf = i.leaf_val if i.leaf_val is not None else "-"
             lowBox = i.low_box if i.low_box is not None else "-"
             highBox = i.high_box if i.high_box is not None else "-"
@@ -222,7 +217,10 @@ def import_abdd_from_abdd_file(path: str) -> ABDD:
 
 def init_abdd_from_ta(ta: TTreeAut, var_count: Optional[int] = None) -> ABDD:
     """
-    TODO DOCS
+    Given a folded TreeAut-like structure (UBDA/BDA), convert this TreeAut
+    to ABDD instance.
+
+    Assumes no loop-edges are present.
     """
     if not check_if_abdd(ta):
         ValueError(f"cannot turn {ta.name} to an ABDD")
@@ -265,3 +263,7 @@ def init_abdd_from_ta(ta: TTreeAut, var_count: Optional[int] = None) -> ABDD:
         node.set_node_info_from_ta_transition(edge, result.node_map, var_prefix_len=vlen)
     result.node_count = result.count_nodes()
     return result
+
+
+def check_abdd_isomorphism(abdd1: ABDD, abdd2: ABDD) -> bool:
+    pass

@@ -25,8 +25,8 @@ class ABDDNode:
     # None in case of leaf transitions, list in case of multi-port box transitions
     low: Union[NoneType, "ABDDNode", list["ABDDNode"]]
     high: Union[NoneType, "ABDDNode", list["ABDDNode"]]
-    parents_through_low: set["ABDDNode"]  # if root, both parent lists are []
-    parents_through_high: set["ABDDNode"]
+    parents_through_low: set[int]  # if root, both parent lists are []
+    parents_through_high: set[int]
 
     def __init__(self, name: Union[str, int], state_prefix_len: int = 1):
         # in ABDD-like structures, one node should always have one outgoing edge, which allows us to definitely
@@ -50,28 +50,49 @@ class ABDDNode:
         self.parents_through_high = set()
 
     def __repr__(self):
+        # leaf node: idx <leafval>
+        # internal node: idx [var] (target) [boxname] (target) [boxname]
+
         if self.is_leaf:
-            return f"{self.node} [{self.leaf_val}]"
-        result: str = f"{self.node} <{self.var}> "
-        result += f"[L:{self.low_box if self.low_box is not None else 'S'}]"
-
-        result += f"{self.low.node} "
-
-        result += f"[H:{self.low_box if self.low_box is not None else 'S'}]"
-
-        result += f"{self.high.node}"
-
-        return result
+            return f"{self.node} <{self.leaf_val}>"
+        node: str = f"{self.node} [{self.var}]"
+        l = []
+        if type(self.low) == list:
+            l = [i.node for i in self.low]
+        elif type(self.low) == ABDDNode:
+            l = [self.low.node]
+        low_tgt = "(" + ", ".join([str(i) for i in l]) + ")"
+        h = []
+        if type(self.high) == list:
+            h = [i.node for i in self.high]
+        elif type(self.high) == ABDDNode:
+            h = [self.high.node]
+        high_tgt = "(" + ", ".join([str(i) for i in h]) + ")"
+        return f"{node} {low_tgt} {self.low_box} {high_tgt} {self.high_box}"
 
     def __hash__(self):
+        if type(self.low) == list:
+            low_hash = ",".join([str(i.node) for i in self.low])
+        elif type(self.low) == ABDDNode:
+            low_hash = str(self.low.node)
+        else:  # type(self.low) is None
+            low_hash = ""
+
+        if type(self.high) == list:
+            high_hash = ",".join([str(i.node) for i in self.high])
+        elif type(self.high) == ABDDNode:
+            high_hash = str(self.high.node)
+        else:  # type(self.high) is None
+            high_hash = ""
+
         return hash(
             (
                 self.node,
                 self.var,
-                self.leaf_val if self.is_leaf else None,
-                self.low.node if self.low else None,
+                self.leaf_val if self.is_leaf else "",
+                low_hash,
                 self.low_box,
-                self.high.node if self.low else None,
+                high_hash,
                 self.high_box,
             )
         )
@@ -247,20 +268,36 @@ class ABDDNode:
             return self.leaf_val
         return None
 
-    def connect_to_low_child(
-        self, node: "ABDDNode"
-    ) -> None:  # if multiple attach_low, ABDDNode turns to list[ABDDNode]
+    def connect_to_low_child(self, node: "ABDDNode") -> None:
         """
         From POV of parent node N, connect a child node P (argument 'node') to N's low nodes.
+        If used multiple times on the same node, low turns from ABDDNode to list[ABDDNode]
         """
-        self.low
-        node.parents_through_low.add(self)
+        new_low: ABDDNode | list[ABDDNode]
+        if self.low is None:
+            new_low = node
+        if type(self.low) == ABDDNode:
+            new_low = [self.low, node]
+        if type(self.low) == list:
+            new_low = self.low + [node]
+
+        self.low = new_low
+        node.parents_through_low.add(self.node)
 
     def connect_to_high_child(self, node: "ABDDNode") -> None:
         """
         From POV of parent node N, connect a child node P (argument 'node') to N's high nodes.
         """
-        node.parents_through_high.add(self)
+        new_high: ABDDNode | list[ABDDNode]
+        if self.high is None:
+            new_high = node
+        if type(self.high) == ABDDNode:
+            new_high = [self.high, node]
+        if type(self.high) == list:
+            new_high = self.high + [node]
+
+        self.high = new_high
+        node.parents_through_high.add(self.node)
 
     def connect_to_parent_from_low(self, node: "ABDDNode") -> None:
         """
@@ -274,7 +311,7 @@ class ABDDNode:
         if type(node.low) == list:
             new_low = node.low.extend([self])
         node.low = new_low
-        self.parents_through_low.add(node)
+        self.parents_through_low.add(node.node)
 
     def connect_to_parent_from_high(self, node: "ABDDNode") -> None:
         """

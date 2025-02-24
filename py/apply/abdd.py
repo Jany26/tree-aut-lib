@@ -1,5 +1,8 @@
+import re
+
 from typing import Generator, Optional
 from apply.abdd_check import check_if_abdd
+from helpers.utils import eprint, box_catalogue
 from tree_automata.automaton import TTreeAut, iterate_edges, iterate_states_bfs
 from tree_automata.transition import TTransition
 from apply.abdd_node import ABDDNode
@@ -53,18 +56,26 @@ class ABDD:
             8,
             "leaf",
             8,
-            "lowBox",
-            8,
             "lowNode",
             8,
-            "highBox",
+            "lowBox",
             8,
             "highNode",
+            8,
+            "highBox",
         )
         result += f"  " + "-" * 65 + "\n"
         for i in self.root.explore_subtree_bfs(repeat=False):
-            lowStr = i.low.node if i.low is not None else "-"
-            highStr = i.high.node if i.high is not None else "-"
+            if i.is_leaf:
+                continue
+            if type(i.low) == list:
+                lowStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else str(n.node) for n in i.low])
+            else:
+                lowStr = f"<{i.low.leaf_val}>" if i.low.is_leaf else i.low.node if i.low is not None else "-"
+            if type(i.high) == list:
+                highStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else str(n.node) for n in i.high])
+            else:
+                highStr = f"<{i.high.leaf_val}>" if i.high.is_leaf else i.high.node if i.high is not None else "-"
             leaf = i.leaf_val if i.leaf_val is not None else "-"
             lowBox = i.low_box if i.low_box is not None else "-"
             highBox = i.high_box if i.high_box is not None else "-"
@@ -76,13 +87,13 @@ class ABDD:
                 8,
                 leaf,
                 8,
-                lowBox,
-                8,
                 lowStr,
                 8,
-                highBox,
+                lowBox,
                 8,
                 highStr,
+                8,
+                highBox,
             )
         return result
 
@@ -101,11 +112,112 @@ class ABDD:
         pass
 
 
+def obtain_child_node_info(target_str: str, leafnode_count: int = 2) -> list[int]:
+    if target_str.startswith("<"):
+        leaf = int(target_str.lstrip("<").rstrip(">").strip())
+        return [leaf]
+    if target_str.startswith("("):
+        nodes = target_str.lstrip("(").rstrip(")").split(",")
+        result = []
+        for n in nodes:
+            result.append(int(n) + leafnode_count)
+        return result if len(result) > 1 else result[0]
+    return [int(target_str) + leafnode_count]
+
+
 def import_abdd_from_abdd_file(path: str) -> ABDD:
     """
     TODO
     """
-    pass
+    if not path.endswith(".dd"):
+        eprint("Warning: importing a Decision Diagram from not a .dd file")
+
+    dd_name: Optional[str] = None
+    var_count: Optional[int] = None
+    root_idx: Optional[int] = None
+    root_node: Optional[ABDDNode] = None
+    node_cache: dict[int, tuple[ABDDNode, int | list[int], int | list[int]]] = {}
+
+    zero = ABDDNode(0)
+    zero.set_as_leaf(0)
+    one = ABDDNode(1)
+    one.set_as_leaf(1)
+    node_cache[0] = (zero, [], [])
+    node_cache[1] = (one, [], [])
+
+    leafnode_count = 2
+
+    with open(path, "r") as file:
+        for linenum, line in enumerate(file, start=1):
+            # remove comments, leading, trailing whitespaces
+            line = line.split("#")[0].strip()
+            if line == "":
+                continue
+            if line.startswith("@"):
+                if line not in ["@ABDD"]:
+                    eprint("Warning: Not @ABDD in the preamble")
+                continue
+            if line.startswith("%"):
+                attribute, value = line.lstrip("%").split()
+                if attribute == "Name":
+                    dd_name = value
+                elif attribute == "Vars":
+                    var_count = int(value)
+                elif attribute == "Root":
+                    root_idx = int(value)
+                else:
+                    eprint(f"Warning: Unknown metadata attribute '{attribute}'")
+                continue
+
+            idxr = "([0-9]+)"
+            varr = "\[([0-9]*)\]"
+            tgtr = "(\([0-9\s\,]+\)|\<[0-9]+\>|[0-9]+)"
+            redr = "(?:\[(\w+)\])?"
+            node_record_regex = idxr + "\s*" + varr + "\s*" + tgtr + "\s*" + redr + "\s*" + tgtr + "\s*" + redr
+            node_record_match = re.search(node_record_regex, line)
+            node, var, low, lowr, high, highr = node_record_match.group(1, 2, 3, 4, 5, 6)
+
+            if any([s is None or s == "" for s in [node, var, low, high]]):
+                raise ValueError(f"Missing important node information at line {linenum}")
+
+            node_idx = int(node) + leafnode_count
+            if node_idx in node_cache:
+                raise ValueError(f"Duplicate entry for node {node}")
+            var = int(var)
+
+            if lowr is not None and lowr not in box_catalogue:
+                raise ValueError(f"Unknown low reduction rule '{lowr}' from node '{node}'")
+            if highr is not None and highr not in box_catalogue:
+                raise Exception(f"Unknown high reduction rule '{highr}' from node '{node}'")
+
+            try:
+                low_tgt: list[int] = obtain_child_node_info(low)
+            except:
+                raise ValueError(f"Invalid low child information for node '{node}'")
+            try:
+                high_tgt: list[int] = obtain_child_node_info(high)
+            except:
+                raise ValueError(f"Invalid high child information for node '{node}'")
+
+            newnode = ABDDNode(node_idx)
+            if int(node) == root_idx:
+                newnode.is_root = True
+                root_node = newnode
+            newnode.var = var
+            newnode.is_leaf = False
+            newnode.low_box = lowr
+            newnode.high_box = highr
+            # only internal nodes are in the cache
+            node_cache[node_idx] = (newnode, low_tgt, high_tgt)
+
+    for node_idx, (node, low, high) in node_cache.items():
+        for i in low:
+            lownode, _, _ = node_cache[i]
+            node.connect_to_low_child(lownode)
+        for i in high:
+            highnode, _, _ = node_cache[i]
+            node.connect_to_high_child(highnode)
+    return ABDD(dd_name, var_count, root_node)
 
 
 def init_abdd_from_ta(ta: TTreeAut, var_count: Optional[int] = None) -> ABDD:

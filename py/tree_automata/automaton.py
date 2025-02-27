@@ -213,7 +213,7 @@ class TTreeAut:
         result = set()
         for tr in iterate_edges(self):
             # all states have to be able to terminate, ie. have an output transition
-            if all([c in leaves for c in tr.children]):
+            if len(tr.children) > 0 and all([c in leaves for c in tr.children]):
                 result.add(tr)
         return result
 
@@ -229,8 +229,21 @@ class TTreeAut:
         result = set()
         for tr in iterate_edges(self):
             # all states have to be able to loop, otherwise we could get unbalanced
-            if all([c in loopstates for c in tr.children]):
+            if len(tr.children) > 0 and all([c in loopstates for c in tr.children]):
                 result.add(tr)
+        return result
+
+    def get_port_order(self):
+        """
+        Get lexicographically sorted (ascending) list of port-state tuples.
+        Low (index 0) children are lexicographically smaller than high (index 1).
+        """
+        path_list = self.get_shortest_state_paths_dict()
+        result: list[tuple[str, str]] = []
+        for s, _ in path_list:
+            for edge in self.transitions[s].values():
+                if edge.children == [] and edge.info.label.startswith("Port"):
+                    result.append((edge.info.label, s))
         return result
 
     def get_symbol_arity_dict(self) -> dict[str, int]:
@@ -418,10 +431,10 @@ class TTreeAut:
             pre_order_dfs(root, [], result)
         return result
 
-    def get_shortest_state_paths_dict(self) -> dict[str, str]:
+    def get_shortest_state_paths_dict(self) -> list[tuple[str, str]]:
         """
         explore the state space (BFS-like) of the TA and remember the paths taken
-        return the dictionary of state -> paths
+        return a list of (state, path) tuples, lexicographically sorted
         paths are represented as strings of '0's and '1's
         note: we assume 'boxes' (tree automata used in ABDDs) need root-uniqueness to be well-defined,
         so the state space is not traversed in parallel
@@ -446,7 +459,7 @@ class TTreeAut:
                         queue.append((child, newpath))
                     elif result[child] > f"{path}{i}":
                         result[child] = f"{path}{i}"
-        return {k: v for k, v in sorted(result.items(), key=lambda item: item[1])}
+        return [(k, v) for k, v in sorted(result.items(), key=lambda item: item[1])]
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Extract information about variables - - - - - - - - - - - - - - - - - - -
@@ -708,11 +721,16 @@ class TTreeAut:
                 self.transitions[state][new_key] = self.transitions[state].pop(old_key)
 
     def reformat_ports(self) -> None:
-        paths_dict: dict[str, str] = self.get_shortest_state_paths_dict()
+        """
+        Rename port transitions in a lexicographical order given by each port's
+        state's shortest path to reach.
+        Useful for comparing box properties, like isomorphism etc.
+        """
+        paths_list: list[tuple[str, str]] = self.get_shortest_state_paths_dict()
         counter: int = 0
 
         # we assume max one port transition per state
-        for state in paths_dict.keys():
+        for state, _ in paths_list:
             for edge in self.transitions[state].values():
                 if edge.info.label.startswith("Port"):
                     edge.info.label = f"Port_{counter}"

@@ -1,13 +1,19 @@
 from typing import Optional, Union
-from apply.abdd import ABDD  # , init_abdd_from_ta
+import copy
+import itertools
 
-# from apply.apply_testing import BooleanOperation
-# from helpers.string_manipulation import create_string_from_name_set
-# from helpers.utils import eprint, box_catalogue
-# from tree_automata.automaton import TTreeAut, iterate_edges
-# from apply.abdd_check import check_if_abdd
+from tree_automata.automaton import TTreeAut
+from helpers.utils import box_catalogue
+
+from apply.abdd import ABDD
 from apply.abdd_node import ABDDNode
 from apply.apply_edge import ApplyEdge
+from tree_automata.transition import TEdge, TTransition
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# previous ad-hoc attempt for materialization
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
 def edge_setter_helper(

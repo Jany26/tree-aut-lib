@@ -132,8 +132,8 @@ def import_treeaut_from_tmb(source: str, source_type="f") -> TTreeAut:
 
         if transition_done and not line.startswith("\n"):
             edge = load_transition_from_tmb(line)
-            if edge == []:
-                continue
+            # if edge == []:
+            #     continue
             # if arity_done and statelist_done:
             #     consistency_check_tmb(edge, all_states, arity_dict)
             key = generate_key_from_edge(edge)

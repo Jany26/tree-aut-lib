@@ -73,6 +73,28 @@ class TTransition:
         # comment = " <<< LEAF TRANSITION >>>" if self.children == [] else ""
         return f"{self.src} -- {self.info} --> {self.children}"
 
+    def __hash__(self):
+        return hash(
+            (
+                self.src,
+                self.info.label,
+                ",".join([i if i is not None else "_" for i in self.info.box_array]),
+                self.info.variable,
+                ",".join([i for i in self.children]),
+            )
+        )
+
+    def __eq__(self, other: "TTransition") -> bool:
+        return all(
+            [
+                self.src == other.src,
+                self.info.label == other.info.label,
+                self.info.box_array == other.info.box_array,
+                self.info.variable == other.info.variable,
+                self.children == other.children,
+            ]
+        )
+
     def is_self_loop(self) -> bool:
         if self.src in self.children:
             return True

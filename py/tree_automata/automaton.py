@@ -219,19 +219,52 @@ class TTreeAut:
 
     def get_loopable_transitions(self) -> set[TTransition]:
         """
-        Find all transitions, such that all children can self-loop.
+        Find all transitions, such that all children can self-loop (even indirectly,
+        i.e.. through more than one transition).
+
+        The self-looping property of a state is evaluated as true, iff the state 's'
+        belongs to the set of top-down reachable states of 's'.
 
         Note: a transition can be loopable and terminable at the same time.
         I.e. in case of Lport, Hport, X boxes -> the "sink" state has to be able to loop,
         so that it can reach the final variable, and then can terminate with a port transition, or 0/1.
         """
-        loopstates = self.get_self_looping_states()
+        from tree_automata.functions.reachability import get_all_state_reachability
+
+        reachability_cache = get_all_state_reachability(self)
+        loopstates = set([state for state, reachable_set in reachability_cache.items() if state in reachable_set])
         result = set()
         for tr in iterate_edges(self):
             # all states have to be able to loop, otherwise we could get unbalanced
             if len(tr.children) > 0 and all([c in loopstates for c in tr.children]):
                 result.add(tr)
         return result
+
+    def get_terminating_transitions(self) -> set[TTransition]:
+        """
+        Find all transitions such that there is no way of getting back to the source state.
+        This differs from 'terminable' transitions, i.e. port/output transitions are terminating, but not terminable.
+        """
+        from tree_automata.functions.reachability import get_all_state_reachability
+
+        reachability_cache = get_all_state_reachability(self)
+        # loopstates = set([state for state, reachable_set in reachability_cache.items() if state in reachable_set])
+        result = set()
+        for tr in iterate_edges(self):
+            # all states have to be able to loop, otherwise we could get unbalanced
+            if len(tr.children) == 0 or all([tr.src not in reachability_cache[c] for c in tr.children]):
+                result.add(tr)
+        return result
+
+    def get_output_transitions(self) -> set[TTransition]:
+        """
+        Return a set of all transitions that have 0 child states, i.e. output/leaf transitions.
+        These include port transitions, as well as "0"/"1" transitions.
+
+        Compared to get_output_edges(), this does not return a state<->output symbol lookup,
+        just a set of TTransition objects.
+        """
+        return set([e for e in iterate_edges(self) if len(e.children) == 0])
 
     def get_port_order(self):
         """

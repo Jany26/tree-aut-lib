@@ -43,7 +43,9 @@ class TTreeNode:
         # low nodes (false branch) will be down
 
         # we use postorder DFS traversal in reverse order of child nodes (from 1 down to 0)
-        pass
+        if not self.children:
+            return f"{self.value}"
+        return f"{self.value}[{', '.join(repr(child) for child in self.children)}]"
 
     def print_node(self, offset: int = 0) -> None:
         """
@@ -131,10 +133,24 @@ class TTreeNode:
         return self if (self.value == value_to_find) else None
 
     def treenode_iterate_bfs(self) -> Generator["TTreeNode", None, None]:
-        pass
+        queue = [self]
+        while queue != []:
+            node = queue.pop(0)
+            yield node
+            for i in node.children:
+                queue.append(i)
 
-    def treenode_iterate_dfs(self) -> Generator["TTreeNode", None, None]:
-        pass
+    def treenode_iterate_dfs(self, reverse=False) -> Generator["TTreeNode", None, None]:
+        stack = [self]
+        while stack != []:
+            node = stack.pop(0)
+            yield node
+            for i in node.children:
+                stack.insert(0, i)
+
+    def count_nodes(self) -> int:
+        node_count = sum(i.count_nodes() for i in self.children)
+        return 1 + node_count
 
 
 def convert_string_to_tree(string: str) -> TTreeNode:

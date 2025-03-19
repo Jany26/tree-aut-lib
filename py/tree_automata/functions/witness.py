@@ -12,7 +12,7 @@ def generate_witness_tree(edge_dict: dict[str, TTransition], root: str) -> Optio
     """
 
     # bugfix = False: will create node names in the format: '(symbol;state)'
-    # which is better for visual debugging sbut these trees will not work with
+    # which is better for visual debugging, but these trees will not work with
     # match_tree functions used with the original tree automata that produced
     # these witness trees. For it to match with original tree automaton,
     # the format should be: 'symbol' (bugfix = True)

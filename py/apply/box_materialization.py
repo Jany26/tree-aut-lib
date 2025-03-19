@@ -170,7 +170,8 @@ def create_materialized_box(
                 transitions.add(
                     TTransition(
                         f"{s}<{minv},{maxv}>",
-                        TEdge(t.info.label, [], t.info.variable),
+                        # TEdge(t.info.label, [], t.info.variable)
+                        TEdge(t.info.label, [], f"{maxv}"),
                         [f"{i}<{orig_state_ranges[i][0]},{orig_state_ranges[i][1]}>" for i in t.children],
                     )
                 )
@@ -209,7 +210,8 @@ def create_materialized_box(
         for t in term_tr[s]:
             children = []
             for i in t.children:
-                if i in split_state_ranges and split_state_ranges[i][0] > maxv:
+                # watch out here for the split state terminating conditions that choose which states are children
+                if i in split_state_ranges and split_state_ranges[i][1] > maxv:
                     children.append(f"{i}<{split_state_ranges[i][0]},{split_state_ranges[i][1]}>")
                 else:
                     children.append(f"{i}<{orig_state_ranges[i][0]},{orig_state_ranges[i][1]}>")

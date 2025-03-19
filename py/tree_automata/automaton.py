@@ -266,17 +266,22 @@ class TTreeAut:
         """
         return set([e for e in iterate_edges(self) if len(e.children) == 0])
 
-    def get_port_order(self):
+    def get_port_order(self, preorder=False, varinfo=False) -> list[tuple[str, str]] | list[tuple[str, str, str]]:
         """
         Get lexicographically sorted (ascending) list of port-state tuples.
         Low (index 0) children are lexicographically smaller than high (index 1).
+
+        If preorder=True, the order is not "strictly" lexicographic, i.e. root states
+        are considered lexicographically larger than paths starting with "low" or 0.
+
+        If varinfo=True, include variable information of the port transition in the resulting tuples.
         """
-        path_list = self.get_shortest_state_paths_dict()
+        path_list = self.get_shortest_state_paths_dict(preorder=preorder)
         result: list[tuple[str, str]] = []
         for s, _ in path_list:
             for edge in self.transitions[s].values():
                 if edge.children == [] and edge.info.label.startswith("Port"):
-                    result.append((edge.info.label, s))
+                    result.append((edge.info.label, s) if not varinfo else (edge.info.label, s, edge.info.variable))
         return result
 
     def get_symbol_arity_dict(self) -> dict[str, int]:
@@ -464,7 +469,7 @@ class TTreeAut:
             pre_order_dfs(root, [], result)
         return result
 
-    def get_shortest_state_paths_dict(self) -> list[tuple[str, str]]:
+    def get_shortest_state_paths_dict(self, preorder=False) -> list[tuple[str, str]]:
         """
         explore the state space (BFS-like) of the TA and remember the paths taken
         return a list of (state, path) tuples, lexicographically sorted
@@ -477,6 +482,20 @@ class TTreeAut:
         thus the state order we obtain is not necessarily total, but only partial
         that is why the inverted dictionary would have a path pointing to a list (set) of states
         """
+
+        def preorder_sort_key(item):
+            """
+            In some comparisons, we want the low paths to be lexicographically smaller than empty path
+            -- (i.e. when a root is a port state during materialization comparison).
+            """
+            node, path = item
+            if path == "":
+                return (1, path)  # empty path should come second
+            elif path.startswith("0"):
+                return (0, path)  # 'low' paths first
+            else:
+                return (2, path)  # 'high' paths last
+
         # tuple = state, shortest path string
         queue: list[tuple[str, str]] = [(i, "") for i in self.roots]
         result: dict[str, str] = {i: "" for i in self.roots}
@@ -492,7 +511,10 @@ class TTreeAut:
                         queue.append((child, newpath))
                     elif result[child] > f"{path}{i}":
                         result[child] = f"{path}{i}"
-        return [(k, v) for k, v in sorted(result.items(), key=lambda item: item[1])]
+        if preorder:
+            return [(k, v) for k, v in sorted(result.items(), key=preorder_sort_key)]
+        else:
+            return [(k, v) for k, v in sorted(result.items(), key=lambda item: item[1])]
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Extract information about variables - - - - - - - - - - - - - - - - - - -
@@ -753,13 +775,13 @@ class TTreeAut:
                 counter += 1
                 self.transitions[state][new_key] = self.transitions[state].pop(old_key)
 
-    def reformat_ports(self) -> None:
+    def reformat_ports(self, preorder=False) -> None:
         """
         Rename port transitions in a lexicographical order given by each port's
         state's shortest path to reach.
         Useful for comparing box properties, like isomorphism etc.
         """
-        paths_list: list[tuple[str, str]] = self.get_shortest_state_paths_dict()
+        paths_list: list[tuple[str, str]] = self.get_shortest_state_paths_dict(preorder)
         counter: int = 0
 
         # we assume max one port transition per state

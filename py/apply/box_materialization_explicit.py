@@ -29,8 +29,6 @@ def create_alpha_intersectoid_unfolded(
         pass
 
     aut: TTreeAut = box_catalogue[box]
-    # print(aut)
-    # print(aut.get_port_order())
 
     info_map: dict[tuple[str, str], tuple[str, str]] = {
         (port, state): (n.var, n.node) for (port, state), n in zip(aut.get_port_order(), node_tgt)
@@ -52,10 +50,6 @@ def create_alpha_intersectoid_unfolded(
     sync_conditions: set[tuple[str, int]] = set(
         (s, v) for s in aut.get_states() for v in synchronization_vars + target_vars
     )
-    # for var in synchronization_vars + target_vars:
-    #     for state, term_var in port_conditions:
-    #         if var < term_var:
-    #             sync_conditions.add((state, var))
 
     # term condition = (state, var) tuples in which terminating transition is chosen instead of a looping one
     term_conditions: set[tuple[str, int]] = set()
@@ -68,14 +62,6 @@ def create_alpha_intersectoid_unfolded(
                 # i.e. max root distance for some state is > 1
                 term_conditions.add((src, var - 1))
 
-    # print(info_map)
-    # print(aut.get_states())
-    # print(synchronization_vars + target_vars)
-    # for i in product(aut.get_states(), synchronization_vars + target_vars):
-    #     print(i)
-    # print("term", term_conditions)
-    # print("sync", sync_conditions)
-    # print("port", port_conditions)
     worklist: list[tuple[str, int]] = []
     for i in aut.roots:
         worklist.append((i, node_src.var))
@@ -100,14 +86,12 @@ def create_alpha_intersectoid_unfolded(
         if (s, v) in term_conditions:
             children = [(c, v + 1) for c in terminating_tr[s].children]
             term_tr = TTransition(sname, TEdge("LH", [], v), [str(c) for c in children])
-            # print(f'adding terminating transition: {term_tr}')
             if sname not in transitions:
                 transitions[sname] = {}
             transitions[sname][f"k{counter}"] = term_tr
             counter += 1
             for i in children:
                 if i not in worklist:
-                    # print(f'worklist add {i}')
                     worklist.append(i)
             continue
 
@@ -120,7 +104,6 @@ def create_alpha_intersectoid_unfolded(
             if port == "":
                 ValueError("Inconsistent port condition with box automaton.")
             port_tr = TTransition(sname, TEdge(port, [], ""), [])
-            # print(f'adding port transition       : {port_tr}')
             if sname not in transitions:
                 transitions[sname] = {}
             transitions[sname][f"k{counter}"] = port_tr
@@ -129,14 +112,12 @@ def create_alpha_intersectoid_unfolded(
 
         children = [(c, v + 1) for c in looping_tr[s].children]
         loop_tr = TTransition(sname, TEdge("LH", [], v), [str(c) for c in children])
-        # print(f'adding looping transition    : {loop_tr}')
         if sname not in transitions:
             transitions[sname] = {}
         transitions[sname][f"k{counter}"] = loop_tr
         counter += 1
         for i in children:
             if i not in worklist:
-                # print(f'worklist add {i}')
                 worklist.append(i)
 
         # on top of normal looping transitions, if sync conditions are matched, arbitrary ports
@@ -147,7 +128,4 @@ def create_alpha_intersectoid_unfolded(
             transitions[sname][f"k{counter}"] = sync_port_tr
             counter += 1
 
-    # for t in transitions.values():
-    #     for e in t.values():
-    #         print(e)
     return TTreeAut(roots, transitions, "", aut.port_arity)

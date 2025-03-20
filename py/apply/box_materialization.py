@@ -164,20 +164,26 @@ def create_materialized_box(
                 )
             )
 
-        # 2 if there is not a copy in the split_ranges(), keep the terminating transition
+        # 2 if there is not a copy in the split_ranges(), keep the terminating transition, BUT
+        # check if either the original state or a split state is added to the
         if s not in split_state_ranges and s in term_tr:
             for t in term_tr[s]:
-                transitions.add(
-                    TTransition(
-                        f"{s}<{minv},{maxv}>",
-                        # TEdge(t.info.label, [], t.info.variable)
-                        TEdge(t.info.label, [], f"{maxv}"),
-                        [f"{i}<{orig_state_ranges[i][0]},{orig_state_ranges[i][1]}>" for i in t.children],
-                    )
+                children = []
+                for i in t.children:
+                    if i in split_state_ranges:
+                        children.append(f"{i}<{split_state_ranges[i][0]},{split_state_ranges[i][1]}>")
+                    else:
+                        children.append(f"{i}<{orig_state_ranges[i][0]},{orig_state_ranges[i][1]}>")
+                creating_tr = TTransition(
+                    f"{s}<{minv},{maxv}>",
+                    # TEdge(t.info.label, [], t.info.variable)
+                    TEdge(t.info.label, [], f"{maxv}"),
+                    children,
                 )
+                transitions.add(creating_tr)
 
         # 3 add a copy of looping transition to original/split states, such that
-        # only the states that contain the following variable in their ranges are used (looping becomes terminating)
+        # only the states that contain the FOLLOWING variable in their ranges are used (looping becomes terminating)
         if s in split_state_ranges:
             selfloop = loop_tr[s]
             children = []
@@ -186,10 +192,12 @@ def create_materialized_box(
                     children.append(f"{i}<{split_state_ranges[i][0]},{split_state_ranges[i][1]}>")
                 else:
                     children.append(f"{i}<{orig_state_ranges[i][0]},{orig_state_ranges[i][1]}>")
-            transitions.add(TTransition(f"{s}<{minv},{maxv}>", TEdge(selfloop.info.label, [], f"{maxv}"), children))
+            creating_tr = TTransition(f"{s}<{minv},{maxv}>", TEdge(selfloop.info.label, [], f"{maxv}"), children)
+            # print(f'creating terminating transition {creating_tr}')
+            transitions.add(creating_tr)
 
         # 4 add an arbitrary port transition if a copy is in the split_ranges()
-        if s in split_state_ranges:
+        if s in split_state_ranges and materialization_var >= minv and materialization_var <= maxv:
             transitions.add(TTransition(f"{s}<{minv},{maxv}>", TEdge("Port_arbitrary", [], f"{maxv}"), []))
 
     for s, (minv, maxv) in split_state_ranges.items():

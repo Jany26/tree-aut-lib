@@ -167,10 +167,17 @@ def create_materialized_box(
         # 2 if there is not a copy in the split_ranges(), keep the terminating transition, BUT
         # check if either the original state or a split state is added to the
         if s not in split_state_ranges and s in term_tr:
+            has_port = False
             for t in term_tr[s]:
+                if t.info.label.startswith("Port"):
+                    has_port = True
                 children = []
                 for i in t.children:
-                    if i in split_state_ranges:
+                    if (
+                        i in split_state_ranges
+                        and split_state_ranges[i][0] <= maxv + 1
+                        and maxv + 1 <= split_state_ranges[i][1]
+                    ):
                         children.append(f"{i}<{split_state_ranges[i][0]},{split_state_ranges[i][1]}>")
                     else:
                         children.append(f"{i}<{orig_state_ranges[i][0]},{orig_state_ranges[i][1]}>")
@@ -181,6 +188,10 @@ def create_materialized_box(
                     children,
                 )
                 transitions.add(creating_tr)
+            if has_port and materialization_var >= maxv:
+                transitions.add(
+                    TTransition(f"{s}<{minv},{maxv}>", TEdge("Port_arbitrary", [], f"{materialization_var}"), [])
+                )
 
         # 3 add a copy of looping transition to original/split states, such that
         # only the states that contain the FOLLOWING variable in their ranges are used (looping becomes terminating)
@@ -197,7 +208,7 @@ def create_materialized_box(
             transitions.add(creating_tr)
 
         # 4 add an arbitrary port transition if a copy is in the split_ranges()
-        if s in split_state_ranges and materialization_var >= minv and materialization_var <= maxv:
+        if materialization_var >= minv and materialization_var <= maxv:
             transitions.add(TTransition(f"{s}<{minv},{maxv}>", TEdge("Port_arbitrary", [], f"{maxv}"), []))
 
     for s, (minv, maxv) in split_state_ranges.items():

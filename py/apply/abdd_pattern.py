@@ -78,6 +78,26 @@ class ABDDPattern:
 
         return f"{indent}{self.__class__.__name__}[{', '.join(normal_attrs)}, {low_repr}, {high_repr}]"
 
+    def __eq__(self, other: "ABDDPattern") -> bool:
+        if any(
+            [
+                self.new != other.new,
+                type(self.name) != type(other.name),
+                # type(self.name) == ABDDNode and type(other.name) == ABDDNode and self.name.node != other.name.node,
+                self.level != other.level,
+                self.low_box != other.low_box,
+                self.high_box != other.high_box,
+                len(self.low) != len(other.low),
+                len(self.high) != len(other.high),
+            ]
+        ):
+            return False
+        if any([self.low[i] != other.low[i] for i in range(len(self.low))]):
+            return False
+        if any([self.high[i] != other.high[i] for i in range(len(self.high))]):
+            return False
+        return True
+
 
 class MaterializationRecipe:
     """
@@ -93,5 +113,19 @@ class MaterializationRecipe:
         self.init_targets = init_targets
 
     def __repr__(self):
-        attr_str = ", ".join(f"{key}={value!r}" for key, value in self.__dict__.items())
-        return f"{self.__class__.__name__}[{attr_str}]"
+        # attr_str = ", ".join(f"{key}={value!r}" for key, value in self.__dict__.items())
+        # indent=2
+        result = f"{self.__class__.__name__}[init_box={self.init_box}, init_targets=[\n"
+        for idx, i in enumerate(self.init_targets):
+            result += f"  {i.__repr__(level=0)}\n"
+        result += "]"
+        return result
+
+    def __eq__(self, other: "MaterializationRecipe"):
+        if self.init_box != other.init_box:
+            return False
+        if len(self.init_targets) != len(other.init_targets):
+            return False
+        if any([self.init_targets[i] != other.init_targets[i] for i in range(len(self.init_targets))]):
+            return False
+        return True

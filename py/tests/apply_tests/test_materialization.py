@@ -2,33 +2,40 @@ import unittest
 
 from apply.abdd import ABDD, import_abdd_from_abdd_file
 from apply.abdd_pattern import ABDDPattern, MaterializationRecipe
-from apply.box_materialization import create_materialized_box
-from apply.pattern_finding import abdd_subsection_create
+from apply.box_materialization import create_materialized_box_wrapper
+from apply.pattern_finding import abdd_subsection_create_wrapper
 from tree_automata.automaton import TTreeAut
 
 
 class TestMaterializationLPortUneven(unittest.TestCase):
     abdd: ABDD = import_abdd_from_abdd_file("../tests/apply/materialization-inputs/materialization-lport-10-7.dd")
     direction = False  # false = low, true = high
-    nodelist = abdd.root.high if direction else abdd.root.low
+    # nodelist = abdd.root.high if direction else abdd.root.low
+    nodelist = ["out0", "out1"]
+    # varlist = [10, 7]
+    varlist = ["out0", "out1"]
+    matlevel = "mat"
 
     def test_materialization_lport_10_7_at_level_2(self):
         materialization_level = 2
-        res = create_materialized_box(
+        res = create_materialized_box_wrapper(
             self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box=None,
             init_targets=[
                 ABDDPattern(
                     new=True,
-                    level=materialization_level,
+                    level=self.matlevel,
                     low_box="X",
-                    low=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                     high_box="LPort",
-                    high=[ABDDPattern(level=10, name=self.nodelist[0]), ABDDPattern(level=7, name=self.nodelist[1])],
+                    high=[
+                        ABDDPattern(level=self.varlist[0], name=self.nodelist[0]),
+                        ABDDPattern(level=self.varlist[1], name=self.nodelist[1]),
+                    ],
                 )
             ],
         )
@@ -36,29 +43,32 @@ class TestMaterializationLPortUneven(unittest.TestCase):
 
     def test_materialization_lport_10_7_at_level_3(self):
         materialization_level = 3
-        res = create_materialized_box(
+        res = create_materialized_box_wrapper(
             self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
             init_targets=[
                 ABDDPattern(
                     new=True,
-                    level=materialization_level,
+                    level=self.matlevel,
                     low_box="X",
-                    low=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                     high_box="X",
-                    high=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    high=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                 ),
                 ABDDPattern(
                     new=True,
-                    level=materialization_level,
+                    level=self.matlevel,
                     low_box="X",
-                    low=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                     high_box="LPort",
-                    high=[ABDDPattern(level=10, name=self.nodelist[0]), ABDDPattern(level=7, name=self.nodelist[1])],
+                    high=[
+                        ABDDPattern(level=self.varlist[0], name=self.nodelist[0]),
+                        ABDDPattern(level=self.varlist[1], name=self.nodelist[1]),
+                    ],
                 ),
             ],
         )
@@ -66,29 +76,32 @@ class TestMaterializationLPortUneven(unittest.TestCase):
 
     def test_materialization_lport_10_7_at_level_4(self):
         materialization_level = 4
-        res = create_materialized_box(
+        res = create_materialized_box_wrapper(
             self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
             init_targets=[
                 ABDDPattern(
                     new=True,
-                    level=materialization_level,
+                    level=self.matlevel,
                     low_box="X",
-                    low=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                     high_box="X",
-                    high=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    high=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                 ),
                 ABDDPattern(
                     new=True,
-                    level=materialization_level,
+                    level=self.matlevel,
                     low_box="X",
-                    low=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                     high_box="LPort",
-                    high=[ABDDPattern(level=10, name=self.nodelist[0]), ABDDPattern(level=7, name=self.nodelist[1])],
+                    high=[
+                        ABDDPattern(level=self.varlist[0], name=self.nodelist[0]),
+                        ABDDPattern(level=self.varlist[1], name=self.nodelist[1]),
+                    ],
                 ),
             ],
         )
@@ -96,29 +109,29 @@ class TestMaterializationLPortUneven(unittest.TestCase):
 
     def test_materialization_lport_10_7_at_level_6(self):
         materialization_level = 6
-        res = create_materialized_box(
+        res = create_materialized_box_wrapper(
             self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
             init_targets=[
                 ABDDPattern(
                     new=True,
-                    level=materialization_level,
+                    level=self.matlevel,
                     low_box="X",
-                    low=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                     high_box="X",
-                    high=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    high=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                 ),
                 ABDDPattern(
                     new=True,
-                    level=materialization_level,
+                    level=self.matlevel,
                     low_box="X",
-                    low=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                     high_box=None,
-                    high=[ABDDPattern(level=7, name=self.nodelist[1])],
+                    high=[ABDDPattern(level=self.varlist[1], name=self.nodelist[1])],
                 ),
             ],
         )
@@ -126,72 +139,135 @@ class TestMaterializationLPortUneven(unittest.TestCase):
 
     def test_materialization_lport_10_7_at_level_7(self):
         materialization_level = 7
-        res = create_materialized_box(
+        res = create_materialized_box_wrapper(
             self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
             init_targets=[
                 ABDDPattern(
                     new=True,
-                    level=materialization_level,
+                    level=self.matlevel,
                     low_box="X",
-                    low=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                     high_box="X",
-                    high=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    high=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                 ),
-                ABDDPattern(level=7, name=self.nodelist[1]),
+                ABDDPattern(level=self.varlist[1], name=self.nodelist[1]),
             ],
         )
+        print(recipe)
+        print(expected_recipe)
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_lport_10_7_at_level_8(self):
         materialization_level = 8
-        res = create_materialized_box(
+        res = create_materialized_box_wrapper(
             self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
             init_targets=[
                 ABDDPattern(
                     new=True,
-                    level=materialization_level,
+                    level=self.matlevel,
                     low_box="X",
-                    low=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                     high_box="X",
-                    high=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    high=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                 ),
-                ABDDPattern(level=7, name=self.nodelist[1]),
+                ABDDPattern(level=self.varlist[1], name=self.nodelist[1]),
             ],
         )
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_lport_10_7_at_level_9(self):
         materialization_level = 9
-        res = create_materialized_box(
+        res = create_materialized_box_wrapper(
             self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
             init_targets=[
                 ABDDPattern(
                     new=True,
-                    level=materialization_level,
+                    level=self.matlevel,
                     low_box=None,
-                    low=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                     high_box=None,
-                    high=[ABDDPattern(level=10, name=self.nodelist[0])],
+                    high=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
                 ),
-                ABDDPattern(level=7, name=self.nodelist[1]),
+                ABDDPattern(level=self.varlist[1], name=self.nodelist[1]),
             ],
         )
         self.assertEqual(recipe, expected_recipe)
+
+
+class TestMaterializationLPortShort(unittest.TestCase):
+    abdd: ABDD = import_abdd_from_abdd_file("../tests/apply/materialization-inputs/materialization-lport-10-7.dd")
+    direction = False  # false = low, true = high
+    # nodelist = abdd.root.high if direction else abdd.root.low
+    nodelist = ["out0", "out1"]
+    # varlist = [10, 7]
+    varlist = ["out0", "out1"]
+    matlevel = "mat"
+
+    def test_materialization_lport_3_3_at_level_2(self):
+        self.abdd.root.low[0].var = 3
+        self.abdd.root.low[1].var = 3
+        materialization_level = 2
+        res = create_materialized_box_wrapper(
+            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+        )
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+
+        expected_recipe = MaterializationRecipe(
+            init_box=None,
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box=None,
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
+                    high_box=None,
+                    high=[ABDDPattern(level=self.varlist[1], name=self.nodelist[1])],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+    def test_materialization_lport_10_3_at_level_2(self):
+        # self.abdd.root.low[0].var = 3
+        self.abdd.root.low[1].var = 3
+        materialization_level = 2
+        res = create_materialized_box_wrapper(
+            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+        )
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+
+        expected_recipe = MaterializationRecipe(
+            init_box=None,
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box="X",
+                    low=[ABDDPattern(level=self.varlist[0], name=self.nodelist[0])],
+                    high_box=None,
+                    high=[ABDDPattern(level=self.varlist[1], name=self.nodelist[1])],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+
+class TestMaterializationLPortOther(unittest.TestCase):
 
     def test_lport_hport_partial_mismatches_uneven(self):
         # LPort-07-04 | HPort-04-07

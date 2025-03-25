@@ -31,7 +31,7 @@ from tree_automata.transition import TEdge, TTransition
 
 
 def compute_variable_ranges(
-    aut: TTreeAut, invar: int, info_map: dict[tuple[str, str], tuple[int, int]], leaf_level: int
+    aut: TTreeAut, invar: int, outvars: dict[str, int], leaf_level: int
 ) -> dict[str, tuple[int, int]]:
     """
     For a tree automaton 'aut', given the initial variable 'invar' with which the automaton's run is entered,
@@ -39,7 +39,7 @@ def compute_variable_ranges(
     return a dictionary of state to int-int tuple representing intervals of possible variables, that can be seen
     from within that state.
     """
-    outvars = {s: v for (p, s), (v, i) in info_map.items()}
+    # outvars = {s: v for (p, s), (v, i) in info_map.items()}
     states = aut.get_states()
     terminating_tr: dict[str, TTransition] = {i.src: i for i in aut.get_terminable_transitions()}
     looping_tr: dict[str, TTransition] = {i.src: i for i in aut.get_loopable_transitions()}
@@ -97,40 +97,12 @@ def compute_variable_ranges(
     return result
 
 
-def create_split_states(ranges: dict[str, list[int]], split_var: int) -> dict[str, tuple[int, int]]:
-    result = {}
-    for state, (minvar, maxvar) in ranges.items():
-        if minvar <= split_var and split_var < maxvar:
-            result[state] = [minvar, split_var]
-            result[f"{state}_"] = (split_var, maxvar)
-        else:
-            result[state] = (minvar, maxvar)
-    return result
-
-
 def create_materialized_box(
-    node_src: ABDDNode,  # from here we find out the box, the target nodes and the variable levels needed
-    direction: bool,  # False=low, True=high
-    materialization_var: int,  # for now we will only materialize one level at a time
-    leaf_level: int,  # needed in case we work with boxes that contain inherent "leaf" transitions and
-    # we need to compare variable ranges somehow
-):
-    """
-    Description TODO ...
-    """
-    node_tgt: list[ABDDNode] = node_src.high if direction else node_src.low
-    box: Optional[str] = node_src.high_box if direction else node_src.low_box
-    if box is None:
-        pass
-    aut: TTreeAut = box_catalogue[box]
-    info_map: dict[tuple[str, str], tuple[int, int]] = {
-        (port, state): (n.var, n.node) for (port, state), n in zip(aut.get_port_order(), node_tgt)
-    }
-    outvars = {s: v for (p, s), (v, i) in info_map.items()}
-    invar = node_src.var
-    if not (materialization_var > invar and any([materialization_var < var for var in outvars.values()])):
-        return aut
-    ranges = compute_variable_ranges(aut, invar, info_map, leaf_level)
+    aut: TTreeAut, invar: int, materialization_var: int, outvars: list[int], leaf_level: int
+) -> TTreeAut:
+    """ """
+    outvar_map = {s: outvars[i] for i, (p, s) in enumerate(aut.get_port_order())}
+    ranges = compute_variable_ranges(aut, invar, outvar_map, leaf_level)
     loop_tr: dict[str, TTransition] = {i.src: i for i in aut.get_loopable_transitions()}
     term_tr: dict[str, set[TTransition]] = {
         s: set([t for t in aut.transitions[s].values() if t in aut.get_terminating_transitions()])
@@ -243,6 +215,28 @@ def create_materialized_box(
         transition_dict[t.src][f"k{i}"] = t
 
     root_list = [f"{i}<{orig_state_ranges[i][0]},{orig_state_ranges[i][1]}>" for i in aut.roots]
-    name = f"materialized({aut.name}, in:{invar}, at:{materialization_var}, out:{[n.var for n in node_tgt]})"
+    name = f"materialized({aut.name}, in:{invar}, at:{materialization_var}, out:{outvars})"
     result = TTreeAut(root_list, transition_dict, name, aut.port_arity)
     return result
+
+
+def create_materialized_box_wrapper(
+    node_src: ABDDNode,  # from here we find out the box, the target nodes and the variable levels needed
+    direction: bool,  # False=low, True=high
+    materialization_var: int,  # for now we will only materialize one level at a time
+    leaf_level: int,  # needed in case we work with boxes that contain inherent "leaf" transitions and
+    # we need to compare variable ranges somehow
+):
+    """
+    Description TODO ...
+    """
+    node_tgt: list[ABDDNode] = node_src.high if direction else node_src.low
+    box: Optional[str] = node_src.high_box if direction else node_src.low_box
+    if box is None:
+        pass
+    aut: TTreeAut = box_catalogue[box]
+    outvars = [n.var for n in node_tgt]
+    invar = node_src.var
+    if not (materialization_var > invar and any([materialization_var < var for var in outvars])):
+        return aut
+    return create_materialized_box(aut, invar, materialization_var, outvars, leaf_level)

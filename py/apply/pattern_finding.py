@@ -108,7 +108,7 @@ def matbox_sublang_of_box(aut: TTreeAut, box: TTreeAut, debug=False) -> bool:
     return aut_subset_of_box
 
 
-def get_state_node_lookup(nodes: list[ABDDNode], materialized_box: TTreeAut) -> dict[str, ABDDNode]:
+def get_state_sym_lookup(nodes: list[ABDDNode], materialized_box: TTreeAut) -> dict[str, ABDDNode]:
     portstates: list[tuple[str, str]] = []  # (port, state) tuples
     for e in iterate_edges(materialized_box):
         if e.info.label.startswith("Port") and e.info.label != "Port_arbitrary":
@@ -130,7 +130,7 @@ def remove_irrelevant_ports(materialized_box: TTreeAut, arbitrary=False):
 
 
 def abdd_subsection_create(
-    original_abdd: ABDD, original_node: ABDDNode, direction: bool, materialized_box: TTreeAut
+    state_sym_lookup: dict[str, str | ABDDNode], materialized_box: TTreeAut
 ) -> MaterializationRecipe:
     """
     This process is similar to folding, but instead of trying to fold as much as possible,
@@ -143,15 +143,15 @@ def abdd_subsection_create(
     4) starting from the 'matched' states (to the ports of the 'matched' box),
         we similarly try finding the matching boxes of the children of the terminating transitions from the matched states
     """
-    root = materialized_box.roots[0]  # we expect one root state
+
+    # print('lookup', state_sym_lookup)
     working_aut = copy.deepcopy(materialized_box)
-    state_node_lookup: dict[str, ABDDNode] = get_state_node_lookup(
-        original_node.high if direction else original_node.low, materialized_box
-    )
+    root = working_aut.roots[0]
     port_trs = [
         (k, copy.deepcopy(e)) for k, e in iterate_key_edge_tuples(working_aut) if e.info.label.startswith("Port")
     ]
     term_trs = {t.src: t for t in working_aut.get_terminating_transitions() if len(t.children) > 0}
+
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # A) initial edge -> materialized nodes
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -198,9 +198,9 @@ def abdd_subsection_create(
 
     result_targets: list[ABDDPattern] = []
     for state, var in targets:
-        if state in state_node_lookup:
-            noderef = state_node_lookup[state]
-            result_targets.append(ABDDPattern(new=False, name=noderef, level=noderef.var))
+        if state in state_sym_lookup:
+            noderef = state_sym_lookup[state]
+            result_targets.append(ABDDPattern(new=False, name=noderef, level=noderef))
             continue
         pattern = ABDDPattern()
         pattern.new = True
@@ -212,7 +212,8 @@ def abdd_subsection_create(
             terminating_transition = e
         if terminating_transition is None:
             raise ValueError(f"no terminating transition found for intermediate state {state}")
-        pattern.level = int(terminating_transition.info.variable)
+        # pattern.level = int(terminating_transition.info.variable)
+        pattern.level = "mat"
         for idx, child in enumerate(terminating_transition.children):
             working_aut.roots = [child]
             working_aut.reformat_ports()
@@ -221,11 +222,12 @@ def abdd_subsection_create(
             for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
                 boxcopy = copy.deepcopy(box_catalogue[boxname])
                 boxcopy.reformat_ports()
-                if matbox_equal_to_box(working_aut, boxcopy):
+                if matbox_sublang_of_box(working_aut, boxcopy):
                     match = boxname
                     for port, s in working_aut.get_port_order():
-                        noderef = state_node_lookup[s]
-                        subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef.var))
+                        noderef = state_sym_lookup[s]
+                        # subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef.var))
+                        subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef))
             if not match:
                 terminating_transition_2 = None
                 for e in iterate_edges_from_state(working_aut, state):
@@ -234,8 +236,9 @@ def abdd_subsection_create(
                     terminating_transition_2 = e
                 if terminating_transition_2 is None:
                     raise ValueError(f"no terminating transition found for intermediate state {state}")
-                noderef = state_node_lookup[child]
-                subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef.var))
+                noderef = state_sym_lookup[child]
+                # subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef.var))
+                subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef))
             if idx == 0:
                 pattern.low = subtargets
                 pattern.low_box = match
@@ -244,3 +247,24 @@ def abdd_subsection_create(
                 pattern.high_box = match
         result_targets.append(pattern)
     return MaterializationRecipe(result_box, result_targets)
+
+
+def abdd_subsection_create_wrapper(
+    original_abdd: ABDD, original_node: ABDDNode, direction: bool, materialized_box: TTreeAut
+) -> MaterializationRecipe:
+    # root = materialized_box.roots[0]  # we expect one root state
+    # name_node_lookup: dict[str, ABDDNode] = {
+    #     f"out{i}": nodes[i] for nodes
+    # }
+
+    tgts = original_node.high if direction else original_node.low
+    syms = [f"out{i}" for i in range(len(tgts))]
+    sym_node_lookup = {s: t for (s, t) in zip(syms, tgts)}
+
+    # state_sym_lookup: dict[str, ABDDNode] = get_state_node_lookup(
+    #     original_node.high if direction else original_node.low, materialized_box
+    # )
+    state_sym_lookup: dict[str, str] = get_state_sym_lookup(syms, materialized_box)
+    # print('lookup', state_sym_lookup)
+    mat_recipe = abdd_subsection_create(state_sym_lookup, materialized_box)
+    return mat_recipe

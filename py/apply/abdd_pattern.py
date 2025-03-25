@@ -32,8 +32,8 @@ class ABDDPattern:
     def __init__(
         self,
         new: bool = False,
-        name: str | ABDDNode = "",
-        level: int = 0,
+        name: str = "",
+        level: str | int = 0,
         low_box: Optional[str] = None,
         low: list["ABDDPattern"] = [],
         high_box: Optional[str] = None,
@@ -52,9 +52,9 @@ class ABDDPattern:
     #     return f"{self.__class__.__name__}[{attr_str}]"
 
     def __repr__(self, level=0):
-        indent = "  " * level  # Indentation for nested levels
-
-        # Regular attributes (excluding `low` and `high`)
+        indent = "  " * level
+        # if self.name.startswith("out"):
+        #     return indent + self.name
         normal_attrs = [
             f"new={self.new!r}",
             f"name={self.name!r}",
@@ -62,20 +62,16 @@ class ABDDPattern:
             f"low_box={self.low_box!r}",
             f"high_box={self.high_box!r}",
         ]
-
-        # Handle `low` and `high` lists:
-        if self.low:
-            low_repr = f"low=[\n" + ",\n".join(child.__repr__(level + 2) for child in self.low) + "\n" + indent + "  ]"
-        else:
-            low_repr = f"low=[]"
-
-        if self.high:
-            high_repr = (
-                f"high=[\n" + ",\n".join(child.__repr__(level + 2) for child in self.high) + "\n" + indent + "  ]"
-            )
-        else:
-            high_repr = f"high=[]"
-
+        low_repr = (
+            f"low=[]"
+            if not self.low
+            else (f"low=[\n" + ",\n".join(child.__repr__(level + 2) for child in self.low) + "\n" + indent + "  ]")
+        )
+        high_repr = (
+            f"high=[]"
+            if not self.high
+            else (f"high=[\n" + ",\n".join(child.__repr__(level + 2) for child in self.high) + "\n" + indent + "  ]")
+        )
         return f"{indent}{self.__class__.__name__}[{', '.join(normal_attrs)}, {low_repr}, {high_repr}]"
 
     def __eq__(self, other: "ABDDPattern") -> bool:

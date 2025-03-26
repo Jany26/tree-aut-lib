@@ -8,19 +8,17 @@ from apply.abdd_pattern import MaterializationRecipe
 from apply.box_materialization import create_materialized_box
 from apply.pattern_finding import abdd_subsection_create, get_state_sym_lookup
 from tree_automata.automaton import TTreeAut, iterate_edges, iterate_key_edge_tuples
-from helpers.utils import box_catalogue
+from helpers.utils import box_catalogue, box_arities
 
 from apply.abdd_node import ABDDNode
 from tree_automata.transition import TEdge, TTransition
 
 
-# class VariablePredicate(NamedTuple):
-#     var1: str
-#     rel: str,
-#     var2: str
 class VariablePredicate(namedtuple("VariablePredicate", ["var1", "rel", "var2"])):
-    def __repr__(self):
-        return f"[{self.var1} {self.rel} {self.var2}]"
+    def __repr__(self, short=False):
+        if short:
+            return f"[{self.var1} {self.rel} {self.var2}]"
+        return f'{self.__class__.__name__}("{self.var1}", "{self.rel}", "{self.var2}")'
 
 
 def obtain_predicates(
@@ -64,6 +62,10 @@ def create_all_predicate_sets(boxname: str) -> set[frozenset[VariablePredicate]]
     box: TTreeAut = box_catalogue[boxname]
     result = set()
     predicate_sets = {"in": [VariablePredicate("in", "1<", "mat"), VariablePredicate("in", "<<", "mat")]}
+    has_leaf = False
+    if any([i in boxname for i in ["0", "1"]]):
+        has_leaf = True
+        predicate_sets["leaf"] = [VariablePredicate("mat", "1<", "leaf"), VariablePredicate("mat", "<<", "leaf")]
 
     # equal or larger (None) < smaller by one (1<) < smaller by more than one (<<)
     predicate_order = {None: 0, "1<": 1, "<<": 2}
@@ -104,6 +106,7 @@ def create_all_predicate_sets(boxname: str) -> set[frozenset[VariablePredicate]]
                         compare_predicates[var1] >= compare_predicates[var2],
                         compare_predicates[var1] != 0,
                         not (compare_predicates["in"] == 1 and compare_predicates[var2] == 0),
+                        not has_leaf or compare_predicates[var1] <= compare_predicates["leaf"],
                     ]
                 ):
                     result.add(frozenset([i for i in lookup.values() if i is not None]))
@@ -114,13 +117,18 @@ def create_all_predicate_sets(boxname: str) -> set[frozenset[VariablePredicate]]
                         compare_predicates[var1] <= compare_predicates[var2],
                         compare_predicates[var2] != 0,
                         not (compare_predicates["in"] == 1 and compare_predicates[var1] == 0),
+                        not has_leaf or compare_predicates[var2] <= compare_predicates["leaf"],
                     ]
                 ):
                     result.add(frozenset([i for i in lookup.values() if i is not None]))
         else:
             for var in compare_vars:
                 if all(
-                    [compare_predicates[var] != 0, not (compare_predicates["in"] == 1 and compare_predicates[var] == 0)]
+                    [
+                        compare_predicates[var] != 0,
+                        not (compare_predicates["in"] == 1 and compare_predicates[var] == 0),
+                        not has_leaf or compare_predicates[var] <= compare_predicates["leaf"],
+                    ]
                 ):
                     result.add(frozenset([i for i in lookup.values() if i is not None]))
 
@@ -148,23 +156,104 @@ def generate_patterns(boxname: str) -> dict[frozenset[VariablePredicate], Materi
     varassign = {"in": 1}
     box = box_catalogue[boxname]
     arity = box.port_arity
-    other_vars = [f"out{i}" for i in range(arity)] + ["mat"]
+    other_vars = [f"out{i}" for i in range(arity)] + ["mat", "leaf"]
     outvar = [i for i in range(2, 10)]
+    # leafvar = [i for i in range(2, 10)]
+    result: dict[frozenset[VariablePredicate], MaterializationRecipe] = {}
     for predicate_set in predicate_sets:
-        for comb in itertools.product(outvar, repeat=arity + 1):
+        for comb in itertools.product(outvar, repeat=arity + 2):  # arity = # of ports + mat level + leaf level
             for i, val in enumerate(list(comb)):
                 varassign[other_vars[i]] = val
             if check_predicate_against_values(predicate_set, varassign):
                 invar = varassign["in"]
                 outvars = [varassign[f"out{i}"] for i in range(arity)]
+                # print(predicate_set)
                 matvar = varassign["mat"]
-                leafvar = 10
+                leafvar = varassign["leaf"]
                 matbox = create_materialized_box(box, invar, matvar, outvars, leafvar)
-                pset_str = ", ".join([s.__repr__() for s in predicate_set])
-                print("Predicates:", pset_str)
-                # state_sym_lookup =
                 # print(matbox)
                 state_sym_lookup: dict[str, str] = get_state_sym_lookup([f"out{i}" for i in range(arity)], matbox)
                 pattern = abdd_subsection_create(state_sym_lookup, matbox)
-                print(pattern)
+                # print(pattern)
+                result[predicate_set] = pattern
                 break
+    return result
+
+
+def format_frozenset(predicates: frozenset) -> str:
+    def predicate_key(predicate: VariablePredicate) -> str:
+        v_order = {f"out{i}": f"{i + 1}" for i in range(5)}
+        v_order["in"] = "0"
+        v_order["leaf"] = "6"
+        p_order = {"1<": "1", "<<": "2"}
+        if predicate.var1 != "mat":
+            var = predicate.var1
+        if predicate.var2 != "mat":
+            var = predicate.var2
+        return v_order[var] + p_order[predicate.rel]
+
+    return f"frozenset({repr(sorted(predicates, key=predicate_key))})"
+
+
+def print_generated_patterns(filename: str) -> None:
+    t = " " * 4
+    f = open(filename, "w")
+    f.write("from apply.abdd_pattern import MaterializationRecipe, ABDDPattern\n")
+    f.write("from apply.pattern_generate import VariablePredicate\n")
+    f.write("\n\n")
+    f.write("# fmt: off\n")
+
+    all_patterns = {}
+
+    for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
+        name_list: list[tuple[str, str]] = []
+        patterns = generate_patterns(boxname)
+        # for pset in patterns.keys():
+        #     print(format_frozenset(pset))
+        psets = [sorted(i, key=repr) for i in patterns.keys()]
+        psets = sorted(psets, key=repr)
+        for idx, i in enumerate(psets):
+            predicate_name = f"predicate_set_{boxname}_{idx}"
+            f.write(f"{predicate_name} = frozenset({i})\n")
+            f.write("\n")
+            recipe_name = f"materialization_recipe_{boxname}_{idx}"
+            f.write(f"{recipe_name} = {patterns[frozenset(i)]}\n")
+            f.write("\n")
+            name_list.append((predicate_name, recipe_name))
+        all_patterns[boxname] = name_list
+
+    cache_name = "cached_materialization_recipes"
+
+    f.write(f"{cache_name}: dict[str, dict[frozenset[VariablePredicate], MaterializationRecipe]] = {{\n")
+    for box, name_list in all_patterns.items():
+        f.write(f"{t}'{box}': {{\n")
+        for pset, recipe in name_list:
+            f.write(f"{t}{t}{pset}: {recipe},\n")
+        f.write(f"{t}}},\n")
+    f.write("}\n")
+    f.write("# fmt: on\n")
+
+    f.close()
+
+    # for boxname in box_arities.keys():
+    #     print(boxname)
+    #     f.write(f"{t}'{boxname}': {{\n")
+    #     # print(boxname)
+    #     patterns = generate_patterns(boxname)
+    #     for pset, recipe in patterns.items():
+    #         # print(pset)
+    #         # f.write(f"{t}{t}frozenset([\n")
+    #         # for predicate in pset:
+    #         #     f.write(f"{t}{t}{t}{predicate},\n")
+    #         #     pass
+    #         # f.write(f"{t}{t}]): ")
+    #         f.write(f"{t}{t}{format_frozenset(pset)}")
+    #         f.write(":(\n")
+    #         f.write(f"{recipe.__repr__(level=8)}")
+    #         f.write("),\n")
+    #         # print(recipe)
+
+    #         # f.write(str(pset))
+    #         # f.write
+    #     f.write("    }\n")
+    #     break

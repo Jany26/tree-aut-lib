@@ -85,11 +85,11 @@ def compute_variable_ranges(
                     mins[child] = mins[state] + 1
                     change = True
 
-        # if any interval bound is zero, keep iterating:
-        some_bound_is_unset = False
-        some_bound_is_unset = any([i is None for i in mins.values()]) or any([i is None for i in maxs.values()])
-        if some_bound_is_unset:
-            print(f"copmute_variable_ragnes() warning: some variable range for box {aut.name} was not determined")
+    # if any interval bound is zero, keep iterating:
+    some_bound_is_unset = False
+    some_bound_is_unset = any([i is None for i in mins.values()]) or any([i is None for i in maxs.values()])
+    if some_bound_is_unset:
+        print(f"compute_variable_ranges() warning: some variable range for box {aut.name} was not determined")
 
     # we could need to change the ranges during some manipulation, so instead of using immutable tuples,
     # we store the ranges in the two-element list
@@ -181,7 +181,11 @@ def create_materialized_box(
 
         # 4 add an arbitrary port transition if a copy is in the split_ranges()
         if materialization_var >= minv and materialization_var <= maxv:
-            transitions.add(TTransition(f"{s}<{minv},{maxv}>", TEdge("Port_arbitrary", [], f"{maxv}"), []))
+            outedges = aut.get_output_edges(inverse=True)
+            if s in outedges and any([i in outedges[s] for i in ["0", "1"]]):
+                transitions.add(TTransition(f"{s}<{minv},{maxv}>", TEdge(outedges[s][0], [], f"{maxv}"), []))
+            else:
+                transitions.add(TTransition(f"{s}<{minv},{maxv}>", TEdge("Port_arbitrary", [], f"{maxv}"), []))
 
     for s, (minv, maxv) in split_state_ranges.items():
         # 1 add a self-loop if minv < maxv
@@ -215,7 +219,7 @@ def create_materialized_box(
         transition_dict[t.src][f"k{i}"] = t
 
     root_list = [f"{i}<{orig_state_ranges[i][0]},{orig_state_ranges[i][1]}>" for i in aut.roots]
-    name = f"materialized({aut.name}, in:{invar}, at:{materialization_var}, out:{outvars})"
+    name = f"materialized({aut.name}, in:{invar}, at:{materialization_var}, out:{outvars}, leaf:{leaf_level})"
     result = TTreeAut(root_list, transition_dict, name, aut.port_arity)
     return result
 

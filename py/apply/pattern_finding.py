@@ -113,8 +113,13 @@ def get_state_sym_lookup(nodes: list[ABDDNode], materialized_box: TTreeAut) -> d
     for e in iterate_edges(materialized_box):
         if e.info.label.startswith("Port") and e.info.label != "Port_arbitrary":
             portstates.append((e.info.label, e.src))
+        # if e.children == [] and e.info.label != "Port_arbitrary":
+        #     portstates.append((e.info.label, e.src))
     portstates = sorted(portstates, key=lambda item: item[0])
     result = {state: node for (port, state), node in zip(portstates, nodes)}
+    for e in iterate_edges(materialized_box):
+        if e.children == [] and not e.info.label.startswith("Port"):
+            result[e.src] = e.info.label
     return result
 
 
@@ -173,7 +178,7 @@ def abdd_subsection_create(
     # now we find the arbitrary port connection:
     targets: list[tuple[str, int]]  # (nodename, nodevariable)
     result_box = None
-    for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
+    for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort", "0", "1"]:
         boxcopy = copy.deepcopy(box_catalogue[boxname])
         boxcopy.reformat_ports()
         if matbox_sublang_of_box(working_aut, boxcopy):
@@ -185,6 +190,7 @@ def abdd_subsection_create(
     else:
         var = int(term_trs[root].info.variable)
         targets = [(root, var)]
+    # print(result_box, targets)
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # B) materialized nodes -> initial targets
@@ -219,15 +225,23 @@ def abdd_subsection_create(
             working_aut.reformat_ports()
             match = None
             subtargets = []
-            for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
+            for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort", "0", "1"]:
                 boxcopy = copy.deepcopy(box_catalogue[boxname])
                 boxcopy.reformat_ports()
                 if matbox_sublang_of_box(working_aut, boxcopy):
                     match = boxname
-                    for port, s in working_aut.get_port_order():
-                        noderef = state_sym_lookup[s]
-                        # subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef.var))
-                        subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef))
+                    if boxname in ["0", "1"]:
+                        if matbox_equal_to_box(working_aut, boxcopy):
+                            match = "X"
+                        else:
+                            match = None
+                        # noderef = '0'
+                        subtargets.append(ABDDPattern(new=False, name="0", level="leaf"))
+                    else:
+                        for port, s in working_aut.get_port_order():
+                            noderef = state_sym_lookup[s]
+                            # subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef.var))
+                            subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef))
             if not match:
                 terminating_transition_2 = None
                 for e in iterate_edges_from_state(working_aut, state):
@@ -238,7 +252,9 @@ def abdd_subsection_create(
                     raise ValueError(f"no terminating transition found for intermediate state {state}")
                 noderef = state_sym_lookup[child]
                 # subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef.var))
-                subtargets.append(ABDDPattern(new=False, name=noderef, level=noderef))
+                subtargets.append(
+                    ABDDPattern(new=False, name=noderef, level="leaf" if noderef in ["0", "1"] else noderef)
+                )
             if idx == 0:
                 pattern.low = subtargets
                 pattern.low_box = match

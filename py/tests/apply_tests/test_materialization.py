@@ -267,6 +267,444 @@ class TestMaterializationLPortShort(unittest.TestCase):
         self.assertEqual(recipe, expected_recipe)
 
 
+class TestMaterializationX(unittest.TestCase):
+    abdd: ABDD = import_abdd_from_abdd_file("../tests/apply/materialization-inputs/materialization-x-4.dd")
+    direction = False
+    outnode = "out0"
+    outlevel = "out0"
+    matlevel = "mat"
+
+    def test_materialization_x_3_at_level_2(self):
+        self.abdd.root.low[0].var = 3
+        materialization_level = 2
+        res = create_materialized_box_wrapper(
+            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+        )
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        expected_recipe = MaterializationRecipe(
+            init_box=None,
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box=None,
+                    high_box=None,
+                    low=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                    high=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+    def test_materialization_x_4_at_level_2(self):
+        self.abdd.root.low[0].var = 4
+        materialization_level = 2
+        res = create_materialized_box_wrapper(
+            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+        )
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        expected_recipe = MaterializationRecipe(
+            init_box=None,
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box="X",
+                    high_box="X",
+                    low=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                    high=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+    def test_materialization_x_4_at_level_3(self):
+        self.abdd.root.low[0].var = 4
+        materialization_level = 3
+        res = create_materialized_box_wrapper(
+            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+        )
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        expected_recipe = MaterializationRecipe(
+            init_box="X",
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box=None,
+                    high_box=None,
+                    low=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                    high=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+    def test_materialization_x_5_at_level_3(self):
+        self.abdd.root.low[0].var = 5
+        materialization_level = 3
+        res = create_materialized_box_wrapper(
+            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+        )
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        expected_recipe = MaterializationRecipe(
+            init_box="X",
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box="X",
+                    high_box="X",
+                    low=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                    high=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+
+class TestMaterializationL0(unittest.TestCase):
+    abdd: ABDD = import_abdd_from_abdd_file("../tests/apply/materialization-inputs/materialization-x-4.dd")
+    abdd.root.low_box = "L0"
+    direction = False
+    outnode = "out0"
+    outlevel = "out0"
+    matlevel = "mat"
+    leafnode = "0"
+    leaflevel = "leaf"
+
+    def test_materialization_l0_3_at_level_2_leaf_3(self):
+        self.abdd.root.low[0].var = 3
+        materialization_level = 2
+        leaf_level = 3
+        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        expected_recipe = MaterializationRecipe(
+            init_box=None,
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box=None,
+                    high_box=None,
+                    low=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.leafnode,
+                            level=self.leaflevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                    high=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+    def test_materialization_l0_3_at_level_2_leaf_4(self):
+        self.abdd.root.low[0].var = 3
+        materialization_level = 2
+        leaf_level = 4
+        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+
+        expected_recipe = MaterializationRecipe(
+            init_box=None,
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box="X",
+                    high_box=None,
+                    low=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.leafnode,
+                            level=self.leaflevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                    high=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+    def test_materialization_l0_4_at_level_2_leaf_4(self):
+        self.abdd.root.low[0].var = 4
+        materialization_level = 2
+        leaf_level = 4
+        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+
+        expected_recipe = MaterializationRecipe(
+            init_box=None,
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box="X",
+                    high_box="L0",
+                    low=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.leafnode,
+                            level=self.leaflevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                    high=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+    def test_materialization_l0_4_at_level_3_leaf_4(self):
+        self.abdd.root.low[0].var = 4
+        materialization_level = 3
+        leaf_level = 4
+        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+
+        expected_recipe = MaterializationRecipe(
+            init_box="L0",
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box=None,
+                    high_box=None,
+                    low=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.leafnode,
+                            level=self.leaflevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                    high=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+    def test_materialization_l0_4_at_level_3_leaf_5(self):
+        self.abdd.root.low[0].var = 4
+        materialization_level = 3
+        leaf_level = 5
+        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+
+        expected_recipe = MaterializationRecipe(
+            init_box="L0",
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box="X",
+                    high_box=None,
+                    low=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.leafnode,
+                            level=self.leaflevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                    high=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+    def test_materialization_l0_5_at_level_3_leaf_5(self):
+        self.abdd.root.low[0].var = 5
+        materialization_level = 3
+        leaf_level = 5
+        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+
+        expected_recipe = MaterializationRecipe(
+            init_box="L0",
+            init_targets=[
+                ABDDPattern(
+                    new=True,
+                    level=self.matlevel,
+                    low_box="X",
+                    high_box="L0",
+                    low=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.leafnode,
+                            level=self.leaflevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                    high=[
+                        ABDDPattern(
+                            new=False,
+                            name=self.outnode,
+                            level=self.outlevel,
+                            low_box=None,
+                            high_box=None,
+                            low=[],
+                            high=[],
+                        )
+                    ],
+                )
+            ],
+        )
+        self.assertEqual(recipe, expected_recipe)
+
+
 class TestMaterializationLPortOther(unittest.TestCase):
 
     def test_lport_hport_partial_mismatches_uneven(self):

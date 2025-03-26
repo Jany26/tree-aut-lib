@@ -35,8 +35,8 @@ class ABDDPattern:
         name: str = "",
         level: str | int = 0,
         low_box: Optional[str] = None,
-        low: list["ABDDPattern"] = [],
         high_box: Optional[str] = None,
+        low: list["ABDDPattern"] = [],
         high: list["ABDDPattern"] = [],
     ):
         self.new = new
@@ -52,27 +52,27 @@ class ABDDPattern:
     #     return f"{self.__class__.__name__}[{attr_str}]"
 
     def __repr__(self, level=0):
-        indent = "  " * level
+        indent = " " * level
         # if self.name.startswith("out"):
         #     return indent + self.name
         normal_attrs = [
             f"new={self.new!r}",
             f"name={self.name!r}",
             f"level={self.level!r}",
-            f"low_box={self.low_box!r}",
-            f"high_box={self.high_box!r}",
+            f"low_box=" + ("None" if self.low_box is None else f"'{self.low_box}'"),
+            f"high_box=" + ("None" if self.high_box is None else f"'{self.high_box}'"),
         ]
         low_repr = (
             f"low=[]"
             if not self.low
-            else (f"low=[\n" + ",\n".join(child.__repr__(level + 2) for child in self.low) + "\n" + indent + "  ]")
+            else (f"low=[\n" + ",\n".join(child.__repr__(level + 4) for child in self.low) + "\n" + indent + "]")
         )
         high_repr = (
             f"high=[]"
             if not self.high
-            else (f"high=[\n" + ",\n".join(child.__repr__(level + 2) for child in self.high) + "\n" + indent + "  ]")
+            else (f"high=[\n" + ",\n".join(child.__repr__(level + 4) for child in self.high) + "\n" + indent + "]")
         )
-        return f"{indent}{self.__class__.__name__}[{', '.join(normal_attrs)}, {low_repr}, {high_repr}]"
+        return f"{indent}{self.__class__.__name__}({', '.join(normal_attrs)}, {low_repr}, {high_repr})"
 
     def __eq__(self, other: "ABDDPattern") -> bool:
         if any(
@@ -108,13 +108,12 @@ class MaterializationRecipe:
         self.init_box = init_box
         self.init_targets = init_targets
 
-    def __repr__(self):
-        # attr_str = ", ".join(f"{key}={value!r}" for key, value in self.__dict__.items())
-        # indent=2
-        result = f"{self.__class__.__name__}[init_box={self.init_box}, init_targets=[\n"
-        for idx, i in enumerate(self.init_targets):
-            result += f"  {i.__repr__(level=0)}\n"
-        result += "]"
+    def __repr__(self, level=0):
+        indent = " " * level
+        boxstr = self.init_box if self.init_box is None else f"'{self.init_box}'"
+        result = f"{indent}{self.__class__.__name__}(init_box={boxstr}, init_targets=[\n"
+        result += ",\n".join([f"{indent}{i.__repr__(level=level+4)}" for i in self.init_targets])
+        result += f"\n{indent}])"
         return result
 
     def __eq__(self, other: "MaterializationRecipe"):

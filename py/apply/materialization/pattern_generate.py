@@ -1,17 +1,14 @@
-import copy
 import itertools
-from typing import Optional
 from collections import namedtuple
 
 from apply.abdd import ABDD
-from apply.abdd_pattern import MaterializationRecipe
-from apply.box_materialization import create_materialized_box
-from apply.pattern_finding import abdd_subsection_create, get_state_sym_lookup
-from tree_automata.automaton import TTreeAut, iterate_edges, iterate_key_edge_tuples
-from helpers.utils import box_catalogue, box_arities
-
+from apply.materialization.abdd_pattern import MaterializationRecipe
+from apply.materialization.box_materialization import create_materialized_box
+from apply.materialization.pattern_finding import abdd_subsection_create, get_state_sym_lookup
 from apply.abdd_node import ABDDNode
-from tree_automata.transition import TEdge, TTransition
+
+from helpers.utils import box_catalogue, box_arities
+from tree_automata import TTransition, TTreeAut
 
 
 class VariablePredicate(namedtuple("VariablePredicate", ["var1", "rel", "var2"])):
@@ -22,18 +19,52 @@ class VariablePredicate(namedtuple("VariablePredicate", ["var1", "rel", "var2"])
 
 
 def obtain_predicates(
-    node_src: ABDDNode, node_tgt: list[ABDDNode], materialization_var: int
+    abdd: ABDD, node_src: ABDDNode, direction: bool, materialization_var: int
 ) -> frozenset[VariablePredicate]:
+    """
+    Based on the current node 'node_src' from the ABDD 'abdd' and the 'direction' of the apply call,
+    figure out, based on the edge information, the set of predicates that are true in order
+    to search the appropriate MaterializationRecipe in the pre-computed cache.
+
+    When an empty set is returned, no materialization is needed.
+    """
+    node_tgt = node_src.high if direction else node_src.low
+    box = node_src.high_box if direction else node_src.low_box
+    leaf_var = abdd.variable_count + 1
+
+    # early returns -> None box == short edge => no materialization needed
+    # <in, ...,  mat, ..., out> order is broken iff in >= mat or mat >= all outs
+    if any(
+        [
+            box is None,
+            materialization_var <= node_src.var,
+            all([materialization_var >= out_node.var for out_node in node_tgt]),
+        ]
+    ):
+        return frozenset([])
+
     result = []
+    # TODO: rework this to a more "robust" automata-based approach
+    # i.e. pre-computing boxes that contain leaf transitions with terminal symbols
+    if box in ["L0", "L1", "H0", "H1"]:
+        if materialization_var + 1 == leaf_var:
+            result.append(VariablePredicate("mat", "1<", "leaf"))
+        if materialization_var + 1 < leaf_var:
+            result.append(VariablePredicate("mat", "<<", "leaf"))
+
+    # relationship between materialization variable and input variables
     if node_src.var + 1 == materialization_var:
         result.append(VariablePredicate("in", "1<", "mat"))
     if node_src.var + 1 < materialization_var:
         result.append(VariablePredicate("in", "<<", "mat"))
+
+    # relationship between materialization variable and output variables
     for idx, out_node in enumerate(node_tgt):
         if materialization_var + 1 == out_node.var:
             result.append(VariablePredicate("mat", "1<", f"out{idx}"))
         if materialization_var + 1 < out_node.var:
             result.append(VariablePredicate("mat", "<<", f"out{idx}"))
+
     return frozenset(result)
 
 
@@ -62,9 +93,9 @@ def create_all_predicate_sets(boxname: str) -> set[frozenset[VariablePredicate]]
     box: TTreeAut = box_catalogue[boxname]
     result = set()
     predicate_sets = {"in": [VariablePredicate("in", "1<", "mat"), VariablePredicate("in", "<<", "mat")]}
-    has_leaf = False
+    # has_leaf = False
     if any([i in boxname for i in ["0", "1"]]):
-        has_leaf = True
+        # has_leaf = True
         predicate_sets["leaf"] = [VariablePredicate("mat", "1<", "leaf"), VariablePredicate("mat", "<<", "leaf")]
 
     # equal or larger (None) < smaller by one (1<) < smaller by more than one (<<)
@@ -99,44 +130,48 @@ def create_all_predicate_sets(boxname: str) -> set[frozenset[VariablePredicate]]
             compare_predicates[var] = predicate_order[lookup_item]
 
         if len(compare_vars) > 1:
-            for var1, var2 in itertools.combinations(compare_vars, 2):
-                if all(
-                    [
-                        compare_vars[var1] > compare_vars[var2],
-                        compare_predicates[var1] >= compare_predicates[var2],
-                        compare_predicates[var1] != 0,
-                        not (compare_predicates["in"] == 1 and compare_predicates[var2] == 0),
-                        not has_leaf or compare_predicates[var1] <= compare_predicates["leaf"],
-                    ]
-                ):
-                    result.add(frozenset([i for i in lookup.values() if i is not None]))
-
-                if all(
-                    [
-                        compare_vars[var1] < compare_vars[var2],
-                        compare_predicates[var1] <= compare_predicates[var2],
-                        compare_predicates[var2] != 0,
-                        not (compare_predicates["in"] == 1 and compare_predicates[var1] == 0),
-                        not has_leaf or compare_predicates[var2] <= compare_predicates["leaf"],
-                    ]
-                ):
-                    result.add(frozenset([i for i in lookup.values() if i is not None]))
+            check_pairwise_vars(result, lookup, compare_vars, compare_predicates)
         else:
-            for var in compare_vars:
-                if all(
-                    [
-                        compare_predicates[var] != 0,
-                        not (compare_predicates["in"] == 1 and compare_predicates[var] == 0),
-                        not has_leaf or compare_predicates[var] <= compare_predicates["leaf"],
-                    ]
-                ):
-                    result.add(frozenset([i for i in lookup.values() if i is not None]))
+            check_singleton_var(result, lookup, compare_vars, compare_predicates)
 
-    # for fset in result:
-    #     for predicate in fset:
-    #         print(f"[{predicate.var1} {predicate.rel} {predicate.var2}]" if predicate is not None else "[]", end=', ')
-    #     print()
     return result
+
+
+def check_singleton_var(
+    result: set[frozenset[VariablePredicate]],
+    lookup: dict[str, VariablePredicate],
+    compare_vars: dict[str, int],
+    compare_predicates: dict[str, int],
+):
+    for var in compare_vars:
+        if all(
+            [
+                compare_predicates[var] != 0,
+                not (compare_predicates["in"] == 1 and compare_predicates[var] == 0),
+                not "leaf" in compare_predicates or compare_predicates[var] <= compare_predicates["leaf"],
+            ]
+        ):
+            result.add(frozenset([i for i in lookup.values() if i is not None]))
+
+
+def check_pairwise_vars(
+    result: set[frozenset[VariablePredicate]],
+    lookup: dict[str, VariablePredicate],
+    compare_vars: dict[str, int],
+    compare_predicates: dict[str, int],
+) -> None:
+    for var1, var2 in itertools.combinations(compare_vars, 2):
+        smaller_var = var1 if compare_vars[var1] < compare_vars[var2] else var2
+        larger_var = var2 if compare_vars[var1] < compare_vars[var2] else var1
+        if all(
+            [
+                compare_predicates[larger_var] >= compare_predicates[smaller_var],
+                compare_predicates[larger_var] != 0,
+                not (compare_predicates["in"] == 1 and compare_predicates[smaller_var] == 0),
+                not "leaf" in compare_predicates or compare_predicates[larger_var] <= compare_predicates["leaf"],
+            ]
+        ):
+            result.add(frozenset([i for i in lookup.values() if i is not None]))
 
 
 def check_predicate_against_values(predicates: frozenset[VariablePredicate], assignment: dict[str, int]) -> bool:
@@ -158,7 +193,6 @@ def generate_patterns(boxname: str) -> dict[frozenset[VariablePredicate], Materi
     arity = box.port_arity
     other_vars = [f"out{i}" for i in range(arity)] + ["mat", "leaf"]
     outvar = [i for i in range(2, 10)]
-    # leafvar = [i for i in range(2, 10)]
     result: dict[frozenset[VariablePredicate], MaterializationRecipe] = {}
     for predicate_set in predicate_sets:
         for comb in itertools.product(outvar, repeat=arity + 2):  # arity = # of ports + mat level + leaf level
@@ -167,14 +201,11 @@ def generate_patterns(boxname: str) -> dict[frozenset[VariablePredicate], Materi
             if check_predicate_against_values(predicate_set, varassign):
                 invar = varassign["in"]
                 outvars = [varassign[f"out{i}"] for i in range(arity)]
-                # print(predicate_set)
                 matvar = varassign["mat"]
                 leafvar = varassign["leaf"]
                 matbox = create_materialized_box(box, invar, matvar, outvars, leafvar)
-                # print(matbox)
                 state_sym_lookup: dict[str, str] = get_state_sym_lookup([f"out{i}" for i in range(arity)], matbox)
                 pattern = abdd_subsection_create(state_sym_lookup, matbox)
-                # print(pattern)
                 result[predicate_set] = pattern
                 break
     return result
@@ -195,11 +226,15 @@ def format_frozenset(predicates: frozenset) -> str:
     return f"frozenset({repr(sorted(predicates, key=predicate_key))})"
 
 
+ABDD_PATTERN_PACKAGE = "apply.materialization.abdd_pattern"
+ABDD_GENERATE_PACKAGE = "apply.materialization.pattern_generate"
+
+
 def print_generated_patterns(filename: str) -> None:
     t = " " * 4
     f = open(filename, "w")
-    f.write("from apply.abdd_pattern import MaterializationRecipe, ABDDPattern\n")
-    f.write("from apply.pattern_generate import VariablePredicate\n")
+    f.write(f"from {ABDD_PATTERN_PACKAGE} import MaterializationRecipe, ABDDPattern\n")
+    f.write(f"from {ABDD_GENERATE_PACKAGE} import VariablePredicate\n")
     f.write("\n\n")
     f.write("# fmt: off\n")
 
@@ -208,8 +243,6 @@ def print_generated_patterns(filename: str) -> None:
     for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
         name_list: list[tuple[str, str]] = []
         patterns = generate_patterns(boxname)
-        # for pset in patterns.keys():
-        #     print(format_frozenset(pset))
         psets = [sorted(i, key=repr) for i in patterns.keys()]
         psets = sorted(psets, key=repr)
         for idx, i in enumerate(psets):
@@ -234,26 +267,3 @@ def print_generated_patterns(filename: str) -> None:
     f.write("# fmt: on\n")
 
     f.close()
-
-    # for boxname in box_arities.keys():
-    #     print(boxname)
-    #     f.write(f"{t}'{boxname}': {{\n")
-    #     # print(boxname)
-    #     patterns = generate_patterns(boxname)
-    #     for pset, recipe in patterns.items():
-    #         # print(pset)
-    #         # f.write(f"{t}{t}frozenset([\n")
-    #         # for predicate in pset:
-    #         #     f.write(f"{t}{t}{t}{predicate},\n")
-    #         #     pass
-    #         # f.write(f"{t}{t}]): ")
-    #         f.write(f"{t}{t}{format_frozenset(pset)}")
-    #         f.write(":(\n")
-    #         f.write(f"{recipe.__repr__(level=8)}")
-    #         f.write("),\n")
-    #         # print(recipe)
-
-    #         # f.write(str(pset))
-    #         # f.write
-    #     f.write("    }\n")
-    #     break

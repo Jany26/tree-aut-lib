@@ -1,5 +1,5 @@
-from apply.abdd_pattern import MaterializationRecipe, ABDDPattern
-from apply.pattern_generate import VariablePredicate
+from apply.materialization.abdd_pattern import MaterializationRecipe, ABDDPattern
+from apply.materialization.pattern_generate import VariablePredicate
 
 
 # fmt: off

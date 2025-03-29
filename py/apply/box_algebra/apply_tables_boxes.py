@@ -1,40 +1,12 @@
 from typing import Optional, Union
-from apply.box_trees import BoxTreeNode
+from apply.box_algebra.box_trees import BoxTreeNode
+from apply.box_algebra.port_connection import PortConnectionInfo
 
 
 # TODO: Figure out what kind of information should be stored wrt. to ports
 # TODO: Find out an efficient way to store and use this info
 
 # first of all
-
-
-class PortConnectionInfo:
-    """
-    One instance of this class corresponds to one port name within some box of a box tree.
-    It has to contain information about: which state
-    """
-
-    def __init__(
-        self,
-        state1: Optional[Union[str, int]],
-        state2: Optional[Union[str, int]],
-        recursion: bool = False,
-        negation: bool = False,
-    ):
-        self.state1: Optional[Union[str, int]] = state1
-        self.state2: Optional[Union[str, int]] = state2
-        # if neither states are None -> recursion=True is assumed
-        # but is explicit here for clarity (in case unary op. is used etc...)
-        self.recursion = recursion
-        self.negation = negation
-
-
-# class PortConnectionInfoTree:
-#     def __init__(self, name: str, info: PortConnectionInfo):
-#         self.port_name = name
-#         self.port_info = info
-#         self.low: Optional[PortConnectionInfoTree] = None
-#         self.high: Optional[PortConnectionInfoTree] = None
 
 
 # these "tables" use two lookups (boxname in first operand ABDD, boxname in second operand ABBDD),

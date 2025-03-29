@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Optional, Tuple
 
-from apply.apply_tables_boxes import PortConnectionInfo
-from apply.apply_tables_outputs import ApplyEffect, effects
+from apply.box_algebra.port_connection import PortConnectionInfo
+from apply.box_algebra.apply_tables_outputs import ApplyEffect, effects
 from formats.format_vtf import export_treeaut_to_vtf
 from formats.render_dot import export_to_file
 from helpers.utils import box_catalogue
@@ -14,8 +14,8 @@ from tree_automata import (
     tree_aut_intersection,
 )
 
-import apply.apply_tables_outputs as tables
-from apply.box_trees import build_box_tree
+import apply.box_algebra.apply_tables_outputs as tables
+from apply.box_algebra.box_trees import build_box_tree
 
 
 class BooleanOperation(Enum):

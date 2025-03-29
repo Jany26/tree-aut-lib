@@ -3,7 +3,7 @@ import unittest
 from formats.format_vtf import import_treeaut_from_vtf
 
 # from apply.abdd_apply import check_if_abdd
-from apply.abdd_check import check_if_abdd
+from apply.abdd import check_if_abdd
 from tree_automata.automaton import TTreeAut
 
 

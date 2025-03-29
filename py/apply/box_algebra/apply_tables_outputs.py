@@ -1,27 +1,6 @@
 # from apply_op_merging import OutputTransition
 from typing import Optional
 
-
-class ApplyEffect:
-    def __init__(self, out: Optional[int], port: Optional[int], negation: bool = False, operate: bool = False):
-        self.output = out  # If None, assume neither 0 nor 1
-        self.port = port  # If None, assume none of { P1, P2, !P1, !P2 }
-        self.negation = negation  # If True, negate the result (redirect transitions from 0 to 1 and vice-versa)
-        self.operate = operate  # If True, assume OP => recursively continue with the operation
-
-
-effects: dict[str, ApplyEffect] = {
-    "-": ApplyEffect(None, None),
-    "0": ApplyEffect(0, None),
-    "1": ApplyEffect(1, None),
-    "P1": ApplyEffect(None, 0),
-    "P2": ApplyEffect(None, 1),
-    "!P1": ApplyEffect(None, 0, negation=True),
-    "!P2": ApplyEffect(None, 1, negation=True),
-    "OP": ApplyEffect(None, None, operate=True),
-}
-
-
 AND_table = [
     ["-", "0", "-", "-"],
     ["0", "0", "0", "0"],

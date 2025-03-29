@@ -1,9 +1,9 @@
 import unittest
 
 from apply.abdd import ABDD, import_abdd_from_abdd_file
-from apply.abdd_pattern import ABDDPattern, MaterializationRecipe
-from apply.box_materialization import create_materialized_box_wrapper
-from apply.pattern_finding import abdd_subsection_create_wrapper
+from apply.materialization.abdd_pattern import ABDDPattern, MaterializationRecipe
+from apply.materialization.box_materialization import create_materialized_box_wrapper
+from apply.materialization.pattern_finding import abdd_subsection_create_wrapper
 from tree_automata.automaton import TTreeAut
 
 

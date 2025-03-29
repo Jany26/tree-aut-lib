@@ -1,6 +1,6 @@
 import copy
 
-from apply.apply_tables_boxes import PortConnectionInfo
+from apply.box_algebra.port_connection import PortConnectionInfo
 from apply.equality import tree_aut_equal
 from tree_automata import TTreeAut
 from helpers.utils import box_catalogue

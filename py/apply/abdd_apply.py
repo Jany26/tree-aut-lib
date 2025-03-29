@@ -24,9 +24,9 @@ from apply.apply_testing import BooleanOperation
 from helpers.string_manipulation import create_string_from_name_set
 from helpers.utils import eprint, box_catalogue
 from tree_automata.automaton import TTreeAut, iterate_edges
-from apply.abdd_check import check_if_abdd
+from apply.abdd import check_if_abdd
 from apply.abdd_node import ABDDNode
-from apply.apply_node_materialization import materialize_node_on_edge
+from apply.dead_ends.apply_node_materialization import materialize_node_on_edge
 
 
 class ABDDApplyHelper:

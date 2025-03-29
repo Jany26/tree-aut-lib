@@ -86,7 +86,7 @@ def dot_transition_handle(graph: graphviz.Digraph, edge: TTransition, key: str, 
         # EDGE: output_state -> arbitrary output point
         output_edge_label = edge.info.label
         if edge.info.label.startswith("Port_"):
-            output_edge_label = f"⊕{edge.info.label[5:]}"
+            output_edge_label = edge.info.label.replace("Port_", "⊕")
         var = f"[{edge.info.variable}]" if edge.info.variable != "" else ""
         graph.edge(edge.src, name, penwidth="2.0", arrowsize="0.5", label=f"<<B>{var} {output_edge_label}</B>>")
 

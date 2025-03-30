@@ -1,17 +1,4 @@
-from typing import Union, Optional
-
-
-# TODO: rework port connection info to contain:
-# - indices to both (low-low or high-high) child node lists
-# - negation and recursion flag
-
-# Each BoxTreeNode will then contain not only the used box, but also
-# a list of port connection info instances
-
-# Then during apply, when materialization is not needed and both input variables and output variables
-# agree (are the same level), then we can utilize the box algebrae to obtain the BoxTreeNode
-# within each node of this tree is a string representing the used box AND PortConnectionInfo
-# that says what the results of each of the target nodes of leaf nodes of this tree are.
+from typing import Optional
 
 
 class PortConnectionInfo:
@@ -30,22 +17,20 @@ class PortConnectionInfo:
 
     def __init__(
         self,
-        state1: Optional[Union[str, int]],
-        state2: Optional[Union[str, int]],
+        target1: Optional[int] = None,
+        target2: Optional[int] = None,
         recursion: bool = False,
         negation: bool = False,
     ):
-        self.state1: Optional[Union[str, int]] = state1
-        self.state2: Optional[Union[str, int]] = state2
+        # target1 and target2 will be indices into the child lists in the initial ABDD
+        self.target1: Optional[int] = target1
+        self.target2: Optional[int] = target2
         # if neither states are None -> recursion=True is assumed
         # but is explicit here for clarity (in case unary op. is used etc...)
         self.recursion = recursion
         self.negation = negation
 
-
-# class PortConnectionInfoTree:
-#     def __init__(self, name: str, info: PortConnectionInfo):
-#         self.port_name = name
-#         self.port_info = info
-#         self.low: Optional[PortConnectionInfoTree] = None
-#         self.high: Optional[PortConnectionInfoTree] = None
+    def __repr__(self):
+        cname = self.__class__.__name__
+        attributes = [f"{k}={v}" for k, v in self.__dict__.items()]
+        return f"{cname}({', '.join(attributes)})"

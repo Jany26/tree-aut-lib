@@ -1,12 +1,17 @@
-# from apply_op_merging import OutputTransition
-from typing import Optional
+from enum import Enum
 
-AND_table = [
-    ["-", "0", "-", "-"],
-    ["0", "0", "0", "0"],
-    ["-", "0", "1", "P2"],
-    ["-", "0", "P1", "OP"],
-]
+
+class BooleanOperation(Enum):
+    NOP = 0
+    AND = 1
+    OR = 2
+    XOR = 3
+    IFF = 4
+    NAND = 5
+    NOR = 6
+    IMPLY = 7
+    NOT = 8  # might make it a separate class since it has a different arity
+
 
 # the top-right and bottom-left corners are ambiguous in the following operations
 # we are not sure whether a port transition is applicable in some cases,
@@ -14,6 +19,14 @@ AND_table = [
 
 # most probably, the whole first row and column should be '-', since we logically
 # cannot perform a binary operation on a 'None' type operand
+
+
+AND_table = [
+    ["-", "0", "-", "-"],
+    ["0", "0", "0", "0"],
+    ["-", "0", "1", "P2"],
+    ["-", "0", "P1", "OP"],
+]
 
 OR_table = [
     ["-", "-", "1", "-"],
@@ -56,3 +69,13 @@ NOR_table = [
     ["0", "0", "0", "0"],
     ["-", "!P1", "0", "OP"],
 ]
+
+op_lookup = {
+    BooleanOperation.AND: AND_table,
+    BooleanOperation.OR: OR_table,
+    BooleanOperation.XOR: XOR_table,
+    BooleanOperation.IFF: IFF_table,
+    BooleanOperation.NAND: NAND_table,
+    BooleanOperation.NOR: NOR_table,
+    BooleanOperation.IMPLY: IMPLY_table,
+}

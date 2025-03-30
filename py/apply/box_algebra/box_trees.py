@@ -1,4 +1,5 @@
 import copy
+from typing import Optional
 
 from apply.box_algebra.port_connection import PortConnectionInfo
 from apply.equality import tree_aut_equal
@@ -7,78 +8,87 @@ from helpers.utils import box_catalogue
 
 
 class BoxTreeNode:
-    # leaf constructor
-    def __init__(self, node: str | None, low=None, high=None):
+    """
+    Each BoxTreeNode will then contain not only the used box, but also a list of port connection info instances.
+
+    Then during apply, when materialization is not needed and both input variables and output variables
+    agree (are the same level), then we can utilize the box algebrae to obtain the BoxTreeNode
+    within each node of this tree is a string representing the used box AND PortConnectionInfo
+    that says what the results of each of the target nodes of leaf nodes of this tree are.
+    """
+
+    def __init__(
+        self,
+        node: Optional[str] = None,
+        port_info: list[PortConnectionInfo] = [],
+        is_leaf: bool = True,
+        low: Optional["BoxTreeNode"] = None,
+        high: Optional["BoxTreeNode"] = None,
+    ):
         # if leaf, node is boxname string
         # if non-leaf, node is state name
         self.node = node
-        # portname -> structure of information
-        self.port_info: dict[str, PortConnectionInfo]
-        self.is_leaf: bool = (low is None) and (high is None)
-        self.low: BoxTreeNode | None = low  # str = boxname (from boxCatalogue)
-        self.high: BoxTreeNode | None = high
+        self.port_info = port_info
+        self.is_leaf = is_leaf
+        # low and high are boxname strings (from box_catalogue)
+        self.low = low
+        self.high = high
 
-    def __repr__(self):
-        result = "n" if not self.is_leaf else self.node
-        result += f"({self.low}" if self.low is not None else ""
-        result += ";" if self.low is not None and self.high is not None else ""
-        result += f"{self.high})" if self.high is not None else ""
-        return result
-
-
-# maybe not needed, since recursive solution seems more elegant
-def get_transient_states(aut: TTreeAut) -> set[str]:
-    reach_dict = {i: aut.get_reachable_states_from(i) for i in aut.get_states()}
-    result = set()
-    for state in aut.transitions.keys():
-        transient = True
-        for t in aut.transitions[state].values():
-            if t.is_self_loop():
-                transient = False
-        unreachable = True
-        if transient:
-            for reachable_state in reach_dict[state]:
-                if state in reach_dict[reachable_state]:
-                    unreachable = False
-        non_leaf = state not in aut.get_output_states()
-        if transient and unreachable and non_leaf:
-            result.add(state)
-    return result
+    def __repr__(self, level=4):
+        cname = self.__class__.__name__
+        ind = f" " * level
+        indm = f" " * (level - 4)
+        indp = f" " * (level + 4)
+        port_info = f"\n{ind}port_info=["
+        for i in self.port_info:
+            port_info += f"\n{indp}{i},"
+        port_info += f"\n{ind}]" if self.port_info != [] else "]"
+        attributes = [
+            f'\n{ind}node="{self.node}"',
+            port_info,
+            f"\n{ind}is_leaf={self.is_leaf}",
+            f"\n{ind}low={None if self.low is None else self.low.__repr__(level=level+4)}",
+            f"\n{ind}high={None if self.high is None else self.high.__repr__(level=level+4)}",
+        ]
+        return f"{cname}({','.join([a for a in attributes if a != ""])}\n{indm})"
 
 
-def boxtree_intersectoid_compare(aut: TTreeAut, root: str) -> str | None:
-    roots = [i for i in aut.roots]
+def boxtree_intersectoid_compare(aut: TTreeAut, root: str) -> tuple[str | None, list[PortConnectionInfo]]:
+    origroots = [i for i in aut.roots]
     aut.roots = [root]
     aut.reformat_ports()
     for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort", "False", "True"]:
         box_copy = copy.deepcopy(box_catalogue[boxname])
         box_copy.reformat_ports()
         if tree_aut_equal(aut, box_copy):
-            aut.roots = roots
-            return boxname
-    aut.roots = roots
-    return None
+            portstates = aut.get_port_order()[: box_copy.port_arity]
+            aut.roots = origroots
+            return (boxname, portstates)
+    aut.roots = origroots
+    return (None, [])
 
 
-def build_box_tree(aut: TTreeAut) -> BoxTreeNode | None:
-    def build_box_tree_recursive(aut: TTreeAut, state: str) -> BoxTreeNode | None:
+def build_box_tree(aut: TTreeAut, port_map: dict[str, PortConnectionInfo]) -> BoxTreeNode | None:
+    def build_box_tree_recursive(
+        aut: TTreeAut, state: str, port_map: dict[str, PortConnectionInfo]
+    ) -> BoxTreeNode | None:
         # leaf case
-        boxname = boxtree_intersectoid_compare(aut, state)
+        boxname, portinfo = boxtree_intersectoid_compare(aut, state)
         if boxname is not None:
-            return BoxTreeNode(boxname)
+            result_node = BoxTreeNode(node=boxname, port_info=[port_map[state] for (port, state) in portinfo])
+            return result_node
 
         # inner node case
         for edge in aut.transitions[state].values():
             if len(edge.children) == 2:
-                low: BoxTreeNode | None = build_box_tree_recursive(aut, edge.children[0])
-                high: BoxTreeNode | None = build_box_tree_recursive(aut, edge.children[1])
-                if (low is not None) and (high is not None):
-                    result = BoxTreeNode(state, low, high)
+                low_result: BoxTreeNode | None = build_box_tree_recursive(aut, edge.children[0], port_map)
+                high_result: BoxTreeNode | None = build_box_tree_recursive(aut, edge.children[1], port_map)
+                if (low_result is not None) and (high_result is not None):
+                    result = BoxTreeNode(node=state, port_info=[], is_leaf=False, low=low_result, high=high_result)
                     return result
         return None
 
-    aut_copy = copy.deepcopy(aut)
     for i in aut.roots:
-        box_tree = build_box_tree_recursive(aut, i)
+        box_tree = build_box_tree_recursive(aut, i, port_map)
         if box_tree is not None:
             return box_tree

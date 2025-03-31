@@ -34,8 +34,6 @@ class ABDDNode:
     # [node1, ..., noden] in case of n-port box transitions
     low: list["ABDDNode"]
     high: list["ABDDNode"]
-    parents_through_low: set[int]  # if root, both parent lists are []
-    parents_through_high: set[int]
 
     def __init__(self, name: Union[str, int], state_prefix_len: int = 1):
         # in ABDD-like structures, one node should always have one outgoing edge, which allows us to definitely
@@ -52,11 +50,9 @@ class ABDDNode:
 
         self.low_box = None
         self.low = []
-        self.parents_through_low = set()
 
         self.high_box = None
         self.high = []
-        self.parents_through_high = set()
 
     def __repr__(self):
         # leaf node: idx <leafval>
@@ -140,10 +136,6 @@ class ABDDNode:
         high_slice = [node_map[state] for state in edge.children[low_arity : low_arity + high_arity]]
         self.low = low_slice
         self.high = high_slice
-        for i in low_slice:
-            i.parents_through_low.add(self)
-        for i in high_slice:
-            i.parents_through_high.add(self)
 
     def set_leaf_info_from_ta_transition(self, edge: TTransition, var_prefix_len: int = 1):
         if edge.info.variable != "":
@@ -170,15 +162,6 @@ class ABDDNode:
         If node contains contradictory information, return False.
         """
         result = True
-        # root consistency
-        if self.is_root and any(
-            [
-                len(self.parents_through_low) > 0,
-                len(self.parents_through_high) > 0,
-            ]
-        ):
-            eprint(f"ABDDNode check: node {self.node} is root, but has parent references")
-            result = False
 
         # leaf consistency
         if self.is_leaf and any(
@@ -215,14 +198,6 @@ class ABDDNode:
             eprint(f"ABDDNode check: inner node {self.node} box info is inconsistent with child info")
             result = False
 
-        # check low children consistency with parent references
-        if not all([self.node in i.parents_through_low for i in self.low]):
-            eprint(f"ABDDNode check: node {self.node} has a (low) child with broken reference")
-            result = False
-        if not all([self.node in i.parents_through_high for i in self.high]):
-            eprint(f"ABDDNode check: node {self.node} has a (high) child with broken reference")
-            result = False
-
         return result
 
     def connect_to_low_child(self, node: "ABDDNode") -> None:
@@ -231,28 +206,24 @@ class ABDDNode:
         If used multiple times on the same node, low turns from ABDDNode to list[ABDDNode]
         """
         self.low.append(node)
-        node.parents_through_low.add(self.node)
 
     def connect_to_high_child(self, node: "ABDDNode") -> None:
         """
         From POV of parent node N, connect a child node P (argument 'node') to N's high nodes.
         """
         self.high.append(node)
-        node.parents_through_high.add(self.node)
 
     def connect_to_parent_from_low(self, node: "ABDDNode") -> None:
         """
         From POV of child node P, connect it as a low node to parent node P (argument 'node').
         """
         node.low.append(self)
-        self.parents_through_low.add(node.node)
 
     def connect_to_parent_from_high(self, node: "ABDDNode") -> None:
         """
         From POV of child node P, connect it as a high node to parent node P (argument 'node').
         """
         node.high.append(self)
-        self.parents_through_high.add(node.node)
 
     def explore_subtree_bfs(self, repeat=False) -> Generator["ABDDNode", None, None]:
         queue: list[ABDDNode] = [self]

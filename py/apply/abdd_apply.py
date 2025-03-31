@@ -21,10 +21,11 @@ from typing import Optional, Union
 from apply.abdd import ABDD, init_abdd_from_ta
 from apply.apply_edge import ApplyEdge
 from apply.box_algebra.apply_intersectoid import BooleanOperation
+from apply.box_algebra.box_trees import BoxTreeNode
+from apply.materialization.abdd_pattern import MaterializationRecipe
 from helpers.utils import box_catalogue
 from tree_automata.automaton import TTreeAut
 from apply.abdd_node import ABDDNode
-from apply.dead_ends.apply_node_materialization import materialize_node_on_edge
 
 
 class ABDDApplyHelper:
@@ -102,26 +103,28 @@ def abdd_apply(
     abdd_apply_from(op, arg1, arg2, helper)
 
 
+# TODO: edit ABDD structure using a materialization recipe
+def edit_abdd_using_materialization_recipe(abdd: ABDD, node: ABDDNode, mat_recipe: MaterializationRecipe) -> None:
+    pass
+
+
+# TODO: edit ABDD structure using a BoxTreeNode (result of apply call)
+def edit_abdd_using_boxtree(abdd: ABDD, node: ABDDNode, box_tree: BoxTreeNode) -> None:
+    pass
+
+
 def abdd_apply_from(op: BooleanOperation, edge1: ApplyEdge, edge2: ApplyEdge, helper: ABDDApplyHelper) -> ABDDNode:
     # we will probably need to return a reduction rule plus the node that is the result of the apply
 
     # materialize_new_root_if_needed(op, edge1, edge2, helper)
 
     if edge1.to_node.var < edge2.to_node.var:
-        new_node = materialize_node_on_edge(edge2, edge1.to_node.var, helper.counter_2)
-        helper.counter_2 += 1
-        edge2.from_node = new_node
-        abdd_apply_from(op, edge1, edge2, helper)
+        # materialization here
+        pass
 
     if edge1.to_node.var > edge2.to_node.var:
-        new_node = materialize_node_on_edge(edge1, edge2.to_node.var, helper.counter_1)
-        helper.counter_1 += 1
-        edge1.from_node = new_node
-        abdd_apply_from(op, edge1, edge2, helper)
-
-    # edge1str = f"{edge1.from_node}, {edge1.to_node}, {'H' if edge1.low_high else 'L'}, {edge1.box_reduction}"
-    # edge2str = f"{edge2.from_node}, {edge2.to_node}, {'H' if edge2.low_high else 'L'}, {edge2.box_reduction}"
-    # print(f"abdd_apply ( edge1 = {edge1str} , edge2 = {edge2str} )")
+        # materialization here
+        pass
 
     if edge1.to_node.is_leaf and edge2.to_node.is_leaf:
         return produce_terminal(edge1.to_node.leaf_val, edge2.to_node.leaf_val, op)

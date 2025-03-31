@@ -52,6 +52,25 @@ class BoxTreeNode:
         ]
         return f"{cname}({','.join([a for a in attributes if a != ""])}\n{indm})"
 
+    def __eq__(self, other: "BoxTreeNode") -> bool:
+        if not all(
+            [
+                type(self.node) == type(other.node),
+                self.is_leaf == other.is_leaf,
+                not self.is_leaf or self.node == other.node,
+                not self.is_leaf or self.port_info == other.port_info,
+            ]
+        ):
+            return False
+
+        low = type(self.low) == type(other.low) and self.low == other.low
+        high = type(self.high) == type(other.high) and self.high == other.high
+
+        if not low or not high:
+            return False
+
+        return True
+
 
 def boxtree_intersectoid_compare(aut: TTreeAut, root: str) -> tuple[str | None, list[PortConnectionInfo]]:
     origroots = [i for i in aut.roots]

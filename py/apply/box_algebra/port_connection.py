@@ -34,3 +34,15 @@ class PortConnectionInfo:
         cname = self.__class__.__name__
         attributes = [f"{k}={v}" for k, v in self.__dict__.items()]
         return f"{cname}({', '.join(attributes)})"
+
+    def __eq__(self, other: "PortConnectionInfo") -> bool:
+        return all(
+            [
+                type(self.target1) == type(other.target1),
+                self.target1 is None or self.target1 == other.target1,
+                type(self.target2) == type(other.target2),
+                self.target2 is None or self.target2 == other.target2,
+                self.recursion == other.recursion,
+                self.negation == other.negation,
+            ]
+        )

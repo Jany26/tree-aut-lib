@@ -12,7 +12,9 @@ class ABDD:
     name: str
     variable_count: int
     root: ABDDNode
-    node_map: dict[str, ABDDNode]
+
+    # node_map is used during TA->ABDD conversion, probably could be kept outside the class
+    # node_map: dict[str, ABDDNode]
     node_count: int
     terminal_0: Optional[ABDDNode]
     terminal_1: Optional[ABDDNode]
@@ -25,25 +27,11 @@ class ABDD:
         self.name = name
         self.variable_count = variable_count
         self.root = root
+        self.root_rule: Optional[str] = None if root.var == 1 else "X"
         self.node_map = {}
         self.node_count = 0
         self.terminal_0: Optional[ABDDNode] = root.find_terminal(0)
         self.terminal_1: Optional[ABDDNode] = root.find_terminal(1)
-
-    def iterate_bfs_nodes(self, repeat=False) -> Generator[ABDDNode, None, None]:
-        return self.root.explore_subtree_bfs(repeat)
-
-    def iterate_dfs_nodes(self, repeat=False) -> Generator[ABDDNode, None, None]:
-        return self.root.explore_subtree_dfs(repeat)
-
-    def count_nodes(self) -> int:
-        result = 0
-        for i in self.root.explore_subtree_bfs():
-            result += 1
-        return result
-
-    def evaluate_for(self, assignment: dict[int, bool]) -> int:
-        pass
 
     def __repr__(self):
         result = f"  [ABDD]: '{self.name}'\n"
@@ -92,6 +80,21 @@ class ABDD:
             )
         return result
 
+    def iterate_bfs_nodes(self, repeat=False) -> Generator[ABDDNode, None, None]:
+        return self.root.explore_subtree_bfs(repeat)
+
+    def iterate_dfs_nodes(self, repeat=False) -> Generator[ABDDNode, None, None]:
+        return self.root.explore_subtree_dfs(repeat)
+
+    def count_nodes(self) -> int:
+        result = 0
+        for i in self.root.explore_subtree_bfs():
+            result += 1
+        return result
+
+    def evaluate_for(self, assignment: dict[int, bool]) -> int:
+        pass
+
     def convert_to_treeaut_obj(self) -> TTreeAut:
         pass
 
@@ -103,7 +106,16 @@ class ABDD:
                 i.node = counter
                 counter += 1
 
-    def materialize_node_above(self):
+    def change_leaf_level():
+        """
+        Leaf level can only be changed such that it is still larger than any inner node level.
+        Before modifying the structure, a simple DFS traversal will obtain the maximum variable level
+        of inner nodes.
+
+        After that, all edges leading to terminal nodes will be analyzed and reduction rules
+        will be modified so that if edge inner node -> terminal node will have short edge if the
+        variable difference is one and 'X'-edge if it is greater than one.
+        """
         pass
 
 
@@ -215,7 +227,7 @@ def import_abdd_from_abdd_file(path: str) -> ABDD:
     return ABDD(dd_name, var_count, root_node)
 
 
-def init_abdd_from_ta(ta: TTreeAut, var_count: Optional[int] = None) -> ABDD:
+def convert_ta_to_abdd(ta: TTreeAut, var_count: Optional[int] = None) -> ABDD:
     """
     Given a folded TreeAut-like structure (UBDA/BDA), convert this TreeAut
     to ABDD instance.
@@ -224,6 +236,9 @@ def init_abdd_from_ta(ta: TTreeAut, var_count: Optional[int] = None) -> ABDD:
     """
     if not check_if_abdd(ta):
         ValueError(f"cannot turn {ta.name} to an ABDD")
+
+    # statename -> corresponding node
+    node_map: dict[str, ABDDNode] = {}
 
     try:
         slen: int = len(ta.get_statename_prefix())
@@ -238,19 +253,19 @@ def init_abdd_from_ta(ta: TTreeAut, var_count: Optional[int] = None) -> ABDD:
     root = ta.roots[0]
     root_node = ABDDNode(ta.roots[0], state_prefix_len=slen)
     result = ABDD(f"{ta.name}", var_count if var_count is not None else ta.get_var_max(), root_node)
-    result.node_map[root] = root_node
+    node_map[root] = root_node
 
     for state in iterate_states_bfs(ta):
         if state in ta.roots:
             continue
-        result.node_map[state] = ABDDNode(state, state_prefix_len=slen)
+        node_map[state] = ABDDNode(state, state_prefix_len=slen)
 
     for state in ta.roots:
-        result.node_map[state].is_root = True
-        result.root = result.node_map[state]
+        node_map[state].is_root = True
+        result.root = node_map[state]
 
     for edge in iterate_edges(ta):
-        node: ABDDNode = result.node_map[edge.src]
+        node: ABDDNode = node_map[edge.src]
         if edge.children == []:
             node.set_leaf_info_from_ta_transition(edge, var_prefix_len=vlen)
             if edge.info.label == "0":
@@ -260,7 +275,7 @@ def init_abdd_from_ta(ta: TTreeAut, var_count: Optional[int] = None) -> ABDD:
             continue
         if edge.info.box_array == []:
             edge.info.box_array = [None, None]
-        node.set_node_info_from_ta_transition(edge, result.node_map, var_prefix_len=vlen)
+        node.set_node_info_from_ta_transition(edge, node_map, var_prefix_len=vlen)
     result.node_count = result.count_nodes()
     return result
 

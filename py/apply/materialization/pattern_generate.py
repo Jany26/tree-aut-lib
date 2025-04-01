@@ -1,5 +1,6 @@
 import itertools
 from collections import namedtuple
+from typing import Optional
 
 from apply.abdd import ABDD
 from apply.materialization.abdd_pattern import MaterializationRecipe
@@ -19,7 +20,7 @@ class VariablePredicate(namedtuple("VariablePredicate", ["var1", "rel", "var2"])
 
 
 def obtain_predicates(
-    abdd: ABDD, node_src: ABDDNode, direction: bool, materialization_var: int
+    abdd: ABDD, node_src: Optional[ABDDNode], direction: Optional[bool], materialization_var: int
 ) -> frozenset[VariablePredicate]:
     """
     Based on the current node 'node_src' from the ABDD 'abdd' and the 'direction' of the apply call,
@@ -28,8 +29,14 @@ def obtain_predicates(
 
     When an empty set is returned, no materialization is needed.
     """
-    node_tgt = node_src.high if direction else node_src.low
-    box = node_src.high_box if direction else node_src.low_box
+    invar: int = 0 if node_src is None else node_src.var
+    node_tgt: list[ABDDNode] = [abdd.root] if node_src is None else node_src.high if direction else node_src.low
+    tgt_vars: list[int] = [abdd.variable_count if n.is_leaf else n.var for n in node_tgt]
+    box: Optional[str] = None
+    if direction is None:
+        box = None if abdd.root.var == 1 else "X"
+    else:
+        box = node_src.high_box if direction else node_src.low_box
     leaf_var = abdd.variable_count + 1
 
     # early returns -> None box == short edge => no materialization needed
@@ -37,8 +44,8 @@ def obtain_predicates(
     if any(
         [
             box is None,
-            materialization_var <= node_src.var,
-            all([materialization_var >= out_node.var for out_node in node_tgt]),
+            materialization_var <= invar,
+            all([materialization_var >= var for var in tgt_vars]),
         ]
     ):
         return frozenset([])
@@ -46,6 +53,7 @@ def obtain_predicates(
     result = []
     # TODO: rework this to a more "robust" automata-based approach
     # i.e. pre-computing boxes that contain leaf transitions with terminal symbols
+    # if any([a in box for a in ['0', '1']]):
     if box in ["L0", "L1", "H0", "H1"]:
         if materialization_var + 1 == leaf_var:
             result.append(VariablePredicate("mat", "1<", "leaf"))
@@ -53,16 +61,16 @@ def obtain_predicates(
             result.append(VariablePredicate("mat", "<<", "leaf"))
 
     # relationship between materialization variable and input variables
-    if node_src.var + 1 == materialization_var:
+    if invar + 1 == materialization_var:
         result.append(VariablePredicate("in", "1<", "mat"))
-    if node_src.var + 1 < materialization_var:
+    if invar + 1 < materialization_var:
         result.append(VariablePredicate("in", "<<", "mat"))
 
     # relationship between materialization variable and output variables
     for idx, out_node in enumerate(node_tgt):
-        if materialization_var + 1 == out_node.var:
+        if materialization_var + 1 == tgt_vars[idx]:
             result.append(VariablePredicate("mat", "1<", f"out{idx}"))
-        if materialization_var + 1 < out_node.var:
+        if materialization_var + 1 < tgt_vars[idx]:
             result.append(VariablePredicate("mat", "<<", f"out{idx}"))
 
     return frozenset(result)

@@ -19,6 +19,8 @@ class ABDDNode:
     # node idx is also used for reference in parent sets
     node: int
     # variable index, 0 is reserved for leaves and error checking, variables start from 1
+    # TODO: perhaps it would be better to actually use normal index to store variable level,
+    # and not always reference the overall abdd's level
     var: int
     is_leaf: bool
     is_root: bool
@@ -54,20 +56,33 @@ class ABDDNode:
         self.high_box = None
         self.high = []
 
+    # def __repr__(self):
+    #     # leaf node: idx <leafval>
+    #     # internal node: idx [var] (target) [boxname] (target) [boxname]
+    #     if self.is_leaf:
+    #         return f"{self.node} <{self.leaf_val}>"
+    #     node: str = f"{self.node} [{self.var}]"
+    #     ltgt: str = "(" + ", ".join([str(i.node) for i in self.low]) + ")"
+    #     htgt: str = "(" + ", ".join([str(i.node) for i in self.high]) + ")"
+    #     lbox: str = f" [{self.low_box}] " if self.low_box is not None else ""
+    #     hbox: str = f" [{self.high_box}]" if self.high_box is not None else ""
+    #     return f"{node} {ltgt}{lbox} {htgt}{hbox}"
+
     def __repr__(self):
-        # leaf node: idx <leafval>
-        # internal node: idx [var] (target) [boxname] (target) [boxname]
-        if self.is_leaf:
-            return f"{self.node} <{self.leaf_val}>"
-        node: str = f"{self.node} [{self.var}]"
-        ltgt: str = "(" + ", ".join([str(i.node) for i in self.low]) + ")"
-        htgt: str = "(" + ", ".join([str(i.node) for i in self.high]) + ")"
-        lbox: str = f" [{self.low_box}] " if self.low_box is not None else ""
-        hbox: str = f" [{self.high_box}]" if self.high_box is not None else ""
-        return f"{node} {ltgt}{lbox} {htgt}{hbox}"
+        attrib = [
+            f"node={self.node}",
+            f"var={self.var}",
+            f"leaf{f' {self.leaf_val}' if self.leaf_val is not None else ''}" if self.is_leaf else "",
+            f"root" if self.is_root else "",
+            f"lbox={self.low_box}" if self.low != [] else "",
+            f"low=[{', '.join([f"{i.node}({i.var})" for i in self.low])}]" if self.low != [] else "",
+            f"hbox={self.high_box}" if self.high != [] else "",
+            f"high=[{', '.join([f"{i.node}({i.var})" for i in self.high])}]" if self.high != [] else "",
+        ]
+
+        return f"{self.__class__.__name__}({', '.join([i for i in attrib if i != ""])})"
 
     def __hash__(self):
-
         return hash(
             (
                 self.node,

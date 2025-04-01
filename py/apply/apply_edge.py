@@ -4,15 +4,41 @@ from apply.abdd import ABDD
 
 
 class ApplyEdge:
-    abdd: ABDD
-    from_node: Optional[ABDDNode]
-    to_node: ABDDNode | list[ABDDNode]
-    box_reduction: str
-    low_high: bool  # False = low, True = high
+    def __init__(self, abdd: ABDD, source: Optional[ABDDNode] = None, direction: Optional[bool] = None):
+        """
+        Helper structure which represents one edge of an ABDD.
+        Edge e is a tuple (e.node, e.rule), since we can have multiport reduction rules,
+        e.node is actually a list of ABDDNodes.
 
-    def __init__(self, abdd, from_node, to_node, box_reduction, low_high):
-        self.abdd = abdd
-        self.from_node = from_node
-        self.to_node = to_node
-        self.box_reduction = box_reduction
-        self.low_high = low_high
+        ApplyEdge contains references to nodes and rules so that modifying this information
+        in the ApplyEdge object will translate to the original ABDD.
+
+        For algorithm's (conceptual) purposes, only 'target' and 'rule' are needed.
+        For implementation's purposes (modifying, referencing, etc.), 'abdd', 'source' and 'direction' are needed.
+        """
+        self.abdd: ABDD = abdd
+        self.source: Optional[ABDDNode] = source
+        self.direction: Optional[bool] = direction
+        self.target: list[ABDDNode] = [self.abdd.root]
+        self.rule: Optional[str] = self.abdd.root_rule
+        if source is not None and direction is not None:
+            self.target = source.high if direction else source.low
+            self.rule = source.high_box if direction else source.low_box
+
+    def __repr__(self) -> str:
+        rule = "S" if self.rule is None else self.rule
+        dir = "None" if self.direction is None else "H" if self.direction else "L"
+        src = "None" if self.source is None else str(self.source.node)
+        tgt = "[" + ", ".join([f"{n.node}({n.var})" for n in self.target]) + "]"
+        return f"{self.__class__.__name__}(abdd={self.abdd.name}, src={src}, dir={dir}, tgt={tgt}, rule={rule})"
+
+    def __eq__(self, other: "ApplyEdge") -> bool:
+        return all(
+            [
+                self.abdd.name == other.abdd.name,  # NOTE: comparing whole ABDD structures seems unnecessary
+                self.source == other.source,
+                self.direction == other.direction,
+                self.target == other.target,
+                self.rule == other.rule,
+            ]
+        )

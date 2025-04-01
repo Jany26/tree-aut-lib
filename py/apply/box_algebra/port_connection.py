@@ -32,8 +32,14 @@ class PortConnectionInfo:
 
     def __repr__(self):
         cname = self.__class__.__name__
-        attributes = [f"{k}={v}" for k, v in self.__dict__.items()]
-        return f"{cname}({', '.join(attributes)})"
+        # attributes = [f"{k}={v}" for k, v in self.__dict__.items()]
+        attributes = [
+            f"target1={self.target1}" if self.target1 is not None else "",
+            f"target2={self.target2}" if self.target2 is not None else "",
+            f"recursion={self.recursion}" if self.recursion else "",
+            f"negation={self.negation}" if self.negation else "",
+        ]
+        return f"{cname}({', '.join([a for a in attributes if a != ""])})"
 
     def __eq__(self, other: "PortConnectionInfo") -> bool:
         return all(

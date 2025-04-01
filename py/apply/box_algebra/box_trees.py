@@ -39,16 +39,18 @@ class BoxTreeNode:
         ind = f" " * level
         indm = f" " * (level - 4)
         indp = f" " * (level + 4)
-        port_info = f"\n{ind}port_info=["
+        port_info = f" port_info=["
         for i in self.port_info:
             port_info += f"\n{indp}{i},"
         port_info += f"\n{ind}]" if self.port_info != [] else "]"
+        nodename = f'"{self.node}"' if self.node else "None"
+
         attributes = [
-            f'\n{ind}node="{self.node}"',
+            f"\n{ind}node={nodename}",
             port_info,
-            f"\n{ind}is_leaf={self.is_leaf}",
-            f"\n{ind}low={None if self.low is None else self.low.__repr__(level=level+4)}",
-            f"\n{ind}high={None if self.high is None else self.high.__repr__(level=level+4)}",
+            f" is_leaf={self.is_leaf}" if not self.is_leaf else "",
+            f"\n{ind}low={self.low.__repr__(level=level+4)}" if self.low else "",
+            f"\n{ind}high={self.high.__repr__(level=level+4)}" if self.high else "",
         ]
         return f"{cname}({','.join([a for a in attributes if a != ""])}\n{indm})"
 
@@ -70,6 +72,21 @@ class BoxTreeNode:
             return False
 
         return True
+
+    def depth(self, target: "BoxTreeNode") -> Optional[int]:
+        """
+        Return the depth of the "target" node if it is in the BoxTree, if not, return None.
+        """
+        queue = [(self, 0)]
+        while queue != []:
+            node, depth = queue.pop(0)
+            if node == target:
+                return depth
+            if node.low is not None:
+                queue.append((node.low, depth + 1))
+            if node.high is not None:
+                queue.append((node.high, depth + 1))
+        return None
 
 
 def boxtree_intersectoid_compare(aut: TTreeAut, root: str) -> tuple[str | None, list[PortConnectionInfo]]:

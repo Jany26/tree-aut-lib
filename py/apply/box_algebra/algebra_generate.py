@@ -1,5 +1,6 @@
 from apply.box_algebra.apply_intersectoid import BooleanOperation, apply_intersectoid_create
-from apply.box_algebra.box_trees import build_box_tree
+from apply.box_algebra.box_trees import BoxTreeNode, build_box_tree
+from apply.box_algebra.port_connection import PortConnectionInfo
 from helpers.utils import box_catalogue, box_arities
 
 
@@ -17,6 +18,15 @@ def print_generated_algebrae(filename: str):
     for operation in BooleanOperation.__members__.values():
         if operation in [BooleanOperation.NOP, BooleanOperation.NOT]:
             continue
+
+        # short-short base case:
+        f.write(f"{ind}(None, {operation}, None): ")
+        boxtree = BoxTreeNode(
+            None, port_info=[PortConnectionInfo(target1=0, target2=0, recursion=True, negation=False)]
+        )
+        f.write(f"{boxtree.__repr__(level=8)},\n")
+
+        # non-short cases:
         for boxname1 in box_arities.keys():
             box1 = box_catalogue[boxname1]
             for boxname2 in box_arities.keys():
@@ -25,6 +35,7 @@ def print_generated_algebrae(filename: str):
                 boxtree = build_box_tree(applied_aut, portmap)
                 f.write(f'{ind}("{boxname1}", {operation}, "{boxname2}"): ')
                 f.write(f"{boxtree.__repr__(level=8)},\n")
+        f.write("\n\n")
     f.write(f"}}\n\n")
     f.write(f"# fmt: on\n")
     f.close()

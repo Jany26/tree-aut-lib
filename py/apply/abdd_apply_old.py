@@ -1,8 +1,7 @@
-from typing import NewType, Optional, Union
+from typing import Optional, Union
 from apply import materialization
 from apply.abdd import ABDD, convert_ta_to_abdd
 from apply.apply_edge import ApplyEdge
-from apply.box_algebra import port_connection
 from apply.box_algebra.apply_intersectoid import BooleanOperation
 from apply.box_algebra.box_trees import BoxTreeNode
 from apply.box_algebra.port_connection import PortConnectionInfo
@@ -111,138 +110,123 @@ def abdd_apply(
 
     # manual materialization override for root nodes
     helper = ABDDApplyHelper(in1, in2, maxvar=maxvar)
-    e1 = ApplyEdge(in1, None, None)
-    e2 = ApplyEdge(in2, None, None)
-    rule, roots = abdd_apply_from(op, e1, e2, helper)
-    root = roots[0]
+    matlevel = min(in1.root.var, in2.root.var)
+    res1 = obtain_predicates(in1, None, None, matlevel)
+    res2 = obtain_predicates(in2, None, None, matlevel)
+    recipe1 = None if res1 == frozenset() else cached_materialization_recipes[in1.root_rule][res1]
+    recipe2 = None if res2 == frozenset() else cached_materialization_recipes[in2.root_rule][res2]
+    if recipe1 is not None:
+        materialize_abdd_pattern(ApplyEdge(in1, None, None), recipe1, matlevel)
+    if recipe2 is not None:
+        materialize_abdd_pattern(ApplyEdge(in2, None, None), recipe2, matlevel)
+
+    root = abdd_apply_from(op, in1.root, in2.root, helper)
     abdd = ABDD(f"{in1.name} {op.name} {in2.name}", maxvar, root)
-    # abdd.root_rule = None if root.var == 1 else "X"
-    abdd.root_rule = rule
+    abdd.root_rule = None if root.var == 1 else "X"
     return abdd
 
 
-def process_boxtree_leafcase(
-    boxtree: BoxTreeNode, e1: ApplyEdge, e2: ApplyEdge, op, helper: ABDDApplyHelper, varlevel: int
-) -> tuple[Optional[str], list[ABDDNode]]:
-    if boxtree.is_leaf:
-        rule = boxtree.node
-        nodes = []
-        for pc in boxtree.port_info:
-            if pc.target1 is not None and pc.target2 is not None:
-                nodes.append(
-                    produce_terminal(e1.target[pc.target1].leaf_val, e2.target[pc.target2].leaf_val, op, helper)
-                )
-            elif pc.target1 is not None:
-                nodes.append(e1.target[pc.target1])
-            elif pc.target2 is not None:
-                nodes.append(e2.target[pc.target2])
-        return rule, nodes
-
-    low_rule, low_targets = (
-        process_boxtree_leafcase(boxtree.low, e1, e2, op, helper, varlevel + 1) if boxtree.low else (None, [])
-    )
-    high_rule, high_targets = (
-        process_boxtree_leafcase(boxtree.high, e1, e2, op, helper, varlevel + 1) if boxtree.high else (None, [])
-    )
-
-    new_abdd_node = ABDDNode(helper.counter)
-    new_abdd_node.var = varlevel
-    new_abdd_node.low_box = low_rule
-    new_abdd_node.low = low_targets
-    new_abdd_node.high_box = high_rule
-    new_abdd_node.high = high_targets
-
-    # not sure with the variable
-    return None, [new_abdd_node]
-
-
-def process_boxtree_innercase(
-    boxtree: BoxTreeNode, e1: ApplyEdge, e2: ApplyEdge, op, helper: ABDDApplyHelper, varlevel: int
-) -> tuple[Optional[str], list[ABDDNode]]:
-    if boxtree.is_leaf:
-        rule = boxtree.node
-        nodes = []
-        for pc in boxtree.port_info:
-            if pc.target1 is not None and pc.target2 is not None:
-                edge1low = ApplyEdge(e1.abdd, e1.target[pc.target1], False)
-                edge2low = ApplyEdge(e2.abdd, e2.target[pc.target2], False)
-                edge1high = ApplyEdge(e1.abdd, e1.target[pc.target1], True)
-                edge2high = ApplyEdge(e2.abdd, e2.target[pc.target2], True)
-                l_rule, l_target = abdd_apply_from(op, edge1low, edge2low, helper)
-                h_rule, h_target = abdd_apply_from(op, edge1high, edge2high, helper)
-                node = ABDDNode(helper.counter)
-                node.var = varlevel
-                node.low_box = l_rule
-                node.low = l_target
-                node.high_box = h_rule
-                node.high = h_target
-                helper.counter += 1
-                nodes.append(node)
-            elif pc.target1 is not None:
-                nodes.append(e1.target[pc.target1])
-            elif pc.target2 is not None:
-                nodes.append(e2.target[pc.target2])
-        return rule, nodes
-
-    low_rule, low_targets = (
-        process_boxtree_innercase(boxtree.low, e1, e2, op, helper, varlevel + 1) if boxtree.low else (None, [])
-    )
-    high_rule, high_targets = (
-        process_boxtree_innercase(boxtree.high, e1, e2, op, helper, varlevel + 1) if boxtree.high else (None, [])
-    )
-
-    new_abdd_node = ABDDNode(helper.counter)
-    new_abdd_node.var = varlevel
-    new_abdd_node.low_box = low_rule
-    new_abdd_node.low = low_targets
-    new_abdd_node.high_box = high_rule
-    new_abdd_node.high = high_targets
-    return None, [new_abdd_node]
-
-
 # NOTE: we probably need to have rule1, rule2 as operands too, since we need the
-def abdd_apply_from(
-    op: BooleanOperation, e1: ApplyEdge, e2: ApplyEdge, helper: ABDDApplyHelper
-) -> tuple[Optional[str], list[ABDDNode]]:
+def abdd_apply_from(op: BooleanOperation, node1: ABDDNode, node2: ABDDNode, helper: ABDDApplyHelper) -> ABDDNode:
     # TODO: check "call_cache" first
     # NOTE: perhaps here we should do something about "early" return (in case one operand is leaf and we can do early return)
 
-    print(f"abdd_apply_from({e1}, {e2})")
-    # materialization
-    min1 = min(n.var if not n.is_leaf else helper.abdd1.variable_count for n in e1.target)
-    min2 = min(n.var if not n.is_leaf else helper.abdd2.variable_count for n in e2.target)
-    max1 = max(n.var if not n.is_leaf else helper.abdd1.variable_count for n in e1.target)
-    max2 = max(n.var if not n.is_leaf else helper.abdd2.variable_count for n in e2.target)
-    matlevel = min(min1, min2)
+    if node1.is_leaf and node2.is_leaf:
+        return produce_terminal(node1.leaf_val, node2.leaf_val, op, helper)
 
-    if matlevel != max1:
-        predicates1 = obtain_predicates(helper.abdd1, e1.source, e1.direction, matlevel)
-        if predicates1 != frozenset() and e1.rule:
-            pattern = cached_materialization_recipes[e1.rule][predicates1]
-            e1 = materialize_abdd_pattern(e1, pattern, matlevel)
-            return abdd_apply_from(op, e1, e2, helper)
-    if matlevel != max2:
-        predicates2 = obtain_predicates(helper.abdd2, e2.source, e2.direction, matlevel)
-        if predicates2 != frozenset() and e2.rule:
-            pattern = cached_materialization_recipes[e2.rule][predicates2]
-            e2 = materialize_abdd_pattern(e2, pattern, matlevel)
-            return abdd_apply_from(op, e1, e2, helper)
+    # low/low apply - materialization
 
-    # now we can assume that e1 and e2 have targets with the same variable
+    # low_matlevel, needs_materialization = materialize(node1.low, node2.low, helper)
+    # TODO: make this more compact -> return boolean (materialization needed - yes/no) and integer (materialization level)
+    min1low = min(n.var if not n.is_leaf else helper.abdd1.variable_count for n in node1.low)
+    min2low = min(n.var if not n.is_leaf else helper.abdd2.variable_count for n in node2.low)
+    max1low = max(n.var if not n.is_leaf else helper.abdd1.variable_count for n in node1.low)
+    max2low = max(n.var if not n.is_leaf else helper.abdd2.variable_count for n in node2.low)
+    low_matlevel: int
 
-    # edges to leaves
-    if all([i.is_leaf for i in e1.target] + [i.is_leaf for i in e2.target]):
-        boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
-        return process_boxtree_leafcase(boxtree, e1, e2, op, helper, matlevel)
+    if min1low != min2low or max1low != max2low:
+        min1 = min(helper.abdd1.variable_count if n.is_leaf else n.var for n in node1.low)
+        min2 = min(helper.abdd2.variable_count if n.is_leaf else n.var for n in node2.low)
+        low_matlevel = min(min1, min2)
+        predicates1 = obtain_predicates(helper.abdd1, node1, False, low_matlevel)
+        predicates2 = obtain_predicates(helper.abdd2, node2, False, low_matlevel)
+        if predicates1 != frozenset() and node1.low_box:
+            pattern = cached_materialization_recipes[node1.low_box][predicates1]
+            materialize_abdd_pattern(ApplyEdge(helper.abdd1, node1, False), pattern, low_matlevel)
+        if predicates2 != frozenset() and node2.low_box:
+            pattern = cached_materialization_recipes[node2.low_box][predicates2]
+            materialize_abdd_pattern(ApplyEdge(helper.abdd2, node2, False), pattern, low_matlevel)
+
+    # high/high apply - materialization
+
+    # TODO: same as with low/low materialization -> compactness
+    # TODO: maybe even make this into one function, same for low/high just switching with one bool
+    min1high = min(n.var if not n.is_leaf else helper.abdd1.variable_count for n in node1.high)
+    min2high = min(n.var if not n.is_leaf else helper.abdd2.variable_count for n in node2.high)
+    max1high = max(n.var if not n.is_leaf else helper.abdd1.variable_count for n in node1.high)
+    max2high = max(n.var if not n.is_leaf else helper.abdd2.variable_count for n in node2.high)
+    high_matlevel: int
+
+    if min1high != min2high or max1high != max2high:
+        min1 = min(helper.abdd1.variable_count if n.is_leaf else n.var for n in node1.high)
+        min2 = min(helper.abdd2.variable_count if n.is_leaf else n.var for n in node2.high)
+        high_matlevel = min(min1, min2)
+        predicates1 = obtain_predicates(helper.abdd1, node1, True, high_matlevel)
+        predicates2 = obtain_predicates(helper.abdd2, node2, True, high_matlevel)
+        if predicates1 != frozenset() and node1.high_box:
+            pattern = cached_materialization_recipes[node1.high_box][predicates1]
+            materialize_abdd_pattern(ApplyEdge(helper.abdd1, node1, True), pattern, high_matlevel)
+        if predicates2 != frozenset() and node2.high_box:
+            pattern = cached_materialization_recipes[node2.high_box][predicates2]
+            materialize_abdd_pattern(ApplyEdge(helper.abdd2, node2, True), pattern, high_matlevel)
+
+    low_boxtree = default_boxtree
+    high_boxtree = default_boxtree
+
+    if node1.low_box is not None and node2.low_box is not None:
+        low_boxtree = boxtree_cache[(node1.low_box, op, node2.low_box)]
+    elif node1.high_box is not None and node2.high_box is not None:
+        high_boxtree = boxtree_cache[(node1.high_box, op, node2.high_box)]
+
+    # TODO: create target nodes from the box trees, which include invoking recursive apply calls
+
+    resultnode = ABDDNode(helper.counter)
+    helper.counter += 1
+
+    queue: list[BoxTreeNode] = [low_boxtree]
+    low_box = None
+    low_tgt = []
+    while queue != []:
+        boxnode = queue.pop(0)
+        if not boxnode.is_leaf:
+            newnode = ABDDNode(helper.counter)
+            helper.counter += 1
+            newnode.var = low_matlevel + low_boxtree.depth(boxnode)
+
+        # if boxnode.low:
+        #     queue.append(boxnode.low)
+        # if boxnode.high:
+        #     queue.append(boxnode.high)
+        # abdd_apply_from(op, edge1, edge2, helper)
+        # abdd_apply_from(op, edge1, edge2, helper)
+
+    # queue: list[BoxTreeNode] = [high_boxtree]
+    # high_box = None
+    # high_tgt = []
+    # while queue != []:
+    #     boxnode = queue.pop(0)
+    #     if node.is_leaf:
+    #         boxnode.
+    #         newnode = ABDDNode()
+    #         newnode.var = high_matlevel + high_boxtree.depth(boxnode)
+    #         continue
 
     # create a resulting edge object (node, rule), check the node against "node_cache"
     # insert node into "node_cache" if necessary
 
     # TODO: insert into "call_cache"
 
-    boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
-    rule, nodes = process_boxtree_innercase(boxtree, e1, e2, op, helper, matlevel)
-    return rule, nodes
+    return [], None
 
 
 # TODO: edit ABDD structure using a materialization recipe
@@ -313,7 +297,25 @@ def materialize_abdd_pattern(edge: ApplyEdge, mat_recipe: MaterializationRecipe,
         else:
             edge.source.low_box = mat_recipe.init_box
             edge.source.low = [nodemap[i.name] for i in mat_recipe.init_targets]
-    return ApplyEdge(edge.abdd, edge.source, edge.direction)
+
+
+# def get_boxstate_nodename_dict(edge_obj: ApplyEdge) -> dict[str, ABDDNode]:
+#     box: TTreeAut = box_catalogue[edge_obj.box_reduction]
+#     portstates = []
+#     for sym, states in box.get_output_edges().items():
+#         if sym.startswith("Port"):
+#             portstates.extend(states)
+#     portstates = [state for sym, states in box.get_output_edges().items() if sym.startswith("Port") for state in states]
+#     # ports = [sym for sym in box.get_output_edges().keys() if sym.startswith('Port')]
+#     portstates.sort()
+#     nodes: list[ABDDNode]
+#     if isinstance(edge_obj.to_node, ABDDNode):
+#         nodes = [edge_obj.to_node]
+#     elif isinstance(edge_obj.to_node, ABDDNode):
+#         nodes = edge_obj.to_node
+#     elif edge_obj.to_node is None:
+#         return {}
+#     return {portstates[i]: nodes[i] for i in range(len(portstates))}
 
 
 def produce_terminal(val1: int, val2: int, op: BooleanOperation, helper: ABDDApplyHelper) -> ABDDNode:

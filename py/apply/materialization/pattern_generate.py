@@ -67,10 +67,10 @@ def obtain_predicates(
         result.append(VariablePredicate("in", "<<", "mat"))
 
     # relationship between materialization variable and output variables
-    for idx, out_node in enumerate(node_tgt):
-        if materialization_var + 1 == tgt_vars[idx]:
+    for idx, var in enumerate(tgt_vars):
+        if materialization_var + 1 == var:
             result.append(VariablePredicate("mat", "1<", f"out{idx}"))
-        if materialization_var + 1 < tgt_vars[idx]:
+        if materialization_var + 1 < var:
             result.append(VariablePredicate("mat", "<<", f"out{idx}"))
 
     return frozenset(result)

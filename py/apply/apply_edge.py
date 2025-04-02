@@ -20,7 +20,8 @@ class ApplyEdge:
         self.source: Optional[ABDDNode] = source
         self.direction: Optional[bool] = direction
         self.target: list[ABDDNode] = [self.abdd.root]
-        self.rule: Optional[str] = self.abdd.root_rule
+        # self.rule: Optional[str] = self.abdd.root_rule
+        self.rule: Optional[str] = None if self.abdd.root.var == 1 else "X"
         if source is not None and direction is not None:
             self.target = source.high if direction else source.low
             self.rule = source.high_box if direction else source.low_box

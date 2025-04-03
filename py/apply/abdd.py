@@ -37,46 +37,38 @@ class ABDD:
         result = f"  [ABDD]: '{self.name}'\n"
         result += f"  > Root = {self.root.node}\n"
         result += f"  > Vars = {self.variable_count}\n"
-        result += "  > %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n" % (
-            8,
-            "nodeID",
-            8,
-            "varID",
-            8,
-            "leaf",
-            8,
-            "lowNode",
+        result += "  > %-*s %-*s %-*s %-*s %-*s\n" % (
+            20,
+            "nodeID(varID)",
             8,
             "lowBox",
-            8,
-            "highNode",
+            20,
+            "lowNode(var)",
             8,
             "highBox",
+            20,
+            "highNode(var)",
         )
-        result += f"  " + "-" * 65 + "\n"
+        result += f"  " + "-" * 82 + "\n"
         for i in self.root.explore_subtree_bfs(repeat=False):
             if i.is_leaf:
                 continue
-            lowStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else str(n.node) for n in i.low])
-            highStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else str(n.node) for n in i.high])
+            lowStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else f"{n.node}({n.var})" for n in i.low])
+            highStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else f"{n.node}({n.var})" for n in i.high])
             leaf = i.leaf_val if i.leaf_val is not None else "-"
             lowBox = i.low_box if i.low_box is not None else "-"
             highBox = i.high_box if i.high_box is not None else "-"
-            result += "  > %-*s %-*s %-*s %-*s %-*s %-*s %-*s\n" % (
-                8,
-                i.node,
-                8,
-                i.var,
-                8,
-                leaf,
-                8,
-                lowStr,
+            result += "  > %-*s %-*s %-*s %-*s %-*s\n" % (
+                20,
+                f"{i.node}({i.var})",
                 8,
                 lowBox,
-                8,
-                highStr,
+                20,
+                lowStr,
                 8,
                 highBox,
+                20,
+                highStr,
             )
         return result
 

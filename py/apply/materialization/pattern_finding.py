@@ -141,12 +141,8 @@ def abdd_subsection_create(
                 if matbox_sublang_of_box(working_aut, boxcopy):
                     match = boxname
                     if boxname in ["0", "1"]:
-                        if matbox_equal_to_box(working_aut, boxcopy):
-                            match = "X"
-                        else:
-                            match = None
-                        # noderef = '0'
-                        subtargets.append(ABDDPattern(new=False, name="0", level="leaf"))
+                        match = "X" if matbox_equal_to_box(working_aut, boxcopy) else None
+                        subtargets.append(ABDDPattern(new=False, name=state_sym_lookup[child], level="leaf"))
                     else:
                         for port, s in working_aut.get_port_order():
                             noderef = state_sym_lookup[s]

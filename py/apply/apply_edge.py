@@ -29,8 +29,8 @@ class ApplyEdge:
     def __repr__(self) -> str:
         rule = "S" if self.rule is None else self.rule
         dir = "None" if self.direction is None else "H" if self.direction else "L"
-        src = "None" if self.source is None else str(self.source.node)
-        tgt = "[" + ", ".join([f"{n.node}({n.var})" for n in self.target]) + "]"
+        src = "None" if self.source is None else f"{self.source.node}({self.source.var})"
+        tgt = "[" + ", ".join([f"{n.node}({n.var})" if not n.is_leaf else f"<{n.leaf_val}>" for n in self.target]) + "]"
         return f"{self.__class__.__name__}(abdd={self.abdd.name}, src={src}, dir={dir}, tgt={tgt}, rule={rule})"
 
     def __eq__(self, other: "ApplyEdge") -> bool:

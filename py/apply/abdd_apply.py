@@ -72,6 +72,7 @@ class ABDDApplyHelper:
         self.counter_2: int = in2.count_nodes()
         self.counter: int = 0
         self.maxvar = maxvar
+        self.depth = 0
 
     def insert_call(self, op: BooleanOperation, edge1: ApplyEdge, edge2: ApplyEdge) -> None:
         pass
@@ -116,7 +117,6 @@ def abdd_apply(
     rule, roots = abdd_apply_from(op, e1, e2, helper)
     root = roots[0]
     abdd = ABDD(f"{in1.name} {op.name} {in2.name}", maxvar, root)
-    # abdd.root_rule = None if root.var == 1 else "X"
     abdd.root_rule = rule
     return abdd
 
@@ -146,19 +146,22 @@ def process_boxtree_leafcase(
     )
 
     new_abdd_node = ABDDNode(helper.counter)
-    new_abdd_node.var = varlevel
+    new_abdd_node.var = varlevel  # not sure with the variable
     new_abdd_node.low_box = low_rule
     new_abdd_node.low = low_targets
     new_abdd_node.high_box = high_rule
     new_abdd_node.high = high_targets
-
-    # not sure with the variable
+    helper.counter += 1
     return None, [new_abdd_node]
 
 
 def process_boxtree_innercase(
     boxtree: BoxTreeNode, e1: ApplyEdge, e2: ApplyEdge, op, helper: ABDDApplyHelper, varlevel: int
 ) -> tuple[Optional[str], list[ABDDNode]]:
+    if boxtree.node == "True":
+        return "X", [e1.abdd.terminal_1]
+    if boxtree.node == "False":
+        return "X", [e1.abdd.terminal_0]
     if boxtree.is_leaf:
         rule = boxtree.node
         nodes = []
@@ -176,6 +179,7 @@ def process_boxtree_innercase(
                 node.low = l_target
                 node.high_box = h_rule
                 node.high = h_target
+                node.is_leaf = False
                 helper.counter += 1
                 nodes.append(node)
             elif pc.target1 is not None:
@@ -190,13 +194,14 @@ def process_boxtree_innercase(
     high_rule, high_targets = (
         process_boxtree_innercase(boxtree.high, e1, e2, op, helper, varlevel + 1) if boxtree.high else (None, [])
     )
-
     new_abdd_node = ABDDNode(helper.counter)
     new_abdd_node.var = varlevel
     new_abdd_node.low_box = low_rule
     new_abdd_node.low = low_targets
     new_abdd_node.high_box = high_rule
     new_abdd_node.high = high_targets
+    new_abdd_node.is_leaf = False
+    helper.counter += 1
     return None, [new_abdd_node]
 
 
@@ -207,7 +212,6 @@ def abdd_apply_from(
     # TODO: check "call_cache" first
     # NOTE: perhaps here we should do something about "early" return (in case one operand is leaf and we can do early return)
 
-    print(f"abdd_apply_from({e1}, {e2})")
     # materialization
     min1 = min(n.var if not n.is_leaf else helper.abdd1.variable_count for n in e1.target)
     min2 = min(n.var if not n.is_leaf else helper.abdd2.variable_count for n in e2.target)
@@ -233,7 +237,11 @@ def abdd_apply_from(
     # edges to leaves
     if all([i.is_leaf for i in e1.target] + [i.is_leaf for i in e2.target]):
         boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
-        return process_boxtree_leafcase(boxtree, e1, e2, op, helper, matlevel)
+        helper.depth += 1
+        rule, nodes = process_boxtree_leafcase(boxtree, e1, e2, op, helper, matlevel)
+        # TODO: modify result structure during returns here
+        helper.depth -= 1
+        return rule, nodes
 
     # create a resulting edge object (node, rule), check the node against "node_cache"
     # insert node into "node_cache" if necessary
@@ -241,7 +249,11 @@ def abdd_apply_from(
     # TODO: insert into "call_cache"
 
     boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
+    helper.depth += 1
+    # TODO: fix depth -> matlevel is in cases of non-leaf boxtree nodes incorrect
     rule, nodes = process_boxtree_innercase(boxtree, e1, e2, op, helper, matlevel)
+    # TODO: modify result structure during returns here
+    helper.depth -= 1
     return rule, nodes
 
 
@@ -329,6 +341,7 @@ def produce_terminal(val1: int, val2: int, op: BooleanOperation, helper: ABDDApp
         BooleanOperation.NOT: -1,
     }
     node = ABDDNode(helper.counter)
+    helper.counter += 1
     node.set_as_leaf(op_translate[op])
     if node in helper.node_cache:
         return helper.node_cache[node]

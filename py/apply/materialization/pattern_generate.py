@@ -31,7 +31,7 @@ def obtain_predicates(
     """
     invar: int = 0 if node_src is None else node_src.var
     node_tgt: list[ABDDNode] = [abdd.root] if node_src is None else node_src.high if direction else node_src.low
-    tgt_vars: list[int] = [abdd.variable_count if n.is_leaf else n.var for n in node_tgt]
+    tgt_vars: list[int] = [abdd.variable_count + 1 if n.is_leaf else n.var for n in node_tgt]
     box: Optional[str] = None
     if direction is None:
         box = None if abdd.root.var == 1 else "X"

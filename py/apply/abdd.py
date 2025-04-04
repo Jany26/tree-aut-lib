@@ -38,18 +38,18 @@ class ABDD:
         result += f"  > Root = {self.root.node}\n"
         result += f"  > Vars = {self.variable_count}\n"
         result += "  > %-*s %-*s %-*s %-*s %-*s\n" % (
-            20,
-            "nodeID(varID)",
+            12,
+            "node(var)",
             8,
             "lowBox",
-            20,
-            "lowNode(var)",
+            12,
+            "low(var)",
             8,
             "highBox",
-            20,
-            "highNode(var)",
+            12,
+            "high(var)",
         )
-        result += f"  " + "-" * 82 + "\n"
+        result += f"  " + "-" * 60 + "\n"
         for i in self.root.explore_subtree_bfs(repeat=False):
             if i.is_leaf:
                 continue
@@ -59,15 +59,15 @@ class ABDD:
             lowBox = i.low_box if i.low_box is not None else "-"
             highBox = i.high_box if i.high_box is not None else "-"
             result += "  > %-*s %-*s %-*s %-*s %-*s\n" % (
-                20,
+                12,
                 f"{i.node}({i.var})",
                 8,
                 lowBox,
-                20,
+                12,
                 lowStr,
                 8,
                 highBox,
-                20,
+                12,
                 highStr,
             )
         return result

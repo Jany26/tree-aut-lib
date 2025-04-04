@@ -69,23 +69,18 @@ class ABDDNode:
     #     return f"{node} {ltgt}{lbox} {htgt}{hbox}"
 
     def __repr__(self):
+        def prettyprint_nodes(l: list[ABDDNode]) -> str:
+            return "[" + ", ".join([f"{i.node}({i.var})" if not i.is_leaf else f"<{i.leaf_val}>" for i in l]) + "]"
+
         attrib = [
             f"node={self.node}",
             f"var={self.var}",
             f"leaf{f' {self.leaf_val}' if self.leaf_val is not None else ''}" if self.is_leaf else "",
             f"root" if self.is_root else "",
             f"lbox={self.low_box}" if self.low != [] else "",
-            (
-                f"low=[{', '.join([f"{i.node}({i.var})" if not i.is_leaf else f"<{i.leaf_val}>" for i in self.low])}]"
-                if self.low != []
-                else ""
-            ),
+            f"low={prettyprint_nodes(self.low)}" if self.low != [] else "",
             f"hbox={self.high_box}" if self.high != [] else "",
-            (
-                f"high=[{', '.join([f"{i.node}({i.var})" if not i.is_leaf else f"<{i.leaf_val}>" for i in self.high])}]"
-                if self.high != []
-                else ""
-            ),
+            f"high={prettyprint_nodes(self.high)}" if self.high != [] else "",
         ]
 
         return f"{self.__class__.__name__}({', '.join([i for i in attrib if i != ""])})"

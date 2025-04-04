@@ -24,7 +24,7 @@ def print_generated_algebrae(filename: str):
         boxtree = BoxTreeNode(
             None, port_info=[PortConnectionInfo(target1=0, target2=0, recursion=True, negation=False)]
         )
-        f.write(f"{boxtree.__repr__(level=8)},\n")
+        f.write(f"{boxtree.__repr__(level=8)},  # None {operation.name} None\n")
 
         # non-short cases:
         for boxname1 in box_arities.keys():
@@ -34,7 +34,7 @@ def print_generated_algebrae(filename: str):
                 applied_aut, portmap = apply_intersectoid_create(operation, box1, box2)
                 boxtree = build_box_tree(applied_aut, portmap)
                 f.write(f'{ind}("{boxname1}", {operation}, "{boxname2}"): ')
-                f.write(f"{boxtree.__repr__(level=8)},\n")
+                f.write(f"{boxtree.__repr__(level=8)},  # {boxname1} {operation.name} {boxname2}\n")
         f.write("\n\n")
     f.write(f"}}\n\n")
     f.write(f"# fmt: on\n")

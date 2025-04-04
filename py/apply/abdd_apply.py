@@ -129,9 +129,8 @@ def process_boxtree_leafcase(
         nodes = []
         for pc in boxtree.port_info:
             if pc.target1 is not None and pc.target2 is not None:
-                nodes.append(
-                    produce_terminal(e1.target[pc.target1].leaf_val, e2.target[pc.target2].leaf_val, op, helper)
-                )
+                term = produce_terminal(e1.target[pc.target1].leaf_val, e2.target[pc.target2].leaf_val, op, helper)
+                nodes.append(term)
             elif pc.target1 is not None:
                 nodes.append(e1.target[pc.target1])
             elif pc.target2 is not None:
@@ -152,19 +151,25 @@ def process_boxtree_leafcase(
     new_abdd_node.high_box = high_rule
     new_abdd_node.high = high_targets
     helper.counter += 1
-    return None, [new_abdd_node]
+    rule = None
+    nodes = [new_abdd_node]
+    return rule, nodes
 
 
 def process_boxtree_innercase(
-    boxtree: BoxTreeNode, e1: ApplyEdge, e2: ApplyEdge, op, helper: ABDDApplyHelper, varlevel: int
+    boxtree: BoxTreeNode, e1: ApplyEdge, e2: ApplyEdge, op, helper: ABDDApplyHelper, varlevel: int, rootlevel: int
 ) -> tuple[Optional[str], list[ABDDNode]]:
     if boxtree.node == "True":
-        return "X", [e1.abdd.terminal_1]
+        rule = "X"
+        nodes = [e1.abdd.terminal_1]
+        return rule, nodes
     if boxtree.node == "False":
-        return "X", [e1.abdd.terminal_0]
+        rule = "X"
+        nodes = [e1.abdd.terminal_0]
+        return rule, nodes
     if boxtree.is_leaf:
         rule = boxtree.node
-        nodes = []
+        nodes: list[ABDDNode] = []
         for pc in boxtree.port_info:
             if pc.target1 is not None and pc.target2 is not None:
                 edge1low = ApplyEdge(e1.abdd, e1.target[pc.target1], False)
@@ -189,19 +194,25 @@ def process_boxtree_innercase(
         return rule, nodes
 
     low_rule, low_targets = (
-        process_boxtree_innercase(boxtree.low, e1, e2, op, helper, varlevel + 1) if boxtree.low else (None, [])
+        process_boxtree_innercase(boxtree.low, e1, e2, op, helper, varlevel, rootlevel + 1)
+        if boxtree.low
+        else (None, [])
     )
     high_rule, high_targets = (
-        process_boxtree_innercase(boxtree.high, e1, e2, op, helper, varlevel + 1) if boxtree.high else (None, [])
+        process_boxtree_innercase(boxtree.high, e1, e2, op, helper, varlevel, rootlevel + 1)
+        if boxtree.high
+        else (None, [])
     )
     new_abdd_node = ABDDNode(helper.counter)
-    new_abdd_node.var = varlevel
+    new_abdd_node.var = rootlevel
     new_abdd_node.low_box = low_rule
     new_abdd_node.low = low_targets
     new_abdd_node.high_box = high_rule
     new_abdd_node.high = high_targets
     new_abdd_node.is_leaf = False
     helper.counter += 1
+    rule = None
+    nodes = [new_abdd_node]
     return None, [new_abdd_node]
 
 
@@ -213,10 +224,10 @@ def abdd_apply_from(
     # NOTE: perhaps here we should do something about "early" return (in case one operand is leaf and we can do early return)
 
     # materialization
-    min1 = min(n.var if not n.is_leaf else helper.abdd1.variable_count for n in e1.target)
-    min2 = min(n.var if not n.is_leaf else helper.abdd2.variable_count for n in e2.target)
-    max1 = max(n.var if not n.is_leaf else helper.abdd1.variable_count for n in e1.target)
-    max2 = max(n.var if not n.is_leaf else helper.abdd2.variable_count for n in e2.target)
+    min1 = min(n.var if not n.is_leaf else (helper.abdd1.variable_count + 1) for n in e1.target)
+    min2 = min(n.var if not n.is_leaf else (helper.abdd2.variable_count + 1) for n in e2.target)
+    max1 = max(n.var if not n.is_leaf else (helper.abdd1.variable_count + 1) for n in e1.target)
+    max2 = max(n.var if not n.is_leaf else (helper.abdd2.variable_count + 1) for n in e2.target)
     matlevel = min(min1, min2)
 
     if matlevel != max1:
@@ -232,6 +243,7 @@ def abdd_apply_from(
             e2 = materialize_abdd_pattern(e2, pattern, matlevel)
             return abdd_apply_from(op, e1, e2, helper)
 
+    dir = "H" if e1.direction else "L" if e1.direction is not None else "None"
     # now we can assume that e1 and e2 have targets with the same variable
 
     # edges to leaves
@@ -251,17 +263,21 @@ def abdd_apply_from(
     boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
     helper.depth += 1
     # TODO: fix depth -> matlevel is in cases of non-leaf boxtree nodes incorrect
-    rule, nodes = process_boxtree_innercase(boxtree, e1, e2, op, helper, matlevel)
+    treelevel = min(e1.source.var if e1.source is not None else 1, e2.source.var if e2.source is not None else 1) + 1
+    rule, nodes = process_boxtree_innercase(boxtree, e1, e2, op, helper, matlevel, treelevel)
     # TODO: modify result structure during returns here
     helper.depth -= 1
     return rule, nodes
 
 
 # TODO: edit ABDD structure using a materialization recipe
-def materialize_abdd_pattern(edge: ApplyEdge, mat_recipe: MaterializationRecipe, mat_level: int) -> None:
-    above_root = edge.source is None
-    if above_root:
-        edge.abdd.root_rule = mat_recipe.init_box
+# TODO: make it so the materialized node and edge is returned, but the initial references within the ABDD
+# stay intact -> this will prevent unnecessary materialized nodes in case of revisiting the same parts of the ABDD
+# during recursion
+def materialize_abdd_pattern(edge: ApplyEdge, mat_recipe: MaterializationRecipe, mat_level: int) -> ApplyEdge:
+    # above_root = edge.source is None
+    # if above_root:
+    #     edge.abdd.root_rule = mat_recipe.init_box
     if len(mat_recipe.init_targets) > 1:
         raise ValueError("Materialization above root has more than one target. Don't know what to do.")
     workset = [i for i in mat_recipe.init_targets]
@@ -286,11 +302,6 @@ def materialize_abdd_pattern(edge: ApplyEdge, mat_recipe: MaterializationRecipe,
 
         # new node reference
         currentnode = nodemap[pattern.name]
-        if above_root:
-            currentnode.is_root = True
-            edge.abdd.root.is_root = False
-            edge.abdd.root = currentnode
-            above_root = False
         currentnode = nodemap[pattern.name]
         currentnode.low_box = pattern.low_box
         currentnode.high_box = pattern.high_box
@@ -318,14 +329,14 @@ def materialize_abdd_pattern(edge: ApplyEdge, mat_recipe: MaterializationRecipe,
         currentnode.high = newhigh
 
     # redirecting initial targets and rules in the ABDD
-    if edge.direction is not None:
-        if edge.direction:
-            edge.source.high_box = mat_recipe.init_box
-            edge.source.high = [nodemap[i.name] for i in mat_recipe.init_targets]
-        else:
-            edge.source.low_box = mat_recipe.init_box
-            edge.source.low = [nodemap[i.name] for i in mat_recipe.init_targets]
-    return ApplyEdge(edge.abdd, edge.source, edge.direction)
+    # new_source = ABDDNode()
+    # if edge.direction is not None:
+    result = ApplyEdge(edge.abdd, edge.source, edge.direction)
+    result.rule = mat_recipe.init_box
+    tgt = [nodemap[i.name] for i in mat_recipe.init_targets]
+    result.target = tgt
+    return result
+    # return ApplyEdge(edge.abdd, edge.source, edge.direction)
 
 
 def produce_terminal(val1: int, val2: int, op: BooleanOperation, helper: ABDDApplyHelper) -> ABDDNode:

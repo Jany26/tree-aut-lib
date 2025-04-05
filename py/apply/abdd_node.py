@@ -1,5 +1,5 @@
 from types import NoneType
-from typing import Generator, Optional, Union
+from typing import Generator, Iterator, Optional, Union
 
 from tree_automata.automaton import TTreeAut
 from tree_automata.transition import TTransition
@@ -69,9 +69,6 @@ class ABDDNode:
     #     return f"{node} {ltgt}{lbox} {htgt}{hbox}"
 
     def __repr__(self):
-        def prettyprint_nodes(l: list[ABDDNode]) -> str:
-            return "[" + ", ".join([f"{i.node}({i.var})" if not i.is_leaf else f"<{i.leaf_val}>" for i in l]) + "]"
-
         attrib = [
             f"node={self.node}",
             f"var={self.var}",
@@ -243,7 +240,7 @@ class ABDDNode:
         """
         node.high.append(self)
 
-    def explore_subtree_bfs(self, repeat=False) -> Generator["ABDDNode", None, None]:
+    def explore_subtree_bfs(self, repeat=False) -> Iterator["ABDDNode"]:
         queue: list[ABDDNode] = [self]
         visited = set()
         while queue != []:
@@ -255,7 +252,7 @@ class ABDDNode:
             queue.extend(node.low)
             queue.extend(node.high)
 
-    def explore_subtree_dfs(self, repeat=False) -> Generator["ABDDNode", None, None]:
+    def explore_subtree_dfs(self, repeat=False) -> Iterator["ABDDNode"]:
         stack: list[ABDDNode] = [self]
         visited = set()
         while stack != []:
@@ -268,8 +265,38 @@ class ABDDNode:
             stack.extend(reversed(node.low))
             stack.extend(reversed(node.high))
 
+    def explore_subtree_bfs_backrefs(self, repeat=False) -> Iterator[tuple["ABDDNode", bool, "ABDDNode"]]:
+        queue: list[ABDDNode] = [(self, False, i) for i in self.low] + [(self, True, i) for i in self.high]
+        visited = set()
+        while queue != []:
+            node = queue.pop(0)
+            if not repeat and node in visited:
+                continue
+            yield node
+            visited.add(node)
+            queue.extend([(node, False, i) for i in node.low])
+            queue.extend([(node, False, i) for i in node.high])
+
+    def explore_subtree_dfs_backrefs(self, repeat=False) -> Iterator[tuple["ABDDNode", bool, "ABDDNode"]]:
+        queue: list[ABDDNode] = [(self, True, i) for i in reversed(self.high)] + [
+            (self, False, i) for i in reversed(self.low)
+        ]
+        visited = set()
+        while queue != []:
+            node = queue.pop()
+            if not repeat and node in visited:
+                continue
+            yield node
+            visited.add(node)
+            queue.extend([(node, False, i) for i in reversed(node.high)])
+            queue.extend([(node, False, i) for i in reversed(node.low)])
+
     def find_terminal(self, target: int) -> Optional["ABDDNode"]:
         for i in self.explore_subtree_bfs():
             if i.is_leaf and i.leaf_val == target:
                 return i
         return None
+
+
+def prettyprint_nodes(l: list[ABDDNode]) -> str:
+    return "[" + ", ".join([f"{i.node}({i.var})" if not i.is_leaf else f"<{i.leaf_val}>" for i in l]) + "]"

@@ -70,9 +70,18 @@ class ABDDApplyHelper:
 
         self.counter_1: int = in1.count_nodes()
         self.counter_2: int = in2.count_nodes()
-        self.counter: int = 0
+        self.counter: int = max(
+            [n.node for n in self.abdd1.iterate_bfs_nodes()] + [n.node for n in self.abdd2.iterate_bfs_nodes()]
+        )
         self.maxvar = maxvar
         self.depth = 0
+
+        for i in in1.iterate_bfs_nodes():
+            if self.find_node(i) is None:
+                self.insert_node(i)
+        for i in in2.iterate_bfs_nodes():
+            if self.find_node(i) is None:
+                self.insert_node(i)
 
     def insert_call(self, op: BooleanOperation, edge1: ApplyEdge, edge2: ApplyEdge) -> None:
         pass
@@ -81,10 +90,18 @@ class ABDDApplyHelper:
         pass
 
     def insert_node(self, node: ABDDNode) -> None:
-        pass
+        low_tuple = tuple([n.leaf_val if n.is_leaf else n.node for n in node.low])
+        high_tuple = tuple([n.leaf_val if n.is_leaf else n.node for n in node.high])
+        lookup = tuple([node.var, node.low_box, low_tuple, node.high_box, high_tuple])
+        self.node_cache[lookup] = node
 
     def find_node(self, node: ABDDNode) -> Optional[ABDDNode]:
-        pass
+        low_tuple = tuple([n.leaf_val if n.is_leaf else n.node for n in node.low])
+        high_tuple = tuple([n.leaf_val if n.is_leaf else n.node for n in node.high])
+        lookup = tuple([node.var, node.low_box, low_tuple, node.high_box, high_tuple])
+        if lookup in self.node_cache:
+            return self.node_cache[lookup]
+        return None
 
 
 def abdd_apply(
@@ -150,9 +167,15 @@ def process_boxtree_leafcase(
     new_abdd_node.low = low_targets
     new_abdd_node.high_box = high_rule
     new_abdd_node.high = high_targets
-    helper.counter += 1
+    cache_hit = helper.find_node(new_abdd_node)
+    nodes = []
+    if cache_hit is not None:
+        nodes.append(cache_hit)
+    else:
+        nodes.append(new_abdd_node)
+        helper.counter += 1
+        helper.insert_node(new_abdd_node)
     rule = None
-    nodes = [new_abdd_node]
     return rule, nodes
 
 
@@ -185,8 +208,13 @@ def process_boxtree_innercase(
                 node.high_box = h_rule
                 node.high = h_target
                 node.is_leaf = False
-                helper.counter += 1
-                nodes.append(node)
+                cache_hit = helper.find_node(node)
+                if cache_hit is not None:
+                    nodes.append(cache_hit)
+                else:
+                    nodes.append(node)
+                    helper.counter += 1
+                    helper.insert_node(node)
             elif pc.target1 is not None:
                 nodes.append(e1.target[pc.target1])
             elif pc.target2 is not None:
@@ -210,10 +238,18 @@ def process_boxtree_innercase(
     new_abdd_node.high_box = high_rule
     new_abdd_node.high = high_targets
     new_abdd_node.is_leaf = False
-    helper.counter += 1
+
+    cache_hit = helper.find_node(new_abdd_node)
+    nodes = []
+    if cache_hit is not None:
+        nodes.append(cache_hit)
+    else:
+        nodes.append(new_abdd_node)
+        helper.counter += 1
+        helper.insert_node(new_abdd_node)
+
     rule = None
-    nodes = [new_abdd_node]
-    return None, [new_abdd_node]
+    return rule, nodes
 
 
 # NOTE: we probably need to have rule1, rule2 as operands too, since we need the
@@ -234,16 +270,15 @@ def abdd_apply_from(
         predicates1 = obtain_predicates(helper.abdd1, e1.source, e1.direction, matlevel)
         if predicates1 != frozenset() and e1.rule:
             pattern = cached_materialization_recipes[e1.rule][predicates1]
-            e1 = materialize_abdd_pattern(e1, pattern, matlevel)
+            e1 = materialize_abdd_pattern(e1, pattern, matlevel, helper)
             return abdd_apply_from(op, e1, e2, helper)
     if matlevel != max2:
         predicates2 = obtain_predicates(helper.abdd2, e2.source, e2.direction, matlevel)
         if predicates2 != frozenset() and e2.rule:
             pattern = cached_materialization_recipes[e2.rule][predicates2]
-            e2 = materialize_abdd_pattern(e2, pattern, matlevel)
+            e2 = materialize_abdd_pattern(e2, pattern, matlevel, helper)
             return abdd_apply_from(op, e1, e2, helper)
 
-    dir = "H" if e1.direction else "L" if e1.direction is not None else "None"
     # now we can assume that e1 and e2 have targets with the same variable
 
     # edges to leaves
@@ -251,33 +286,31 @@ def abdd_apply_from(
         boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
         helper.depth += 1
         rule, nodes = process_boxtree_leafcase(boxtree, e1, e2, op, helper, matlevel)
-        # TODO: modify result structure during returns here
         helper.depth -= 1
         return rule, nodes
 
-    # create a resulting edge object (node, rule), check the node against "node_cache"
-    # insert node into "node_cache" if necessary
-
-    # TODO: insert into "call_cache"
+    # NOTE: inserting into and checking against the "node_cache" is done during boxtree exploration
 
     boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
     helper.depth += 1
-    # TODO: fix depth -> matlevel is in cases of non-leaf boxtree nodes incorrect
     treelevel = min(e1.source.var if e1.source is not None else 1, e2.source.var if e2.source is not None else 1) + 1
     rule, nodes = process_boxtree_innercase(boxtree, e1, e2, op, helper, matlevel, treelevel)
-    # TODO: modify result structure during returns here
     helper.depth -= 1
     return rule, nodes
 
 
-# TODO: edit ABDD structure using a materialization recipe
-# TODO: make it so the materialized node and edge is returned, but the initial references within the ABDD
-# stay intact -> this will prevent unnecessary materialized nodes in case of revisiting the same parts of the ABDD
-# during recursion
-def materialize_abdd_pattern(edge: ApplyEdge, mat_recipe: MaterializationRecipe, mat_level: int) -> ApplyEdge:
-    # above_root = edge.source is None
-    # if above_root:
-    #     edge.abdd.root_rule = mat_recipe.init_box
+def negate_subtree(abdd: ABDD, root: ABDDNode, helper: ABDDApplyHelper) -> ABDDNode:
+    """
+    Explore the subtree rooted in 'root' within 'abdd' and negate it, while creating copies of the inner nodes.
+
+    Copies are created when there is no node_cache hit (cache can be found in "helper" object).
+    """
+    root.explore_subtree_bfs_backrefs(repeat=False)
+
+
+def materialize_abdd_pattern(
+    edge: ApplyEdge, mat_recipe: MaterializationRecipe, mat_level: int, helper: ABDDApplyHelper
+) -> ApplyEdge:
     if len(mat_recipe.init_targets) > 1:
         raise ValueError("Materialization above root has more than one target. Don't know what to do.")
     workset = [i for i in mat_recipe.init_targets]
@@ -290,8 +323,8 @@ def materialize_abdd_pattern(edge: ApplyEdge, mat_recipe: MaterializationRecipe,
     # initial targets node creation
     for i in workset:
         if i.new:
-            nodemap[i.name] = ABDDNode(edge.abdd.node_count)
-            edge.abdd.node_count += 1
+            nodemap[i.name] = ABDDNode(helper.counter)
+            helper.counter += 1
 
     # traversing
     while workset != []:
@@ -302,18 +335,18 @@ def materialize_abdd_pattern(edge: ApplyEdge, mat_recipe: MaterializationRecipe,
 
         # new node reference
         currentnode = nodemap[pattern.name]
-        currentnode = nodemap[pattern.name]
         currentnode.low_box = pattern.low_box
         currentnode.high_box = pattern.high_box
         currentnode.var = varmap[pattern.level]
         currentnode.is_leaf = False
+        helper
 
         # creating references to low edge target nodes
         newlow = []
         for i in pattern.low:
             if i.new:
-                nodemap[i.name] = ABDDNode(edge.abdd.node_count)
-                edge.abdd.node_count += 1
+                nodemap[i.name] = ABDDNode(helper.counter)
+                helper.counter += 1
             newlow.append(nodemap[i.name])
             workset.append(i)
 
@@ -321,22 +354,24 @@ def materialize_abdd_pattern(edge: ApplyEdge, mat_recipe: MaterializationRecipe,
         newhigh = []
         for i in pattern.high:
             if i.new:
-                nodemap[i.name] = ABDDNode(edge.abdd.node_count)
-                edge.abdd.node_count += 1
+                nodemap[i.name] = ABDDNode(helper.counter)
+                helper.counter += 1
             newhigh.append(nodemap[i.name])
             workset.append(i)
         currentnode.low = newlow
         currentnode.high = newhigh
 
+        # checking the materialized node against the node cache
+        cache_hit = helper.find_node(currentnode)
+        if cache_hit is not None:
+            nodemap[pattern.name] = cache_hit
+
     # redirecting initial targets and rules in the ABDD
-    # new_source = ABDDNode()
-    # if edge.direction is not None:
     result = ApplyEdge(edge.abdd, edge.source, edge.direction)
     result.rule = mat_recipe.init_box
     tgt = [nodemap[i.name] for i in mat_recipe.init_targets]
     result.target = tgt
     return result
-    # return ApplyEdge(edge.abdd, edge.source, edge.direction)
 
 
 def produce_terminal(val1: int, val2: int, op: BooleanOperation, helper: ABDDApplyHelper) -> ABDDNode:

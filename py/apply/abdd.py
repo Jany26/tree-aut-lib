@@ -84,6 +84,11 @@ class ABDD:
             result += 1
         return result
 
+    def check_brute_force_equivalence(self, other: "ABDD") -> bool:
+        if self.variable_count != other.variable_count:
+            raise ValueError("unequal number of variables for equivalence checking")
+        # for
+
     def evaluate_for(self, assignment: dict[int, bool]) -> int:
         pass
 
@@ -219,7 +224,7 @@ def import_abdd_from_abdd_file(path: str) -> ABDD:
     return ABDD(dd_name, var_count, root_node)
 
 
-def convert_ta_to_abdd(ta: TTreeAut, var_count: Optional[int] = None) -> ABDD:
+def convert_ta_to_abdd(ta: TTreeAut, var_count: Optional[int] = None, node_start: int = 0) -> ABDD:
     """
     Given a folded TreeAut-like structure (UBDA/BDA), convert this TreeAut
     to ABDD instance.
@@ -231,26 +236,28 @@ def convert_ta_to_abdd(ta: TTreeAut, var_count: Optional[int] = None) -> ABDD:
 
     # statename -> corresponding node
     node_map: dict[str, ABDDNode] = {}
+    state_idx_map: dict[str, int] = {}
+    node_counter = node_start
 
-    try:
-        slen: int = len(ta.get_statename_prefix())
-    except ValueError:
-        ta.reformat_states()
-        slen: int = len(ta.get_statename_prefix())
     vlen = len(ta.get_var_prefix())
 
     if len(ta.roots) != 1:
         raise ValueError("ABDD can have only one root")
 
+    # we assume one TA rootstate in ABDD-compatible binary decision automaton
     root = ta.roots[0]
-    root_node = ABDDNode(ta.roots[0], state_prefix_len=slen)
+    state_idx_map[root] = node_counter
+    node_counter += 1
+    root_node = ABDDNode(state_idx_map[root])
     result = ABDD(f"{ta.name}", var_count if var_count is not None else ta.get_var_max(), root_node)
     node_map[root] = root_node
 
     for state in iterate_states_bfs(ta):
         if state in ta.roots:
             continue
-        node_map[state] = ABDDNode(state, state_prefix_len=slen)
+        state_idx_map[state] = node_counter
+        node_counter += 1
+        node_map[state] = ABDDNode(state_idx_map[state])
 
     for state in ta.roots:
         node_map[state].is_root = True
@@ -278,7 +285,7 @@ def check_abdd_isomorphism(abdd1: ABDD, abdd2: ABDD) -> bool:
 
 def check_if_abdd(ta: TTreeAut) -> bool:
     """
-    Perform checks if the BDA structkure is convertible to automaton:
+    Perform checks if the BDA structure is convertible to automaton:
     - there should be no self-loops, or any other loops
     - each state should have just one outgoing edge (determinism)
     - every edge should be labeled with a variable
@@ -288,7 +295,7 @@ def check_if_abdd(ta: TTreeAut) -> bool:
     result: bool = True
     for edge in iterate_edges(ta):
         if edge.src in visited:
-            print(f"multiple edges from {edge.src}")
+            eprint(f"multiple edges from {edge.src}")
             result = False
         visited.add(edge.src)
         if edge.children == []:
@@ -296,23 +303,23 @@ def check_if_abdd(ta: TTreeAut) -> bool:
             continue
         arity_sum = sum(1 if b in [None, ""] else box_catalogue[b].port_arity for b in edge.info.box_array)
         if len(edge.children) != arity_sum:
-            print(f"inconsistent arity on edge {edge}")
+            eprint(f"inconsistent arity on edge {edge}")
             result = False
 
         for i in edge.info.box_array:
             # boxes are either non-empty string or None
             if type(i) == str and i == "":
-                print(f"{edge} boxes are either None or a non-empty string")
+                eprint(f"{edge} boxes are either None or a non-empty string")
                 result = False
         if edge.src in edge.children:
-            print(f"self loop {edge}")
+            eprint(f"self loop {edge}")
             result = False
             continue
         if edge.info.variable == "":
-            print(f"no variable on edge {edge}")
+            eprint(f"no variable on edge {edge}")
             result = False
     output_vars.remove("")
     if len(output_vars) > 1:
-        print(f"inconsistent output variables: {create_string_from_name_set(output_vars)}")
+        eprint(f"inconsistent output variables: {create_string_from_name_set(output_vars)}")
         result = False
     return result

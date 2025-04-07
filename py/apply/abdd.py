@@ -1,3 +1,4 @@
+import itertools
 import re
 
 from typing import Generator, Optional
@@ -37,7 +38,7 @@ class ABDD:
         result = f"  [ABDD]: '{self.name}'\n"
         result += f"  > Root = {self.root.node}\n"
         result += f"  > Vars = {self.variable_count}\n"
-        result += "  > %-*s %-*s %-*s %-*s %-*s\n" % (
+        result += "  > %-*s %-*s %-*s %-*s %-*s %-*s\n" % (
             12,
             "node(var)",
             8,
@@ -48,6 +49,8 @@ class ABDD:
             "highBox",
             12,
             "high(var)",
+            20,
+            "hex(ID)",
         )
         result += f"  " + "-" * 60 + "\n"
         for i in self.root.explore_subtree_bfs(repeat=False):
@@ -58,7 +61,7 @@ class ABDD:
             leaf = i.leaf_val if i.leaf_val is not None else "-"
             lowBox = i.low_box if i.low_box is not None else "-"
             highBox = i.high_box if i.high_box is not None else "-"
-            result += "  > %-*s %-*s %-*s %-*s %-*s\n" % (
+            result += "  > %-*s %-*s %-*s %-*s %-*s %-*s\n" % (
                 12,
                 f"{i.node}({i.var})",
                 8,
@@ -69,8 +72,29 @@ class ABDD:
                 highBox,
                 12,
                 highStr,
+                20,
+                hex(id(i)),
             )
         return result
+
+    def __eq__(self, other: "ABDD", brute_force: bool = False) -> bool:
+        """
+        'brute_force' = False -> Check structural equality of two ABDDs.
+        This is essentially the top-down
+
+        'brute_force' = True -> Check the result of evaluating all possible variable
+        true/false assignments in a brute-force manner.
+        """
+        if not brute_force:
+            return all(
+                [
+                    self.variable_count == other.variable_count,
+                    self.root_rule == other.root_rule,
+                    self.root == other.root,
+                ]
+            )
+        else:
+            return self.check_brute_force_equivalence(other)
 
     def iterate_bfs_nodes(self, repeat=False) -> Generator[ABDDNode, None, None]:
         return self.root.explore_subtree_bfs(repeat)
@@ -87,10 +111,66 @@ class ABDD:
     def check_brute_force_equivalence(self, other: "ABDD") -> bool:
         if self.variable_count != other.variable_count:
             raise ValueError("unequal number of variables for equivalence checking")
-        # for
+        for assign_tuple in itertools.product([False, True], repeat=self.variable_count):
+            assignment = list(assign_tuple)
+            res1 = self.evaluate_for(assignment)
+            res2 = other.evaluate_for(assignment)
+            if res1 != res2:
+                eprint(f"check_brute_force_equivalence({self.name}, {other.name}):")
+                eprint(f"not equal for {{{','.join([f'{i}' for i, val in enumerate(assignment) if val])}}}")
+                return False
+        return True
 
-    def evaluate_for(self, assignment: dict[int, bool]) -> int:
-        pass
+    def evaluate_for(self, assignment: list[bool]) -> int:
+        def evaluate_box(box: TTreeAut, assignment: list[bool], node_map: dict[str, ABDDNode]) -> bool | ABDDNode:
+            current = box.roots[0]
+            outputs = box.get_output_edges(inverse=True)
+            while assignment != []:
+                val = assignment.pop(0)
+                if current in outputs:
+                    break
+                pick_loop = assignment != []
+                for t in box.transitions[current].values():
+                    if pick_loop == t.is_self_loop():
+                        current = t.children[int(val)]
+                    continue
+            # either we map a terminal result
+            if outputs[current][0] in ["0", "1"]:
+                return True if outputs[current][0] == "1" else False
+            # or map the node corresponding to the port
+            return node_map[outputs[current][0]]
+
+        current_node: Optional[ABDDNode] = None
+        result = None
+        while True:
+            if current_node is not None and current_node.is_leaf:
+                result = current_node.leaf_val
+                break
+            current_var = 0 if current_node is None else current_node.var - 1
+            rule = (
+                self.root_rule
+                if current_node is None
+                else (current_node.high_box if assignment[current_var - 1] else current_node.low_box)
+            )
+            target = (
+                [self.root]
+                if current_node is None
+                else (current_node.high if assignment[current_var - 1] else current_node.low)
+            )
+            if rule is None:
+                current_node = target[0]
+            else:
+                target_var = max([self.variable_count + 1 if t.is_leaf else t.var for t in target])
+                port_map = {port: target[i] for i, (port, state) in enumerate(box_catalogue[rule].get_port_order())}
+                subassign = assignment[current_var : target_var - 1]
+                box_eval = evaluate_box(box_catalogue[rule], subassign, port_map)
+                if type(box_eval) == bool:
+                    result = int(box_eval)
+                    break
+                current_node = box_eval
+        if result is None:
+            raise ValueError(f"couldn't evaluate the truth value for {self.name}")
+        return result
 
     def convert_to_treeaut_obj(self) -> TTreeAut:
         pass
@@ -277,10 +357,6 @@ def convert_ta_to_abdd(ta: TTreeAut, var_count: Optional[int] = None, node_start
         node.set_node_info_from_ta_transition(edge, node_map, var_prefix_len=vlen)
     result.node_count = result.count_nodes()
     return result
-
-
-def check_abdd_isomorphism(abdd1: ABDD, abdd2: ABDD) -> bool:
-    pass
 
 
 def check_if_abdd(ta: TTreeAut) -> bool:

@@ -12,6 +12,8 @@ from typing import Union
 
 import graphviz
 
+from apply.abdd import ABDD
+from formats.abdd_to_dot import abdd_to_dot
 from tree_automata import TTreeAut, TTransition, TTreeNode
 from tree_automata.tree_node import convert_string_to_tree
 from bdd.bdd_class import BDD
@@ -21,46 +23,6 @@ from formats.format_vtf import import_treeaut_from_vtf, export_treeaut_to_vtf
 from formats.format_tmb import import_treeaut_from_tmb, export_treeaut_to_tmb
 
 from helpers.utils import box_catalogue
-
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# IMPORT/EXPORT INTEGRATION WITH JUPYTER
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-# vtf and tmb versions are usually used directly, so these two functions are obsolete:
-
-# def import_treeaut(source: str, format_type: str = "", source_type: str = "f") -> TTreeAut:
-#     if format_type == "" and source_type == "f":
-#         if source.endswith(".vtf"):
-#             format_type = "vtf"
-#         elif source.endswith(".tmb"):
-#             format_type = "tmb"
-#         else:
-#             raise Exception(f"import_treeaut(): unknown format_type")
-
-#     if format_type == "vtf":
-#         return import_treeaut_from_vtf(source, source_type)
-#     elif format_type == "tmb":
-#         return import_treeaut_from_tmb(source, source_type)
-#     else:
-#         raise Exception(f"import_treeaut(): unsupported format '{format_type}'")
-
-
-# target can be either a filepath or a string variable, where
-# def export_treeaut(ta: TTreeAut, format_type: str, target_type: str, filepath: str = ""):
-#     if format_type != "vtf" and format_type != "tmb":
-#         raise Exception(f"export_treeaut(): unsupported format_type '{format_type}'")
-#     if target_type != "f" and target_type != "s":
-#         raise Exception(f"export_treeaut(): unsupported target_type '{target_type}'")
-
-#     if target_type == "f":
-#         ta.name = "unnamed" if ta.name == "" else ta.name
-#         filepath = f"./{ta.name}.{format_type}" if filepath == "" else filepath
-
-#     if format_type == "vtf":
-#         return export_treeaut_to_vtf(ta, target_type, filepath)
-#     else:
-#         return export_treeaut_to_tmb(ta, target_type, filepath)
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -215,7 +177,7 @@ def dot_state_handle(graph: graphviz.Digraph, state: str, leaves: set[str], root
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def convert_to_dot(src: Union[TTreeAut, TTreeNode, str, BDD], verbose=False, caption=False) -> graphviz.Digraph:
+def convert_to_dot(src: Union[TTreeAut, TTreeNode, str, BDD, ABDD], verbose=False, caption=False) -> graphviz.Digraph:
     if type(src) is TTreeAut:
         return treeaut_to_dot(src, verbose, caption)
     elif type(src) is TTreeNode:
@@ -224,6 +186,8 @@ def convert_to_dot(src: Union[TTreeAut, TTreeNode, str, BDD], verbose=False, cap
         return tree_to_dot(convert_string_to_tree(str(src)))
     elif type(src) is BDD:
         return bdd_to_dot(src)
+    elif type(src) is ABDD:
+        return abdd_to_dot(src)
 
 
 def treeaut_to_dot(ta: TTreeAut, verbose=False, caption=False) -> graphviz.Digraph:

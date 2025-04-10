@@ -2,10 +2,11 @@ import itertools
 import re
 
 from typing import Generator, Optional
+from apply.abdd_node_cache import ABDDNodeCacheClass
 from helpers.string_manipulation import create_string_from_name_set
 from helpers.utils import eprint, box_catalogue
-from tree_automata.automaton import TTreeAut, iterate_edges, iterate_states_bfs
-from tree_automata.transition import TTransition
+from tree_automata.automaton import TTreeAut, iterate_edges
+from tree_automata.transition import TEdge, TTransition
 from apply.abdd_node import ABDDNode
 
 
@@ -28,7 +29,7 @@ class ABDD:
         self.name = name
         self.variable_count = variable_count
         self.root = root
-        self.root_rule: Optional[str] = None if root.var == 1 else "X"
+        self.root_rule: Optional[str] = None
         self.node_map = {}
         self.node_count = 0
         self.terminal_0: Optional[ABDDNode] = root.find_terminal(0)
@@ -36,23 +37,24 @@ class ABDD:
 
     def __repr__(self):
         result = f"  [ABDD]: '{self.name}'\n"
-        result += f"  > Root = {self.root.node}\n"
-        result += f"  > Vars = {self.variable_count}\n"
+        result += f"  > Root node index     = {self.root.node}\n"
+        result += f"  > Root rule           = {self.root_rule}\n"
+        result += f"  > Number of variables = {self.variable_count}\n"
         result += "  > %-*s %-*s %-*s %-*s %-*s %-*s\n" % (
-            12,
+            10,
             "node(var)",
-            8,
-            "lowBox",
-            12,
-            "low(var)",
-            8,
-            "highBox",
-            12,
-            "high(var)",
+            5,
+            "LBox",
             20,
+            "low(var)",
+            5,
+            "HBox",
+            20,
+            "high(var)",
+            14,
             "hex(ID)",
         )
-        result += f"  " + "-" * 60 + "\n"
+        result += f"  " + "-" * (74 + 7) + "\n"
         for i in self.root.explore_subtree_bfs(repeat=False):
             if i.is_leaf:
                 continue
@@ -62,17 +64,17 @@ class ABDD:
             lowBox = i.low_box if i.low_box is not None else "-"
             highBox = i.high_box if i.high_box is not None else "-"
             result += "  > %-*s %-*s %-*s %-*s %-*s %-*s\n" % (
-                12,
+                10,
                 f"{i.node}({i.var})",
-                8,
+                5,
                 lowBox,
-                12,
-                lowStr,
-                8,
-                highBox,
-                12,
-                highStr,
                 20,
+                lowStr,
+                5,
+                highBox,
+                20,
+                highStr,
+                14,
                 hex(id(i)),
             )
         return result
@@ -172,16 +174,25 @@ class ABDD:
             raise ValueError(f"couldn't evaluate the truth value for {self.name}")
         return result
 
-    def convert_to_treeaut_obj(self) -> TTreeAut:
-        pass
+    def convert_to_treeaut_obj(self, cache) -> TTreeAut:
+        result = TTreeAut([f"{self.root.node}"], {f"{n.node}": {} for n in self.iterate_bfs_nodes()}, name=self.name)
+        keycounter = 0
+        for n in self.iterate_bfs_nodes():
+            sym = "LH" if not n.is_leaf else f"{n.leaf_val}"
+            var = f"{n.var}" if not n.is_leaf else f"{self.variable_count + 1}"
+            tr = TTransition(
+                f"{n.node}", TEdge(sym, [n.low_box, n.high_box], var), [f"{n.node}" for n in n.low + n.high]
+            )
+            result.transitions[f"{n.node}"][f"{keycounter}"] = tr
+            keycounter += 1
+        return result
 
     def reformat_node_names(self):
         name_map: dict[int, int] = {}
         counter = 0
         for i in self.root.explore_subtree_bfs():
-            if i.node is not None and i.node not in name_map:
-                i.node = counter
-                counter += 1
+            i.node = counter
+            counter += 1
 
     def change_leaf_level():
         """
@@ -209,7 +220,7 @@ def obtain_child_node_info(target_str: str, leafnode_count: int = 2) -> list[int
     return [int(target_str) + leafnode_count]
 
 
-def import_abdd_from_abdd_file(path: str) -> ABDD:
+def import_abdd_from_abdd_file(path: str, ncache: ABDDNodeCacheClass) -> ABDD:
     """
     TODO
     """
@@ -222,12 +233,10 @@ def import_abdd_from_abdd_file(path: str) -> ABDD:
     root_node: Optional[ABDDNode] = None
     node_cache: dict[int, tuple[ABDDNode, int | list[int], int | list[int]]] = {}
 
-    zero = ABDDNode(0)
-    zero.set_as_leaf(0)
-    one = ABDDNode(1)
-    one.set_as_leaf(1)
-    node_cache[0] = (zero, [], [])
-    node_cache[1] = (one, [], [])
+    zero = ncache.terminal_0
+    one = ncache.terminal_1
+    node_cache[-1] = (zero, [], [])
+    node_cache[-2] = (one, [], [])
 
     leafnode_count = 2
 
@@ -264,7 +273,7 @@ def import_abdd_from_abdd_file(path: str) -> ABDD:
             if any([s is None or s == "" for s in [node, var, low, high]]):
                 raise ValueError(f"Missing important node information at line {linenum}")
 
-            node_idx = int(node) + leafnode_count
+            node_idx = int(node)  # + leafnode_count
             if node_idx in node_cache:
                 raise ValueError(f"Duplicate entry for node {node}")
             var = int(var)
@@ -304,7 +313,9 @@ def import_abdd_from_abdd_file(path: str) -> ABDD:
     return ABDD(dd_name, var_count, root_node)
 
 
-def convert_ta_to_abdd(ta: TTreeAut, var_count: Optional[int] = None, node_start: int = 0) -> ABDD:
+def convert_ta_to_abdd(
+    ta: TTreeAut, ncache: ABDDNodeCacheClass, var_count: Optional[int] = None, node_start: int = 0
+) -> ABDD:
     """
     Given a folded TreeAut-like structure (UBDA/BDA), convert this TreeAut
     to ABDD instance.
@@ -316,46 +327,58 @@ def convert_ta_to_abdd(ta: TTreeAut, var_count: Optional[int] = None, node_start
 
     # statename -> corresponding node
     node_map: dict[str, ABDDNode] = {}
-    state_idx_map: dict[str, int] = {}
-    node_counter = node_start
+    # visited_states: dict[str, ABDDNode] = {}
+    # state_idx_map: dict[str, int] = {}
+    ncounter = node_start + 2  # idx 0 and idx 1 are reserved for terminal nodes
 
     vlen = len(ta.get_var_prefix())
 
+    # when this function is called, the following is assumed (for an ABDD-compatible binary decision automaton):
+    # - one TA rootstate
+    # - one state with "0"-labeled output edge
+    # - one state with "1"-labeled output edge
+    # - no two states represent roots of isomorphic ABDDs (i.e. the BDA is normalized)
+
     if len(ta.roots) != 1:
-        raise ValueError("ABDD can have only one root")
+        raise ValueError("convert_ta_to_abdd(): ABDD-compatible BDA can have only one root")
 
-    # we assume one TA rootstate in ABDD-compatible binary decision automaton
-    root = ta.roots[0]
-    state_idx_map[root] = node_counter
-    node_counter += 1
-    root_node = ABDDNode(state_idx_map[root])
-    result = ABDD(f"{ta.name}", var_count if var_count is not None else ta.get_var_max(), root_node)
-    node_map[root] = root_node
+    for sym, states in ta.get_output_edges().items():
+        if sym not in ["0", "1"]:
+            raise ValueError(
+                "convert_ta_to_abdd(): ABDD-compatible BDA can only have output transitions labeled with '0' and '1'"
+            )
+        # if len(states) > 1:
+        #     raise ValueError("convert_ta_to_abdd(): ABDD-compatible BDA can only have one state with specifically labeled output transition")
+        if sym == "0":
+            for s in states:
+                node_map[s] = ncache.terminal_0
+        if sym == "1":
+            for s in states:
+                node_map[s] = ncache.terminal_1
 
-    for state in iterate_states_bfs(ta):
-        if state in ta.roots:
-            continue
-        state_idx_map[state] = node_counter
-        node_counter += 1
-        node_map[state] = ABDDNode(state_idx_map[state])
-
-    for state in ta.roots:
-        node_map[state].is_root = True
-        result.root = node_map[state]
-
+    # since we now assume that every state is representing a unique Boolean function,
+    # inner node cache hits should not happen
     for edge in iterate_edges(ta):
-        node: ABDDNode = node_map[edge.src]
         if edge.children == []:
-            node.set_leaf_info_from_ta_transition(edge, var_prefix_len=vlen)
-            if edge.info.label == "0":
-                result.terminal_0 = node
-            if edge.info.label == "1":
-                result.terminal_1 = node
             continue
+        if edge.src not in node_map:
+            node_map[edge.src] = ABDDNode(ncounter)
+            ncounter += 1
+        for c in edge.children:
+            if c not in node_map:
+                node_map[c] = ABDDNode(ncounter)
+                ncounter += 1
         if edge.info.box_array == []:
             edge.info.box_array = [None, None]
-        node.set_node_info_from_ta_transition(edge, node_map, var_prefix_len=vlen)
+        node_map[edge.src].set_node_info_from_ta_transition(edge, node_map, var_prefix_len=vlen)
+
+    node_map[ta.roots[0]].is_root = True
+    result = ABDD(f"{ta.name}", var_count if var_count is not None else ta.get_var_max(), node_map[ta.roots[0]])
+    result.terminal_0 = ncache.terminal_0
+    result.terminal_1 = ncache.terminal_1
     result.node_count = result.count_nodes()
+    result.root_rule = "X" if result.root.var > 1 else None
+
     return result
 
 

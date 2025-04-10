@@ -64,11 +64,21 @@ class TTreeAut:
         for i in range(self.meta_data.arity):
             result += "%-*s  " % (child_len, f"{child_str[:-2]} {i + 1}")
         if self.print_keys:
-            result += "  %-*s" % (key_len, key_str) + "\n"
-            result += "  " + "-" * sum([src_len, edge_len, key_len, child_len * self.meta_data.arity, 17]) + "\n"
+            result += ": %-*s" % (key_len, key_str) + "\n"
+            space_correction_with_keys = 19
+            result += (
+                "  "
+                + "-" * sum([src_len, edge_len, key_len, child_len * self.meta_data.arity, space_correction_with_keys])
+                + "\n"
+            )
         else:
             result = result[:-2] + "\n"
-            result += "  " + "-" * sum([src_len, edge_len, child_len * self.meta_data.arity, 13]) + "\n"
+            space_correction_without_keys = 13
+            result += (
+                "  "
+                + "-" * sum([src_len, edge_len, child_len * self.meta_data.arity, space_correction_without_keys])
+                + "\n"
+            )
 
         # printing edges
         for state in iterate_states_bfs(self):
@@ -78,15 +88,15 @@ class TTreeAut:
                 result += "  > %-*s -- %-*s" % (src_len, e.src, edge_len, e.info)
                 if len(e.children) != 0:
                     result += " --> "
-                    for i in e.children:
-                        result += "%-*s  " % (child_len, i)
-                    result = result[:-2]
+                    for i in range(self.meta_data.arity):
+                        content = e.children[i] if i < len(e.children) else ""
+                        result += "%-*s  " % (child_len, content)
                 else:
-                    result += " " * (self.meta_data.arity * child_len + 7)
+                    space_correction = len(" --> ") + self.meta_data.arity * len("  ")
+                    result += " " * (self.meta_data.arity * child_len + space_correction)
                 if self.print_keys:
-                    result += "  : %-*s" % (key_len, k)
+                    result += ": %-*s" % (key_len, k)
                 result += "\n"
-        # result = "-" * 78 + '\n'
         return result[:-1]  # trim the last '\n'
 
     def __eq__(self, ta):
@@ -1030,5 +1040,6 @@ class TTreeAutMetaData:
             for child in edge.children:
                 self.child = max(self.child, len(child))
 
-        for arity in self.ta.get_symbol_arity_dict().values():
-            self.arity = max(self.arity, arity)
+        # for arity in self.ta.get_symbol_arity_dict().values():
+        #     self.arity = max(self.arity, arity)
+        self.arity = max(len(t.children) for t in iterate_edges(self.ta))

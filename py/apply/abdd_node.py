@@ -1,7 +1,5 @@
-from types import NoneType
 from typing import Generator, Iterator, Optional, Union
 
-from tree_automata.automaton import TTreeAut
 from tree_automata.transition import TTransition
 from helpers.utils import box_arities, eprint
 
@@ -275,7 +273,7 @@ class ABDDNode:
             yield node
             visited.add(node)
             queue.extend([(node, False, i) for i in node.low])
-            queue.extend([(node, False, i) for i in node.high])
+            queue.extend([(node, True, i) for i in node.high])
 
     def explore_subtree_dfs_backrefs(self, repeat=False) -> Iterator[tuple["ABDDNode", bool, "ABDDNode"]]:
         queue: list[ABDDNode] = [(self, True, i) for i in reversed(self.high)] + [

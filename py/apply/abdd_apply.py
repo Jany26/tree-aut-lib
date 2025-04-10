@@ -1,26 +1,16 @@
-from typing import NewType, Optional, Union
-from apply import materialization
-from apply.abdd import ABDD, convert_ta_to_abdd
+from typing import Optional
+from apply.abdd import ABDD
+from apply.abdd_node_cache import ABDDNodeCacheClass
+from apply.abdd_call_cache import ABDDCallCacheClass
 from apply.apply_edge import ApplyEdge
-from apply.box_algebra import port_connection
 from apply.box_algebra.apply_intersectoid import BooleanOperation
 from apply.box_algebra.box_trees import BoxTreeNode
-from apply.box_algebra.port_connection import PortConnectionInfo
 from apply.materialization.abdd_pattern import MaterializationRecipe
 from apply.materialization.pattern_generate import obtain_predicates
-from helpers.utils import box_catalogue
-from tree_automata.automaton import TTreeAut
 from apply.abdd_node import ABDDNode
 
 from apply.pregenerated.box_algebrae import boxtree_cache
 from apply.pregenerated.materialization_recipes import cached_materialization_recipes
-
-
-materialization_map: dict[str, int] = {"out0": 0, "out1": 1}
-
-default_boxtree = BoxTreeNode(
-    node=None, port_info=[PortConnectionInfo(target1=0, target2=0, recursion=True, negation=False)]
-)
 
 
 class ABDDApplyHelper:
@@ -36,34 +26,12 @@ class ABDDApplyHelper:
 
     """
 
-    # cache[ op, var, node_a, box_a, node_b, box_b ] -> node
-    call_cache: dict[
-        tuple[
-            BooleanOperation,  # operation used in the apply call
-            int,  # at which variable level is apply called
-            int,  # node index of the first operand node
-            str,  # box used on the edge leading to the first operand node
-            int,  # node index of the second operand node
-            str,  # box used on the edge leading to the second operand node
-        ],
-        ABDDNode,
-    ]
+    call_cache: ABDDCallCacheClass
+    node_cache: ABDDNodeCacheClass
 
-    # cache [ var, low_box, low_target, high_box, high_target ] -> node
-    node_cache: dict[
-        tuple[
-            int,  # variable of the node
-            Optional[str],  # low-edge box              / None in case of leaf nodes
-            tuple[int],  # low-edge target node idx
-            Optional[str],  # high-edge box             / None in case of leaf nodes
-            tuple[int],  # high-edge target node idx
-        ],
-        ABDDNode,
-    ]
-
-    def __init__(self, in1: ABDD, in2: ABDD, maxvar: Optional[int] = None):
+    def __init__(self, in1: ABDD, in2: ABDD, maxvar: Optional[int] = None, cache: Optional[ABDDNodeCacheClass] = None):
         self.call_cache = {}
-        self.node_cache = {}
+        self.node_cache = cache if cache is not None else ABDDNodeCacheClass()
 
         self.abdd1: ABDD = in1
         self.abdd2: ABDD = in2
@@ -77,35 +45,15 @@ class ABDDApplyHelper:
         self.depth = 0
 
         for i in in1.iterate_bfs_nodes():
-            if self.find_node(i) is None:
-                self.insert_node(i)
+            if self.node_cache.find_node(i) is None:
+                self.node_cache.insert_node(i)
         for i in in2.iterate_bfs_nodes():
-            if self.find_node(i) is None:
-                self.insert_node(i)
-
-    def insert_call(self, op: BooleanOperation, edge1: ApplyEdge, edge2: ApplyEdge) -> None:
-        pass
-
-    def find_call(self, op: BooleanOperation, edge1: ApplyEdge, edge2: ApplyEdge) -> Optional[ABDDNode]:
-        pass
-
-    def insert_node(self, node: ABDDNode) -> None:
-        low_tuple = tuple([n.leaf_val if n.is_leaf else n.node for n in node.low])
-        high_tuple = tuple([n.leaf_val if n.is_leaf else n.node for n in node.high])
-        lookup = tuple([node.var, node.low_box, low_tuple, node.high_box, high_tuple])
-        self.node_cache[lookup] = node
-
-    def find_node(self, node: ABDDNode) -> Optional[ABDDNode]:
-        low_tuple = tuple([n.leaf_val if n.is_leaf else n.node for n in node.low])
-        high_tuple = tuple([n.leaf_val if n.is_leaf else n.node for n in node.high])
-        lookup = tuple([node.var, node.low_box, low_tuple, node.high_box, high_tuple])
-        if lookup in self.node_cache:
-            return self.node_cache[lookup]
-        return None
+            if self.node_cache.find_node(i) is None:
+                self.node_cache.insert_node(i)
 
 
 def abdd_apply(
-    op: BooleanOperation, in1: Union[TTreeAut, ABDD], in2: Union[TTreeAut, ABDD], maxvar: Optional[int] = None
+    op: BooleanOperation, in1: ABDD, in2: ABDD, cache: ABDDNodeCacheClass, maxvar: Optional[int] = None
 ) -> ABDD:
     """
     This serves as a wrapper to the recursive abdd_apply_from(), where actual apply takes place.
@@ -119,18 +67,19 @@ def abdd_apply(
     # some preliminary typecasting and checking
     if maxvar is None:
         maxvar = max(in1.get_var_max(), in2.get_var_max())
-    if type(in1) == TTreeAut:
-        in1 = convert_ta_to_abdd(in1, var_count=maxvar)
-    if type(in2) == TTreeAut:
-        in2 = convert_ta_to_abdd(in2, var_count=maxvar)
+    # if type(in1) == TTreeAut:
+    #     in1 = convert_ta_to_abdd(in1, var_count=maxvar)
+    # if type(in2) == TTreeAut:
+    #     in2 = convert_ta_to_abdd(in2, var_count=maxvar)
 
     if not (maxvar is not None and type(in1) == ABDD and type(in2) == ABDD):
         ValueError("invalid parameters")
 
     # manual materialization override for root nodes
-    helper = ABDDApplyHelper(in1, in2, maxvar=maxvar)
+    helper = ABDDApplyHelper(in1, in2, maxvar=maxvar, cache=cache)
     e1 = ApplyEdge(in1, None, None)
     e2 = ApplyEdge(in2, None, None)
+    print(cache)
     rule, roots = abdd_apply_from(op, e1, e2, helper)
     root = roots[0]
     abdd = ABDD(f"{in1.name} {op.name} {in2.name}", maxvar, root)
@@ -167,14 +116,14 @@ def process_boxtree_leafcase(
     new_abdd_node.low = low_targets
     new_abdd_node.high_box = high_rule
     new_abdd_node.high = high_targets
-    cache_hit = helper.find_node(new_abdd_node)
+    cache_hit = helper.node_cache.find_node(new_abdd_node)
     nodes = []
     if cache_hit is not None:
         nodes.append(cache_hit)
     else:
         nodes.append(new_abdd_node)
         helper.counter += 1
-        helper.insert_node(new_abdd_node)
+        helper.node_cache.find_node.insert_node(new_abdd_node)
     rule = None
     return rule, nodes
 
@@ -208,13 +157,13 @@ def process_boxtree_innercase(
                 node.high_box = h_rule
                 node.high = h_target
                 node.is_leaf = False
-                cache_hit = helper.find_node(node)
+                cache_hit = helper.node_cache.find_node(node)
                 if cache_hit is not None:
                     nodes.append(cache_hit)
                 else:
                     nodes.append(node)
                     helper.counter += 1
-                    helper.insert_node(node)
+                    helper.node_cache.insert_node(node)
             elif pc.target1 is not None:
                 nodes.append(e1.target[pc.target1])
             elif pc.target2 is not None:
@@ -239,14 +188,14 @@ def process_boxtree_innercase(
     new_abdd_node.high = high_targets
     new_abdd_node.is_leaf = False
 
-    cache_hit = helper.find_node(new_abdd_node)
+    cache_hit = helper.node_cache.find_node(new_abdd_node)
     nodes = []
     if cache_hit is not None:
         nodes.append(cache_hit)
     else:
         nodes.append(new_abdd_node)
         helper.counter += 1
-        helper.insert_node(new_abdd_node)
+        helper.node_cache.insert_node(new_abdd_node)
 
     rule = None
     return rule, nodes
@@ -362,9 +311,11 @@ def materialize_abdd_pattern(
         currentnode.high = newhigh
 
         # checking the materialized node against the node cache
-        cache_hit = helper.find_node(currentnode)
+        cache_hit = helper.node_cache.find_node(currentnode)
         if cache_hit is not None:
             nodemap[pattern.name] = cache_hit
+        else:
+            helper.node_cache.insert_node(currentnode)
 
     # redirecting initial targets and rules in the ABDD
     result = ApplyEdge(edge.abdd, edge.source, edge.direction)
@@ -386,14 +337,12 @@ def produce_terminal(val1: int, val2: int, op: BooleanOperation, helper: ABDDApp
         BooleanOperation.IMPLY: not val1 or val2,
         BooleanOperation.NOT: -1,
     }
-    node = ABDDNode(helper.counter)
-    helper.counter += 1
-    node.set_as_leaf(op_translate[op])
-    if node in helper.node_cache:
-        return helper.node_cache[node]
+    if op_translate[op] == 0:
+        return helper.abdd1.terminal_0
+    elif op_translate[op] == 1:
+        return helper.abdd1.terminal_1
     else:
-        helper.node_cache[node] = node
-        return node
+        raise ValueError("produce_terminal(): unsupported binary operator")
 
 
 ## Make the materialization take ABDD, and two nodes (or one in case it is above root node) in between which the materialized node will sit

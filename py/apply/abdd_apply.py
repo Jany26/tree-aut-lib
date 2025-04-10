@@ -1,3 +1,4 @@
+from types import NoneType
 from typing import Optional
 from apply.abdd import ABDD
 from apply.abdd_node_cache import ABDDNodeCacheClass
@@ -11,6 +12,18 @@ from apply.abdd_node import ABDDNode
 
 from apply.pregenerated.box_algebrae import boxtree_cache
 from apply.pregenerated.materialization_recipes import cached_materialization_recipes
+
+
+negate_box_label = {
+    None: None,
+    "X": "X",
+    "L0": "L1",
+    "L1": "L0",
+    "H0": "H1",
+    "H1": "H0",
+    "LPort": "LPort",
+    "HPort": "HPort",
+}
 
 
 class ABDDApplyHelper:
@@ -29,17 +42,25 @@ class ABDDApplyHelper:
     call_cache: ABDDCallCacheClass
     node_cache: ABDDNodeCacheClass
 
-    def __init__(self, in1: ABDD, in2: ABDD, maxvar: Optional[int] = None, cache: Optional[ABDDNodeCacheClass] = None):
+    # we will use id(node) as keys into the cache
+    negation_cache: dict[int, ABDDNode]
+
+    def __init__(
+        self, in1: ABDD, in2: Optional[ABDD], maxvar: Optional[int] = None, cache: Optional[ABDDNodeCacheClass] = None
+    ):
         self.call_cache = {}
         self.node_cache = cache if cache is not None else ABDDNodeCacheClass()
+        self.negation_cache = {id(cache.terminal_0): cache.terminal_1, id(cache.terminal_1): cache.terminal_0}
 
         self.abdd1: ABDD = in1
-        self.abdd2: ABDD = in2
+        self.abdd2: Optional[ABDD] = in2
 
         self.counter_1: int = in1.count_nodes()
-        self.counter_2: int = in2.count_nodes()
-        self.counter: int = max(
-            [n.node for n in self.abdd1.iterate_bfs_nodes()] + [n.node for n in self.abdd2.iterate_bfs_nodes()]
+        self.counter_2: int = in2.count_nodes() if in2 is not None else 0
+        self.counter: int = (
+            max([n.node for n in self.abdd1.iterate_bfs_nodes()] + [n.node for n in self.abdd2.iterate_bfs_nodes()])
+            if in2 is not None
+            else max([n.node for n in self.abdd1.iterate_bfs_nodes()])
         )
         self.maxvar = maxvar
         self.depth = 0
@@ -47,13 +68,26 @@ class ABDDApplyHelper:
         for i in in1.iterate_bfs_nodes():
             if self.node_cache.find_node(i) is None:
                 self.node_cache.insert_node(i)
-        for i in in2.iterate_bfs_nodes():
-            if self.node_cache.find_node(i) is None:
-                self.node_cache.insert_node(i)
+        if in2 is not None:
+            for i in in2.iterate_bfs_nodes():
+                if self.node_cache.find_node(i) is None:
+                    self.node_cache.insert_node(i)
+
+    def find_negated_node(self, node: ABDDNode) -> Optional[ABDDNode]:
+        if id(node) in self.negation_cache:
+            return self.negation_cache[id(node)]
+        return None
+
+    def insert_negated_node(self, node: ABDDNode, negation: ABDDNode) -> None:
+        self.negation_cache[id(node)] = negation
 
 
 def abdd_apply(
-    op: BooleanOperation, in1: ABDD, in2: ABDD, cache: ABDDNodeCacheClass, maxvar: Optional[int] = None
+    op: BooleanOperation,
+    in1: ABDD,
+    in2: Optional[ABDD] = None,
+    cache: ABDDNodeCacheClass = None,
+    maxvar: Optional[int] = None,
 ) -> ABDD:
     """
     This serves as a wrapper to the recursive abdd_apply_from(), where actual apply takes place.
@@ -67,22 +101,29 @@ def abdd_apply(
     # some preliminary typecasting and checking
     if maxvar is None:
         maxvar = max(in1.get_var_max(), in2.get_var_max())
-    # if type(in1) == TTreeAut:
-    #     in1 = convert_ta_to_abdd(in1, var_count=maxvar)
-    # if type(in2) == TTreeAut:
-    #     in2 = convert_ta_to_abdd(in2, var_count=maxvar)
 
-    if not (maxvar is not None and type(in1) == ABDD and type(in2) == ABDD):
-        ValueError("invalid parameters")
+    if not (maxvar is not None and type(in1) == ABDD and (type(in2) == ABDD or type(in2) == NoneType)):
+        raise ValueError("invalid parameters")
 
-    # manual materialization override for root nodes
     helper = ABDDApplyHelper(in1, in2, maxvar=maxvar, cache=cache)
     e1 = ApplyEdge(in1, None, None)
+
+    # special handling for negation
+    if op.name == "NOT" and type(in2) == NoneType:
+        root = negate_subtree(in1, in1.root, helper)
+        print(f"negation result = {root}")
+        abdd = ABDD(f"{op.name} {in1.name}", maxvar, root)
+        abdd.root_rule = negate_box_label[in1.root_rule]
+        return abdd
+
+    if not (op.name != "NOT" and type(in2) == ABDD):
+        raise ValueError("invalid parameters")
+
+    # handling for normal binary operator apply
     e2 = ApplyEdge(in2, None, None)
-    print(cache)
     rule, roots = abdd_apply_from(op, e1, e2, helper)
     root = roots[0]
-    abdd = ABDD(f"{in1.name} {op.name} {in2.name}", maxvar, root)
+    abdd = ABDD(f"({in1.name} {op.name} {in2.name})", maxvar, root)
     abdd.root_rule = rule
     return abdd
 
@@ -165,9 +206,15 @@ def process_boxtree_innercase(
                     helper.counter += 1
                     helper.node_cache.insert_node(node)
             elif pc.target1 is not None:
-                nodes.append(e1.target[pc.target1])
+                resultnode = e1.target[pc.target1]
+                if pc.negation:
+                    resultnode = negate_subtree(helper.abdd1, resultnode, helper)
+                nodes.append(resultnode)
             elif pc.target2 is not None:
-                nodes.append(e2.target[pc.target2])
+                resultnode = e2.target[pc.target2]
+                if pc.negation:
+                    resultnode = negate_subtree(helper.abdd2, resultnode, helper)
+                nodes.append(resultnode)
         return rule, nodes
 
     low_rule, low_targets = (
@@ -248,13 +295,37 @@ def abdd_apply_from(
     return rule, nodes
 
 
-def negate_subtree(abdd: ABDD, root: ABDDNode, helper: ABDDApplyHelper) -> ABDDNode:
-    """
-    Explore the subtree rooted in 'root' within 'abdd' and negate it, while creating copies of the inner nodes.
+def negate_subtree(abdd: ABDD, node: ABDDNode, helper: ABDDApplyHelper) -> ABDDNode:
+    cache_hit = helper.find_negated_node(node)
+    if cache_hit is not None:
+        return cache_hit
 
-    Copies are created when there is no node_cache hit (cache can be found in "helper" object).
-    """
-    root.explore_subtree_bfs_backrefs(repeat=False)
+    # since terminal nodes are in the cache from the start, we don't have to explicitly
+    # check leaf nodes for early return, it would happen in the initial cache check
+
+    neg_low = [negate_subtree(abdd, child, helper) for child in node.low]
+    neg_high = [negate_subtree(abdd, child, helper) for child in node.high]
+    low_box = negate_box_label[node.low_box]
+    high_box = negate_box_label[node.high_box]
+
+    newnode = ABDDNode(helper.counter)
+    newnode.var = node.var
+    newnode.low = neg_low
+    newnode.low_box = low_box
+    newnode.high = neg_high
+    newnode.high_box = high_box
+    newnode.is_root = node.is_root
+    newnode.is_leaf = node.is_leaf
+
+    cache_hit = helper.node_cache.find_node(newnode)
+    if cache_hit is None:
+        helper.counter += 1
+        helper.node_cache.insert_node(newnode)
+    else:
+        del newnode
+        newnode = cache_hit
+    helper.insert_negated_node(node, newnode)
+    return newnode
 
 
 def materialize_abdd_pattern(

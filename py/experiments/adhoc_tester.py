@@ -96,7 +96,7 @@ def test_dimacs_benchmark(path, options: TestOptions) -> Tuple[bool | None, str]
         return eq, report
 
     for i, ta in enumerate(tree_auts.values()):
-        ta.meta_data.Frecompute()
+        ta.meta_data.recompute()
         if options.export_vtf:
             export_treeaut_to_vtf(ta, f"{options.output_path}/{i:02d}-{names[i]}.vtf")
         if options.export_png:
@@ -137,7 +137,7 @@ def check_equivalence(tree_auts: dict, options: TestOptions):
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def canonize_benchmark(initial: TTreeAut, options: TestOptions):
+def canonize_benchmark(initial: TTreeAut, options: TestOptions) -> dict[str, TTreeAut]:
     if not os.path.exists(options.output_path):
         os.makedirs(options.output_path)
     if options.progress:
@@ -240,7 +240,7 @@ def canonize_benchmark(initial: TTreeAut, options: TestOptions):
     normalization_log.close()
     folding_log.close()
 
-    result = {
+    result: dict[str, TTreeAut] = {
         "initial": initial,
         "initial_extra": initial_changed,
         "unfolded": unfolded,

@@ -5,6 +5,7 @@
 """
 
 import sys
+from typing import Optional
 
 from tree_automata.automaton import TTreeAut
 from formats.format_vtf import import_treeaut_from_vtf
@@ -44,7 +45,8 @@ box_h0: TTreeAut = import_treeaut_from_vtf("../tests/boxes/boxH0.vtf")
 box_h1: TTreeAut = import_treeaut_from_vtf("../tests/boxes/boxH1.vtf")
 box_hport: TTreeAut = import_treeaut_from_vtf("../tests/boxes/boxHPort.vtf")
 
-box_arities: dict[str, int] = {
+box_arities: dict[Optional[str], int] = {
+    None: 1,
     "X": 1,
     "L0": 1,
     "L1": 1,

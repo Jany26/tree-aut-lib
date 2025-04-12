@@ -90,10 +90,10 @@ class SimulationHelper:
 
 def simulate_run_treeaut(ta: TTreeAut, assignment: list[int], verbose=False) -> bool:
     """
-    # Simulates a run through the automaton (branching / deciding process),
-    # given a variable evaluation. Returns a value on a leaf node
-    # ... with UBDAs => 1 = true, 0 = false
-    # NOTE: So far works with unfolded/normalized UBDA.
+    Simulates a run through the automaton (branching / deciding process),
+    given a variable evaluation. Returns a value on a leaf node
+    ... with UBDAs => 1 = true, 0 = false
+    NOTE: So far works with unfolded/normalized UBDA.
     """
 
     def create_sorted_edge_list(edges: dict[str, TTransition]) -> list[str]:

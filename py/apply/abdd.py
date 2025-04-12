@@ -123,66 +123,96 @@ class ABDD:
                 return False
         return True
 
-    def evaluate_for(self, assignment: list[bool]) -> int:
+    def evaluate_for(self, assignment: list[bool], verbose=False) -> int:
         def evaluate_box(box: TTreeAut, assignment: list[bool], node_map: dict[str, ABDDNode]) -> bool | ABDDNode:
+
             current = box.roots[0]
             outputs = box.get_output_edges(inverse=True)
-            while assignment != []:
-                val = assignment.pop(0)
-                if current in outputs:
-                    break
-                pick_loop = assignment != []
+            if verbose:
+                print(f"  > box eval {box.name} start: current={current}, assignment={assignment}")
+            for i, val in enumerate(subassign):
                 for t in box.transitions[current].values():
-                    if pick_loop == t.is_self_loop():
+                    if t.is_self_loop() == (i < len(subassign) - 1) and len(t.children) > int(val):
+                        if verbose:
+                            print(
+                                f"  > current={current}, idx={i}, assignment={assignment}, current_val={val}, output=None, loop={t.is_self_loop()}"
+                            )
                         current = t.children[int(val)]
-                    continue
-            # either we map a terminal result
-            if outputs[current][0] in ["0", "1"]:
-                return True if outputs[current][0] == "1" else False
+                        break
+            # if we managed to reach an output state,
+            if current not in outputs:
+                raise ValueError("evaluate_box(): didn't reach an output state")
+            # then we either map a terminal result
+            out_label = outputs[current][0]
+            if out_label in ["0", "1"]:
+                if verbose:
+                    print(
+                        f'  > current={current}, outputs={[f"{s}->{node_map[p[0]].node if p[0].startswith("Port") else p[0]}" for s, p in outputs.items()]}, result={out_label}'
+                    )
+                return out_label == "1"
             # or map the node corresponding to the port
-            return node_map[outputs[current][0]]
+            if verbose:
+                print(
+                    f'  > current={current}, outputs={[f"{s}->{node_map[p[0]].node if p[0].startswith("Port") else p[0]}" for s, p in outputs.items()]}, result={node_map[outputs[current][0]].node}'
+                )
+            return node_map[out_label]
 
+        if verbose:
+            print(f"evaluating {self.name} for {assignment}")
         current_node: Optional[ABDDNode] = None
-        result = None
         while True:
+            if verbose:
+                print(f" > node={current_node.node if current_node is not None else "None"}, ", end="")
             if current_node is not None and current_node.is_leaf:
-                result = current_node.leaf_val
-                break
+                if verbose:
+                    print(f"leaf={current_node.leaf_val}")
+                return int(current_node.leaf_val)
             current_var = 0 if current_node is None else current_node.var - 1
             rule = (
                 self.root_rule
                 if current_node is None
-                else (current_node.high_box if assignment[current_var - 1] else current_node.low_box)
+                else (current_node.high_box if assignment[current_var] else current_node.low_box)
             )
             target = (
                 [self.root]
                 if current_node is None
-                else (current_node.high if assignment[current_var - 1] else current_node.low)
+                else (current_node.high if assignment[current_var] else current_node.low)
             )
             if rule is None:
+                if verbose:
+                    print(f"var={current_var+1}, rule={rule}, target={','.join(f"{t.node}" for t in target)}")
                 current_node = target[0]
             else:
                 target_var = max([self.variable_count + 1 if t.is_leaf else t.var for t in target])
                 port_map = {port: target[i] for i, (port, state) in enumerate(box_catalogue[rule].get_port_order())}
-                subassign = assignment[current_var : target_var - 1]
+                subassign = assignment[current_var + 1 : target_var - 1]
+                if verbose:
+                    print(
+                        f"var={current_var+1}, rule={rule}, target={','.join(f"{t.node}" for t in target)}, target_var={target_var}, ports={[f"{i} -> {n.node}" for i, (p, n) in enumerate(port_map.items())]}, sub={subassign}"
+                    )
                 box_eval = evaluate_box(box_catalogue[rule], subassign, port_map)
                 if type(box_eval) == bool:
-                    result = int(box_eval)
-                    break
+                    return int(box_eval)
                 current_node = box_eval
-        if result is None:
-            raise ValueError(f"couldn't evaluate the truth value for {self.name}")
-        return result
 
-    def convert_to_treeaut_obj(self, cache) -> TTreeAut:
+    def convert_to_treeaut_obj(self) -> TTreeAut:
         result = TTreeAut([f"{self.root.node}"], {f"{n.node}": {} for n in self.iterate_bfs_nodes()}, name=self.name)
         keycounter = 0
         for n in self.iterate_bfs_nodes():
             sym = "LH" if not n.is_leaf else f"{n.leaf_val}"
             var = f"{n.var}" if not n.is_leaf else f"{self.variable_count + 1}"
-            tr = TTransition(
-                f"{n.node}", TEdge(sym, [n.low_box, n.high_box], var), [f"{n.node}" for n in n.low + n.high]
-            )
+
+            # NOTE: it is important to set the boxarray to [] in case of leaf nodes,
+            # since during normalization, "symbol_arity_dict()" method is used, and it counts arities of symbols
+            # using either the length of a box array (in case of leaf nodes it should be [] -> thus 0), or in case of
+            # "LH", it counts the number of boxes in the boxarray (which is always 2 -> padded with None if needed)
+
+            # this older way of counting boxes in the boxarray breaks when converting ABDD to a BDA,
+            # unfolding and normalizing -> during conversion, terminal nodes still have low_box and high_box,
+            # which are set to None and during the conversion, are changed as such
+
+            boxarray = [] if n.is_leaf else [n.low_box, n.high_box]
+            tr = TTransition(f"{n.node}", TEdge(sym, boxarray, var), [f"{n.node}" for n in n.low + n.high])
             result.transitions[f"{n.node}"][f"{keycounter}"] = tr
             keycounter += 1
         return result
@@ -235,8 +265,8 @@ def import_abdd_from_abdd_file(path: str, ncache: ABDDNodeCacheClass) -> ABDD:
 
     zero = ncache.terminal_0
     one = ncache.terminal_1
-    node_cache[-1] = (zero, [], [])
-    node_cache[-2] = (one, [], [])
+    node_cache[0] = (zero, [], [])
+    node_cache[1] = (one, [], [])
 
     leafnode_count = 2
 
@@ -273,7 +303,7 @@ def import_abdd_from_abdd_file(path: str, ncache: ABDDNodeCacheClass) -> ABDD:
             if any([s is None or s == "" for s in [node, var, low, high]]):
                 raise ValueError(f"Missing important node information at line {linenum}")
 
-            node_idx = int(node)  # + leafnode_count
+            node_idx = int(node) + leafnode_count
             if node_idx in node_cache:
                 raise ValueError(f"Duplicate entry for node {node}")
             var = int(var)
@@ -373,7 +403,7 @@ def convert_ta_to_abdd(
         node_map[edge.src].set_node_info_from_ta_transition(edge, node_map, var_prefix_len=vlen)
 
     node_map[ta.roots[0]].is_root = True
-    result = ABDD(f"{ta.name}", var_count if var_count is not None else ta.get_var_max(), node_map[ta.roots[0]])
+    result = ABDD(f"{ta.name}", var_count if var_count is not None else ta.get_var_max() - 1, node_map[ta.roots[0]])
     result.terminal_0 = ncache.terminal_0
     result.terminal_1 = ncache.terminal_1
     result.node_count = result.count_nodes()
@@ -401,8 +431,10 @@ def check_if_abdd(ta: TTreeAut) -> bool:
             output_vars.add(edge.info.variable)
             continue
         arity_sum = sum(1 if b in [None, ""] else box_catalogue[b].port_arity for b in edge.info.box_array)
+        if edge.info.box_array == []:
+            arity_sum = len(edge.children)
         if len(edge.children) != arity_sum:
-            eprint(f"inconsistent arity on edge {edge}")
+            eprint(f"inconsistent arity on edge {edge}, {edge.info.box_array}")
             result = False
 
         for i in edge.info.box_array:
@@ -417,7 +449,8 @@ def check_if_abdd(ta: TTreeAut) -> bool:
         if edge.info.variable == "":
             eprint(f"no variable on edge {edge}")
             result = False
-    output_vars.remove("")
+    if "" in output_vars:
+        output_vars.remove("")
     if len(output_vars) > 1:
         eprint(f"inconsistent output variables: {create_string_from_name_set(output_vars)}")
         result = False

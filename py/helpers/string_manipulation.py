@@ -38,6 +38,16 @@ def get_var_prefix_from_list(var_list: list[str]) -> str:
     return prefix
 
 
+def get_var_translate(variables: list[str]) -> dict[str, int]:
+    prefix = get_var_prefix_from_list(variables)
+    plen = len(prefix)
+    return {var: int(var[plen:]) for var in variables}
+
+
+# def macrostring(macrostate: list[str]) -> str:
+#     return create_string_from_name_set(state_name_sort(macrostate))
+
+
 def create_string_from_name_set(state_list: list[str]) -> str:
     """
     Create a string (state name) from list of states -- e.g. '{a,b,c}'

@@ -1,5 +1,5 @@
 import copy
-from typing import Generator
+from typing import Generator, Iterator
 
 from tree_automata.transition import TEdge, TTransition
 from helpers.string_manipulation import state_name_sort, get_var_prefix_from_list
@@ -25,6 +25,22 @@ class TTreeAut:
     - each state in the state dictionary references another dictionary
         - this will be called "transition" dictionary (for the current state)
         - the transition dictionary is referenced by arbitrary keys (for now)
+
+    Important note: this class is also used to represent UBDAs, BDAs,
+    and BDAs that are compatible with ABDDs.
+    - BDAs: binary decision automaton
+        - is not necessarily in canonical form,
+        - each state always has ONE outgoing transition
+    - UBDAs: unreduced binary decision automaton
+        - when all box occurrences in the BDA are replaced with their structures
+        - UBDAs can contain self-loops, isomorphic states, etc.
+    - normalized UBDA: contains no isomorphic states, i.e. roots to TA with the
+    same language, or roots to DDs representing the same Boolean function
+    - well-specified UBDA: only one binary decision tree can be equal to it
+    - ABDD - automata-based binary decision diagram
+
+    What this means is that sometimes we need to enforce one root state, or
+    we utilize a "root rule", etc...
     """
 
     def __init__(
@@ -552,13 +568,13 @@ class TTreeAut:
         """
         res: set[str] = set()
         for edge in iterate_edges(self):
-            if edge.info.variable != "":
-                prefix_len = 0
-                for i in range(len(edge.info.variable)):
-                    if not edge.info.variable[i:].isnumeric():
-                        prefix_len += 1
-                var = edge.info.variable[:prefix_len]
-                res.add(var)
+            # if edge.info.variable != "":
+            prefix_len = 0
+            for i in range(len(edge.info.variable)):
+                if not edge.info.variable[i:].isnumeric():
+                    prefix_len += 1
+            var = edge.info.variable[:prefix_len]
+            res.add(var)
         if len(res) > 1:
             raise ValueError("inconsistent variable prefix")
         el: str = res.pop()

@@ -6,7 +6,7 @@
 
 import copy
 import itertools
-from typing import Dict, List, Set, Tuple, Generator
+from typing import Dict, List, Optional, Set, Tuple, Generator
 
 from tree_automata import (
     TTreeAut,
@@ -132,6 +132,85 @@ def create_intersectoid(ta: TTreeAut, box: TTreeAut, root: str, helper: FoldingH
     return result
 
 
+def create_intersectoid_new(ta: TTreeAut, box: TTreeAut, root: str, helper: FoldingHelper):
+    edges: set[TTransition] = set()
+    visited: set[str] = set()
+    worklist: list[tuple[str, str]] = [(root, b) for b in box.roots]
+    while worklist != []:
+        ta_state, box_state = worklist.pop(0)
+        src: str = tuple_name((ta_state, box_state))
+        if src in visited:
+            continue
+        for ta_edge in ta.transitions[ta_state].values():
+            for box_edge in box.transitions[box_state].values():
+                # print(f'processing {ta_edge} + {box_edge}')
+                edge = process_intersectoid_edge(src, ta_edge, box_edge, helper)
+                if edge is None:
+                    continue
+                # print(f'adding {edge}')
+                edges.add(edge)
+                new = [c for c in zip(ta_edge.children, box_edge.children) if tuple_name(c) not in visited]
+                # print(f'worklist += {new}')
+                worklist.extend(new)
+        visited.add(src)
+    roots = [tuple_name((root, b)) for b in box.roots]
+    name = f"intersectoid({root}, {box.name.replace("box", "")})"
+    transitions = {}
+    for k, e in enumerate(edges, start=1):
+        if e.src not in transitions:
+            transitions[e.src] = {}
+        transitions[e.src][f"k{k}"] = e
+    result = TTreeAut(roots, transitions, name, box.port_arity)
+    return result
+
+
+def process_intersectoid_edge(
+    src: str, ta_edge: TTransition, box_edge: TTransition, helper: FoldingHelper
+) -> Optional[TTransition]:
+    """
+    UBDA = 'ta', BOX = 'box', Delta = set of transitions
+    1) (q,s)-{LH}-->[ (q1,s1),(q2,s2) ] iff
+            q-{LH}->(q1,q2) \in Delta(UBDA) and
+            s-{LH}->(s1,s2) \in Delta(BOX) and
+            s1 = s2 ==> q1 = q2
+
+    2) (q,s)-{LH, var}-->[ (q1,s1),(q2,s2) ] iff
+            q-{LH,var}->(q1,q2) \in Delta(UBDA) and
+            s-{LH}->(s1,s2) \in Delta(BOX) and
+            s1 = s2 ==> q1 = q2
+
+    3) (q,s)-{a}->() where a \in {'0', '1'} iff
+            q-{a}->() \in Delta(UBDA) and s-{a}->() \in Delta(BOX) trd. of b
+
+    4) (q,s)-{Port_i}->() | s-{Port_i}->() in Delta(BOX)
+    """
+    edge_var = helper.state_var_map[ta_edge.src] if ta_edge.src in helper.state_var_map else ""
+
+    # Case 4: If box label is a port, then that "overrules" any other label.
+    if box_edge.info.label.startswith("Port"):
+        return TTransition(src, TEdge(box_edge.info.label, [], edge_var), [])
+
+    # Skip reduced edges, BUT NOT when the source state can create a port transition.
+    # Since we work with a DAG and not a tree, I guess this can happen.
+    if any([b is not None for b in ta_edge.info.box_array]):
+        return None
+
+    # Skip differently labeled edges (e.g. 'LH' vs. 0/1). Ports are exceptions.
+    if ta_edge.info.label != box_edge.info.label:
+        return None
+
+    # A little optimization -> this means the box/UBDA paths diverge
+    if len(ta_edge.children) == 2 and len(box_edge.children) == 2:
+        if ta_edge.children[0] != ta_edge.children[1] and box_edge.children[0] == box_edge.children[1]:
+            return None
+
+    # The following merges cases 1, 2 and 3.
+    children: list[str] = []
+    for i in range(len(ta_edge.children)):
+        children.append(tuple_name((ta_edge.children[i], box_edge.children[i])))
+    return TTransition(src, TEdge(box_edge.info.label, [], ta_edge.info.variable), children)
+
+
 def intersectoid_reachability(ta: TTreeAut, var_visibility: dict[str, int]) -> list[str]:
     """
     [description]
@@ -202,6 +281,9 @@ def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper) -> None:
 
     [note]
     nothing is returned -> the variables are saturated in situ into 'treeaut'
+
+    TODO: side effect: transitions who disrupt the variable path, i.e. introduce
+    a path that can backtrack or repeat a variable, are deleted
     """
 
     def add_variables(ta: TTreeAut, var: int, state: str, helper: FoldingHelper) -> None:
@@ -346,7 +428,8 @@ def reduce_portable_states(intersectoid: TTreeAut):
         node, _ = non_empty_top_down(intersectoid)
         if node is not None:
             for port, (state, key) in i.items():
-                edge_popper[state].remove(key)
+                if key in edge_popper[state]:
+                    edge_popper[state].remove(key)
 
         return_reduced_edges(intersectoid, edge_storage)
         edge_storage = {}

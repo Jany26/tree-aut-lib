@@ -7,6 +7,7 @@ essential algorithms/operations regarding folding.
 [note] mostly redundant or self-explanatory functions
 """
 
+import os
 import re
 import copy
 from typing import Tuple, Set, List, Dict, Optional
@@ -20,7 +21,16 @@ from helpers.string_manipulation import get_first_name_from_tuple_str
 
 
 class FoldingHelper:
-    def __init__(self, ta: TTreeAut, verbose: bool, export_vtf: bool, export_png: bool, output, export_path, max_var):
+    def __init__(
+        self,
+        ta: TTreeAut,
+        max_var: int,
+        verbose: bool = False,
+        export_vtf: bool = False,
+        export_png: bool = False,
+        output: str = "",
+        export_path: str = "",
+    ):
         self.name: str = ""
         match = re.search(r"\(([^()]*)\)", ta.name)
         if match is None:
@@ -40,7 +50,13 @@ class FoldingHelper:
         self.max_var: int = max_var
         self.min_var: int = 0
         self.var_prefix: str = ta.get_var_prefix()
-        self.state_map: Dict[str, str] = {}
+        self.state_var_map: Dict[str, str] = {}
+        for e in iterate_edges(ta):
+            if e.info.variable != "":
+                if e.src in self.state_var_map:
+                    raise ValueError(f"FoldingHelper(): multiple variable-marked edges from state {e.src}")
+                self.state_var_map[e.src] = e.info.variable
+
         self.counter: int = 0
         self.counter2: int = 0  # obsolete currently
         self.reach: Dict[str, Set[str]] = get_all_state_reachability(ta, reflexive=False)
@@ -52,6 +68,11 @@ class FoldingHelper:
         self.vtf: bool = export_vtf
         self.output: str = output
         self.path = export_path
+        if self.vtf or self.png:
+            if not os.path.exists(f"{self.path}/ubdas/"):
+                os.makedirs(f"{self.path}/ubdas/")
+            if not os.path.exists(f"{self.path}/intersectoids/"):
+                os.makedirs(f"{self.path}/intersectoids/")
 
     def __repr__(self):
         result: str = "[FoldingHelper]\n"
@@ -68,7 +89,7 @@ class FoldingHelper:
                 result += "%-*s -> %-*s : %-*s : %s\n" % (src_len, state, child_len, child_str, key_len, key, edge)
         result += f"minvar = {self.min_var}, maxvar = {self.max_var}\n"
         result += f"keycounter = {self.key_counter}, counter = {self.counter}, counter2 = {self.counter2}\n"
-        result += f"statemap = {self.state_map}\n"
+        result += f"statemap = {self.state_var_map}\n"
         return result
 
     def write(self, s):
@@ -131,6 +152,8 @@ class FoldingHelper:
         """
         Helper function for exporting intersectoid images/files used in folding procedure.
         """
+        if self.output == "":
+            return
         self.intersectoids.append(treeaut)
         temp: str = f"{self.counter}-{source}-{box}-{root}"
         if self.path is None:
@@ -149,7 +172,7 @@ class FoldingHelper:
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-def get_state_index_from_box_index(edge: list, idx: int) -> int:
+def get_state_index_from_box_index(edge: TTransition, idx: int) -> int:
     """
     Returns the first (important notice!) child state (index),
     to which does the transition lead through the box on index idx.
@@ -173,6 +196,12 @@ def get_state_index_from_box_index(edge: list, idx: int) -> int:
     raise Exception("get_state_index_from_box_index(): idx out of range")
 
 
+def check_box_arrays(ta: TTreeAut) -> None:
+    for edge in iterate_edges(ta):
+        if edge.info.label == "LH" and len(edge.info.box_array) != 2:
+            raise ValueError(f"check_box_arrays(): {edge} has unfilled box array = {edge.info.box_array}")
+
+
 def fill_box_arrays(ta: TTreeAut) -> None:
     """
     Normalizes the box arrays within the tree automaton, so that reducibility checks are consistent.
@@ -181,6 +210,8 @@ def fill_box_arrays(ta: TTreeAut) -> None:
     """
     arities: Dict[str, int] = ta.get_symbol_arity_dict()
     for edge in iterate_edges(ta):
+        if edge.info.label != "LH":
+            continue
         if edge.info.box_array == []:
             edge.info.box_array = [None] * len(edge.children)
         else:

@@ -15,7 +15,7 @@ import os
 from typing import Any, Optional
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges
-from tree_automata.automaton import state_name_sort
+from tree_automata.automaton import iterate_key_edge_tuples, iterate_states_bfs, state_name_sort
 from helpers.string_manipulation import (
     create_string_from_name_set as macrostring,
     get_var_prefix_from_list,
@@ -92,9 +92,23 @@ class NormalizationHelper:
 
 
 def process_possible_edges(children_macrostates: list[list[str]], norm: NormalizationHelper, current_var: int) -> None:
+    """
+    NOTE: The main difference from the original implementation used in Bachelor's thesis
+    stems from using the 'var_cache': macrostate -> variable.
+    When a macrostate (a set of states of the original UBDA) is given an output edge,
+    the currently processed variable level ('current_var') is assigned to the state in the
+    'var_cache'.
+
+    When a potential new edge is processed, this var cache is then checked for discrepancies
+    between source and child macrostates.
+    Source state variable cannot be 'larger' than a child state variable.
+    (Variables increase from root to leaves.)
+    If such a case would happen, then that could create a path in the normalized UBDA
+    that allows repeated or backtracked variables. Which is undesirable in the context
+    of trying to create an ABDD from a normalized UBDA.
+    """
     children_lists = [list(i) for i in itertools.product(*children_macrostates)]
     new_macrostate = set()
-    force_var = False
     keys_to_process = []
     varstr = f"{norm.var_prefix}{current_var}"
     for c in children_lists:
@@ -142,7 +156,7 @@ def process_possible_edges(children_macrostates: list[list[str]], norm: Normaliz
                 if norm.verbose:
                     norm.debug_print(f"[edge relevancy check failed]: {source} - {src_var} -> {children_macrostates}")
                 return
-    # however, var_cache is only updated at the end of the iteration
+        # however, var_cache is only updated at the end of the iteration
 
     # NOTE: for now we are not sure if this is correct or not, perhaps normalization has other issues
     # second check: in a self-loop, child variables havesource var cannot have a higher variable than a child variable
@@ -173,6 +187,7 @@ def process_possible_edges(children_macrostates: list[list[str]], norm: Normaliz
     )
 
     # NOTE: part of the outvar cache fix attempt
+
     # if added_var is not None and not self_loop:
     #     norm.outvar_cache[source] = added_var
 
@@ -199,7 +214,7 @@ def ubda_normalize(ta: TTreeAut, vars: list[str], verbose=False, output=None) ->
     # then output edges will have variable x(n+1)
     var: int = norm.var_translate[norm.variables.pop(0)]
     for symbol, state_list in ta.get_output_edges().items():
-        norm.transitions.add(TTransition(macrostring(state_list), TEdge(symbol, [], f"{var}"), []))
+        norm.transitions.add(TTransition(macrostring(state_list), TEdge(symbol, [], f"{norm.var_prefix}{var}"), []))
         norm.worklist.append(state_list)
         norm.var_cache[macrostring(state_list)] = var
     norm.debug_print(f"var: {var} | {[macrostring(i) for i in norm.worklist]}")
@@ -219,18 +234,92 @@ def ubda_normalize(ta: TTreeAut, vars: list[str], verbose=False, output=None) ->
         # if norm.variables == []:
         #     break
     ta = create_treeaut_from_helper(norm)
-    # remove_bad_transitions(ta, vars)
     return ta
 
 
-def remove_bad_transitions(ta: TTreeAut, vars: list[str]) -> None:
+def prune_var_repeating_transitions(ta: TTreeAut, norm: NormalizationHelper) -> None:
+    mins: dict[str, int] = {}
+    maxs: dict[str, int] = {}
+    outs: dict[str, int] = {}
+    vartoint: dict[str, int] = ta.get_var_lookup()
+    maxl = 0
+
+    # for edge in iterate_edges(ta):
+    for state in iterate_states_bfs(ta):
+        maxl = max(len(state), maxl)
+        if norm.verbose:
+            print(state)
+        for edge in ta.transitions[state].values():
+            if edge.is_self_loop():
+                for c in edge.children:
+                    if c not in mins or mins[edge.src] + 1 < mins[c]:
+                        if norm.verbose:
+                            print(f" > mins[{c}] = mins({edge.src}) + 1 = {mins[edge.src] + 1}")
+                        mins[c] = mins[edge.src] + 1
+                continue
+            var = vartoint[edge.info.variable]
+            if edge.src in outs:
+                raise ValueError(f"prune_var_repeating_transitions(): found multiple outvars from {edge.src}")
+            outs[edge.src] = var
+            if norm.verbose:
+                print(f" > outs[{edge.src}] = {var}")
+            for c in edge.children:
+                if c not in mins:
+                    if norm.verbose:
+                        print(f" > mins[{c}] = {var}")
+                    mins[c] = var
+                if c in mins and var < mins[c]:
+                    if norm.verbose:
+                        print(f" > mins[{c}] = {var}")
+                    mins[c] = var
+                if c not in maxs:
+                    if norm.verbose:
+                        print(f" > maxs[{c}] = {var}")
+                    maxs[c] = var
+                if c in maxs and var > maxs[c]:
+                    if norm.verbose:
+                        print(f" > maxs[{c}] = {var}")
+                    maxs[c] = var
+
+    for s in ta.get_states():
+        print(
+            "%-*s : min(in) = %-*s max(in) = %-*s out = %-*s"
+            % (
+                maxl,
+                s,
+                4,
+                mins[s] if s in mins else "-",
+                4,
+                maxs[s] if s in maxs else "-",
+                4,
+                outs[s] if s in outs else "-",
+            )
+        )
+
+    delete: list[tuple[str]] = []
+    for k, e in iterate_key_edge_tuples(ta):
+        if e.is_self_loop():
+            if any(
+                [
+                    mins[e.src] + 1 == outs[e.src],
+                ]
+            ):
+                print(f"removing edge {e}")
+                delete.append((e.src, k))
+    # for s, k in delete:
+    #     ta.remove_transition(s, k)
+
+
+def remove_bad_transitions(ta: TTreeAut, vars: list[str], norm: NormalizationHelper) -> None:
     """
     Remove edges that do not comply with the "variable order":
     - either edges that create a chain of same variable edges (x1, x1)
     - or edges that create a chain of disordered variable edges (x2, x1) if the order is x1 -> x2 -> ...
     """
-    var_index: dict[int, str] = {j: i for i, j in enumerate(vars, start=1)}
-    max_var_cache: dict[str, str] = {}  # state -> (max) variable found, which will be kept in the final UBDA
+    # var string -> index
+    var_index: dict[str, int] = {j: i for i, j in enumerate(vars, start=1)}
+    # state name -> var index
+    max_var_cache: dict[str, int] = {}  # state -> (max) variable found, which will be kept in the final UBDA
     for edge in iterate_edges(ta):
         if edge.info.variable == "":
             continue
@@ -246,7 +335,8 @@ def remove_bad_transitions(ta: TTreeAut, vars: list[str]) -> None:
             for child in edge.children:
                 if child not in max_var_cache:
                     continue
-                if max_var_cache[child] <= max_var_cache[edge.src]:
+                if norm.var_translate[max_var_cache[child]] <= norm.var_translate[max_var_cache[edge.src]]:
+                    print(f"flagging {edge} for removal")
                     flagged_edges.add((edge.src, key))
 
     for src, key in flagged_edges:

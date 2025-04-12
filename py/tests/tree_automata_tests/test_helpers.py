@@ -7,6 +7,7 @@ from tree_automata import TTreeAut
 
 import tests.tree_automata_examples as ta
 import tests.tree_node_examples as tn
+from tree_automata.transition import TEdge, TTransition
 
 
 class TestTreeAutomatonGetOutputStates(unittest.TestCase):
@@ -101,3 +102,34 @@ class TestTreeAutomatonGenerateTuples(unittest.TestCase):
         self.assertEqual(len(test_3), 3)
         self.assertEqual(len(test_4), 61)
         self.assertEqual(len(test_5), 15)
+
+
+class TestVarPrefix(unittest.TestCase):
+
+    def test_var_x_prefix(self):
+
+        t1 = TTransition("q", TEdge("LH", [], ""), ["q", "s"])
+        t2 = TTransition("q", TEdge("LH", [], "x5"), ["r", "s"])
+        t3 = TTransition("r", TEdge("0", [], "x6"), [])
+        td = {"q": {"1": t1, "2": t2}, "r": {"3": t3}}
+        res = TTreeAut(["q"], td, "test1", 0)
+        prefix = res.get_var_prefix()
+        self.assertEqual(prefix, "x")
+
+    def test_var_empty_prefix(self):
+        t1 = TTransition("q", TEdge("LH", [], ""), ["q", "s"])
+        t2 = TTransition("q", TEdge("LH", [], "5"), ["r", "s"])
+        t3 = TTransition("r", TEdge("0", [], "6"), [])
+        td = {"q": {"1": t1, "2": t2}, "r": {"3": t3}}
+        res = TTreeAut(["q"], td, "test2", 0)
+        prefix = res.get_var_prefix()
+        self.assertEqual(prefix, "")
+
+    def test_var_var05ta_prefix(self):
+        t1 = TTransition("q", TEdge("LH", [], ""), ["q", "s"])
+        t2 = TTransition("q", TEdge("LH", [], ""), ["r", "s"])
+        t3 = TTransition("r", TEdge("0", [], "var05ta6"), [])
+        td = {"q": {"1": t1, "2": t2}, "r": {"3": t3}}
+        res = TTreeAut(["q"], td, "test2", 0)
+        prefix = res.get_var_prefix()
+        self.assertEqual(prefix, "var05ta")

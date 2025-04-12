@@ -1,6 +1,8 @@
 import copy
 from typing import Generator, Iterator
 
+from numpy import info
+
 from tree_automata.transition import TEdge, TTransition
 from helpers.string_manipulation import state_name_sort, get_var_prefix_from_list
 
@@ -562,23 +564,25 @@ class TTreeAut:
         Returns largest prefix of a variable in a TA,
         that does not contain only numeric symbols.
 
+        Note: does not check for var prefix consistency, so if there are multiple
+        variable prefixes, this just returns whatever it finds first.
+
         Examples:
             'x1' - returns 'x'
             'var5ta01 - returns 'var5ta'
+            '5' - returns ''
         """
-        res: set[str] = set()
         for edge in iterate_edges(self):
-            # if edge.info.variable != "":
+            if edge.info.variable == "":
+                continue
+            if edge.info.variable.isnumeric():
+                return ""
             prefix_len = 0
             for i in range(len(edge.info.variable)):
                 if not edge.info.variable[i:].isnumeric():
                     prefix_len += 1
-            var = edge.info.variable[:prefix_len]
-            res.add(var)
-        if len(res) > 1:
-            raise ValueError("inconsistent variable prefix")
-        el: str = res.pop()
-        return el
+            return edge.info.variable[:prefix_len]
+        return ""
 
     def get_var_visibility(self, reverse=False) -> dict[str, set[str]]:
         """
@@ -616,7 +620,9 @@ class TTreeAut:
                 continue
             var = int(edge.info.variable[prefix:])
             if edge.src in result and result[edge.src] != var:
-                raise ValueError(f"get_var_visibility_deterministic() -> state {edge.src} sees >1 variables")
+                raise ValueError(
+                    f"get_var_visibility_deterministic() -> state {edge.src} sees >1 variables: {var}, {result[edge.src]}"
+                )
             result[edge.src] = var
         return result
 
@@ -650,12 +656,17 @@ class TTreeAut:
                 max_var = max(max_var, var)
         return max_var
 
-    def get_var_lookup(self, maxvar: int) -> dict[str, int]:
+    def get_var_lookup(self) -> dict[str, int]:
         """
         For each variable 'string', get its corresponding index.
         """
-        prefix = get_var_prefix_from_list()
-        pass
+        prefixlen = len(self.get_var_prefix())
+        result = {}
+        for edge in iterate_edges(self):
+            if edge.info.variable == "":
+                continue
+            result[edge.info.variable] = int(edge.info.variable[prefixlen:])
+        return result
 
     def check_var_str_consistency(self) -> bool:
         """

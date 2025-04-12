@@ -250,10 +250,12 @@ def obtain_child_node_info(target_str: str, leafnode_count: int = 2) -> list[int
     return [int(target_str) + leafnode_count]
 
 
-def import_abdd_from_abdd_file(path: str, ncache: ABDDNodeCacheClass) -> ABDD:
+def import_abdd_from_abdd_file(path: str, ncache: Optional[ABDDNodeCacheClass] = None) -> ABDD:
     """
     TODO
     """
+    if ncache is None:
+        ncache = ABDDNodeCacheClass()
     if not path.endswith(".dd"):
         eprint("Warning: importing a Decision Diagram from not a .dd file")
 

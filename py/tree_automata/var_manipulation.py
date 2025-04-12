@@ -292,7 +292,10 @@ def check_variable_overlap(ta: TTreeAut, max_var: Optional[int] = None) -> bool:
     if max_var is None:
         for edge in iterate_output_edges(ta):
             if edge.info.variable != "":
-                max_var = int(edge.info.variable[var_prefix_len:])
+                if var_prefix_len == 0:
+                    max_var = int(edge.info.variable)
+                else:
+                    max_var = int(edge.info.variable[var_prefix_len:])
         if max_var is None:
             raise ValueError("check_in_var_out_var_overlap(): could not infer maximum variable in the UBDA.")
 

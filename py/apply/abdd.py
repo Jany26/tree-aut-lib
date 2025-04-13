@@ -193,6 +193,7 @@ class ABDD:
             print(f"evaluating {self.name} for {assignment}")
         current_node: Optional[ABDDNode] = None
         while True:
+            using_root_rule = False
             if verbose:
                 print(f" > node={current_node.node if current_node is not None else "None"}, ", end="")
             if current_node is not None and current_node.is_leaf:
@@ -205,6 +206,7 @@ class ABDD:
                 if current_node is None
                 else (current_node.high_box if assignment[current_var] else current_node.low_box)
             )
+            using_root_rule = current_node is None and self.root_rule is not None
             target = (
                 [r for r in self.roots]
                 if current_node is None
@@ -217,7 +219,11 @@ class ABDD:
             else:
                 target_var = max([self.variable_count + 1 if t.is_leaf else t.var for t in target])
                 port_map = {port: target[i] for i, (port, state) in enumerate(box_catalogue[rule].get_port_order())}
-                subassign = assignment[current_var + 1 : target_var - 1]
+                subassign = (
+                    assignment[current_var + 1 : target_var - 1]
+                    if not using_root_rule
+                    else assignment[current_var : target_var - 1]
+                )
                 if verbose:
                     print(
                         f"var={current_var+1}, rule={rule}, target={','.join(f"{t.node}" for t in target)}, target_var={target_var}, ports={[f"{i} -> {n.node}" for i, (p, n) in enumerate(port_map.items())]}, sub={subassign}"
@@ -330,7 +336,6 @@ def import_abdd_from_abdd_file(path: str, ncache: Optional[ABDDNodeCacheClass] =
                 elif attribute == "Root":
                     roots = value.split()
                     root_idxs = [int(r) for r in roots]
-                    print("rootidxs", root_idxs)
                 elif attribute == "Rootrule":
                     print("rootrule", value)
                     if value in box_arities:

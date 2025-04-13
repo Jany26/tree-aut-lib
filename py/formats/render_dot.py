@@ -11,6 +11,7 @@ import os
 from typing import Union
 
 import graphviz
+from numpy import roots
 
 from apply.abdd import ABDD
 from formats.abdd_to_dot import abdd_to_dot
@@ -196,8 +197,30 @@ def treeaut_to_dot(ta: TTreeAut, verbose=False, caption=False) -> graphviz.Digra
         dot.attr(label=f"{ta.name}")
     output_states: set[str] = ta.get_output_states()
 
+    rootbox_used = ta.rootbox is not None
+
+    if rootbox_used:
+        multiport = len(ta.roots) > 1
+        rootbox_node = f"rootbox-connector"
+        dot.node(rootbox_node, label="", shape="point", width="0.001", height="0.001")
+        if multiport:
+            node_above_rootbox = f"->rootbox-connector"
+            dot.node(node_above_rootbox, label="", shape="point", width="0.001", height="0.001")
+            dot.edge(node_above_rootbox, rootbox_node, label=ta.rootbox, penwidth="2.0", arrowsize="0.5")
+        for idx, n in enumerate(ta.roots):
+            dot.node(f"{n}", shape="circle", style="filled", fillcolor="khaki" if n in output_states else "bisque")
+            rootlabel = f"{idx}" if multiport else f"{ta.rootbox}"
+            dot.edge(rootbox_node, f"{n}", label=rootlabel, penwidth="2.0", arrowsize="0.5")
+
     for state in ta.get_states():
-        dot_state_handle(dot, state, output_states, ta.roots)
+        # NODE: inner node (state of TA)
+        dot.node(f"{state}", shape="circle", style="filled", fillcolor="khaki" if state in output_states else "bisque")
+        if state in ta.roots and not rootbox_used:
+            # NODE: arbitrary root point
+            dot.node(f"->{state}", label="", shape="point", width="0.001", height="0.001")
+            # EDGE: arbitrary root point -> root node
+            dot.edge(f"->{state}", f"{state}", label="", penwidth="2.0", arrowsize="0.5")
+            continue
 
     for edge_dict in ta.transitions.values():
         for key, edge in edge_dict.items():

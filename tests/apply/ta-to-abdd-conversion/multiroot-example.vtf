@@ -1,0 +1,10 @@
+@NTA
+%Root x4 x5
+%Rootrule LPort
+# example with multiple root nodes and a multiport rule
+
+x4 LH <[ L1 H1 ] 4> ( t0 x9 )
+x5 LH <[X X]  4> (x9 t1)
+x9 LH <[ X L1 ] 9>  ( t1 t0 )
+t0 0 ( )
+t1 1 ( )

@@ -30,11 +30,13 @@ def obtain_predicates(
     When an empty set is returned, no materialization is needed.
     """
     invar: int = 0 if node_src is None else node_src.var
-    node_tgt: list[ABDDNode] = [abdd.root] if node_src is None else node_src.high if direction else node_src.low
+    node_tgt: list[ABDDNode] = (
+        [r for r in abdd.roots] if node_src is None else node_src.high if direction else node_src.low
+    )
     tgt_vars: list[int] = [abdd.variable_count + 1 if n.is_leaf else n.var for n in node_tgt]
     box: Optional[str] = None
     if direction is None:
-        box = None if abdd.root.var == 1 else "X"
+        box = abdd.root_rule
     else:
         box = node_src.high_box if direction else node_src.low_box
     leaf_var = abdd.variable_count + 1

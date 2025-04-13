@@ -1,5 +1,6 @@
 @NTA
 %Root x4
+%Rootrule X
 # abdd apply test from consultation
 
 x4 LH <[ L1 H1 ] 4> ( t0 x9 )

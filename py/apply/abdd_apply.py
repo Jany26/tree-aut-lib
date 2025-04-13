@@ -100,7 +100,12 @@ def abdd_apply(
     """
     # some preliminary typecasting and checking
     if maxvar is None:
-        maxvar = max(in1.get_var_max(), in2.get_var_max())
+        # for now, we should assume that variable counts are the same
+        if in1.variable_count != in2.variable_count:
+            raise ValueError(
+                f"abdd_apply(): unequal variable counts in1={in1.variable_count}, in2={in2.variable_count}"
+            )
+        maxvar = in1.variable_count
 
     if not (maxvar is not None and type(in1) == ABDD and (type(in2) == ABDD or type(in2) == NoneType)):
         raise ValueError("invalid parameters")
@@ -110,9 +115,9 @@ def abdd_apply(
 
     # special handling for negation
     if op.name == "NOT" and type(in2) == NoneType:
-        root = negate_subtree(in1, in1.root, helper)
-        print(f"negation result = {root}")
-        abdd = ABDD(f"{op.name} {in1.name}", maxvar, root)
+        roots = [negate_subtree(in1, r, helper) for r in in1.roots]
+        print(f"negation result = {roots}")
+        abdd = ABDD(f"{op.name} {in1.name}", maxvar, roots)
         abdd.root_rule = negate_box_label[in1.root_rule]
         return abdd
 
@@ -122,8 +127,7 @@ def abdd_apply(
     # handling for normal binary operator apply
     e2 = ApplyEdge(in2, None, None)
     rule, roots = abdd_apply_from(op, e1, e2, helper)
-    root = roots[0]
-    abdd = ABDD(f"({in1.name} {op.name} {in2.name})", maxvar, root)
+    abdd = ABDD(f"({in1.name} {op.name} {in2.name})", maxvar, roots)
     abdd.root_rule = rule
     return abdd
 
@@ -131,6 +135,14 @@ def abdd_apply(
 def process_boxtree_leafcase(
     boxtree: BoxTreeNode, e1: ApplyEdge, e2: ApplyEdge, op, helper: ABDDApplyHelper, varlevel: int
 ) -> tuple[Optional[str], list[ABDDNode]]:
+    if boxtree.node == "True":
+        rule = "X"
+        nodes = [e1.abdd.terminal_1]
+        return rule, nodes
+    if boxtree.node == "False":
+        rule = "X"
+        nodes = [e1.abdd.terminal_0]
+        return rule, nodes
     if boxtree.is_leaf:
         rule = boxtree.node
         nodes = []

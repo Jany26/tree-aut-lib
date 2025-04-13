@@ -16,6 +16,15 @@ from typing import Optional, Tuple
 
 from tree_automata import TTransition, TEdge, TTreeAut
 
+box_arities: dict[str, int] = {
+    "X": 1,
+    "L0": 1,
+    "L1": 1,
+    "H0": 1,
+    "H1": 1,
+    "LPort": 2,
+    "HPort": 2,
+}
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER FUNCTIONS
@@ -120,15 +129,6 @@ def consistency_check(data: TTransition, states: list[str], arity_dict: dict[str
 
 
 def check_children_arity(edge: TTransition, arity_dict: dict[str, int]) -> bool:
-    box_arities: dict[str, int] = {
-        "X": 1,
-        "L0": 1,
-        "L1": 1,
-        "H0": 1,
-        "H1": 1,
-        "LPort": 2,
-        "HPort": 2,
-    }
     arity: int = arity_dict[edge.info.label]
     box_port_count: int = 0
     box_count: int = 0
@@ -209,6 +209,7 @@ def import_treeaut_from_vtf(source: str, source_type="f", treeaut_type="ta") -> 
     roots_done: bool = False
     arity_done: bool = False
     statelist_done: bool = False
+    root_rule: Optional[str] = None
 
     for line in file:
         if line.startswith("#"):
@@ -216,10 +217,16 @@ def import_treeaut_from_vtf(source: str, source_type="f", treeaut_type="ta") -> 
         parts: list[str] = line.split("#")
         line: str = parts[0]
         if line.startswith("@"):
-            if not line.startswith("@NTA"):
+            name = line.strip()
+            if name not in ["@NTA", "@ABDD", "@UBDA"]:
                 raise Exception(f"import_treeaut_from_vtf(): unexpected structure format {line}")
         elif line.startswith("%"):
-            if line.startswith("%Root"):
+            if line.startswith("%Rootrule"):
+                rule = line.split()[1]
+                if rule not in box_arities:
+                    raise Exception(f"import_treeaut_from_vtf(): unexpected root rule '{root_rule}'")
+                root_rule = rule
+            elif line.startswith("%Root"):
                 roots = load_roots_from_vtf(line)
                 roots_done = True
             elif line.startswith("%Alphabet"):
@@ -249,6 +256,7 @@ def import_treeaut_from_vtf(source: str, source_type="f", treeaut_type="ta") -> 
         file.close()
     result = TTreeAut(roots, transitions, str(treeaut_name))
     result.port_arity = result.get_port_arity()
+    result.rootbox = root_rule
     return result
 
 

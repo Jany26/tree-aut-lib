@@ -10,7 +10,7 @@ from tree_automata.automaton import TTreeAut
 class TestMaterializationLPortUneven(unittest.TestCase):
     abdd: ABDD = import_abdd_from_abdd_file("../tests/apply/materialization-inputs/materialization-lport-10-7.dd")
     direction = False  # false = low, true = high
-    # nodelist = abdd.root.high if direction else abdd.root.low
+    # nodelist = abdd.roots[0].high if direction else abdd.roots[0].low
     nodelist = ["out0", "out1"]
     # varlist = [10, 7]
     varlist = ["out0", "out1"]
@@ -19,9 +19,9 @@ class TestMaterializationLPortUneven(unittest.TestCase):
     def test_materialization_lport_10_7_at_level_2(self):
         materialization_level = 2
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box=None,
@@ -44,9 +44,9 @@ class TestMaterializationLPortUneven(unittest.TestCase):
     def test_materialization_lport_10_7_at_level_3(self):
         materialization_level = 3
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
@@ -77,9 +77,9 @@ class TestMaterializationLPortUneven(unittest.TestCase):
     def test_materialization_lport_10_7_at_level_4(self):
         materialization_level = 4
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
@@ -110,9 +110,9 @@ class TestMaterializationLPortUneven(unittest.TestCase):
     def test_materialization_lport_10_7_at_level_6(self):
         materialization_level = 6
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
@@ -140,9 +140,9 @@ class TestMaterializationLPortUneven(unittest.TestCase):
     def test_materialization_lport_10_7_at_level_7(self):
         materialization_level = 7
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
@@ -165,9 +165,9 @@ class TestMaterializationLPortUneven(unittest.TestCase):
     def test_materialization_lport_10_7_at_level_8(self):
         materialization_level = 8
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
@@ -188,9 +188,9 @@ class TestMaterializationLPortUneven(unittest.TestCase):
     def test_materialization_lport_10_7_at_level_9(self):
         materialization_level = 9
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="LPort",
@@ -212,20 +212,20 @@ class TestMaterializationLPortUneven(unittest.TestCase):
 class TestMaterializationLPortShort(unittest.TestCase):
     abdd: ABDD = import_abdd_from_abdd_file("../tests/apply/materialization-inputs/materialization-lport-10-7.dd")
     direction = False  # false = low, true = high
-    # nodelist = abdd.root.high if direction else abdd.root.low
+    # nodelist = abdd.roots[0].high if direction else abdd.roots[0].low
     nodelist = ["out0", "out1"]
     # varlist = [10, 7]
     varlist = ["out0", "out1"]
     matlevel = "mat"
 
     def test_materialization_lport_3_3_at_level_2(self):
-        self.abdd.root.low[0].var = 3
-        self.abdd.root.low[1].var = 3
+        self.abdd.roots[0].low[0].var = 3
+        self.abdd.roots[0].low[1].var = 3
         materialization_level = 2
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box=None,
@@ -243,13 +243,13 @@ class TestMaterializationLPortShort(unittest.TestCase):
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_lport_10_3_at_level_2(self):
-        # self.abdd.root.low[0].var = 3
-        self.abdd.root.low[1].var = 3
+        # self.abdd.roots[0].low[0].var = 3
+        self.abdd.roots[0].low[1].var = 3
         materialization_level = 2
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box=None,
@@ -275,12 +275,12 @@ class TestMaterializationX(unittest.TestCase):
     matlevel = "mat"
 
     def test_materialization_x_3_at_level_2(self):
-        self.abdd.root.low[0].var = 3
+        self.abdd.roots[0].low[0].var = 3
         materialization_level = 2
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
         expected_recipe = MaterializationRecipe(
             init_box=None,
             init_targets=[
@@ -317,12 +317,12 @@ class TestMaterializationX(unittest.TestCase):
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_x_4_at_level_2(self):
-        self.abdd.root.low[0].var = 4
+        self.abdd.roots[0].low[0].var = 4
         materialization_level = 2
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
         expected_recipe = MaterializationRecipe(
             init_box=None,
             init_targets=[
@@ -359,12 +359,12 @@ class TestMaterializationX(unittest.TestCase):
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_x_4_at_level_3(self):
-        self.abdd.root.low[0].var = 4
+        self.abdd.roots[0].low[0].var = 4
         materialization_level = 3
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
         expected_recipe = MaterializationRecipe(
             init_box="X",
             init_targets=[
@@ -401,12 +401,12 @@ class TestMaterializationX(unittest.TestCase):
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_x_5_at_level_3(self):
-        self.abdd.root.low[0].var = 5
+        self.abdd.roots[0].low[0].var = 5
         materialization_level = 3
         res = create_materialized_box_wrapper(
-            self.abdd.root, self.direction, materialization_level, self.abdd.variable_count + 1
+            self.abdd.roots[0], self.direction, materialization_level, self.abdd.variable_count + 1
         )
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
         expected_recipe = MaterializationRecipe(
             init_box="X",
             init_targets=[
@@ -445,7 +445,7 @@ class TestMaterializationX(unittest.TestCase):
 
 class TestMaterializationL0(unittest.TestCase):
     abdd: ABDD = import_abdd_from_abdd_file("../tests/apply/materialization-inputs/materialization-x-4.dd")
-    abdd.root.low_box = "L0"
+    abdd.roots[0].low_box = "L0"
     direction = False
     outnode = "out0"
     outlevel = "out0"
@@ -454,11 +454,11 @@ class TestMaterializationL0(unittest.TestCase):
     leaflevel = "leaf"
 
     def test_materialization_l0_3_at_level_2_leaf_3(self):
-        self.abdd.root.low[0].var = 3
+        self.abdd.roots[0].low[0].var = 3
         materialization_level = 2
         leaf_level = 3
-        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        res = create_materialized_box_wrapper(self.abdd.roots[0], self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
         expected_recipe = MaterializationRecipe(
             init_box=None,
             init_targets=[
@@ -495,11 +495,11 @@ class TestMaterializationL0(unittest.TestCase):
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_l0_3_at_level_2_leaf_4(self):
-        self.abdd.root.low[0].var = 3
+        self.abdd.roots[0].low[0].var = 3
         materialization_level = 2
         leaf_level = 4
-        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        res = create_materialized_box_wrapper(self.abdd.roots[0], self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box=None,
@@ -537,11 +537,11 @@ class TestMaterializationL0(unittest.TestCase):
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_l0_4_at_level_2_leaf_4(self):
-        self.abdd.root.low[0].var = 4
+        self.abdd.roots[0].low[0].var = 4
         materialization_level = 2
         leaf_level = 4
-        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        res = create_materialized_box_wrapper(self.abdd.roots[0], self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box=None,
@@ -579,11 +579,11 @@ class TestMaterializationL0(unittest.TestCase):
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_l0_4_at_level_3_leaf_4(self):
-        self.abdd.root.low[0].var = 4
+        self.abdd.roots[0].low[0].var = 4
         materialization_level = 3
         leaf_level = 4
-        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        res = create_materialized_box_wrapper(self.abdd.roots[0], self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="L0",
@@ -621,11 +621,11 @@ class TestMaterializationL0(unittest.TestCase):
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_l0_4_at_level_3_leaf_5(self):
-        self.abdd.root.low[0].var = 4
+        self.abdd.roots[0].low[0].var = 4
         materialization_level = 3
         leaf_level = 5
-        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        res = create_materialized_box_wrapper(self.abdd.roots[0], self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="L0",
@@ -663,11 +663,11 @@ class TestMaterializationL0(unittest.TestCase):
         self.assertEqual(recipe, expected_recipe)
 
     def test_materialization_l0_5_at_level_3_leaf_5(self):
-        self.abdd.root.low[0].var = 5
+        self.abdd.roots[0].low[0].var = 5
         materialization_level = 3
         leaf_level = 5
-        res = create_materialized_box_wrapper(self.abdd.root, self.direction, materialization_level, leaf_level)
-        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.root, self.direction, res)
+        res = create_materialized_box_wrapper(self.abdd.roots[0], self.direction, materialization_level, leaf_level)
+        recipe = abdd_subsection_create_wrapper(self.abdd, self.abdd.roots[0], self.direction, res)
 
         expected_recipe = MaterializationRecipe(
             init_box="L0",

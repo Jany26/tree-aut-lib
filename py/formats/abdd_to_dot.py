@@ -98,27 +98,50 @@ def abdd_to_dot(abdd: ABDD) -> graphviz.Digraph:
     # in the currently drawn BDD -> this is to avoid duplicate drawing
     cache: set[str] = set()
 
-    n = abdd.root
-    if n is None:
-        return dot
-
-    rootid = f"{n.node}({n.var})" if not n.is_leaf else f"{n.leaf_val}"
-    helperid = f"->{rootid}"
-
+    multiroot = len(abdd.roots) > 1
+    helperid = helperid = f"root-connector"
     dot.node(helperid, shape="point", width="0.001", height="0.001")
+    if multiroot:
+        abovehelperid = f"->root-connector"
+        dot.node(abovehelperid, shape="point", width="0.001", height="0.001")
+        rootlabel = f"{abdd.root_rule}" if abdd.root_rule is not None else "S"
+        dot.edge(abovehelperid, helperid, label=rootlabel, penwidth="1.0", arrowsize="0.5", arrowhead="none")
+    for idx, n in enumerate(abdd.roots):
+        if n is None:
+            return dot
+        rootid = f"{n.node}({n.var})" if not n.is_leaf else f"{n.leaf_val}"
+        dot.node(
+            rootid,
+            label=f"{n.var}" if not n.is_leaf else n.leaf_val,
+            shape="box" if n.is_leaf else "circle",
+            style="filled" if n.is_leaf else "solid",
+        )
+        rootlabel = f"{idx}" if multiroot else f"{abdd.root_rule}"
+        dot.edge(helperid, rootid, label=rootlabel, penwidth="1.0", arrowsize="0.5", arrowhead="vee")
 
-    dot.node(
-        rootid,
-        label=f"{n.var}" if not n.is_leaf else n.leaf_val,
-        shape="box" if n.is_leaf else "circle",
-        style="filled" if n.is_leaf else "solid",
-    )
-    rootlabel = f"{abdd.root_rule}" if abdd.root_rule is not None else "S"
-    dot.edge(helperid, rootid, label=rootlabel, penwidth="1.0", arrowsize="0.5", arrowhead="vee")
+        draw_abdd_node(dot, n, n.low_box, n.low, cache, dir=False)
+        draw_abdd_node(dot, n, n.high_box, n.high, cache, dir=True)
+        cache.add(rootid)
 
-    draw_abdd_node(dot, n, n.low_box, n.low, cache, dir=False)
-    draw_abdd_node(dot, n, n.high_box, n.high, cache, dir=True)
-    cache.add(rootid)
+    # if len(abdd.roots) > 1:
+    #     abovehelperid = f"->{helperid}"
+    #     dot.node(abovehelperid, shape="point", width="0.001", height="0.001")
+    #     dot.node(helperid, shape="point", width="0.001", height="0.001")
+    #     rootlabel = f"{abdd.root_rule}" if abdd.root_rule is not None else "S"
+    #     dot.edge(abovehelperid, helperid, label=rootlabel, penwidth="1.0", arrowsize="0.5", arrowhead="vee")
+    #     for n in abdd.roots:
+    #         rootid = f"{n.node}({n.var})" if not n.is_leaf else f"{n.leaf_val}"
+    #         dot.node(
+    #             rootid,
+    #             label=f"{n.var}" if not n.is_leaf else n.leaf_val,
+    #             shape="box" if n.is_leaf else "circle",
+    #             style="filled" if n.is_leaf else "solid",
+    #         )
+    #         dot.edge(helperid, rootid, label=rootlabel, penwidth="1.0", arrowsize="0.5", arrowhead="vee")
+    #         draw_abdd_node(dot, n, n.low_box, n.low, cache, dir=False)
+    #         draw_abdd_node(dot, n, n.high_box, n.high, cache, dir=True)
+    #         cache.add(rootid)
+
     return dot
 
 

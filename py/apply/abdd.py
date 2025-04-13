@@ -1,11 +1,12 @@
+import copy
 import itertools
 import re
 
 from typing import Generator, Optional
-from apply.abdd_node_cache import ABDDNodeCacheClass
+from apply.abdd_node_cache import ABDDNodeCache, ABDDNodeCacheClass
 from helpers.string_manipulation import create_string_from_name_set
-from helpers.utils import eprint, box_catalogue
-from tree_automata.automaton import TTreeAut, iterate_edges
+from helpers.utils import eprint, box_catalogue, box_arities
+from tree_automata.automaton import TTreeAut, iterate_edges, iterate_key_edge_tuples
 from tree_automata.transition import TEdge, TTransition
 from apply.abdd_node import ABDDNode
 
@@ -13,7 +14,8 @@ from apply.abdd_node import ABDDNode
 class ABDD:
     name: str
     variable_count: int
-    root: ABDDNode
+    roots: list[ABDDNode]
+    root_rule: Optional[str]
 
     # node_map is used during TA->ABDD conversion, probably could be kept outside the class
     # node_map: dict[str, ABDDNode]
@@ -21,23 +23,30 @@ class ABDD:
     terminal_0: Optional[ABDDNode]
     terminal_1: Optional[ABDDNode]
 
-    def __init__(self, name: str, variable_count: int, root: ABDDNode):
+    def __init__(self, name: str, variable_count: int, roots: list[ABDDNode]):
         """
         Initializing ABDD structure will omit self-looping transitions in the TA/UBDA structure.
         Missing variables or box information will raise an exception.
         """
         self.name = name
         self.variable_count = variable_count
-        self.root = root
+        self.roots = roots
         self.root_rule: Optional[str] = None
         self.node_map = {}
         self.node_count = 0
-        self.terminal_0: Optional[ABDDNode] = root.find_terminal(0)
-        self.terminal_1: Optional[ABDDNode] = root.find_terminal(1)
+        self.terminal_0: Optional[ABDDNode] = None
+        self.terminal_1: Optional[ABDDNode] = None
+        for root in self.roots:
+            zero = root.find_terminal(0)
+            one = root.find_terminal(1)
+            if zero is not None:
+                self.terminal_0 = zero
+            if one is not None:
+                self.terminal_1 = one
 
     def __repr__(self):
         result = f"  [ABDD]: '{self.name}'\n"
-        result += f"  > Root node index     = {self.root.node}\n"
+        result += f"  > Root nodes indices  = {', '.join([str(r.node) for r in self.roots])}\n"
         result += f"  > Root rule           = {self.root_rule}\n"
         result += f"  > Number of variables = {self.variable_count}\n"
         result += "  > %-*s %-*s %-*s %-*s %-*s %-*s\n" % (
@@ -55,7 +64,7 @@ class ABDD:
             "hex(ID)",
         )
         result += f"  " + "-" * (74 + 7) + "\n"
-        for i in self.root.explore_subtree_bfs(repeat=False):
+        for i in self.iterate_bfs_nodes(repeat=False):
             if i.is_leaf:
                 continue
             lowStr = ", ".join([f"<{n.leaf_val}>" if n.is_leaf else f"{n.node}({n.var})" for n in i.low])
@@ -92,21 +101,40 @@ class ABDD:
                 [
                     self.variable_count == other.variable_count,
                     self.root_rule == other.root_rule,
-                    self.root == other.root,
+                    self.roots == other.roots,
                 ]
             )
         else:
             return self.check_brute_force_equivalence(other)
 
     def iterate_bfs_nodes(self, repeat=False) -> Generator[ABDDNode, None, None]:
-        return self.root.explore_subtree_bfs(repeat)
+        queue: list[ABDDNode] = [r for r in self.roots]
+        visited = set()
+        while queue != []:
+            node = queue.pop(0)
+            if not repeat and node in visited:
+                continue
+            yield node
+            visited.add(node)
+            queue.extend(node.low)
+            queue.extend(node.high)
 
     def iterate_dfs_nodes(self, repeat=False) -> Generator[ABDDNode, None, None]:
-        return self.root.explore_subtree_dfs(repeat)
+        stack: list[ABDDNode] = [r for r in reversed(self.roots)]
+        visited = set()
+        while stack != []:
+            node = stack.pop()
+            if not repeat and node in visited:
+                continue
+            yield node
+            # we have to insert nodes in a reverse order
+            visited.add(node)
+            stack.extend(reversed(node.low))
+            stack.extend(reversed(node.high))
 
     def count_nodes(self) -> int:
         result = 0
-        for i in self.root.explore_subtree_bfs():
+        for i in self.iterate_bfs_nodes():
             result += 1
         return result
 
@@ -118,8 +146,10 @@ class ABDD:
             res1 = self.evaluate_for(assignment)
             res2 = other.evaluate_for(assignment)
             if res1 != res2:
-                eprint(f"check_brute_force_equivalence({self.name}, {other.name}):")
-                eprint(f"not equal for {{{','.join([f'{i}' for i, val in enumerate(assignment) if val])}}}")
+                eprint(
+                    f"check_brute_force_equivalence({self.name}, {other.name}): not equal for {assignment} -> results: ({res1}, {res2})"
+                )
+                # eprint(f"not equal for {{{','.join([f'{i}' for i, val in enumerate(assignment) if val])}}}")
                 return False
         return True
 
@@ -157,6 +187,8 @@ class ABDD:
                 )
             return node_map[out_label]
 
+        # end of evaluate_box()
+
         if verbose:
             print(f"evaluating {self.name} for {assignment}")
         current_node: Optional[ABDDNode] = None
@@ -174,7 +206,7 @@ class ABDD:
                 else (current_node.high_box if assignment[current_var] else current_node.low_box)
             )
             target = (
-                [self.root]
+                [r for r in self.roots]
                 if current_node is None
                 else (current_node.high if assignment[current_var] else current_node.low)
             )
@@ -196,8 +228,12 @@ class ABDD:
                 current_node = box_eval
 
     def convert_to_treeaut_obj(self) -> TTreeAut:
-        result = TTreeAut([f"{self.root.node}"], {f"{n.node}": {} for n in self.iterate_bfs_nodes()}, name=self.name)
+        result = TTreeAut(
+            [f"{r.node}" for r in self.roots], {f"{n.node}": {} for n in self.iterate_bfs_nodes()}, name=self.name
+        )
         keycounter = 0
+        result.rootbox = self.root_rule
+
         for n in self.iterate_bfs_nodes():
             sym = "LH" if not n.is_leaf else f"{n.leaf_val}"
             var = f"{n.var}" if not n.is_leaf else f"{self.variable_count + 1}"
@@ -220,7 +256,7 @@ class ABDD:
     def reformat_node_names(self):
         name_map: dict[int, int] = {}
         counter = 0
-        for i in self.root.explore_subtree_bfs():
+        for i in self.iterate_bfs_nodes():
             i.node = counter
             counter += 1
 
@@ -261,15 +297,16 @@ def import_abdd_from_abdd_file(path: str, ncache: Optional[ABDDNodeCacheClass] =
 
     dd_name: Optional[str] = None
     var_count: Optional[int] = None
-    root_idx: Optional[int] = None
-    root_node: Optional[ABDDNode] = None
+    root_idxs: Optional[list[int]] = None
+    root_node: list[ABDDNode] = []
     node_cache: dict[int, tuple[ABDDNode, int | list[int], int | list[int]]] = {}
+    root_rule: Optional[str] = None
 
     zero = ncache.terminal_0
     one = ncache.terminal_1
     node_cache[0] = (zero, [], [])
     node_cache[1] = (one, [], [])
-
+    rootsmap: dict[int, ABDDNode] = {}
     leafnode_count = 2
 
     with open(path, "r") as file:
@@ -283,13 +320,23 @@ def import_abdd_from_abdd_file(path: str, ncache: Optional[ABDDNodeCacheClass] =
                     eprint("Warning: Not @ABDD in the preamble")
                 continue
             if line.startswith("%"):
-                attribute, value = line.lstrip("%").split()
+                parts = line.lstrip("%").split(maxsplit=1)
+                attribute = parts[0]
+                value = parts[1]
                 if attribute == "Name":
                     dd_name = value
                 elif attribute == "Vars":
                     var_count = int(value)
                 elif attribute == "Root":
-                    root_idx = int(value)
+                    roots = value.split()
+                    root_idxs = [int(r) for r in roots]
+                    print("rootidxs", root_idxs)
+                elif attribute == "Rootrule":
+                    print("rootrule", value)
+                    if value in box_arities:
+                        root_rule = value
+                    else:
+                        raise ValueError("Warning: Unknown root rule")
                 else:
                     eprint(f"Warning: Unknown metadata attribute '{attribute}'")
                 continue
@@ -325,9 +372,10 @@ def import_abdd_from_abdd_file(path: str, ncache: Optional[ABDDNodeCacheClass] =
                 raise ValueError(f"Invalid high child information for node '{node}'")
 
             newnode = ABDDNode(node_idx)
-            if int(node) == root_idx:
+
+            if int(node) in root_idxs:
                 newnode.is_root = True
-                root_node = newnode
+                rootsmap[int(node)] = newnode
             newnode.var = var
             newnode.is_leaf = False
             newnode.low_box = lowr
@@ -342,7 +390,9 @@ def import_abdd_from_abdd_file(path: str, ncache: Optional[ABDDNodeCacheClass] =
         for i in high:
             highnode, _, _ = node_cache[i]
             node.connect_to_high_child(highnode)
-    return ABDD(dd_name, var_count, root_node)
+    abddresult = ABDD(dd_name, var_count, [rootsmap[idx] for idx in root_idxs])
+    abddresult.root_rule = root_rule
+    return abddresult
 
 
 def convert_ta_to_abdd(
@@ -353,6 +403,8 @@ def convert_ta_to_abdd(
     to ABDD instance.
 
     Assumes no loop-edges are present.
+
+    TODO: root rule unfold
     """
     if not check_if_abdd(ta):
         ValueError(f"cannot turn {ta.name} to an ABDD")
@@ -371,8 +423,10 @@ def convert_ta_to_abdd(
     # - one state with "1"-labeled output edge
     # - no two states represent roots of isomorphic ABDDs (i.e. the BDA is normalized)
 
-    if len(ta.roots) != 1:
-        raise ValueError("convert_ta_to_abdd(): ABDD-compatible BDA can have only one root")
+    # if len(ta.roots) != 1:
+    #     raise ValueError("convert_ta_to_abdd(): ABDD-compatible BDA can have only one root")
+    if len(ta.roots) != box_arities[ta.rootbox]:
+        raise ValueError("convert_ta_to_abdd(): roots incompatible with root box")
 
     for sym, states in ta.get_output_edges().items():
         if sym not in ["0", "1"]:
@@ -405,11 +459,14 @@ def convert_ta_to_abdd(
         node_map[edge.src].set_node_info_from_ta_transition(edge, node_map, var_prefix_len=vlen)
 
     node_map[ta.roots[0]].is_root = True
-    result = ABDD(f"{ta.name}", var_count if var_count is not None else ta.get_var_max() - 1, node_map[ta.roots[0]])
+    result = ABDD(
+        f"{ta.name}", var_count if var_count is not None else ta.get_var_max() - 1, [node_map[r] for r in ta.roots]
+    )
     result.terminal_0 = ncache.terminal_0
     result.terminal_1 = ncache.terminal_1
     result.node_count = result.count_nodes()
-    result.root_rule = "X" if result.root.var > 1 else None
+    # result.root_rule = "X" if result.root.var > 1 else None
+    result.root_rule = ta.rootbox
 
     return result
 

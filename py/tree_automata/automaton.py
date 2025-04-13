@@ -49,6 +49,7 @@ class TTreeAut:
         self, roots: list[str], transitions: dict[str, dict[str, TTransition]], name: str, port_arity: int = 0
     ):
         self.roots: list[str] = roots
+        self.rootbox: str | None = None
         self.transitions: dict[str, dict[str, TTransition]] = transitions
         self.name: str = name
         self.port_arity: int = port_arity
@@ -64,6 +65,7 @@ class TTreeAut:
         # result = "-" * 78 + '\n'
         result += f"  [TreeAut]: '{self.name}'\n"
         result += f"  > Root States = {self.roots}\n"
+        result += f"  > Root Rule   = {self.rootbox}\n"
 
         src_str: str = "source"
         edge_str: str = "edge"

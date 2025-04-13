@@ -18,7 +18,7 @@ class UnfoldingHelper:
     def __init__(self, input: TTreeAut, max_var: int, reformat: bool, sat: bool):
         self.input = input
         self.output = TTreeAut(
-            [i for i in input.roots], {s: {} for s in input.roots}, "unfolded(" + input.name + ")", input.port_arity
+            [i for i in input.roots], {s: {} for s in input.roots}, "unfolded(" + input.name + ")", 0
         )
         self.max_var = max_var
         self.reformat = reformat
@@ -134,6 +134,39 @@ def unfold_edge(helper: UnfoldingHelper, folded_edge: TTransition) -> tuple[int,
     return unfolded_count, new_edge
 
 
+def unfold_root_rule(ta: TTreeAut, max_var: int, helper: UnfoldingHelper):
+    box = copy.deepcopy(box_catalogue[ta.rootbox])
+    if box.port_arity != len(ta.roots):
+        raise ValueError("unfold_root_rule(): number of roots != port arity of root reduction box")
+
+    start_var = 1
+    out_vars = get_outgoing_variables(
+        helper, TTransition("", TEdge("temp", [], f"{helper.prefix}{start_var}"), [r for r in ta.roots])
+    )
+    statemap = {box_state: ubda_state for box_state, ubda_state in zip([s for _, s in box.get_port_order()], ta.roots)}
+
+    if helper.variable_saturation:
+        # Here we saturate the box transitions with variable information
+        saturate_box_edges_with_variables(box, helper.prefix, start_var, out_vars, helper.max_var)
+        out_vars = out_vars[box.port_arity :]  # discard used variables
+
+    # unfold the box content into result
+    # print(result.name, src_state, box.name, children, counter + unfolded)
+    for state_name in box.get_states():
+        new_name = f"{helper.unfold_counter}_{state_name}_root"
+        if state_name in statemap:
+            new_name = statemap[state_name]
+        if state_name in box.roots:
+            helper.output.roots = [new_name]
+        for key, tr in box.transitions[state_name].items():
+            if new_name not in helper.output.transitions:
+                helper.output.transitions[new_name] = {}
+            if tr.info.label.startswith("Port"):
+                continue
+            helper.output.transitions[new_name][key] = tr
+        box.rename_state(state_name, new_name)
+
+
 def ubda_unfolding(ta: TTreeAut, max_var: int, reformat=True, saturate=True) -> TTreeAut:
     """
     The whole 'unfolding' cycle. This function goes through all transitions of
@@ -149,6 +182,10 @@ def ubda_unfolding(ta: TTreeAut, max_var: int, reformat=True, saturate=True) -> 
         for state in ta.get_output_states():
             for edge in ta.transitions[state].values():
                 edge.info.variable = f"{helper.prefix}{helper.max_var}"
+
+    # unfold root box
+    if ta.rootbox is not None:
+        unfold_root_rule(ta, max_var, helper)
 
     for state in iterate_states_bfs(ta):
         for key, edge in ta.transitions[state].items():
@@ -206,6 +243,12 @@ def is_unfolded(ta: TTreeAut) -> bool:
     This function checks if there are any boxes in the tree automaton (UBDA),
     if no boxes are found, the UBDA is unfolded.
     """
+    if ta.rootbox is not None:
+        eprint(f"is_unfolded[ {ta.name} ]: found a root box: {ta.rootbox}")
+        return False
+    if len(ta.roots) != 1:
+        eprint(f"is_unfolded[ {ta.name} ]: unfolded UBDA have 1 root")
+        return False
     for edge in iterate_edges(ta):
         for box in edge.info.box_array:
             if box is not None:

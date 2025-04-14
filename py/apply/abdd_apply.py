@@ -151,9 +151,11 @@ def process_boxtree_leafcase(
                 term = produce_terminal(e1.target[pc.target1].leaf_val, e2.target[pc.target2].leaf_val, op, helper)
                 nodes.append(term)
             elif pc.target1 is not None:
-                nodes.append(e1.target[pc.target1])
+                term = e1.target[pc.target1]
+                nodes.append(negate_subtree(e1.abdd, term, helper) if pc.negation else term)
             elif pc.target2 is not None:
-                nodes.append(e2.target[pc.target2])
+                term = e2.target[pc.target2]
+                nodes.append(negate_subtree(e2.abdd, term, helper) if pc.negation else term)
         return rule, nodes
 
     low_rule, low_targets = (

@@ -9,9 +9,9 @@ import copy
 import os
 from typing import Iterator, List, Dict, Optional, Set, Tuple
 
+from formats.render_dot import export_to_file
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges, non_empty_bottom_up, iterate_edges_from_state
-from tree_automata.automaton import iterate_key_edge_tuples
-from tree_automata.functions.trimming import remove_useless_states, trim
+from tree_automata.functions.trimming import trim
 from canonization.folding_helpers import (
     FoldingHelper,
     get_first_name_from_tuple_str,
@@ -193,13 +193,15 @@ def box_finding(
     final_mapping: dict[str, str] = get_mapping(intersectoid, var_visibility, helper.reach)
     if final_mapping == {}:
         return {}
+    # export_to_file(intersectoid, f"./debug-intersectoids/{root}-{box.name.replace("box", "")}-intersectoid")
     split_mapping: dict[str, str] = {
         p: (get_first_name_from_tuple_str(s), var_visibility[s]) for p, s in final_mapping.items()
     }
     # mapping in which root state is one of ports is invalid
-    for s, var in split_mapping.values():
-        if root == s:
-            return {}
+    # for s, var in split_mapping.values():
+    #     if root == s:
+    #         return {}
+    # print(f"box_finding({box.name.replace("box", "")}, {root}) = {split_mapping}")
     return split_mapping
 
 
@@ -247,94 +249,6 @@ def get_box_index(edge_part: Tuple[str, int, str, str, TTransition]) -> int:
         else:
             current_idx += box_catalogue[box].port_arity
     return current_idx
-
-
-def iterate_edge_parts(
-    obj: TTreeAut, state: str, keep_loops=False, keep_folded=False, keep_nonvar=True
-) -> Iterator[tuple[TTransition, int]]:
-    """
-    Used in folding, this returns tuples of (TTransition, child-index),
-    while skipping self-looping edges, edges unmarked with variables,
-    or children that are targets of a box reduction, or
-    """
-
-    for edge in obj.transitions[state].values():
-        if any(
-            [edge.children == [], not keep_loops and edge.is_self_loop(), not keep_nonvar and edge.info.variable == ""]
-        ):
-            continue
-
-        if keep_folded:
-            for idx, child in enumerate(edge.children):
-                yield edge, idx
-        else:
-            for idx, box in enumerate(edge.info.box_array):
-                if box is None:
-                    child_idx = sum([box_arities[edge.info.box_array[i]] for i in range(idx)])
-                    yield edge, child_idx
-
-
-# alternative version => loop1: iterate over states BFS ( loop2: iterate over boxes )
-def ubda_folding_new(ta: TTreeAut, boxes: list[str], max_var: int):
-    result: TTreeAut = copy.deepcopy(ta)
-    fill_box_arrays(result)
-    helper: FoldingHelper = FoldingHelper(ta, max_var)
-
-    worklist: List[str] = [r for r in ta.roots]
-    visited: set[str] = set()
-    # states are explored in a BFS-like manner
-    while worklist != []:
-        state: str = worklist.pop(0)
-        if state in visited:
-            continue
-        # not sure if we want to skip leaves, probably yes
-        if state in result.get_output_states():
-            continue
-        # we find the best fit for reduction
-        for e, cidx in iterate_edge_parts(result, state):
-            for box in [box_catalogue[n] for n in boxes]:
-                childstate = e.children[cidx]
-                helper.min_var = int(e.info.variable[len(helper.var_prefix) :]) + 1
-                mapping = box_finding(result, box, childstate, helper, state)
-                if not mapping_is_correct(mapping, helper.state_var_map):
-                    helper.write("mapping_is_correct(): FALSE")
-                    continue
-
-                # phase 1: putting the box in the box array
-                initial_box_list: list[Optional[str]] = e.info.box_array
-                symbol = e.info.label
-                box_list = [None] * ta.get_symbol_arity_dict()[symbol]
-                for idx in range(len(initial_box_list)):
-                    box_list[idx] = initial_box_list[idx]
-                box_list[0 if cidx == 0 else 1] = box.name.replace("box", "")
-                e.info.box_array = box_list
-
-                # phase 2: fill the box-port children in the child array
-                e.children.pop(cidx)
-                for i, (map_state, var) in enumerate(mapping.values()):
-                    e.children.insert(cidx + i, map_state)
-                    # if var == helper.state_var_map[map_state]:
-                    #     # NOTE: here, possibly remove self-loop(s) in map_state
-                    #     # in case of identical variables (ta, intersectoid)
-                    #     continue
-
-        # update worklist and visited
-        visited.add(state)
-        for e in iterate_edges_from_state(result, state):
-            for child in e.children:
-                if child not in visited:
-                    worklist.append(child)
-    # end while
-
-    # after folding, particularly after folding HPort and LPort boxes, the port-mapped states
-    # can still contain self-looping transitions, which are unnecessary in the ABDD-context, so we can remove them
-
-    result.remove_self_loops()
-
-    match = re.search(r"\(([^()]*)\)", result.name)
-    result.name = f"folded({ta.name if match is None else match.group(1)})"
-    # return result
-    return remove_useless_states(result)
 
 
 def ubda_folding(

@@ -90,7 +90,6 @@ def compare_op_abdd(input1: ABDD, input2: ABDD, op: BooleanOperation, output: AB
     equal = True
     for assign_tuple in itertools.product([0, 1], repeat=output.variable_count):
         assignment = list(assign_tuple)
-        # print('evaluating', assignment)
         res1 = input1.evaluate_for(assignment)
         res2 = input2.evaluate_for(assignment)
         res = output.evaluate_for(assignment)
@@ -99,7 +98,7 @@ def compare_op_abdd(input1: ABDD, input2: ABDD, op: BooleanOperation, output: AB
             [
                 op.name == "AND" and ((res1 and res2) != res),
                 op.name == "OR" and ((res1 or res2) != res),
-                op.name == "XOR" and ((res1 != res2) != res),
+                op.name == "XOR" and (((res1 and not res2) or (not res1 and res2)) != res),
             ]
         ):
             equal = False

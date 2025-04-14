@@ -107,3 +107,6 @@ class TTransition:
             if i != self.src:
                 return False
         return True
+
+    def is_all_boxed(self) -> bool:
+        return all([b is None for b in self.info.box_array])

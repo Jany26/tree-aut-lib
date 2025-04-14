@@ -21,7 +21,7 @@ from tree_automata.transition import TEdge, TTransition
 def new_fold(ta: TTreeAut, initboxes: list[str], afterboxes: list[str], max_var: int) -> TTreeAut:
     fold = new_fold_terminal(ta, initboxes, max_var)
     new_fold_inner(fold, afterboxes, max_var)
-    return fold
+    return remove_useless_states(fold)
 
 
 def iterate_edge_parts(
@@ -171,7 +171,7 @@ def new_fold_terminal(treeaut: TTreeAut, boxes: list[str], varmax: int) -> TTree
             for e in iterate_edges_from_state(treeaut, s):
                 if e.is_self_loop():
                     edge = e
-        print(f"folding on edge {edge}")
+        # print(f"folding: state={s}, var={var}, edge={edge}")
         lowrule, lowtargets = try_all_boxes(treeaut, edge.children[0], var + 1, boxes, helper)
         # print('low =', lowrule, lowtargets)
         highrule, hightargets = try_all_boxes(treeaut, edge.children[1], var + 1, boxes, helper)
@@ -186,7 +186,7 @@ def new_fold_terminal(treeaut: TTreeAut, boxes: list[str], varmax: int) -> TTree
         edgecount += 1
         worklist.extend(lowtargets)
         worklist.extend(hightargets)
-        visited.add(s)
+        visited.add((s, var))
     return result
 
 
@@ -262,5 +262,3 @@ def new_fold_inner(treeaut: TTreeAut, boxes: list[str], varmax: int) -> None:
                 edge.children = [t[0] for t in targets] + edge.children
             else:
                 edge.children = edge.children + [t[0] for t in targets]
-    treeaut = remove_useless_states(treeaut)
-    return

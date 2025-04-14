@@ -830,6 +830,21 @@ class TTreeAut:
                     edge.info.label = f"Port_{counter}"
                     counter += 1
 
+    def reformat_vars(self, minvar=0, prefix="", start=1) -> None:
+        """
+        Reformat variables so that after it can be assumed they start with index '1'.
+        e.g. turn ['x0', 'x1', 'x2', ...] into ['1', '2', '3', ...] -> works well when used with ABDDs.
+        """
+        lookup = self.get_var_lookup()
+        # when minvar is 3 -> the correction needs to be -2
+        # since usually use minvar as 0 in some benchmarks -> the correction is going to be +1
+        correction = start - minvar
+        for edge in iterate_edges(self):
+            if edge.info.variable == "":
+                continue
+            edge.info.variable = f"{prefix}{lookup[edge.info.variable] + correction}"
+        return
+
     def shrink_tree_aut(self, reachable: list[str]) -> None:
         """
         Shrinks the tree automaton, such that it only contain the states from list (reachable states).

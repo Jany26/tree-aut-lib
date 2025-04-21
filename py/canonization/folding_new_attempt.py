@@ -7,7 +7,7 @@ from helpers.string_manipulation import tuple_name
 from helpers.utils import box_catalogue, box_orders, box_arities
 from canonization.folding import box_finding, mapping_is_correct
 from tree_automata.automaton import TTreeAut, iterate_edges, iterate_edges_from_state, iterate_states_bfs
-from tree_automata.functions.trimming import remove_useless_states
+from tree_automata.functions.trimming import remove_useless_states, shrink_to_top_down_reachable_2
 from tree_automata.transition import TEdge, TTransition
 
 
@@ -21,7 +21,7 @@ from tree_automata.transition import TEdge, TTransition
 def new_fold(ta: TTreeAut, initboxes: list[str], afterboxes: list[str], max_var: int) -> TTreeAut:
     fold = new_fold_terminal(ta, initboxes, max_var)
     new_fold_inner(fold, afterboxes, max_var)
-    return remove_useless_states(fold)
+    return shrink_to_top_down_reachable_2(fold)
 
 
 def iterate_edge_parts(
@@ -187,7 +187,7 @@ def new_fold_terminal(treeaut: TTreeAut, boxes: list[str], varmax: int) -> TTree
         worklist.extend(lowtargets)
         worklist.extend(hightargets)
         visited.add((s, var))
-    return result
+    return shrink_to_top_down_reachable_2(result)
 
 
 def divide_multivar_states(treeaut: TTreeAut):

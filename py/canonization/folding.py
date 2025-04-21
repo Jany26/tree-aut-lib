@@ -277,12 +277,14 @@ def ubda_folding(
     result: TTreeAut = copy.deepcopy(ta)
     fill_box_arrays(result)  # in case of [None, None] and [] discrepancies
     helper: FoldingHelper = FoldingHelper(ta, max_var, verbose, export_vtf, export_png, output, export_path)
+    # print(helper)
     if helper.vtf or helper.png:
         if not os.path.exists(f"{helper.path}/ubdas/"):
             os.makedirs(f"{helper.path}/ubdas/")
         if not os.path.exists(f"{helper.path}/intersectoids/"):
             os.makedirs(f"{helper.path}/intersectoids/")
     var_visibility = helper.state_var_map
+    # print(var_visibility)
     for box_name in boxes:
         box: TTreeAut = box_catalogue[box_name]
         worklist: List[str] = [root for root in ta.roots]
@@ -306,18 +308,19 @@ def ubda_folding(
                 # child_index
                 # source_state
                 # target_state
+                key, chidx, chstate, srcstate, edgeref = edge_part
 
-                part = "L" if edge_part[1] == 0 else "H"
+                part = "L" if chidx == 0 else "H"
                 if is_already_reduced(result, state, edge_part):
                     continue
-                helper.min_var = int(edge_part[4].info.variable[len(helper.var_prefix) :]) + 1
+                helper.min_var = int(edgeref.info.variable[len(helper.var_prefix) :]) + 1
 
                 # skipping self-loop
-                if state in result.transitions[state][edge_part[0]].children:
+                if state in result.transitions[state][key].children:
                     continue
                 if helper.verbose:
                     print("%s> box_finding(%s-[%s:%s]->%s)" % (f"{0 * ' '}", state, part, box.name, edge_part[2]))
-                mapping = box_finding(result, box, edge_part[2], helper, state)
+                mapping = box_finding(result, box, chstate, helper, state)
 
                 # phase 0: checking correctness of the mapping
                 # checking if all mapped states have a visible variable
@@ -327,39 +330,50 @@ def ubda_folding(
                     continue
                 helper.write(
                     "%s> box_finding(%s-[%s:%s]->%s => %s)\n"
-                    % (f"{0 * ' '}", state, "L" if edge_part[1] == 0 else "H", box.name, edge_part[2], mapping)
+                    % (f"{0 * ' '}", state, "L" if edge_part[1] == 0 else "H", box.name, chstate, mapping)
                 )
+                # print(f"box_finding({chstate} {box_name}) = {mapping})")
 
                 # phase 1: putting the box in the box array
-                edge = result.transitions[edge_part[3]][edge_part[0]]
-                initial_box_list: List[str] = edge.info.box_array
-                symbol = edge.info.label
-                box_list = [None] * ta.get_symbol_arity_dict()[symbol]
-                for idx in range(len(initial_box_list)):
-                    box_list[idx] = initial_box_list[idx]
-                box_list[get_box_index(edge_part)] = box_name
-                edge.info.box_array = box_list
+                edge = result.transitions[srcstate][key]
+                # initial_box_list: List[str] = edge.info.box_array
+                # symbol = edge.info.label
+                # box_list = [None] * ta.get_symbol_arity_dict()[symbol]
+                # for idx in range(len(initial_box_list)):
+                #     box_list[idx] = initial_box_list[idx]
+                # try:
+                #     box_list[get_box_index(edge_part)] = box_name
+                # except:
+                #     continue
+                # edge.info.box_array = box_list
+                edge.info.box_array[1 if chidx > 0 else 0] = box_name
 
                 # phase 2: fill the box-port children in the child array
-                idx = get_state_index_from_box_index(edge, get_box_index(edge_part))
-                edge.children.pop(idx)
-                for i, (map_state, var) in enumerate(mapping.values()):
-                    edge.children.insert(idx + i, map_state)
-                    if var == var_visibility[map_state]:
-                        # NOTE: here, possibly remove self-loop(s) in map_state
-                        # in case of identical variables (ta, intersectoid)
-                        continue
-                    new_state: str = f"{map_state}-{var}"
-                    if new_state in result.transitions:
-                        edge.children[idx + i] = new_state
-                    result.transitions[new_state] = {}
-                    edge.children[idx + i] = new_state
-                    new_edge = TTransition(new_state, TEdge("LH", [], f"{var}"), [map_state, map_state])
-                    var_visibility[new_state] = var
-                    helper.counter += 1
-                    key: str = f"temp_{helper.counter2}"
-                    helper.counter2 += 1
-                    result.transitions[new_state][key] = new_edge
+                edge.children.pop(chidx)
+                targets = [mapping[p] for (p, _) in box.get_port_order()]
+                if chidx == 0:
+                    edge.children = [t[0] for t in targets] + edge.children
+                else:
+                    edge.children = edge.children + [t[0] for t in targets]
+                # idx = get_state_index_from_box_index(edge, get_box_index(edge_part))
+                # edge.children.pop(idx)
+                # for i, (map_state, var) in enumerate(mapping.values()):
+                #     edge.children.insert(idx + i, map_state)
+                #     if var == var_visibility[map_state]:
+                #         # NOTE: here, possibly remove self-loop(s) in map_state
+                #         # in case of identical variables (ta, intersectoid)
+                #         continue
+                #     new_state: str = f"{map_state}-{var}"
+                #     if new_state in result.transitions:
+                #         edge.children[idx + i] = new_state
+                #     result.transitions[new_state] = {}
+                #     edge.children[idx + i] = new_state
+                #     new_edge = TTransition(new_state, TEdge("LH", [], f"{var+1}"), [map_state, map_state])
+                #     var_visibility[new_state] = var
+                #     helper.counter += 1
+                #     key: str = f"temp_{helper.counter2}"
+                #     helper.counter2 += 1
+                #     result.transitions[new_state][key] = new_edge
                 # for state in mapping
                 helper.export_ubda(result, state, edge_part, box)
             # for edge_info

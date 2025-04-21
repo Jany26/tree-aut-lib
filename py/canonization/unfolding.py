@@ -94,7 +94,6 @@ def unfold_edge(helper: UnfoldingHelper, folded_edge: TTransition) -> tuple[int,
         start_var: int = int(folded_edge.info.variable[helper.prefix_len :]) + 1
         out_vars: list[int] = get_outgoing_variables(helper, edge)
         if len(out_vars) != len(edge.children):
-            print(out_vars)
             raise Exception(f"ubda_unfolding(): didn't get enough information about outgoing variables, edge {edge}")
 
     # while edge.info.box_array != [] and edge.children != []:
@@ -106,6 +105,8 @@ def unfold_edge(helper: UnfoldingHelper, folded_edge: TTransition) -> tuple[int,
         if box_name is None:
             new_edge.children.append(edge.children[0])
             edge.children.pop(0)
+            # NOTE: even when we do not need to unfold, we HAVE to discard one used outvar
+            out_vars = out_vars[1:]
             continue
         box = copy.deepcopy(box_catalogue[box_name])
 

@@ -213,14 +213,16 @@ def process_possible_edges(
     high_var: str = norm.var_cache[high]
 
     # checking for edge relevancy => if failed, edge would disrupt semantics, so it won't be added
-    if source in norm.var_cache:
-        src_var = norm.var_cache[source]
-        for child in children_macrostates:
-            child_var = norm.var_cache[macrostring(child)]
-            if src_var > child_var:
-                if norm.verbose:
-                    pass
-                return
+    use_normalization_fix = False
+    if use_normalization_fix:
+        if source in norm.var_cache:
+            src_var = norm.var_cache[source]
+            for child in children_macrostates:
+                child_var = norm.var_cache[macrostring(child)]
+                if src_var > child_var:
+                    if norm.verbose:
+                        pass
+                    return
     # however, cache is only updated at the end of the iteration
     lookup_str = str([new_macrostate, symbol, added_var, children_macrostates])
     if lookup_str in norm.processed_edges:
@@ -232,6 +234,7 @@ def process_possible_edges(
     norm.transitions.append(tuple([new_macrostate, symbol, added_var, children_macrostates]))
     norm.debug_print(f"[!] edge = {new_macrostate, symbol, added_var, children_macrostates}")
     for root in norm.treeaut.roots:
+        # print(f'!!!! check root {root} against {norm.treeaut.roots} and {new_macrostate}')
         if root in new_macrostate:
             norm.roots[str(new_macrostate)] = new_macrostate
 
@@ -255,6 +258,7 @@ def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTre
     # NOTE: discrepancy about variables on output edges
     # if the BDA is defined over variables x(1) to x(n),
     # then output edges will have variable x(n+1)
+    # print(norm.variables)
     var: str = norm.variables.pop(0)
     for symbol, state_list in ta.get_output_edges().items():
         norm.transitions.append(tuple([state_list, symbol, var, []]))
@@ -278,7 +282,7 @@ def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTre
         # if norm.variables == []:
         #     break
     ta = create_treeaut_from_helper(norm)
-    # remove_bad_transitions(ta, vars)
+    remove_bad_transitions(ta, vars)
     return ta
 
 

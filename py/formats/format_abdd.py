@@ -141,6 +141,7 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
     leaves: set[str] = set()
     key_counter: int = 0
     preamble: bool = False
+    mvar = 0
     for l in file:
         line: str = l.split("#")[0]  # strip comments
         line = line.strip()  # strip leading and trailing whitespaces
@@ -176,7 +177,8 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
         groups = re.match(full_regex, line)
 
         src: str = groups.group(1)
-        var: str = groups.group(2)
+        var: int = int(groups.group(2))
+        mvar = max(var, mvar)
 
         tgt1: str = groups.group(3)
         box1: Optional[str] = groups.group(4)
@@ -194,7 +196,7 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
             children.append(j)
         for j in [i.strip() for i in tgt2.lstrip("(").rstrip(")").split(",")]:
             children.append(j)
-        edge = TTransition(src, TEdge("LH", [box1, box2], var), children)
+        edge = TTransition(src, TEdge("LH", [box1, box2], f"{var + 1}"), children)
         if src not in ta.transitions:
             ta.transitions[src] = {}
         ta.transitions[src][f"k{key_counter}"] = edge
@@ -206,7 +208,7 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
                 leaves.add(state)
     for leaf in leaves:
         symbol: str = leaf.lstrip("<").rstrip(">")
-        edge = TTransition(leaf, TEdge(symbol, [], f"{int(max_var)-1}"), [])
+        edge = TTransition(leaf, TEdge(symbol, [], f"{mvar+2}"), [])
         ta.transitions[leaf] = {}
         ta.transitions[leaf][f"k{key_counter}"] = edge
         key_counter += 1

@@ -20,7 +20,7 @@ from helpers.string_manipulation import create_string_from_name_set
 
 
 class NormalizationHelper:
-    def __init__(self, treeaut: TTreeAut, variables: list[str], verbose: bool, output=None):
+    def __init__(self, treeaut: TTreeAut, variables: list[str], verbose: bool, output: Optional[str], fix: bool):
         self.treeaut: TTreeAut = treeaut  # copy of the initial TA (un-normalized)
         self.roots: dict[str, list[str]] = {}
 
@@ -59,6 +59,9 @@ class NormalizationHelper:
             if dir_path:
                 os.makedirs(dir_path, exist_ok=True)
         self.output: TextIOWrapper = sys.stdout if output is None else open(output, "w")
+
+        # use fix that does not allow creating transitions with reversed or repeated variable order => utilizing var_cache
+        self.normalization_fix = fix
 
         # child macrostate str -> variable
         # this is used for checking, if the currently considered transition is viable
@@ -243,7 +246,9 @@ def macrostring(macrostate: list[str]) -> str:
     return create_string_from_name_set(state_name_sort(macrostate))
 
 
-def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTreeAut:
+def ubda_normalize(
+    ta: TTreeAut, vars: list, verbose: bool = False, output: Optional[str] = None, fix: bool = False
+) -> TTreeAut:
     """
     Another approach to normalization. This approach also goes bottom-up,
     but remembers current variable, and always decreases the variable with each
@@ -253,7 +258,7 @@ def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTre
     Normalization is similar to determinization, thus works with sets of states
     (represented as lists ordered using state_name_sort()).
     """
-    norm = NormalizationHelper(ta, vars, verbose, output)
+    norm = NormalizationHelper(ta, vars, verbose, output, fix)
 
     # NOTE: discrepancy about variables on output edges
     # if the BDA is defined over variables x(1) to x(n),
@@ -282,7 +287,9 @@ def ubda_normalize(ta: TTreeAut, vars: list, verbose=False, output=None) -> TTre
         # if norm.variables == []:
         #     break
     ta = create_treeaut_from_helper(norm)
-    remove_bad_transitions(ta, vars)
+    if not norm.normalization_fix:
+        remove_bad_transitions(ta, vars)
+    # remove_bad_transitions(ta, vars)
     return ta
 
 

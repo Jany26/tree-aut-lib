@@ -141,7 +141,9 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
     leaves: set[str] = set()
     key_counter: int = 0
     preamble: bool = False
+    max_var: Optional[int] = None
     mvar = 0
+    root_rule: Optional[str] = None
     for l in file:
         line: str = l.split("#")[0]  # strip comments
         line = line.strip()  # strip leading and trailing whitespaces
@@ -157,8 +159,13 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
                 preamble = True
                 continue
         if line.startswith("%"):
-            if data[0] not in ["%Name", "%Vars", "%Root"]:
+            if data[0] not in ["%Name", "%Vars", "%Root", "%Rootrule"]:
                 raise Exception(f"import_treeaut_from_abdd(): unexpected metadata: {data[0]}")
+            if data[0] == "%Rootrule":
+                rule = line.split()[1]
+                if rule not in box_arities:
+                    raise Exception(f"import_treeaut_from_vtf(): unexpected root rule '{root_rule}'")
+                root_rule = rule
             if data[0] == "%Name":
                 ta.name = data[1]
             if data[0] == "%Vars":
@@ -196,7 +203,7 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
             children.append(j)
         for j in [i.strip() for i in tgt2.lstrip("(").rstrip(")").split(",")]:
             children.append(j)
-        edge = TTransition(src, TEdge("LH", [box1, box2], f"{var + 1}"), children)
+        edge = TTransition(src, TEdge("LH", [box1, box2], f"{var}"), children)
         if src not in ta.transitions:
             ta.transitions[src] = {}
         ta.transitions[src][f"k{key_counter}"] = edge
@@ -208,11 +215,12 @@ def create_treeaut_from_abdd(file, name) -> TTreeAut:
                 leaves.add(state)
     for leaf in leaves:
         symbol: str = leaf.lstrip("<").rstrip(">")
-        edge = TTransition(leaf, TEdge(symbol, [], f"{mvar+2}"), [])
+        edge = TTransition(leaf, TEdge(symbol, [], f"{max_var + 1}" if max_var is not None else f"{mvar+2}"), [])
         ta.transitions[leaf] = {}
         ta.transitions[leaf][f"k{key_counter}"] = edge
         key_counter += 1
 
+    ta.rootbox = root_rule
     return ta
 
 

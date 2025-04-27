@@ -17,6 +17,32 @@
 #include <unordered_set>
 #include <cctype>
 
+bool directory_exists(const std::string& path) {
+    struct stat info;
+    return stat(path.c_str(), &info) == 0 && S_ISDIR(info.st_mode);
+}
+
+std::string get_filename(const std::string& path) {
+    size_t last_slash = path.find_last_of("/\\");
+    return (last_slash == std::string::npos) ? path : path.substr(last_slash + 1);
+}
+
+std::string get_directory(const std::string& path) {
+    size_t last_slash = path.find_last_of("/\\");
+    return (last_slash == std::string::npos) ? "" : path.substr(0, last_slash);
+}
+
+std::string get_stem(const std::string& filename) {
+    size_t last_dot = filename.find_last_of(".");
+    return (last_dot == std::string::npos) ? filename : filename.substr(0, last_dot);
+}
+
+std::string get_extension(const std::string& filename) {
+    size_t last_dot = filename.find_last_of(".");
+    return (last_dot == std::string::npos) ? "" : filename.substr(last_dot);
+}
+
+
 class DimacsParser {
     public:
         std::string input_file, output_file, name;
@@ -136,6 +162,11 @@ void DimacsParser::parse() {
             // printf("clausule %d of %d\n", this->processed_clausules, this->clausules_count);
             clausule();
             this->processed_clausules++;
+            this->output_file = this->name + std::to_string(this->processed_clausules);
+            std::string filename = get_filename(this->input_file);
+            this->output_file = this->name + "/" + get_stem(filename) + "-" + std::to_string(this->processed_clausules) + get_extension(filename);
+            std::cout << this->output_file << std::endl;
+            this->export_to_abdd();
         }
         if (this->tokens.size() <= 1) {
             return;
@@ -209,7 +240,7 @@ void DimacsParser::export_to_abdd() {
     temp_name += ".temp";
     FILE *temp = fopen(temp_name.c_str(), "w");
     if (temp == NULL) {
-        fprintf(stderr, "BlifParser: export_to_abdd():");
+        fprintf(stderr, "DimacsParser: export_to_abdd():");
         fprintf(stderr, "failed to open file '%s.temp'\n", this->output_file.c_str());
         return;
     }
@@ -221,7 +252,7 @@ void DimacsParser::export_to_abdd() {
     fclose(temp);
     temp = fopen(temp_name.c_str(), "r");
     if (temp == NULL) {
-        fprintf(stderr, "BlifParser: export_to_abdd():");
+        fprintf(stderr, "DimacsParser: export_to_abdd():");
         fprintf(stderr, "failed to re-open file '%s.temp'\n", this->output_file.c_str());
         return;
     }
@@ -271,40 +302,64 @@ void DimacsParser::export_to_abdd() {
     return;
 }
 
+// int main(/*int argc, char **argv*/) {
+//     // if (argc < 3) {
+//     //     fprintf(stderr, "missing args\n");
+//     //     return 1;
+//     // }
+//     int benchmark_start = 1;
+//     int benchmark_end = 1000;
 
-int main(/*int argc, char **argv*/) {
-    // if (argc < 3) {
-    //     fprintf(stderr, "missing args\n");
-    //     return 1;
-    // }
-    int benchmark_start = 1;
-    int benchmark_end = 1000;
+//     // std::string input_path = argv[1];
+//     // std::string output_path = argv[2];
 
-    // std::string input_path = argv[1];
-    // std::string output_path = argv[2];
+//     DimacsParser parser = DimacsParser("", "");
+//     bdd_init(100000, 100000);
+//     for(int i = benchmark_start; i <= benchmark_end; i++) {
+//         struct stat sb;
+//         if (!(stat("../data/uf20/", &sb) == 0 && S_ISDIR(sb.st_mode))) {
+//             int result = mkdir("../data/uf20/", 0777);
+//             if (result != 0) {
+//                 fprintf(stderr, "DimacsParser: could not create ");
+//                 fprintf(stderr, "folder '../data/uf20/' for outputs\n");
+//                 return 1;
+//             }
+//         }
+//         parser.reset();
+//         parser.input_file = "../benchmark/dimacs/uf20/uf20-0"+ std::to_string(i)+  ".cnf";
+//         parser.output_file = "../data/uf20/uf20-0" + std::to_string(i) + ".abdd";
+//         parser.tokenize();
+//         parser.parse();
+//         parser.export_to_abdd();
+//         bdd_printtable(parser.result);
+//         printf("node count = %d\n", bdd_nodecount(parser.result));
+//     }
+//     bdd_done();
 
-    DimacsParser parser = DimacsParser("", "");
-    bdd_init(100000, 100000);
-    for(int i = benchmark_start; i <= benchmark_end; i++) {
-        struct stat sb;
-        if (!(stat("../data/uf20/", &sb) == 0 && S_ISDIR(sb.st_mode))) {
-            int result = mkdir("../data/uf20/", 0777);
-            if (result != 0) {
-                fprintf(stderr, "DimacsParser: could not create ");
-                fprintf(stderr, "folder '../data/uf20/' for outputs\n");
-                return 1;
-            }
-        }
-        parser.reset();
-        parser.input_file = "../benchmark/dimacs/uf20/uf20-0"+ std::to_string(i)+  ".cnf";
-        parser.output_file = "../data/uf20/uf20-0" + std::to_string(i) + ".abdd";
-        parser.tokenize();
-        parser.parse();
-        parser.export_to_abdd();
-        bdd_printtable(parser.result);
-        printf("node count = %d\n", bdd_nodecount(parser.result));
+//     return 0;
+// }
+
+int main(int argc, char **argv) {
+    if (argc < 3) {
+        fprintf(stderr, "usage: dimacs_parser INPUT_PATH OUTPUT_DIR\n");
+        return 1;
     }
-    bdd_done();
+    std::string cnf_input = argv[1];
+    std::string output_dir = argv[2];
+
+    if (!directory_exists(output_dir)) {
+        mkdir(output_dir.c_str(), 0755);
+    }
+
+
+    // int clause_count = 91;
+    // int variable_count = 20;
+
+    DimacsParser parser = DimacsParser(cnf_input, output_dir);
+    parser.name = output_dir;
+    bdd_init(100000, 100000);
+    parser.tokenize();
+    parser.parse();
 
     return 0;
 }

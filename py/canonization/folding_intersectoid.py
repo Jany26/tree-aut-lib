@@ -20,6 +20,7 @@ from tree_automata import (
 )
 from canonization.folding_helpers import FoldingHelper
 from helpers.string_manipulation import tuple_name, get_first_name_from_tuple_str
+from tree_automata.automaton import iterate_states_bfs
 
 
 def intersectoid_edge_key(e1: TTransition, e2: TTransition) -> str:
@@ -326,6 +327,12 @@ def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper) -> None:
     # when using LPort, HPort, possibly even X port, sometimes the port-mapped state
     # can be reached through multiple vars
     var_visibility: dict[str, int] = treeaut.get_var_visibility_deterministic()
+    for state in iterate_states_bfs(treeaut):
+        if state in var_visibility:
+            continue
+        ta_state = state.split(",")[0][1:]
+        var = int(helper.state_var_map[ta_state][len(helper.var_prefix) :])
+        var_visibility[state] = var
     for edge in iterate_edges(treeaut):
         if edge.info.label.startswith("Port") and edge.info.variable == "":
             if edge.src in var_visibility:

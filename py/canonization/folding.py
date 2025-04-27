@@ -284,10 +284,21 @@ def ubda_folding(
         if not os.path.exists(f"{helper.path}/intersectoids/"):
             os.makedirs(f"{helper.path}/intersectoids/")
     var_visibility = helper.state_var_map
-    # print(var_visibility)
+    root_folded = False
     for box_name in boxes:
         box: TTreeAut = box_catalogue[box_name]
-        worklist: List[str] = [root for root in ta.roots]
+
+        if not root_folded:
+            mapping = box_finding(result, box, ta.roots[0], helper, None)
+            if not mapping_is_correct(mapping, var_visibility):
+                helper.write("mapping_is_correct(): FALSE")
+            else:
+                targets = [mapping[p] for (p, _) in box.get_port_order()]
+                result.rootbox = box_name
+                result.roots = [t[0] for t in targets]
+                root_folded = True
+
+        worklist: List[str] = [root for root in result.roots]
         visited: Set[str] = set()
         while worklist != []:
             state: str = worklist.pop(0)

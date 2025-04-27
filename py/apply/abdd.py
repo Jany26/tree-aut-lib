@@ -1,5 +1,6 @@
 import copy
 import itertools
+import os
 import re
 
 from typing import Generator, Optional
@@ -112,10 +113,10 @@ class ABDD:
         visited = set()
         while queue != []:
             node = queue.pop(0)
-            if not repeat and node in visited:
+            if not repeat and id(node) in visited:
                 continue
             yield node
-            visited.add(node)
+            visited.add(id(node))
             queue.extend(node.low)
             queue.extend(node.high)
 
@@ -259,10 +260,56 @@ class ABDD:
             keycounter += 1
         return result
 
+    def export_to_abdd_file(self, path: str) -> None:
+        """
+        Format example:
+        @ABDD
+        %Name three_L1_to_zero
+        %Vars 10
+        %Rootrule LPort
+        %Root 2 1
+
+        1[3] <0>[L1] 2[H0]
+        2[6] 3[H1] <0>[L1]
+        3[8] <0>[L1] 4
+        4[9] <0>[X] <1>[H0]
+        """
+
+        def target_str(tgt: list[ABDDNode]) -> str:
+            mid_str = ", ".join(f"<{i.leaf_val}>" if i.is_leaf else f"{i.node}" for i in tgt)
+            return mid_str
+
+        basen = os.path.basename(path)
+        dirn = os.path.dirname(path)
+        if not os.path.exists(path):
+            os.makedirs(dirn, exist_ok=True)
+
+        with open(path, "w") as f:
+            f.write(f"@ABDD\n")
+            f.write(f"%Name {self.name}\n")
+            f.write(f"%Vars {self.variable_count}\n")
+            if self.root_rule is not None:
+                f.write(f"%Rootrule {self.root_rule}\n")
+            f.write(f"%Root {' '.join([f"<{i.leaf_val}>" if i.is_leaf else f"{i.node}" for i in self.roots])}\n")
+            f.write(f"\n")
+
+            for n in self.iterate_bfs_nodes():
+                if n.is_leaf:
+                    continue
+                low_str = target_str(n.low)
+                high_str = target_str(n.high)
+                low_box_str = f"[{n.low_box}]" if n.low_box is not None else ""
+                high_box_str = f"[{n.high_box}]" if n.high_box is not None else ""
+                f.write(f"{n.node}[{n.var}] {low_str}{low_box_str} {high_str}{high_box_str}\n")
+            f.write(f"\n")
+
     def reformat_node_names(self):
         name_map: dict[int, int] = {}
-        counter = 0
+        counter = 2
         for i in self.iterate_bfs_nodes():
+            if i.is_leaf:
+                i.node = i.leaf_val
+                continue
             i.node = counter
             counter += 1
 
@@ -337,7 +384,6 @@ def import_abdd_from_abdd_file(path: str, ncache: Optional[ABDDNodeCacheClass] =
                     roots = value.split()
                     root_idxs = [int(r) for r in roots]
                 elif attribute == "Rootrule":
-                    print("rootrule", value)
                     if value in box_arities:
                         root_rule = value
                     else:
@@ -379,7 +425,7 @@ def import_abdd_from_abdd_file(path: str, ncache: Optional[ABDDNodeCacheClass] =
             newnode = ABDDNode(node_idx)
 
             if int(node) in root_idxs:
-                newnode.is_root = True
+                # newnode.is_root = True
                 rootsmap[int(node)] = newnode
             newnode.var = var
             newnode.is_leaf = False
@@ -463,7 +509,7 @@ def convert_ta_to_abdd(
             edge.info.box_array = [None, None]
         node_map[edge.src].set_node_info_from_ta_transition(edge, node_map, var_prefix_len=vlen)
 
-    node_map[ta.roots[0]].is_root = True
+    # node_map[ta.roots[0]].is_root = True
     result = ABDD(
         f"{ta.name}", var_count if var_count is not None else ta.get_var_max() - 1, [node_map[r] for r in ta.roots]
     )
@@ -472,6 +518,12 @@ def convert_ta_to_abdd(
     result.node_count = result.count_nodes()
     # result.root_rule = "X" if result.root.var > 1 else None
     result.root_rule = ta.rootbox
+    for i in result.iterate_bfs_nodes():
+        hit = ncache.find_node(i)
+        if hit is None:
+            ncache.insert_node(i)
+
+    ncache.refresh_nodes()
 
     return result
 

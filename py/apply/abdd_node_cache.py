@@ -31,55 +31,69 @@ class ABDDNodeCacheClass:
         self.terminal_1 = one
         self.cache[(0, 0, None, (), None, ())] = self.terminal_0
         self.cache[(0, 1, None, (), None, ())] = self.terminal_1
+        self.counter = 2
 
     def insert_node(self, node: ABDDNode) -> None:
-        low_tuple = tuple([n.node for n in node.low])
-        high_tuple = tuple([n.node for n in node.high])
+        low_tuple = tuple([id(n) for n in node.low])
+        high_tuple = tuple([id(n) for n in node.high])
         lookup = tuple([node.var, node.leaf_val, node.low_box, low_tuple, node.high_box, high_tuple])
         self.cache[lookup] = node
 
     def find_node(self, node: ABDDNode) -> Optional[ABDDNode]:
-        low_tuple = tuple([n.node for n in node.low])
-        high_tuple = tuple([n.node for n in node.high])
+        low_tuple = tuple([id(n) for n in node.low])
+        high_tuple = tuple([id(n) for n in node.high])
         lookup = tuple([node.var, node.leaf_val, node.low_box, low_tuple, node.high_box, high_tuple])
         if lookup in self.cache:
             return self.cache[lookup]
         return None
 
+    def refresh_nodes(self):
+        counter = 2
+        for tup, i in self.cache.items():
+            if i.is_leaf:
+                continue
+            i.node = counter
+            counter += 1
+        self.counter = counter
+
     def __repr__(self) -> str:
-        result = "%-*s %-*s %-*s %-*s %-*s %-*s -> %-*s\n" % (
+        result = "%-*s %-*s %-*s %-*s %-*s %-*s -> %-*s %-*s\n" % (
             4,
             "var",
             4,
             "leaf",
             5,
             "Lbox",
-            10,
+            20,
             "Lnodes",
             5,
             "Hbox",
-            10,
+            20,
             "Hnodes",
-            50,
-            "Cached Node Info",
+            8,
+            "NodePtr",
+            8,
+            "NodeID",
         )
-        result += "-" * 80 + "\n"
+        result += "-" * 84 + "\n"
         for tup, node in self.cache.items():
             var, leaf, lbox, lnodes, hbox, hnodes = tup
-            result += "%-*s %-*s %-*s %-*s %-*s %-*s -> %-*s\n" % (
+            result += "%-*s %-*s %-*s %-*s %-*s %-*s -> %-*s %-*s\n" % (
                 4,
                 var,
                 4,
                 "-" if leaf is None else leaf,
                 5,
                 "-" if lbox is None else lbox,
-                10,
-                "[" + ",".join([str(l) for l in lnodes]) + "]",
+                20,
+                "[" + ",".join([str(hex(l))[6:] for l in lnodes]) + "]",
                 5,
                 "-" if hbox is None else hbox,
-                10,
-                "[" + ",".join([str(l) for l in hnodes]) + "]",
-                50,
-                node,
+                20,
+                "[" + ",".join([str(hex(l))[6:] for l in hnodes]) + "]",
+                8,
+                hex(id(node))[6:],
+                8,
+                f"<{node.leaf_val}>" if node.is_leaf else f"{node.node}({node.var})",
             )
         return result

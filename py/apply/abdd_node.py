@@ -45,7 +45,7 @@ class ABDDNode:
         self.var = 0  # normally, we start indexing variables from 1
 
         self.is_leaf = True
-        self.is_root = False
+        # self.is_root = False
         self.leaf_val = None
 
         self.low_box = None
@@ -71,7 +71,7 @@ class ABDDNode:
             f"node={self.node}",
             f"var={self.var}",
             f"leaf{f' {self.leaf_val}' if self.leaf_val is not None else ''}" if self.is_leaf else "",
-            f"root" if self.is_root else "",
+            # f"root" if self.is_root else "",
             f"lbox={self.low_box}" if self.low != [] else "",
             f"low={prettyprint_nodes(self.low)}" if self.low != [] else "",
             f"hbox={self.high_box}" if self.high != [] else "",

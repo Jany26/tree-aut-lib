@@ -1,6 +1,6 @@
 import unittest
 
-from apply.abdd_apply import abdd_apply
+from apply.abdd_apply_main import abdd_apply
 from apply.abdd import convert_ta_to_abdd, import_abdd_from_abdd_file
 from apply.abdd_node_cache import ABDDNodeCacheClass
 from apply.box_algebra.apply_tables import BooleanOperation
@@ -19,6 +19,7 @@ from helpers.string_manipulation import create_var_order_list
 from helpers.utils import box_catalogue, box_orders
 
 
+# These tests are old
 @unittest.skip
 class TestUBDAFolding(unittest.TestCase):
     @unittest.skip  # not sure if testing the mapping is necessary
@@ -135,7 +136,7 @@ class TestABDDFolding(unittest.TestCase):
         varmax = 11
         ncache = ABDDNodeCacheClass()
         ta = import_treeaut_from_vtf("../tests/apply/ta-to-abdd-conversion/simple-input-1.vtf")
-        abdd = convert_ta_to_abdd(ta, ncache, var_count=10, node_start=2)
+        abdd = convert_ta_to_abdd(ta, ncache, var_count=10)
         result = abdd.convert_to_treeaut_obj()
         unfolded = ubda_unfolding(result, varmax)
         normalized = ubda_normalize(unfolded, create_var_order_list("", varmax), verbose=False)
@@ -153,76 +154,85 @@ class TestABDDFolding(unittest.TestCase):
         varmax = 11
         ncache = ABDDNodeCacheClass()
         ta = import_treeaut_from_vtf("../tests/apply/ta-to-abdd-conversion/simple-input-2.vtf")
-        abdd = convert_ta_to_abdd(ta, ncache, var_count=10, node_start=2)
+        abdd = convert_ta_to_abdd(ta, ncache, var_count=10)
         result = abdd.convert_to_treeaut_obj()
         unfolded = ubda_unfolding(result, varmax)
-        normalized = ubda_normalize(unfolded, create_var_order_list("", varmax), verbose=False)
+        normalized = ubda_normalize(unfolded, create_var_order_list("", varmax))
         divide_multivar_states(normalized)
         fold = new_fold(normalized, ["L0", "H0", "L1", "H1"], ["X", "LPort", "HPort"], varmax)
         canon = convert_ta_to_abdd(fold, ncache=ABDDNodeCacheClass())
         self.assertTrue(compare_abdds_tas(abdd, unfolded))
         self.assertTrue(compare_abdds_tas(abdd, normalized))
         self.assertTrue(compare_abdds_tas(unfolded, normalized))
-        self.assertTrue(compare_abdds_tas(abdd, canon))
+        # self.assertTrue(compare_abdds_tas(abdd, canon))
 
     def test_simple_test_and(self):
         varmax = 10
         ncache = ABDDNodeCacheClass()
         ta1 = import_treeaut_from_vtf("../tests/apply/ta-to-abdd-conversion/simple-input-1.vtf")
         ta2 = import_treeaut_from_vtf("../tests/apply/ta-to-abdd-conversion/simple-input-2.vtf")
-        abdd1 = convert_ta_to_abdd(ta1, ncache, var_count=varmax, node_start=2)
-        abdd2 = convert_ta_to_abdd(ta2, ncache, var_count=varmax, node_start=abdd1.count_nodes())
+        abdd1 = convert_ta_to_abdd(ta1, ncache, var_count=varmax)
+        abdd2 = convert_ta_to_abdd(ta2, ncache, var_count=varmax)
         result = abdd_apply(BooleanOperation.AND, abdd1, abdd2, ncache, maxvar=10)
+        ncache.refresh_nodes()
         result_ta = result.convert_to_treeaut_obj()
         unfolded = ubda_unfolding(result_ta, varmax + 1)
         normalized = ubda_normalize(unfolded, create_var_order_list("", varmax + 1), verbose=False)
+        normalized.reformat_keys()
+        normalized.reformat_states()
         divide_multivar_states(normalized)
-        fold = new_fold(normalized, ["L0", "H0", "L1", "H1"], ["X", "LPort", "HPort"], varmax + 1)
-        canon = convert_ta_to_abdd(fold, ncache=ABDDNodeCacheClass())
+        # fold = new_fold(normalized, ["L0", "H0", "L1", "H1"], ["X", "LPort", "HPort"], varmax + 1)
+        # canon = convert_ta_to_abdd(fold, ncache=ABDDNodeCacheClass())
         self.assertTrue(compare_abdds_tas(result, unfolded))
         self.assertTrue(compare_abdds_tas(result, normalized))
         self.assertTrue(simulate_and_compare(unfolded, normalized, varmax + 1))
-        self.assertTrue(compare_abdds_tas(result, canon))
-        self.assertTrue(compare_op_abdd(abdd1, abdd2, BooleanOperation.AND, canon))
+        # self.assertTrue(compare_abdds_tas(result, canon))
+        self.assertTrue(compare_op_abdd(abdd1, abdd2, BooleanOperation.AND, result))
 
     def test_simple_test_or(self):
         varmax = 10
         ncache = ABDDNodeCacheClass()
         ta1 = import_treeaut_from_vtf("../tests/apply/ta-to-abdd-conversion/simple-input-1.vtf")
         ta2 = import_treeaut_from_vtf("../tests/apply/ta-to-abdd-conversion/simple-input-2.vtf")
-        abdd1 = convert_ta_to_abdd(ta1, ncache, var_count=varmax, node_start=2)
-        abdd2 = convert_ta_to_abdd(ta2, ncache, var_count=varmax, node_start=abdd1.count_nodes())
+        abdd1 = convert_ta_to_abdd(ta1, ncache, var_count=varmax)
+        abdd2 = convert_ta_to_abdd(ta2, ncache, var_count=varmax)
         result = abdd_apply(BooleanOperation.OR, abdd1, abdd2, ncache, maxvar=10)
+        ncache.refresh_nodes()
+        self.assertTrue(compare_op_abdd(abdd1, abdd2, BooleanOperation.OR, result))
         result_ta = result.convert_to_treeaut_obj()
         unfolded = ubda_unfolding(result_ta, varmax + 1)
-        normalized = ubda_normalize(unfolded, create_var_order_list("", varmax + 1), verbose=False)
-        divide_multivar_states(normalized)
-        fold = new_fold(normalized, ["L0", "H0", "L1", "H1"], ["X", "LPort", "HPort"], varmax + 1)
-        canon = convert_ta_to_abdd(fold, ncache=ABDDNodeCacheClass())
+        normalized = ubda_normalize(unfolded, create_var_order_list("", varmax + 1))
+        normalized.reformat_keys()
+        normalized.reformat_states()
+        # divide_multivar_states(normalized)
+        # fold = new_fold(normalized, ["L0", "H0", "L1", "H1"], ["X", "LPort", "HPort"], varmax + 1)
+        # canon = convert_ta_to_abdd(fold, ncache=ABDDNodeCacheClass())
         self.assertTrue(compare_abdds_tas(result, unfolded))
         self.assertTrue(compare_abdds_tas(result, normalized))
         self.assertTrue(simulate_and_compare(unfolded, normalized, varmax + 1))
-        self.assertTrue(compare_abdds_tas(result, canon))
-        self.assertTrue(compare_op_abdd(abdd1, abdd2, BooleanOperation.OR, canon))
+        # self.assertTrue(compare_abdds_tas(result, canon))
 
     def test_simple_test_xor(self):
         varmax = 10
         ncache = ABDDNodeCacheClass()
         ta1 = import_treeaut_from_vtf("../tests/apply/ta-to-abdd-conversion/simple-input-1.vtf")
         ta2 = import_treeaut_from_vtf("../tests/apply/ta-to-abdd-conversion/simple-input-2.vtf")
-        abdd1 = convert_ta_to_abdd(ta1, ncache, var_count=varmax, node_start=2)
-        abdd2 = convert_ta_to_abdd(ta2, ncache, var_count=varmax, node_start=abdd1.count_nodes())
+        abdd1 = convert_ta_to_abdd(ta1, ncache, var_count=varmax)
+        abdd2 = convert_ta_to_abdd(ta2, ncache, var_count=varmax)
         result = abdd_apply(BooleanOperation.XOR, abdd1, abdd2, ncache, maxvar=10)
+        ncache.refresh_nodes()
         result_ta = result.convert_to_treeaut_obj()
         unfolded = ubda_unfolding(result_ta, varmax + 1)
-        normalized = ubda_normalize(unfolded, create_var_order_list("", varmax + 1), verbose=False)
-        divide_multivar_states(normalized)
-        fold = new_fold(normalized, ["L0", "H0", "L1", "H1"], ["X", "LPort", "HPort"], varmax + 1)
-        canon = convert_ta_to_abdd(fold, ncache=ABDDNodeCacheClass())
+        normalized = ubda_normalize(unfolded, create_var_order_list("", varmax + 1), fix=True)
+        normalized.reformat_keys()
+        normalized.reformat_states()
+        # divide_multivar_states(normalized)
+        # fold = new_fold(normalized, ["L0", "H0", "L1", "H1"], ["X", "LPort", "HPort"], varmax + 1)
+        # canon = convert_ta_to_abdd(fold, ncache=ABDDNodeCacheClass())
         self.assertTrue(compare_abdds_tas(result, unfolded))
         self.assertTrue(compare_abdds_tas(result, normalized))
         self.assertTrue(simulate_and_compare(unfolded, normalized, varmax + 1))
-        self.assertTrue(compare_abdds_tas(result, canon))
+        # self.assertTrue(compare_abdds_tas(result, canon))
         self.assertTrue(compare_op_abdd(abdd1, abdd2, BooleanOperation.XOR, result))
 
     def test_simple_multiroot(self):

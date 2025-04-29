@@ -531,9 +531,12 @@ def convert_ta_to_abdd(
 def check_if_abdd(ta: TTreeAut) -> bool:
     """
     Perform checks if the BDA structure is convertible to automaton:
-    - there should be no self-loops, or any other loops
+    - there should be no self-loops, or any other loops,
     - each state should have just one outgoing edge (determinism)
     - every edge should be labeled with a variable
+
+    NOTE: 'folding' might leave behind some self-loops with no relevant semantics,
+    and also unreachable states, etc.
     """
     visited: set[str] = set()
     output_vars: set[str] = set()

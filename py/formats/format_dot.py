@@ -15,6 +15,16 @@ from helpers.utils import box_catalogue
 # DOT FORMAT IMPORT/EXPORT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+box_labels = {
+    "X": "X",
+    "L0": "<L<sub>0</sub>>",
+    "L1": "<L<sub>1</sub>>",
+    "H0": "<H<sub>0</sub>>",
+    "H1": "<H<sub>1</sub>>",
+    "LPort": "<L<sub>⊕</sub>>",
+    "HPort": "<H<sub>⊕</sub>>",
+    None: "S",
+}
 
 help_point: str = "shape=point, width=0.001, height=0.001"
 small_point: str = "shape=point, width=0.05, height=0.05"

@@ -78,7 +78,7 @@ def ubda_folding_new(ta: TTreeAut, boxes: list[str], max_var: int):
                 childstate = e.children[cidx]
                 helper.min_var = int(e.info.variable[len(helper.var_prefix) :]) + 1
                 mapping = box_finding(result, box, childstate, helper, state)
-                if not mapping_is_correct(mapping, helper.state_var_map):
+                if not mapping_is_correct(mapping, helper.state_var_map, helper.var_prefix):
                     helper.write("mapping_is_correct(): FALSE")
                     continue
 

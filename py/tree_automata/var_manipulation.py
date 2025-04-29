@@ -43,6 +43,7 @@ def compress_vars(ta: TTreeAut) -> TTreeAut:
             transitions[src] = {}
         transitions[src][key] = TTransition(src, edge, children)
     result = TTreeAut(ta.roots, transitions, f"{ta.name}", ta.port_arity)
+    result.rootbox = ta.rootbox
     return result
 
 

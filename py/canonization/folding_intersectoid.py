@@ -330,6 +330,7 @@ def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper) -> None:
     for state in iterate_states_bfs(treeaut):
         if state in var_visibility:
             continue
+        # NOTE: Does not work well with state names in the form "{q1,q2,q3}", etc.
         ta_state = state.split(",")[0][1:]
         var = int(helper.state_var_map[ta_state][len(helper.var_prefix) :])
         var_visibility[state] = var

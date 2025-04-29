@@ -30,6 +30,17 @@ from helpers.utils import box_catalogue
 # TREE AUTOMATA = GRAPHVIZ INTEGRATION WITH DOT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+box_labels = {
+    "X": "X",
+    "L0": "<L<sub>0</sub>>",
+    "L1": "<L<sub>1</sub>>",
+    "H0": "<H<sub>0</sub>>",
+    "H1": "<H<sub>1</sub>>",
+    "LPort": "<L<sub>⊕</sub>>",
+    "HPort": "<H<sub>⊕</sub>>",
+    None: "S",
+}
+
 
 def dot_transition_handle(graph: graphviz.Digraph, edge: TTransition, key: str, verbose=False) -> None:
     use_low_high: bool = False
@@ -94,14 +105,7 @@ def dot_transition_handle(graph: graphviz.Digraph, edge: TTransition, key: str, 
         if edge.info.box_array != [] and edge.info.box_array[current_box] is not None:
             has_box = True
             if type(edge.info.box_array[current_box]) == str:
-                box_name = box_catalogue[edge.info.box_array[current_box]].name
-            else:
-                box_name = edge.info.box_array[current_box].name
-            if box_name.startswith("box"):
-                box_name = box_name[len("box") :]
-            if box_name.endswith("Port"):
-                box_name = box_name[:-4]
-                box_name += "⊕"
+                box_name = edge.info.box_array[current_box].replace("box", "").replace("Port", "⊕")
             edge_label += f": {box_name}"
 
         # box handling (mapping more children to one edge (port_arity > 1))
@@ -206,10 +210,10 @@ def treeaut_to_dot(ta: TTreeAut, verbose=False, caption=False) -> graphviz.Digra
         if multiport:
             node_above_rootbox = f"->rootbox-connector"
             dot.node(node_above_rootbox, label="", shape="point", width="0.001", height="0.001")
-            dot.edge(node_above_rootbox, rootbox_node, label=ta.rootbox, penwidth="2.0", arrowsize="0.5")
+            dot.edge(node_above_rootbox, rootbox_node, label=box_labels[ta.rootbox], penwidth="2.0", arrowsize="0.5")
         for idx, n in enumerate(ta.roots):
             dot.node(f"{n}", shape="circle", style="filled", fillcolor="khaki" if n in output_states else "bisque")
-            rootlabel = f"{idx}" if multiport else f"{ta.rootbox}"
+            rootlabel = f"⊕{idx}" if multiport else box_labels[ta.rootbox]
             dot.edge(rootbox_node, f"{n}", label=rootlabel, penwidth="2.0", arrowsize="0.5")
 
     for state in ta.get_states():

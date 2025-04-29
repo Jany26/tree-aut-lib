@@ -205,7 +205,7 @@ def box_finding(
     return split_mapping
 
 
-def mapping_is_correct(mapping: dict[str, str], var_visibility: dict[str, int]) -> bool:
+def mapping_is_correct(mapping: dict[str, str], var_visibility: dict[str, int], prefix: str) -> bool:
     """
     [description]
     Checks if the mapped states and variables they see are consistent.
@@ -219,7 +219,7 @@ def mapping_is_correct(mapping: dict[str, str], var_visibility: dict[str, int]) 
     for i, (map_state, var) in enumerate(mapping.values()):
         if var == "":
             none_var = True
-        original_var: int = int(var_visibility[map_state])
+        original_var: int = int(var_visibility[map_state][len(prefix) :])
         intersectoid_var: int = int(var)
         if intersectoid_var > original_var:
             bigger_var = True
@@ -290,7 +290,7 @@ def ubda_folding(
 
         if not root_folded:
             mapping = box_finding(result, box, ta.roots[0], helper, None)
-            if not mapping_is_correct(mapping, var_visibility):
+            if not mapping_is_correct(mapping, var_visibility, helper.var_prefix):
                 helper.write("mapping_is_correct(): FALSE")
             else:
                 targets = [mapping[p] for (p, _) in box.get_port_order()]
@@ -336,7 +336,7 @@ def ubda_folding(
                 # phase 0: checking correctness of the mapping
                 # checking if all mapped states have a visible variable
                 # and have lower variables than states in the UBDA
-                if not mapping_is_correct(mapping, var_visibility):
+                if not mapping_is_correct(mapping, var_visibility, helper.var_prefix):
                     helper.write("mapping_is_correct(): FALSE")
                     continue
                 helper.write(

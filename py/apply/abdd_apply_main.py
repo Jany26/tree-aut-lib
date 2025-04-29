@@ -79,42 +79,19 @@ def abdd_apply(
 def abdd_apply_from(
     op: BooleanOperation, var: Optional[int], e1: ApplyEdge, e2: ApplyEdge, helper: ABDDApplyHelper
 ) -> tuple[Optional[str], list[ABDDNode]]:
-    # TODO: find out what variable are we using here
-    # TODO: check "call_cache" first -> before materialization
+    # check call cache
     cache_hit = helper.call_cache.find_call(op, var, e1, e2)
     if cache_hit is not None:
         rule, nodes = cache_hit
         return rule, nodes
 
     # short circuit evaluation
-    # e1leaves = all([n.is_leaf for n in e1.target])
-    # e2leaves = all([n.is_leaf for n in e2.target])
     rule, nodes = short_circuit_evaluation(e1, op, e2, helper)
     if nodes != []:
+        helper.call_cache.insert_call(op, var, e1, e2, rule, nodes)
         return rule, nodes
 
-    # if e1leaves and not e2leaves and node_var_compare(e1.source, e2.source):
-    #     print("E1 all leaf", source_print(e1.source), e1.rule, target_print(e1.target), source_print(e2.source), e2.rule, target_print(e2.target))
-    #     try:
-    #         boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
-    #         rule, nodes = short_circuit_evaluation(boxtree, e1, e2, op, helper, e1.source.var)
-    #         # print(rule, nodes)
-    #         return rule, nodes
-    #     except:
-    #         # print('skipped')
-    #         pass
-    # elif e2leaves and not e1leaves and node_var_compare(e1.source, e2.source):
-    #     print("E2 all leaf", source_print(e1.source), e1.rule, target_print(e1.target), source_print(e2.source), e2.rule, target_print(e2.target))
-    #     try:
-    #         boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
-    #         rule, nodes = short_circuit_evaluation(boxtree, e1, e2, op, helper, e1.source.var)
-    #         # print(rule, nodes)
-    #         return rule, nodes
-    #     except:
-    #         # print('skipped')
-    #         pass
     # now we can assume that e1 and e2 have targets with the same variable
-
     # materialization
     min1 = min(n.var if not n.is_leaf else (helper.abdd1.variable_count + 1) for n in e1.target)
     min2 = min(n.var if not n.is_leaf else (helper.abdd2.variable_count + 1) for n in e2.target)
@@ -141,6 +118,8 @@ def abdd_apply_from(
         helper.depth += 1
         rule, nodes = process_boxtree_leafcase(boxtree, e1, e2, op, helper, matlevel)
         helper.depth -= 1
+
+        helper.call_cache.insert_call(op, matlevel, e1, e2, rule, nodes)
         return rule, nodes
 
     # NOTE: inserting into and checking against the "node_cache" is done during boxtree exploration
@@ -151,9 +130,7 @@ def abdd_apply_from(
     rule, nodes = process_boxtree_innercase(boxtree, e1, e2, op, helper, matlevel, treelevel)
     helper.depth -= 1
 
-    # TODO: insert into call_cache here:
     helper.call_cache.insert_call(op, matlevel, e1, e2, rule, nodes)
-
     return rule, nodes
 
 

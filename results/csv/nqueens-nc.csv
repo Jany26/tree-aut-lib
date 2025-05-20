@@ -1,0 +1,6 @@
+benchmark,bdd,zbdd,tbdd,cbdd,czdd,esrbdd,abdd
+queens-4-output,32,12,12,14,12,14,14
+queens-5-output,170,43,43,56,43,63,63
+queens-6-output,132,28,28,33,28,44,44
+queens-7-output,1102,189,189,227,189,314,314
+queens-8-output,2454,376,376,476,376,598,598

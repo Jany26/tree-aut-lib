@@ -1,3 +1,9 @@
+"""
+[file] algebra_generate.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Create a Python-importable cache of all precomputed op-products of boxes.
+"""
+
 from apply.box_algebra.apply_intersectoid import BooleanOperation, apply_intersectoid_create
 from apply.box_algebra.box_trees import BoxTreeNode, build_box_tree
 from apply.box_algebra.port_connection import PortConnectionInfo
@@ -11,7 +17,7 @@ def print_generated_algebrae(filename: str):
     f.write(f"from apply.box_algebra.port_connection import PortConnectionInfo\n")
     f.write(f"\n")
     f.write(f"\n")
-    f.write(f"# fmt: off\n")
+    f.write(f"# fmt: off\n")  # turning autoformatting off
     f.write(f"boxtree_cache: dict[tuple[str, BooleanOperation, str], BoxTreeNode] = {{\n")
     ind = " " * 4
 
@@ -27,15 +33,18 @@ def print_generated_algebrae(filename: str):
         f.write(f"{boxtree.__repr__(level=8)},  # None {operation.name} None\n")
 
         # non-short cases:
-        for boxname1 in box_arities.keys():
-            box1 = box_catalogue[boxname1]
-            for boxname2 in box_arities.keys():
-                box2 = box_catalogue[boxname2]
+        for boxname1 in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
+            box1 = box_catalogue["Xdet" if boxname1 == "X" else boxname1]
+            for boxname2 in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort"]:
+                box2 = box_catalogue["Xdet" if boxname2 == "X" else boxname2]
                 applied_aut, portmap = apply_intersectoid_create(operation, box1, box2)
                 boxtree = build_box_tree(applied_aut, portmap)
                 f.write(f'{ind}("{boxname1}", {operation}, "{boxname2}"): ')
                 f.write(f"{boxtree.__repr__(level=8)},  # {boxname1} {operation.name} {boxname2}\n")
         f.write("\n\n")
     f.write(f"}}\n\n")
-    f.write(f"# fmt: on\n")
+    f.write(f"# fmt: on\n")  # turning autoformatting back on
     f.close()
+
+
+# End of file algebra_generate.py

@@ -1,3 +1,12 @@
+"""
+[file] pattern_generate.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Generate all possible materialization patterns into an Python-importable cache.
+
+The cache is indexed by a box and a set of predicates (about relationships between variables) of an edge that needs
+to be materialized in one of the input ABDDs.
+"""
+
 import itertools
 from collections import namedtuple
 from typing import Optional
@@ -8,8 +17,8 @@ from apply.materialization.box_materialization import create_materialized_box
 from apply.materialization.pattern_finding import abdd_subsection_create, get_state_sym_lookup
 from apply.abdd_node import ABDDNode
 
-from helpers.utils import box_catalogue, box_arities
-from tree_automata import TTransition, TTreeAut
+from helpers.utils import box_catalogue
+from tree_automata import TTreeAut
 
 
 class VariablePredicate(namedtuple("VariablePredicate", ["var1", "rel", "var2"])):
@@ -48,6 +57,7 @@ def obtain_predicates(
             box is None,
             materialization_var <= invar,
             all([materialization_var >= var for var in tgt_vars]),
+            # any([invar + 1 >= var for var in tgt_vars])
         ]
     ):
         return frozenset([])
@@ -55,7 +65,6 @@ def obtain_predicates(
     result = []
     # TODO: rework this to a more "robust" automata-based approach
     # i.e. pre-computing boxes that contain leaf transitions with terminal symbols
-    # if any([a in box for a in ['0', '1']]):
     if box in ["L0", "L1", "H0", "H1"]:
         if materialization_var + 1 == leaf_var:
             result.append(VariablePredicate("mat", "1<", "leaf"))
@@ -102,15 +111,20 @@ def create_all_predicate_sets(boxname: str) -> set[frozenset[VariablePredicate]]
     """
     box: TTreeAut = box_catalogue[boxname]
     result = set()
+    # predicate_sets is a helper array which contains all possible symbolic values
+    # and a list of possible predicates which concern them (wrt. 'mat' variable)
     predicate_sets = {"in": [VariablePredicate("in", "1<", "mat"), VariablePredicate("in", "<<", "mat")]}
-    # has_leaf = False
     if any([i in boxname for i in ["0", "1"]]):
-        # has_leaf = True
         predicate_sets["leaf"] = [VariablePredicate("mat", "1<", "leaf"), VariablePredicate("mat", "<<", "leaf")]
 
     # equal or larger (None) < smaller by one (1<) < smaller by more than one (<<)
     predicate_order = {None: 0, "1<": 1, "<<": 2}
 
+    # will contain "strength" of output/port symbols
+    # loopable portstates are assigned 2, nonloopable portstates are assigned 1
+    # this is relevant for multiport boxes, where different port-mapped nodes
+    # can have different variables, e.g.
+    # x1 --LPort--> [x5, x3] is valid (since state reperesetn)
     compare_vars = {}
     loopstates = set([i.src for i in box.get_loopable_transitions()])
     for i, (_, s) in enumerate(box.get_port_order()):
@@ -126,7 +140,8 @@ def create_all_predicate_sets(boxname: str) -> set[frozenset[VariablePredicate]]
     keys = predicate_sets.keys()
     values = (predicate_sets[k] for k in keys)
 
-    # Generate all possible assignments
+    # Generate all possible assignments - basically a cartesian product over all lists in 'predicate_sets'
+    # (invar predicates ...) x (outi predicates ...) x (leaf predicates ...)
     predicate_lookups: list[dict[str, VariablePredicate]] = [
         dict(zip(keys, selection)) for selection in itertools.product(*values)
     ]
@@ -153,6 +168,9 @@ def check_singleton_var(
     compare_vars: dict[str, int],
     compare_predicates: dict[str, int],
 ):
+    """
+    For singleport boxes, check the consistency of the variable assignment.
+    """
     for var in compare_vars:
         if all(
             [
@@ -170,6 +188,10 @@ def check_pairwise_vars(
     compare_vars: dict[str, int],
     compare_predicates: dict[str, int],
 ) -> None:
+    """
+    For multiport boxes, check the consistency of the variable assignment.
+    Requires different set of checks (even between port-mapped node variables - symbolic values "outi")
+    """
     for var1, var2 in itertools.combinations(compare_vars, 2):
         smaller_var = var1 if compare_vars[var1] < compare_vars[var2] else var2
         larger_var = var2 if compare_vars[var1] < compare_vars[var2] else var1
@@ -193,16 +215,44 @@ def check_predicate_against_values(predicates: frozenset[VariablePredicate], ass
             holds = holds and val1 + 1 == val2
         if pred.rel == "<<":
             holds = holds and val1 + 1 < val2
+
+    # TODO: we also need to enforce that outi is at least 2 larger than in
+    # otherwise the root state of the box would have to perform 0 transitions to reach out state
+    # since invar is the variable used while getting to the rootstate,
+    # and the box evaluation itself starts at invar + 1
+    # NOTE: for unknown reason, the following does not work so well
+    # perhaps there is a discrepancy between invar and minvar of rootstate of the box ?
+    # Right now, as it is, the predicate set generation and materialized patterns are working and consistent with
+    # the expected (theoretical) behavior.
+
+    # invar = assignment['in']
+    # outvars = [val for var, val in assignment.items() if var.startswith("out") or var.startswith("leaf")]
+    # if any([invar + 1 >= o for o in outvars]):
+    #     holds = False
+
     return holds
 
 
+# 'in' can be fixed, since when materialization happens, the source node variables are assumed equal
+INVAR_FIXED = 1
+# range <2,10> should cover all possible materialization configurations
+OUTVAR_MIN = 2
+OUTVAR_MAX = 10
+
+
 def generate_patterns(boxname: str) -> dict[frozenset[VariablePredicate], MaterializationRecipe]:
+    """
+    For a given box, iterate over all consistent predicate sets,
+    and generate variable assignments such that all predicates from the set hold.
+    Given the generated assignment (which will be replaced by symbolic values later),
+    create a materialized box and then return a cache of predicate_set : materialization_recipe pairs.
+    """
     predicate_sets: set[frozenset[VariablePredicate]] = create_all_predicate_sets(boxname)
-    varassign = {"in": 1}
-    box = box_catalogue[boxname]
+    varassign = {"in": INVAR_FIXED}
+    box = box_catalogue["Xdet" if boxname == "X" else boxname]
     arity = box.port_arity
     other_vars = [f"out{i}" for i in range(arity)] + ["mat", "leaf"]
-    outvar = [i for i in range(2, 10)]
+    outvar = [i for i in range(OUTVAR_MIN, OUTVAR_MAX)]
     result: dict[frozenset[VariablePredicate], MaterializationRecipe] = {}
     for predicate_set in predicate_sets:
         for comb in itertools.product(outvar, repeat=arity + 2):  # arity = # of ports + mat level + leaf level
@@ -221,11 +271,19 @@ def generate_patterns(boxname: str) -> dict[frozenset[VariablePredicate], Materi
     return result
 
 
+# for now we allow max 5 ports
+PORT_MAX = 5
+
+
 def format_frozenset(predicates: frozenset) -> str:
+    """
+    For debugging, prettyprinting of a frozenset (in an orderly way).
+    """
+
     def predicate_key(predicate: VariablePredicate) -> str:
-        v_order = {f"out{i}": f"{i + 1}" for i in range(5)}
+        v_order = {f"out{i}": f"{i + 1}" for i in range(PORT_MAX)}
         v_order["in"] = "0"
-        v_order["leaf"] = "6"
+        v_order["leaf"] = f"{PORT_MAX + 1}"
         p_order = {"1<": "1", "<<": "2"}
         if predicate.var1 != "mat":
             var = predicate.var1
@@ -241,6 +299,10 @@ ABDD_GENERATE_PACKAGE = "apply.materialization.pattern_generate"
 
 
 def print_generated_patterns(filename: str) -> None:
+    """
+    Create an importable Python module that contains cached results of materialization
+    based on the sets of predicates about the variables.
+    """
     t = " " * 4
     f = open(filename, "w")
     f.write(f"from {ABDD_PATTERN_PACKAGE} import MaterializationRecipe, ABDDPattern\n")
@@ -277,3 +339,6 @@ def print_generated_patterns(filename: str) -> None:
     f.write("# fmt: on\n")
 
     f.close()
+
+
+# End of file pattern_generate.py

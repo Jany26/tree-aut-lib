@@ -1,3 +1,10 @@
+"""
+[file] apply_tables.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Operation tables (similar to Cayley) tables on output symbols of tree automata.
+Needed for obtaining box op-products, they follow the common semantics of Boolean operators.
+"""
+
 from enum import Enum
 
 
@@ -79,3 +86,5 @@ op_lookup = {
     BooleanOperation.NOR: NOR_table,
     BooleanOperation.IMPLY: IMPLY_table,
 }
+
+# End of file apply_tables.py

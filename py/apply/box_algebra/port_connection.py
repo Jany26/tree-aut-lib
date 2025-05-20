@@ -1,17 +1,28 @@
+"""
+[file] port_connection.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Class describing metadata about how port states of box-products map to the nodes
+of the ABDD for which the box-products is utilized during edge merging.
+"""
+
 from typing import Optional
 
 
 class PortConnectionInfo:
     """
     One instance of this class corresponds to one port name within some box of a box tree.
+
     It has to contain information about:
+
     - 'state1', 'state2': which state is the port originating from (or rather, a tuple of states
     representing states of the initial boxes whose combination lead to the creation of the box tree).
+
     - 'recursion': whether or not recursion should be continued
         - recursion=True: the result is not predetermined and has to be further recursively computed using
         additional apply calls
         - recursion=False: the result is clear - terminal node (i.e. False AND something, True OR something, etc.),
         or one argument is omitted and the result is one of the two applied nodes (i.e. return x in case of True OR x, etc.)
+
     - 'negation': if the result is negated or not
     """
 
@@ -32,7 +43,6 @@ class PortConnectionInfo:
 
     def __repr__(self):
         cname = self.__class__.__name__
-        # attributes = [f"{k}={v}" for k, v in self.__dict__.items()]
         attributes = [
             f"target1={self.target1}" if self.target1 is not None else "",
             f"target2={self.target2}" if self.target2 is not None else "",
@@ -52,3 +62,6 @@ class PortConnectionInfo:
                 self.negation == other.negation,
             ]
         )
+
+
+# End of file port_connection.py

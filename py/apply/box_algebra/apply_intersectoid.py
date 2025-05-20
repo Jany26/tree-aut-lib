@@ -1,3 +1,10 @@
+"""
+[file] algebra_generate.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Implementation of creating a box op-product.
+Box op-product is a tree automata intersection with specific output transition adding).
+"""
+
 from typing import Optional, Tuple
 
 from apply.box_algebra.port_connection import PortConnectionInfo
@@ -14,9 +21,11 @@ from tree_automata import (
 def apply_intersectoid_create(
     op: BooleanOperation, aut1: TTreeAut, aut2: TTreeAut
 ) -> tuple[TTreeAut, dict[str, PortConnectionInfo]]:
+    """
+    Create 'op'-product of boxes 'aut1' and 'aut2' (main function).
+    """
     # create an intersection
     result = tree_aut_intersection(aut1, aut2)
-    # result.reformat_keys()
 
     # remove any output transition created by the intersection operation
     result.remove_output_transitions()
@@ -42,6 +51,10 @@ def map_states_to_output_transitions(aut: TTreeAut, idx: int) -> dict[str, str]:
 def apply_intersectoid_add_output_transitions(
     result: TTreeAut, op: BooleanOperation, aut1: TTreeAut, aut2: TTreeAut
 ) -> dict[str, PortConnectionInfo]:
+    """
+    Correctly add output transitions to 'result' ('op'-product of 'aut1' 'aut2')
+    based on the operation tables (from 'apply_tables.py')
+    """
     # maps an output transition (-/0/1/Port) to each state for cayley table lookup
     # we assume each state has at most 1 output transition (based on the box correctness criteria)
     map1: dict[str, str] = map_states_to_output_transitions(aut1, 1)
@@ -59,8 +72,8 @@ def apply_intersectoid_add_output_transitions(
         output_symbol = op_table[translation[map1[s1]]][translation[map2[s2]]]
         if output_symbol == "-":
             continue
-        # result.transitions[state][f"k{key_idx}"]
-        portinfo, portname = decide_on_port_name(aut1, aut2, s1, s2, output_symbol)
+
+        portinfo, portname = decide_on_port_name(aut1, aut2, s1, s2, output_symbol, op)
         portmap[state] = portinfo
 
         result.transitions[state][f"k{key_idx}"] = TTransition(state, TEdge(portname, [], ""), [])
@@ -69,8 +82,16 @@ def apply_intersectoid_add_output_transitions(
 
 
 def decide_on_port_name(
-    aut1: TTreeAut, aut2: TTreeAut, state1: str, state2: str, sym: str
+    aut1: TTreeAut, aut2: TTreeAut, state1: str, state2: str, sym: str, op: BooleanOperation
 ) -> Tuple[Optional[PortConnectionInfo], str]:
+    """
+    Based on symbolic names from apply_tables, create correct labels for port transitions.
+
+    [return]
+    a tuple of PortConnectionInfo and the transition label (string)
+    - PortConnectionInfo contains semantics needed in correct apply node-mapping and recursion guiding,
+    absorption laws etc.
+    """
     portmap1 = {i: idx for idx, (_, i) in enumerate(aut1.get_port_order())}
     portmap2 = {i: idx for idx, (_, i) in enumerate(aut2.get_port_order())}
     if sym in ["0", "1"]:
@@ -86,5 +107,8 @@ def decide_on_port_name(
     if sym == "OP":
         port1 = aut1.get_output_edges(inverse=True)[state1][0]
         port2 = aut2.get_output_edges(inverse=True)[state2][0]
-        return (PortConnectionInfo(portmap1[state1], portmap2[state2], recursion=True), f"{port1}<OP>{port2}")
+        return (PortConnectionInfo(portmap1[state1], portmap2[state2], recursion=True), f"{port1}_{op.name}_{port2}")
     raise KeyError("Unknown lookup symbol")
+
+
+# End of file apply_intersectoid.py

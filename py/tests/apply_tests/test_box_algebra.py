@@ -44,7 +44,7 @@ class TestBoxTreeSimpleNonX(unittest.TestCase):
 
 class TestBoxTreeSimpleX(unittest.TestCase):
     def test_boxtree_x_or_l0(self):
-        aut, pmap = apply_intersectoid_create(BooleanOperation.OR, box_catalogue["X"], box_catalogue["L0"])
+        aut, pmap = apply_intersectoid_create(BooleanOperation.OR, box_catalogue["Xdet"], box_catalogue["L0"])
         boxtree = build_box_tree(aut, pmap)
         expected_boxtree = BoxTreeNode(
             node="LPort",
@@ -56,7 +56,7 @@ class TestBoxTreeSimpleX(unittest.TestCase):
         self.assertEqual(boxtree, expected_boxtree)
 
     def test_boxtree_x_or_h0(self):
-        aut, pmap = apply_intersectoid_create(BooleanOperation.OR, box_catalogue["X"], box_catalogue["H0"])
+        aut, pmap = apply_intersectoid_create(BooleanOperation.OR, box_catalogue["Xdet"], box_catalogue["H0"])
         boxtree = build_box_tree(aut, pmap)
         expected_boxtree = BoxTreeNode(
             node="HPort",
@@ -68,7 +68,7 @@ class TestBoxTreeSimpleX(unittest.TestCase):
         self.assertEqual(boxtree, expected_boxtree)
 
     def test_boxtree_x_or_h1(self):
-        aut, pmap = apply_intersectoid_create(BooleanOperation.OR, box_catalogue["X"], box_catalogue["H1"])
+        aut, pmap = apply_intersectoid_create(BooleanOperation.OR, box_catalogue["Xdet"], box_catalogue["H1"])
         boxtree = build_box_tree(aut, pmap)
         expected_boxtree = BoxTreeNode(
             node="H1", port_info=[PortConnectionInfo(target1=0, target2=0, recursion=True, negation=False)]
@@ -76,7 +76,7 @@ class TestBoxTreeSimpleX(unittest.TestCase):
         self.assertEqual(boxtree, expected_boxtree)
 
     def test_boxtree_x_and_l0(self):
-        aut, pmap = apply_intersectoid_create(BooleanOperation.AND, box_catalogue["X"], box_catalogue["L0"])
+        aut, pmap = apply_intersectoid_create(BooleanOperation.AND, box_catalogue["Xdet"], box_catalogue["L0"])
         boxtree = build_box_tree(aut, pmap)
         expected_boxtree = BoxTreeNode(
             node="L0", port_info=[PortConnectionInfo(target1=0, target2=0, recursion=True, negation=False)]
@@ -84,7 +84,7 @@ class TestBoxTreeSimpleX(unittest.TestCase):
         self.assertEqual(boxtree, expected_boxtree)
 
     def test_boxtree_x_and_l1(self):
-        aut, pmap = apply_intersectoid_create(BooleanOperation.AND, box_catalogue["X"], box_catalogue["L1"])
+        aut, pmap = apply_intersectoid_create(BooleanOperation.AND, box_catalogue["Xdet"], box_catalogue["L1"])
         boxtree = build_box_tree(aut, pmap)
         expected_boxtree = BoxTreeNode(
             node="LPort",
@@ -96,7 +96,7 @@ class TestBoxTreeSimpleX(unittest.TestCase):
         self.assertEqual(boxtree, expected_boxtree)
 
     def test_boxtree_x_and_h1(self):
-        aut, pmap = apply_intersectoid_create(BooleanOperation.AND, box_catalogue["X"], box_catalogue["H1"])
+        aut, pmap = apply_intersectoid_create(BooleanOperation.AND, box_catalogue["Xdet"], box_catalogue["H1"])
         boxtree = build_box_tree(aut, pmap)
         expected_boxtree = BoxTreeNode(
             node="HPort",

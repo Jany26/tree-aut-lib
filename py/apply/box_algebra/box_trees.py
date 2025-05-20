@@ -1,3 +1,10 @@
+"""
+[file] box_trees.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] BoxTree recursive class which is obtained from box op-products.
+BoxTrees are precomputed and cached for all box-op-box combinations and then used during ABDD Apply operation.
+"""
+
 import copy
 from typing import Optional
 
@@ -26,7 +33,7 @@ class BoxTreeNode:
         high: Optional["BoxTreeNode"] = None,
     ):
         # if leaf, node is boxname string
-        # if non-leaf, node is state name
+        # if non-leaf, node is state name (from the box op-product)
         self.node = node
         self.port_info = port_info
         self.is_leaf = is_leaf
@@ -90,11 +97,20 @@ class BoxTreeNode:
 
 
 def boxtree_intersectoid_compare(aut: TTreeAut, root: str) -> tuple[str | None, list[PortConnectionInfo]]:
+    """
+    During the recursive creation of the boxtree, this function compares the box op-product automaton 'aut'
+    rooted in the given state ('root') of the box op-product
+    (which is explored in a DFS manner) with all boxes from the box order.
+
+    Returns a tuple of string and list of PortConnectionInfo
+    The list is ordered lexicographically by their occurrences within the matched box.
+    If no box is matched, tuple of None, () is returned.
+    """
     origroots = [i for i in aut.roots]
     aut.roots = [root]
     aut.reformat_ports()
     for boxname in ["X", "L0", "L1", "H0", "H1", "LPort", "HPort", "False", "True"]:
-        box_copy = copy.deepcopy(box_catalogue[boxname])
+        box_copy = copy.deepcopy(box_catalogue["Xdet" if boxname == "X" else boxname])
         box_copy.reformat_ports()
         if tree_aut_equal(aut, box_copy):
             portstates = aut.get_port_order()[: box_copy.port_arity]
@@ -105,9 +121,18 @@ def boxtree_intersectoid_compare(aut: TTreeAut, root: str) -> tuple[str | None, 
 
 
 def build_box_tree(aut: TTreeAut, port_map: dict[str, PortConnectionInfo]) -> BoxTreeNode | None:
+    """
+    Wrapper for the recursive box tree creation function.
+    """
+
     def build_box_tree_recursive(
         aut: TTreeAut, state: str, port_map: dict[str, PortConnectionInfo]
     ) -> BoxTreeNode | None:
+        """
+        Given a box op-product 'aut', explore the automaton in a DFS-like manner, and during the traversal, try to
+        compare 'aut' rooted in a currently visited state with boxes from box order.
+        In case a match is found, a leaf node of a box tree is created, in case no box is matched, keep traversing.
+        """
         # leaf case
         boxname, portinfo = boxtree_intersectoid_compare(aut, state)
         if boxname is not None:
@@ -128,3 +153,6 @@ def build_box_tree(aut: TTreeAut, port_map: dict[str, PortConnectionInfo]) -> Bo
         box_tree = build_box_tree_recursive(aut, i, port_map)
         if box_tree is not None:
             return box_tree
+
+
+# End of file box_trees.py

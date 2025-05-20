@@ -1,24 +1,10 @@
+"""
+[file] abdd_pattern.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Classes describing ABDD Patterns and Materialization Recipes.
+"""
+
 from typing import Optional
-
-from apply.abdd_node import ABDDNode
-
-# note that during apply materialization, this dictionary for symbolic variable lookup will always be available,
-# for example:
-
-# class SymbolicVar:
-#     IN = 0
-#     MAT = 1
-#     OUT1 = 2
-#     OUT2 = 3
-#     LEAF = 4
-
-# symbolic_level: dict[SymbolicVar, int] = {
-#     SymbolicVar.IN: 1,
-#     SymbolicVar.MAT: 4,
-#     SymbolicVar.OUT1: 7,
-#     SymbolicVar.OUT2: 10,
-#     SymbolicVar.LEAF: 50,
-# }
 
 
 class ABDDPattern:
@@ -26,7 +12,6 @@ class ABDDPattern:
     A helper class for storing the subtargets of the materialized ABDD pattern.
     Basically represents an ABDD node and is created only such that ABDD patterns
     are allowed to have arbitrarily large number of targets (for arbitrary number of box ports).
-
     """
 
     def __init__(
@@ -47,14 +32,8 @@ class ABDDPattern:
         self.high_box = high_box
         self.high = high
 
-    # def __repr__(self):
-    #     attr_str = ', '.join(f"{key}={value!r}" for key, value in self.__dict__.items())
-    #     return f"{self.__class__.__name__}[{attr_str}]"
-
     def __repr__(self, level=0):
         indent = " " * level
-        # if self.name.startswith("out"):
-        #     return indent + self.name
         normal_attrs = [
             f"new={self.new!r}",
             f"name={self.name!r}",
@@ -79,7 +58,6 @@ class ABDDPattern:
             [
                 self.new != other.new,
                 type(self.name) != type(other.name),
-                # type(self.name) == ABDDNode and type(other.name) == ABDDNode and self.name.node != other.name.node,
                 self.level != other.level,
                 self.low_box != other.low_box,
                 self.high_box != other.high_box,
@@ -100,8 +78,19 @@ class MaterializationRecipe:
     This is a helper class that will be represent the value for
     frozenset(Relationship) -> ABDDPattern lookup during node materialization.
 
-    Utilizing the information stored within will help us to create the necessary
+    Materialization Recipe basically represents one edge of the ABDD (that is, a box and a list of targets)
+    which replaces the edge that needs materialization in one of the input ABDDs during the recursive descent.
+
+    1:      x1 --ruleA--> [x5, ...]
+    2:      x1 --ruleB--> [x10, ...] => needs to be split so that x5 is the target nodes' variable
+    New2:   x1 --'init_box'--> [nodes created based on 'init_targets' -> should all have x5 variable]
+
+    Utilizing the information stored within the Recipe will help us to create the necessary
     ABDD substructures such that apply recursive descent works in synchronicity wrt. variable levels.
+
+    Can be precomputed for all possible configurations of materialization and instantly retrieved from a cache
+    during Apply. Traversing this structure is then simulating the materialization process.
+    ABDD Patterns stored in the recipe then contain symbolic links/names representing the nodes of the modified ABDD.
     """
 
     def __init__(self, init_box: Optional[str] = None, init_targets: list[ABDDPattern] = []):
@@ -124,3 +113,6 @@ class MaterializationRecipe:
         if any([self.init_targets[i] != other.init_targets[i] for i in range(len(self.init_targets))]):
             return False
         return True
+
+
+# End of file abdd_pattern.py

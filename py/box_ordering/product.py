@@ -1,3 +1,11 @@
+"""
+[file] product.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Obtaining a product of two tree automata - needed for coocurence relation computing.
+[note] Part of a preliminary work on trying to find a total order over boxes
+with regards to their language inclusion properties.
+"""
+
 import itertools
 from typing import Tuple, List, Dict
 
@@ -6,9 +14,6 @@ from helpers.string_manipulation import create_string_from_name_list
 
 
 def create_roots(ta1: TTreeAut, ta2: TTreeAut) -> list:
-    """
-    Docstring TBD
-    """
     root_merge: List = []
     root_merge.append(ta1.roots)
     root_merge.append(ta2.roots)
@@ -24,9 +29,6 @@ def productify(
     edge_list: List[Tuple[str, str, Tuple[str, str]]],
     done: List[Tuple[str, str]],
 ) -> None:
-    """
-    Docstring TBD
-    """
     if [state1, state2] in done:
         return
     done.append([state1, state2])
@@ -54,9 +56,6 @@ def productify(
 
 
 def create_product_relation(edge_list: list[Tuple[str, str, list[str]]], alphabet: dict) -> dict:
-    """
-    Docstring TBD
-    """
     edge_dict: Dict[str, Dict[str, TTransition]] = {}
     for edge in edge_list:
         src_state: str = create_string_from_name_list(edge[0])
@@ -70,11 +69,6 @@ def create_product_relation(edge_list: list[Tuple[str, str, list[str]]], alphabe
 
 
 def tree_aut_product(ta1: TTreeAut, ta2: TTreeAut) -> TTreeAut:
-    """
-    Docstring TBD
-
-    Note: needed for co-occurrence relation
-    """
     alphabet: Dict[str, int] = {**ta1.get_symbol_arity_dict(), **ta2.get_symbol_arity_dict()}
     roots: List[List[str]] = create_roots(ta1, ta2)
     edge_list: List[Tuple[str, str, Tuple[str, str]]] = []
@@ -88,3 +82,6 @@ def tree_aut_product(ta1: TTreeAut, ta2: TTreeAut) -> TTreeAut:
     result.port_arity = result.get_port_arity()
 
     return result
+
+
+# End of product.py

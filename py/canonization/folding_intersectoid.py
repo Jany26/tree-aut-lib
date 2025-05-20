@@ -20,7 +20,7 @@ from tree_automata import (
 )
 from canonization.folding_helpers import FoldingHelper
 from helpers.string_manipulation import tuple_name, get_first_name_from_tuple_str
-from tree_automata.automaton import iterate_states_bfs
+from tree_automata.automaton import iterate_edges_from_state, iterate_states_bfs
 
 
 def intersectoid_edge_key(e1: TTransition, e2: TTransition) -> str:
@@ -144,14 +144,11 @@ def create_intersectoid_new(ta: TTreeAut, box: TTreeAut, root: str, helper: Fold
             continue
         for ta_edge in ta.transitions[ta_state].values():
             for box_edge in box.transitions[box_state].values():
-                # print(f'processing {ta_edge} + {box_edge}')
                 edge = process_intersectoid_edge(src, ta_edge, box_edge, helper)
                 if edge is None:
                     continue
-                # print(f'adding {edge}')
                 edges.add(edge)
                 new = [c for c in zip(ta_edge.children, box_edge.children) if tuple_name(c) not in visited]
-                # print(f'worklist += {new}')
                 worklist.extend(new)
         visited.add(src)
     roots = [tuple_name((root, b)) for b in box.roots]
@@ -267,7 +264,7 @@ def intersectoid_reachability(ta: TTreeAut, var_visibility: dict[str, int]) -> l
     return result
 
 
-def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper) -> None:
+def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper, source: str) -> bool:
     """
     [description]
     Top-down variable saturation. Can compute variables to edges where child
@@ -281,7 +278,8 @@ def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper) -> None:
     that are useful in this procedure
 
     [note]
-    nothing is returned -> the variables are saturated in situ into 'treeaut'
+    # nothing is returned -> the variables are saturated in situ into 'treeaut'
+    Boolean flag saying root state can actually go through the 'source' state variable
 
     TODO: side effect: transitions who disrupt the variable path, i.e. introduce
     a path that can backtrack or repeat a variable, are deleted
@@ -299,6 +297,7 @@ def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper) -> None:
                 if edge_var != var:
                     if helper.verbose:
                         print(f"WARNING: add_variables(): edge {edge} does not agree with var {var}")
+                    edge.info.variable = f"{helper.var_prefix}{var}"
                 return
             if helper.verbose:
                 print(f"add_variables(): adding {helper.var_prefix}{var} to {edge}")
@@ -348,6 +347,21 @@ def add_variables_top_down(treeaut: TTreeAut, helper: FoldingHelper) -> None:
         var = int(edge.info.variable[len(helper.var_prefix) :])
         for child in edge.children:
             add_variables(treeaut, var + 1, child, helper)
+
+    selfloop = False
+    min_outvar: Optional[int] = None
+    for edge in iterate_edges_from_state(treeaut, treeaut.roots[0]):
+        if edge.is_self_loop():
+            selfloop = True
+        if edge.info.variable == "":
+            continue
+        if min_outvar is None:
+            min_outvar = int(edge.info.variable[len(helper.var_prefix) :])
+        else:
+            min_outvar = min(min_outvar, int(edge.info.variable[len(helper.var_prefix) :]))
+    if helper.min_var != min_outvar and not selfloop and source is not None:
+        return False
+    return True
 
 
 def get_port_edge_lookup(intersectoid: TTreeAut) -> Tuple[Dict[str, List[Tuple[str, str]]], Dict[str, Set[str]]]:
@@ -446,4 +460,4 @@ def reduce_portable_states(intersectoid: TTreeAut):
             intersectoid.transitions[state].pop(key)
 
 
-# end folding_intersectoid.py
+# End of file folding_intersectoid.py

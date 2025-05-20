@@ -52,7 +52,6 @@ class TestUBDAFolding(unittest.TestCase):
 
     def test_folding_compare_1(self):
         boxorder = box_orders["full"]
-        # NOTE: does not work with 5+ variables => recursion depth exceeded in get_relation_step()
         var_count = 4
         var_order = create_var_order_list("", var_count + 1)
         treeaut2 = import_treeaut_from_vtf("../tests/folding/foldingTest1.vtf")
@@ -65,8 +64,6 @@ class TestUBDAFolding(unittest.TestCase):
         folded2 = remove_useless_states(ubda_folding(normalized2, boxorder, var_count + 1))
         new_unfolded2 = ubda_unfolding(folded2, 5)
         add_variables_bottom_up(new_unfolded2, var_count)
-
-        # recursion depth exceeded for some reason ??
         self.assertTrue(simulate_and_compare(unfolded2, new_unfolded2, var_count))
 
     def test_folding_compare_2(self):  #  testcase from 2023-08-03 consultation
@@ -84,8 +81,6 @@ class TestUBDAFolding(unittest.TestCase):
         self.assertEqual(len(folded.get_states()), 3)
 
     def test_folding_compare_3(self):
-        # NOTE: does not work with "full" box order = when utilizing LPort, HPort
-        # {1: 0, 2: 0, 3: 0, 4: 0, 5: 0} assignment leads to different results
         boxorder = box_orders["cesr"]
         var_count = 5  # < x1, x2, x3, x4, x5 >
         var_order = create_var_order_list("", var_count + 1)
@@ -113,7 +108,6 @@ class TestUBDAFolding(unittest.TestCase):
         treeaut1 = import_treeaut_from_vtf("../tests/folding/folding-error-6.vtf")
         # NOTE: unfolding produces a different result when using the new definition of the "don't care" box X
         unfolded1 = ubda_unfolding(add_dont_care_boxes(treeaut1, var_count), 6)
-
         # TODO: make a better (fixpoint) algorithm for variable fill where applicable
 
         normalized1 = ubda_normalize(unfolded1, var_order)

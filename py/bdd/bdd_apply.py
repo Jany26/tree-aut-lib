@@ -121,7 +121,6 @@ def apply_function(func: str, bdd1: BDD, bdd2: BDD, var_order=None) -> BDD:
         # scenario A - both are leaves
         if current_case.a:
             terminal: int = leaf_apply_op(func, node1, node2)
-            # print(f"{data.spacing * ' '}[{node1.value}] {func} [{node2.value}] = {terminal}")
             name = f"t{terminal}"
             if name in data.cache:
                 data.spacing -= 2
@@ -134,28 +133,24 @@ def apply_function(func: str, bdd1: BDD, bdd2: BDD, var_order=None) -> BDD:
         # otherwise (at least one is not leaf) ...
         node1val = f"[{node1.value}]" if node1.is_leaf() else f"v{node1.value}"
         node2val = f"[{node2.value}]" if node2.is_leaf() else f"v{node2.value}"
-        # print(f"{data.spacing * ' '}{node1val}, {node2val}")
         low: BDDnode = None
         high: BDDnode = None
         value = None
 
         # scenario B - node1 lower than node2
         if current_case.b:
-            # print(f"  > descend RIGHT [{node1.value} > {node2.value}]")
             low = apply_from(func, node1, node2.low, data)
             high = apply_from(func, node1, node2.high, data)
             value = node2.value
 
         # scenario C - node1 higher than node2
         if current_case.c:
-            # print(f"  > descend LEFT [{node1.value} < {node2.value}]")
             low = apply_from(func, node1.low, node2, data)
             high = apply_from(func, node1.high, node2, data)
             value = node1.value
 
         # scenario D - node1 same level as node2 (but non-leaves)
         if current_case.d:
-            # print(f"  > same level")
             low = apply_from(func, node1.low, node2.low, data)
             high = apply_from(func, node1.high, node2.high, data)
             value = node1.value
@@ -189,7 +184,6 @@ def apply_function(func: str, bdd1: BDD, bdd2: BDD, var_order=None) -> BDD:
     if bdd2.root is None:
         return BDD(None, bdd1.root)
     data = ApplyHelper(bdd1, bdd2, var_order)
-    # print(data.vars)
     new_root = apply_from(func, bdd1.root, bdd2.root, data)
 
     return BDD("BDD", new_root)
@@ -227,4 +221,4 @@ def leaf_apply_op(operator: str, bdd1: BDDnode, bdd2: BDDnode) -> int:
     return result
 
 
-# End of file apply.py
+# End of file bdd_apply.py

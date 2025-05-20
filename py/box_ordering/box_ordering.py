@@ -1,3 +1,11 @@
+"""
+[file] box_ordering.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Operations for comparing languages of boxes to obtain a box order.
+[note] Part of a preliminary work on trying to find a total order over boxes
+with regards to their language inclusion properties.
+"""
+
 from typing import Tuple
 from tree_automata import TTreeAut, tree_aut_intersection, non_empty_bottom_up, tree_aut_complement
 from tree_automata.tree_node import TTreeNode
@@ -19,7 +27,6 @@ def are_comparable(ta1: TTreeAut, ta2: TTreeAut):
     infix: TTreeAut = ta1.create_infix(ta2.get_output_edges(inverse=True))
     language: TTreeAut = {**ta1.get_symbol_arity_dict(), **ta2.get_symbol_arity_dict()}
     complement: TTreeAut = tree_aut_complement(infix, language)
-    # print(complement)
     intersection: TTreeAut = tree_aut_intersection(complement, ta2)
     witnessT, _ = non_empty_bottom_up(intersection)
     return witnessT is None

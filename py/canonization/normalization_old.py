@@ -1,11 +1,14 @@
 """
-[file] normalization.py
+[file] normalization_old.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 [description] UBDA Normalization implementation.
 Merges equivalent states (i.e. states with equivalent languages
 if they were considered roots)
 Basically a bottom-up determinization that takes variables into account (they
 are considered a part of the edge-symbol).
+
+[note] this is an old version of the algorithm, not working
+the implementation is kept here for reference and archiving purposes (in case it is revisited)
 """
 
 from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges
@@ -13,11 +16,6 @@ from tree_automata.functions.helpers import generate_possible_children
 from tree_automata.functions.reachability import get_all_state_reachability
 from tree_automata.functions.determinization import det_create_name
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - old version -- redundant, kept for archiving purposess  - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # this version of normalization created too many useless transitions over variables
 # and worked too much like determinization (did not take variable ordering and
@@ -129,7 +127,7 @@ def filterBadTransitions(ta: TTreeAut, norm: NormalizationHelperOld):
 def normalizationGetTransitions(transitions: list) -> dict:
     result = {}
     for i in transitions:
-        srcState = det_create_name(i[0])
+        srcState = create_string_from_name_set(i[0])
         edge = TEdge(i[1], [], i[2])
         children = [det_create_name(j) for j in i[3]]
         if srcState not in result:
@@ -252,4 +250,4 @@ def procTransitions(data: NormalizationHelperOld, childrenStates: list):
             data.worklist.append(stateList)
 
 
-# end of normalization_old.py
+# End of file normalization_old.py

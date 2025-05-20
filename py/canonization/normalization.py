@@ -188,11 +188,9 @@ def process_possible_edges(
                 # norm.edge_lookup checking is redundant (tests pass even without this)
                 # if key not in norm.edge_lookup[child]:
                 #     continue
-                # print(f"  [!] processed edge {key} leading to {child}{var_string}")
                 # norm.edge_lookup[child].remove(key)
                 if key not in norm.keys:
                     continue
-                # print(f"  [!] removing key {key}")
                 norm.keys.remove(key)
                 keys_to_process.append(key)
 
@@ -200,7 +198,6 @@ def process_possible_edges(
         return
     new_macrostate = state_name_sort(list(new_macrostate))
     if new_macrostate not in norm.next_worklist:
-        # print(f"    > appending {new_macrostate}")
         norm.next_worklist.append(new_macrostate)
 
     # if self-loop (even partial), then no variable on edge
@@ -216,8 +213,7 @@ def process_possible_edges(
     high_var: str = norm.var_cache[high]
 
     # checking for edge relevancy => if failed, edge would disrupt semantics, so it won't be added
-    use_normalization_fix = False
-    if use_normalization_fix:
+    if norm.normalization_fix:
         if source in norm.var_cache:
             src_var = norm.var_cache[source]
             for child in children_macrostates:
@@ -237,7 +233,6 @@ def process_possible_edges(
     norm.transitions.append(tuple([new_macrostate, symbol, added_var, children_macrostates]))
     norm.debug_print(f"[!] edge = {new_macrostate, symbol, added_var, children_macrostates}")
     for root in norm.treeaut.roots:
-        # print(f'!!!! check root {root} against {norm.treeaut.roots} and {new_macrostate}')
         if root in new_macrostate:
             norm.roots[str(new_macrostate)] = new_macrostate
 
@@ -247,7 +242,7 @@ def macrostring(macrostate: list[str]) -> str:
 
 
 def ubda_normalize(
-    ta: TTreeAut, vars: list, verbose: bool = False, output: Optional[str] = None, fix: bool = False
+    ta: TTreeAut, vars: list, verbose: bool = False, output: Optional[str] = None, fix: bool = False, old: bool = False
 ) -> TTreeAut:
     """
     Another approach to normalization. This approach also goes bottom-up,
@@ -263,7 +258,6 @@ def ubda_normalize(
     # NOTE: discrepancy about variables on output edges
     # if the BDA is defined over variables x(1) to x(n),
     # then output edges will have variable x(n+1)
-    # print(norm.variables)
     var: str = norm.variables.pop(0)
     for symbol, state_list in ta.get_output_edges().items():
         norm.transitions.append(tuple([state_list, symbol, var, []]))
@@ -284,12 +278,9 @@ def ubda_normalize(
         norm.next_worklist = []
         for macrostate in norm.worklist:
             norm.var_cache[macrostring(macrostate)] = var
-        # if norm.variables == []:
-        #     break
     ta = create_treeaut_from_helper(norm)
-    if not norm.normalization_fix:
+    if not old:
         remove_bad_transitions(ta, vars)
-    # remove_bad_transitions(ta, vars)
     return ta
 
 
@@ -399,4 +390,4 @@ def is_normalized(ta: TTreeAut, verbose=False) -> bool:
     return duplicateEdges == []
 
 
-# End of normalization.py
+# End of file normalization.py

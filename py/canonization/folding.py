@@ -156,7 +156,7 @@ def get_mapping(intersectoid: TTreeAut, varvis: Dict[str, int], reach: Dict[str,
 
 
 def box_finding(
-    ta: TTreeAut, box: TTreeAut, root: str, helper: FoldingHelper, source: str
+    ta: TTreeAut, box: TTreeAut, root: str, helper: FoldingHelper, source: Optional[str]
 ) -> Dict[str, Tuple[str, int]]:
     """
     [description]
@@ -182,7 +182,9 @@ def box_finding(
     if tree is None:
         return {}
 
-    add_variables_top_down(intersectoid, helper)
+    okay = add_variables_top_down(intersectoid, helper, source)
+    if not okay:
+        return {}
     helper.export_intersectoid(intersectoid, source, root, box.name)
     var_visibility: dict[str, int] = intersectoid.get_var_visibility_deterministic()
     reach: list[str] = intersectoid_reachability(intersectoid, var_visibility)
@@ -193,15 +195,17 @@ def box_finding(
     final_mapping: dict[str, str] = get_mapping(intersectoid, var_visibility, helper.reach)
     if final_mapping == {}:
         return {}
-    # export_to_file(intersectoid, f"./debug-intersectoids/{root}-{box.name.replace("box", "")}-intersectoid")
     split_mapping: dict[str, str] = {
         p: (get_first_name_from_tuple_str(s), var_visibility[s]) for p, s in final_mapping.items()
     }
+
     # mapping in which root state is one of ports is invalid
+    # note: this should now be covered by correct return value of 'add_varaibles_top_down()'
+
     # for s, var in split_mapping.values():
     #     if root == s:
     #         return {}
-    # print(f"box_finding({box.name.replace("box", "")}, {root}) = {split_mapping}")
+
     return split_mapping
 
 
@@ -307,18 +311,6 @@ def ubda_folding(
             # TODO: simplify working with edge info -> just use the variable names listed below
             edges_to_children: List[Tuple[str, int, str, str, TTransition]] = prepare_edge_info(result, state)
             for edge_part in edges_to_children:
-                # edge_part contains 5 items: [
-                # key :
-                # child-index :
-                # child-state :
-                # source-state :
-                # edge :
-                # ]
-
-                # work_key
-                # child_index
-                # source_state
-                # target_state
                 key, chidx, chstate, srcstate, edgeref = edge_part
 
                 part = "L" if chidx == 0 else "H"
@@ -329,63 +321,77 @@ def ubda_folding(
                 # skipping self-loop
                 if state in result.transitions[state][key].children:
                     continue
-                if helper.verbose:
-                    print("%s> box_finding(%s-[%s:%s]->%s)" % (f"{0 * ' '}", state, part, box.name, edge_part[2]))
-                mapping = box_finding(result, box, chstate, helper, state)
 
+                mapping = box_finding(result, box, chstate, helper, state)
+                check = mapping_is_correct(mapping, var_visibility, helper.var_prefix)
+                helper.write(
+                    "%s> box_finding([%s:%s], %s) minvar:%s => %s"
+                    % (f"{0 * ' '}", part, box.name, edgeref, helper.min_var, mapping if check else "nothing")
+                )
                 # phase 0: checking correctness of the mapping
                 # checking if all mapped states have a visible variable
                 # and have lower variables than states in the UBDA
-                if not mapping_is_correct(mapping, var_visibility, helper.var_prefix):
-                    helper.write("mapping_is_correct(): FALSE")
+                if not check:
                     continue
-                helper.write(
-                    "%s> box_finding(%s-[%s:%s]->%s => %s)\n"
-                    % (f"{0 * ' '}", state, "L" if edge_part[1] == 0 else "H", box.name, chstate, mapping)
-                )
-                # print(f"box_finding({chstate} {box_name}) = {mapping})")
+
+                # if only one variable gets folded by the box, then the mapping is invalid
+                # i.e. if s1 --<3>--> (s3, *), and s3 has variable <4> in the mapping,
+                # then nothing actually got folded
+                additional_check = False
+                for port, (_, var) in mapping.items():
+                    if int(edgeref.info.variable[len(helper.var_prefix) :]) + 1 == var:
+                        additional_check = True
+                if additional_check:
+                    continue
 
                 # phase 1: putting the box in the box array
                 edge = result.transitions[srcstate][key]
-                # initial_box_list: List[str] = edge.info.box_array
-                # symbol = edge.info.label
-                # box_list = [None] * ta.get_symbol_arity_dict()[symbol]
-                # for idx in range(len(initial_box_list)):
-                #     box_list[idx] = initial_box_list[idx]
-                # try:
-                #     box_list[get_box_index(edge_part)] = box_name
-                # except:
-                #     continue
-                # edge.info.box_array = box_list
                 edge.info.box_array[1 if chidx > 0 else 0] = box_name
 
-                # phase 2: fill the box-port children in the child array
+                # phase 2: choosing the correctly mapped states
+                targets = []
+                for s, mapped_var in [mapping[p] for (p, _) in box.get_port_order()]:
+                    visible_var = int(var_visibility[s][len(helper.var_prefix) :])
+                    if visible_var == mapped_var:
+                        targets.append((s, mapped_var))
+                        continue
+                    newstate = f"{s}-{mapped_var}"
+                    if newstate in result.transitions:
+                        targets.append((newstate, mapped_var))
+                        continue
+                    result.transitions[newstate] = {}
+                    var_visibility[newstate] = f"{helper.var_prefix}{mapped_var}"
+                    selfloop = None
+                    for e in result.transitions[s].values():
+                        if e.is_self_loop():
+                            selfloop = e
+                    if visible_var - mapped_var >= 1:
+                        newtr = TTransition(
+                            newstate,
+                            TEdge("LH", [None] * 2, f"{helper.var_prefix}{mapped_var}"),
+                            [i for i in selfloop.children],
+                        )
+                        result.transitions[newstate][f"temp{helper.counter}"] = newtr
+                        helper.counter += 1
+                    targets.append((newstate, mapped_var))
+
+                # NOTE: naive version like this
+                # targets = [mapping[p] for (p, _) in box.get_port_order()]
+                # would not work, since if the state's mapped variable does not agree with its outgoing variable
+                # by directly mapping it to the state, we would skip over some decision node
+
+                # instead, we should copy the state along with its self loop (which should be present,
+                # since multiple variables can be mapped to the state)
+                # and then adjust the box targets to the newly created state 'above' the original intended target
+
+                # also, add the copy of the selfloop that goes from the copy to the original over the correct variable
+
+                # phase 3: fill the box-port children in the child array
                 edge.children.pop(chidx)
-                targets = [mapping[p] for (p, _) in box.get_port_order()]
                 if chidx == 0:
                     edge.children = [t[0] for t in targets] + edge.children
                 else:
                     edge.children = edge.children + [t[0] for t in targets]
-                # idx = get_state_index_from_box_index(edge, get_box_index(edge_part))
-                # edge.children.pop(idx)
-                # for i, (map_state, var) in enumerate(mapping.values()):
-                #     edge.children.insert(idx + i, map_state)
-                #     if var == var_visibility[map_state]:
-                #         # NOTE: here, possibly remove self-loop(s) in map_state
-                #         # in case of identical variables (ta, intersectoid)
-                #         continue
-                #     new_state: str = f"{map_state}-{var}"
-                #     if new_state in result.transitions:
-                #         edge.children[idx + i] = new_state
-                #     result.transitions[new_state] = {}
-                #     edge.children[idx + i] = new_state
-                #     new_edge = TTransition(new_state, TEdge("LH", [], f"{var+1}"), [map_state, map_state])
-                #     var_visibility[new_state] = var
-                #     helper.counter += 1
-                #     key: str = f"temp_{helper.counter2}"
-                #     helper.counter2 += 1
-                #     result.transitions[new_state][key] = new_edge
-                # for state in mapping
                 helper.export_ubda(result, state, edge_part, box)
             # for edge_info
             visited.add(state)
@@ -401,4 +407,4 @@ def ubda_folding(
     return result
 
 
-# End of folding.py
+# End of file folding.py

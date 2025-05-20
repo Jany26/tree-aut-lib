@@ -10,7 +10,8 @@ import copy
 from typing import Tuple
 
 from tree_automata import TTreeAut, iterate_edges, remove_useless_states, reachable_top_down
-from tree_automata.var_manipulation import create_var_order_list, add_variables_bottom_up
+from tree_automata.var_manipulation import add_variables_bottom_up
+from helpers.string_manipulation import create_var_order_list
 from helpers.utils import box_orders, full_box_order as box_order
 from bdd.bdd_to_treeaut import create_tree_aut_from_bdd, add_dont_care_boxes
 from simulation import simulate_and_compare
@@ -170,7 +171,6 @@ def canonize_benchmark(initial: TTreeAut, options: TestOptions) -> dict[str, TTr
     normalization_log = open(f"{path}/log_normalization.txt", "w")
     normalization_log.write(f"INPUT\n\n{unfolded_extra}\n\n")
     var_order = create_var_order_list("", options.vars + 2, start=0)
-    # print(var_order)
     normalized = ubda_normalize(unfolded_extra, var_order, verbose=options.debug, output=normalization_log)
     normalized_clean = copy.deepcopy(normalized)
     normalized_clean.reformat_keys()

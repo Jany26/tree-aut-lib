@@ -123,7 +123,6 @@ def tree_aut_is_extension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
                 check_dict[symbol2].append(symbol1)
         for _, possible_leaf_edges in check_dict.items():
             if len(possible_leaf_edges) != 1:
-                # print("False")
                 return False
     full_list = []
     for state_set in co_occurent_list:
@@ -156,4 +155,4 @@ def tree_aut_is_extension(ta1: TTreeAut, ta2: TTreeAut) -> bool:
     return False
 
 
-# End of cooccurrence.py
+# End of file cooccurrence.py

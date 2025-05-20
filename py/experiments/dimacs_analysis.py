@@ -9,9 +9,10 @@ conjuntive normal form (CNF) - DIMACS format.
 import os
 import copy
 
-from blif_analysis import test_folding_on_sub_benchmarks, boxname_simplified_translation, formatBoxCounts
+from experiments.blif_analysis import test_folding_on_sub_benchmarks, boxname_simplified_translation, format_box_counts
 from tree_automata import TTreeAut, reachable_top_down
-from tree_automata.var_manipulation import create_var_order_list, add_variables_bottom_up
+from tree_automata.var_manipulation import add_variables_bottom_up
+from helpers.string_manipulation import create_var_order_list
 from helpers.utils import box_orders
 from canonization.folding import ubda_folding
 from canonization.normalization import ubda_normalize
@@ -61,7 +62,7 @@ def print_dimacs_box_counts():
         initial = import_treeaut_from_abdd(path)
         folded = get_folded_dimacs(initial, order)
         print(
-            f"{name :<30} = {len(initial.get_states()) :<5}, {len(reachable_top_down(folded)) :<5}, {formatBoxCounts(folded)}"
+            f"{name :<30} = {len(initial.get_states()) :<5}, {len(reachable_top_down(folded)) :<5}, {format_box_counts(folded)}"
         )
 
 

@@ -1,3 +1,9 @@
+"""
+[file] bdd_to_treeaut.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Functions for converting BDD instances into TAs (or rather UBDAs).
+"""
+
 import copy
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -46,25 +52,19 @@ def add_dont_care_boxes(ta: TTreeAut, vars: int) -> TTreeAut:
     """
     result: TTreeAut = copy.deepcopy(ta)
     var_prefix: str = result.get_var_prefix()
-    # var_visibility: Dict[str, int] = {i: int(list(j)[0]) for i, j in ta.get_var_visibility_deterministic().items()}
     for edge in iterate_output_edges(result):
         if edge.info.variable == "":
             edge.info.variable = f"{var_prefix}{vars}"
     var_visibility: dict[str, int] = result.get_var_visibility_deterministic()
-    # print(var_visibility)
     leaves: Set[str] = ta.get_output_states()
-    # print(leaves)
-    # counter: int = 0
     skipped_var_edges: List[Tuple[str, str, TTransition]] = []
     for edge in iterate_edges(result):
-        # print(f'analysing edge {edge}')
         if edge.is_self_loop():
             continue
         for idx, child in enumerate(edge.children):
             if (child in leaves and var_visibility[edge.src] != vars) or (
                 child not in leaves and var_visibility[child] - var_visibility[edge.src] >= 2
             ):
-                # print(f'  > condition satisfied')
                 if len(edge.info.box_array) < idx + 1:
                     edge.info.box_array = [None] * len(edge.children)
                 edge.info.box_array[idx] = "X"
@@ -120,3 +120,6 @@ def fill_dont_care_boxes(ta: TTreeAut, max_var: int) -> None:
                     edge.info.box_array[box_idx] = "X"
                 elif src_var >= child_var:
                     ValueError(f"fill_dont_care_boxes(): variable is skipped on edge {edge}")
+
+
+# End of bdd_to_treeaut.py

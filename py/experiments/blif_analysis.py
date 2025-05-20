@@ -12,7 +12,8 @@ import os
 import copy
 
 from tree_automata import TTreeAut, iterate_edges, iterate_states_bfs, shrink_to_top_down_reachable, reachable_top_down
-from tree_automata.var_manipulation import create_var_order_list, add_variables_bottom_up
+from tree_automata.var_manipulation import add_variables_bottom_up
+from helpers.string_manipulation import create_var_order_list
 
 import formats.format_abdd as abdd
 from formats.format_vtf import import_treeaut_from_vtf
@@ -25,7 +26,7 @@ from bdd.bdd_to_treeaut import add_dont_care_boxes
 from helpers.utils import box_orders
 
 
-def checkVariableNaming(file):
+def check_variable_naming(file):
     variable_map: dict[int, set[str]] = {}
     for idx, line in enumerate(file, start=1):
         if line.startswith("#") or line == "\n":
@@ -43,7 +44,7 @@ def checkVariableNaming(file):
                     print(f"{file.name}:{idx}: trying to add '{i}' to variable {var} = {variable_map[var]}")
 
 
-def checkOutputs(file):
+def check_outputs(file):
     outputs_initial = set()
     inputs_initial = set()
     current_outputs = set()
@@ -91,7 +92,7 @@ def checkOutputs(file):
     print(f"diff     =", sorted_difference)
 
 
-def checkDuplicateOutputs(file):
+def check_duplicate_outputs(file):
     output_occurence: dict[str, int] = {}  # variable -> line-number in file
     for idx, line in enumerate(file, start=1):
         if line.startswith("#") or line == "\n":
@@ -107,7 +108,7 @@ def checkDuplicateOutputs(file):
                 )
 
 
-def checkHierarchy(file):
+def check_hierarchy(file):
     inputs_initial = set()
     outputs_parsed = set()
     for idx, line in enumerate(file, start=1):
@@ -127,7 +128,7 @@ def checkHierarchy(file):
             outputs_parsed.add(output)
 
 
-def getAllNodeCounts(filePath: str) -> dict:
+def get_all_node_counts(filePath: str) -> dict:
     treeauts = abdd.import_treeaut_from_abdd(filePath)
     # print([treeaut.name for ta in tas])
     result: dict[str, dict[str, int]] = {}
@@ -145,10 +146,10 @@ def getAllNodeCounts(filePath: str) -> dict:
     return result
 
 
-def printSubtrees(filePath, reportPath):
+def print_subtrees(filePath, reportPath):
     report = open(f"{reportPath}", "w")
     path = f"{filePath}"
-    results = getAllNodeCounts(path)
+    results = get_all_node_counts(path)
     for taName, taResults in results.items():
         report.write(f"{taName}\n")
         sorter: set[int] = set()
@@ -179,7 +180,7 @@ def printSubtrees(filePath, reportPath):
 benchmarks = [432, 499, 880, 1355, 1908]
 
 
-def countBoxesOnEdges(treeaut: TTreeAut):
+def count_boxes_on_edges(treeaut: TTreeAut):
     result = {}
     for edge in iterate_edges(treeaut):
         for box in edge.info.box_array:
@@ -191,7 +192,7 @@ def countBoxesOnEdges(treeaut: TTreeAut):
     return result
 
 
-def exportSubBlifs(filePath):
+def export_sub_blifs(filePath):
     results: list[TTreeAut] = abdd.import_treeaut_from_abdd(filePath)
     if type(results) != list:
         return
@@ -251,7 +252,7 @@ def test_folding_on_sub_benchmarks(path, export, orders=None, root_num=None):
     return result
 
 
-def foldingTestBLIF(test=None):
+def folding_test_blif(test=None):
     report = open("../tests/blif-report.txt", "r")
 
     report_line = f"{'name of the benchmark' :<30}\t| init\t| unfo\t| norm"
@@ -277,7 +278,7 @@ def foldingTestBLIF(test=None):
         )
 
 
-def analyzeNodeCounts():
+def analyze_node_counts():
     benchmarks = [432, 499, 880, 1355, 1908]
     if not os.path.exists("../data/blif-reports/"):
         os.makedirs("../data/blif-reports/")
@@ -285,7 +286,7 @@ def analyzeNodeCounts():
         for subdir, dirs, files in os.walk(f"../data/blif/C{num}"):
             for file in files:
                 reportPath = f"'../data/blif-reports/{file.replace('.abdd', '.txt')}"
-                printSubtrees(f"{subdir}/{file}", reportPath)
+                print_subtrees(f"{subdir}/{file}", reportPath)
 
 
 boxname_simplified_translation = {
@@ -299,8 +300,8 @@ boxname_simplified_translation = {
 }
 
 
-def formatBoxCounts(ta: TTreeAut):
-    midResult = countBoxesOnEdges(ta)
+def format_box_counts(ta: TTreeAut):
+    midResult = count_boxes_on_edges(ta)
     result = {}
     for longName, shortName in boxname_simplified_translation.items():
         count = midResult[longName] if longName in midResult else 0
@@ -311,7 +312,7 @@ def formatBoxCounts(ta: TTreeAut):
     return resultString
 
 
-def printBoxCountsBLIF():
+def print_box_counts_blif():
     initialString = f"{'path' :<30} = {'norm' :<5}, {'full' :<5}, "
     for val in boxname_simplified_translation.values():
         initialString += f"{val :<5}, "
@@ -326,24 +327,27 @@ def printBoxCountsBLIF():
         ta = import_treeaut_from_vtf(f"../data/blif-normalized/{name}.vtf")
         folded = ubda_folding(ta, box_orders["full"], ta.get_var_max())
         print(
-            f"{name :<30} = {len(ta.get_states()) :<5}, {len(reachable_top_down(folded)) :<5}, {formatBoxCounts(folded)}"
+            f"{name :<30} = {len(ta.get_states()) :<5}, {len(reachable_top_down(folded)) :<5}, {format_box_counts(folded)}"
         )
 
 
-def blifConsistencyCheck(path):
+def blif_consistency_check(path):
     file = open(path, "r")
     file.seek(0)
-    checkDuplicateOutputs(file)
+    check_duplicate_outputs(file)
     file.seek(0)
-    checkOutputs(file)
+    check_outputs(file)
     file.seek(0)
-    checkHierarchy(file)
+    check_hierarchy(file)
     file.seek(0)
-    checkVariableNaming(file)
+    check_variable_naming(file)
 
 
 if __name__ == "__main__":
     path = "../tests/blif/"
-    # blifConsistencyCheck()
-    foldingTestBLIF()
-    # printBoxCountsBLIF()
+    # blif_consistency_check()
+    folding_test_blif()
+    # print_box_counts_blif()
+
+
+# End of file blif_analysis.py

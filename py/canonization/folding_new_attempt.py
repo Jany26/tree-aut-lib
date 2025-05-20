@@ -1,3 +1,9 @@
+"""
+[file] folding_new_attempt.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] An (unsuccessful) attempt to try to implement a different way of folding.
+"""
+
 import re
 from typing import Optional, Iterator
 import copy
@@ -11,11 +17,17 @@ from tree_automata.functions.trimming import remove_useless_states, shrink_to_to
 from tree_automata.transition import TEdge, TTransition
 
 
-# NOTE: Perhaps this should be scrapped
-# folding should explore all states with for specific box,
-# going over all boxes for one state can affect the rest of the structure, denying
-# proper folding for better suited boxes,
-# especially for LPort/HPort boxes
+# NOTE: Perhaps this should be scrapped.
+
+# Folding should explore all edges and try to reduce them with a specific box, before going to the next box.
+# Going over all boxes for one state can affect the rest of the structure, denying proper folding for better suited
+# boxes, especially for LPort/HPort boxes
+
+# Also this top-down BFS approach introduces many nodes during the folding (because it essentially unwinds loops top-down)
+# before trying the "non-terminal" boxes (X, LPort, HPort), which is an unnecessary overhead for this algorithm.
+# It essentially undoes the work of normalization.
+
+# This code is kept here for archiving purposes and maybe could be later refined into a better approach.
 
 
 def new_fold(ta: TTreeAut, initboxes: list[str], afterboxes: list[str], max_var: int) -> TTreeAut:
@@ -129,9 +141,7 @@ def try_all_boxes(treeaut, state, var, boxes, helper) -> tuple[Optional[str], li
             map = {}
         if map != {}:
             targets = [map[p] for (p, _) in box.get_port_order()]
-            # print(f'box_finding({state}, {var}) = {b}, {targets}')
             return b, targets
-    # print(f'box_finding({state}, {var}) = None, [({state}, {var})]')
     return None, [(state, var)]
 
 
@@ -157,7 +167,6 @@ def new_fold_terminal(treeaut: TTreeAut, boxes: list[str], varmax: int) -> TTree
         visited.add((state, varmax))
     while worklist != []:
         s, var = worklist.pop(0)
-        # print('worklist popped', s, var)
         if (s, var) in visited:
             continue
         edge = None
@@ -171,11 +180,8 @@ def new_fold_terminal(treeaut: TTreeAut, boxes: list[str], varmax: int) -> TTree
             for e in iterate_edges_from_state(treeaut, s):
                 if e.is_self_loop():
                     edge = e
-        # print(f"folding: state={s}, var={var}, edge={edge}")
         lowrule, lowtargets = try_all_boxes(treeaut, edge.children[0], var + 1, boxes, helper)
-        # print('low =', lowrule, lowtargets)
         highrule, hightargets = try_all_boxes(treeaut, edge.children[1], var + 1, boxes, helper)
-        # print('high =', highrule, hightargets)
         if s not in result.transitions:
             result.transitions[tuple_name((s, var))] = {}
         result.transitions[tuple_name((s, var))][f"k{edgecount}"] = TTransition(
@@ -191,6 +197,10 @@ def new_fold_terminal(treeaut: TTreeAut, boxes: list[str], varmax: int) -> TTree
 
 
 def divide_multivar_states(treeaut: TTreeAut):
+    """
+    Previous attempt for a post-hoc fix of normalization's weird transitions which should now
+    not be created thanks to the fixed version of normalization itself.
+    """
     varvis = treeaut.get_var_visibility()
     lookup = treeaut.get_var_lookup()
     # we first find all bad states (along with the list of outvars)
@@ -199,10 +209,12 @@ def divide_multivar_states(treeaut: TTreeAut):
         if len(vars) > 1:
             badstates[s] = vars
 
+    print(varvis)
     for s, vars in badstates.items():
         # we create multiple copies of bad states -> one for each variable
         for v in vars:
             newstate = f"{s}({lookup[v]})"
+            varvis[newstate] = set([v])
             treeaut.transitions[newstate] = {}
             for key, edge in treeaut.transitions[s].items():
                 if edge.info.variable != "" and edge.info.variable != v:
@@ -219,7 +231,9 @@ def divide_multivar_states(treeaut: TTreeAut):
         for edge in iterate_edges(treeaut):
             if edge.src != s and s in edge.children:
                 # edges_to_fix.append(edge)
+                print("src", edge.src)
                 target_var = max(lookup[v] for v in varvis[edge.src])
+                print("target", target_var)
                 out_var = sorted([lookup[v] for v in vars])
                 for i in out_var:
                     if target_var < i:
@@ -238,9 +252,7 @@ def box_finding_wrapper(treeaut: TTreeAut, state: str, var: int, box: TTreeAut, 
         map = {}
     if map != {}:
         targets = [map[p] for (p, _) in box.get_port_order()]
-        print(f'box_finding({state}, {var}) = {box.name.replace("box", "")}, {targets}')
         return box.name.replace("box", ""), targets
-    # print(f'box_finding({state}, {var}) = None, [({state}, {var})]')
     return None, [(state, var)]
 
 
@@ -262,3 +274,6 @@ def new_fold_inner(treeaut: TTreeAut, boxes: list[str], varmax: int) -> None:
                 edge.children = [t[0] for t in targets] + edge.children
             else:
                 edge.children = edge.children + [t[0] for t in targets]
+
+
+# End of file folding_new_attempt.py

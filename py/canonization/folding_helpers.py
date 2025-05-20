@@ -4,7 +4,7 @@
 [description] Helper functions and FoldingHelper class used during all
 essential algorithms/operations regarding folding.
 
-[note] mostly redundant or self-explanatory functions
+[note] also contains some redundant or self-explanatory functions used during debugging
 """
 
 import os
@@ -528,3 +528,6 @@ def remove_flagged_edges(ta: TTreeAut, helper: FoldingHelper):
             if children_stayed and not only_boxed:
                 key_list.append(key)
                 ta.transitions[state].pop(key)
+
+
+# End of file folding_helpers.py

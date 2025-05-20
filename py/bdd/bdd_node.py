@@ -1,3 +1,11 @@
+"""
+[file] bdd_node.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Class encapsulating one node of a BDD.
+[note] Needed in order to parse DIMACS format and for creating BDDs
+for further testing/experimenting with tree automata.
+"""
+
 from typing import List, Dict, Set, Optional
 
 

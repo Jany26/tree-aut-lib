@@ -39,7 +39,6 @@ def find_port_states(ta: TTreeAut) -> list[str]:
         label: str = edge.info.label
         if label.startswith("Port") and label not in result:
             result[label] = edge.src
-    # print([result[key] for key in sorted(result.keys())])
 
     # since we assume port transitions are labeled with numbers in a lexicographic order (Port0, Port1, Port2, ...),
     # i.e. port transitions reached through 0000 (LLLL) come before the ones reached through 1111 (HHHH),
@@ -96,7 +95,6 @@ def unfold_edge(helper: UnfoldingHelper, folded_edge: TTransition) -> tuple[int,
         if len(out_vars) != len(edge.children):
             raise Exception(f"ubda_unfolding(): didn't get enough information about outgoing variables, edge {edge}")
 
-    # while edge.info.box_array != [] and edge.children != []:
     while edge.info.box_array != []:
         box_name: str = edge.info.box_array[0]
         edge.info.box_array.pop(0)
@@ -119,7 +117,6 @@ def unfold_edge(helper: UnfoldingHelper, folded_edge: TTransition) -> tuple[int,
             out_vars = out_vars[box.port_arity :]  # discard used variables
 
         # unfold the box content into result
-        # print(result.name, src_state, box.name, children, counter + unfolded)
         for state_name in box.get_states():
             new_name = f"{helper.unfold_counter + unfolded_count}_{state_name}_{edge.src}"
             helper.output.transitions[new_name] = copy.copy(box.transitions[state_name])
@@ -129,7 +126,6 @@ def unfold_edge(helper: UnfoldingHelper, folded_edge: TTransition) -> tuple[int,
 
         for index, state in enumerate(connector_list):
             helper.sub_table[state] = children[index]
-        # print(helper.sub_table)
 
         unfolded_count += 1
     return unfolded_count, new_edge
@@ -256,6 +252,25 @@ def is_unfolded(ta: TTreeAut) -> bool:
                 eprint(f"is_unfolded[ {ta.name} ]: found a box: {edge}")
                 return False
     return True
+
+
+def remove_useless_transitions(ta: TTreeAut):
+    minvarin: dict[str, int] = {r: 1 for r in ta.roots}
+    maxvarout: dict[str, int] = {}
+    plen = len(ta.get_var_prefix())
+    for e in iterate_edges(ta):
+        if e.is_self_loop() or e.info.variable == "":
+            continue
+        var = int(e.info.variable[plen:])
+        maxvarout[e.src] = max(var, maxvarout[e.src]) if e.src in maxvarout else var
+        for c in e.children:
+            minvarin[c] = min(var + 1, minvarin[c]) if c in minvarin else var + 1
+    to_remove: list[tuple[str, str]] = []
+    for k, e in iterate_key_edge_tuples(ta):
+        if e.is_self_loop() and minvarin[e.src] == maxvarout[e.src]:
+            to_remove.append((e.src, k))
+    for s, k in to_remove:
+        ta.remove_transition(s, k)
 
 
 # redundant below ...

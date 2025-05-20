@@ -1,5 +1,5 @@
 """
-[file] bdd.py
+[file] bdd_class.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 [description] Module for implementing basic BDD operations.
 [note] Needed in order to parse DIMACS format (read as DNF* for simplification).
@@ -331,31 +331,4 @@ def compare_bdds(bdd1: BDD, bdd2: BDD) -> bool:
     return compare_nodes(bdd1.root, bdd2.root)
 
 
-# WIP ...
-# unfolding self-loops and partial-loops is needed.
-# def create_bdd_from_tree_aut(ta: TTreeAut) -> BDD:
-#     if not is_unfolded(ta):
-#         raise Exception('create_bdd_from_ta(): folded input')
-#     if len(ta.roots) != 1:
-#         raise Exception('create_bdd_from_ta(): more than 1 root state')
-
-#     root = BDDnode(ta.roots[0], ta.transitions[ta.roots])
-
-#     visited = set()
-#     stack = [ta.roots[0]]
-
-#     while len(stack) > 0:
-#         node = stack.pop()
-#         if node is None:
-#             continue
-
-#         if node in visited:
-#             continue
-#         visited.add(node)
-
-#         yield node
-#         stack.append(node.high)
-#         stack.append(node.low)
-
-
-# End of file bdd.py
+# End of file bdd_class.py

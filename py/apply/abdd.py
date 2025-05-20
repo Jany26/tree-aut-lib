@@ -1,3 +1,9 @@
+"""
+[file] abdd.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] ABDD class with import/export/converter functions.
+"""
+
 import copy
 import itertools
 import os
@@ -15,16 +21,13 @@ from apply.abdd_node import ABDDNode
 class ABDD:
     name: str
     variable_count: int
-    roots: list[ABDDNode]
+    roots: list[ABDDNode]  # since root rule can be multiport, we need a list of root nodes
     root_rule: Optional[str]
-
-    # node_map is used during TA->ABDD conversion, probably could be kept outside the class
-    # node_map: dict[str, ABDDNode]
     node_count: int
     terminal_0: Optional[ABDDNode]
     terminal_1: Optional[ABDDNode]
 
-    def __init__(self, name: str, variable_count: int, roots: list[ABDDNode]):
+    def __init__(self, name: str, variable_count: int, roots: list[ABDDNode], rootrule=None):
         """
         Initializing ABDD structure will omit self-looping transitions in the TA/UBDA structure.
         Missing variables or box information will raise an exception.
@@ -32,8 +35,7 @@ class ABDD:
         self.name = name
         self.variable_count = variable_count
         self.roots = roots
-        self.root_rule: Optional[str] = None
-        self.node_map = {}
+        self.root_rule: Optional[str] = rootrule
         self.node_count = 0
         self.terminal_0: Optional[ABDDNode] = None
         self.terminal_1: Optional[ABDDNode] = None
@@ -92,7 +94,7 @@ class ABDD:
     def __eq__(self, other: "ABDD", brute_force: bool = False) -> bool:
         """
         'brute_force' = False -> Check structural equality of two ABDDs.
-        This is essentially the top-down
+        This is essentially the top-down isomorphism check of the structures (disregarding the semantics).
 
         'brute_force' = True -> Check the result of evaluating all possible variable
         true/false assignments in a brute-force manner.
@@ -140,6 +142,10 @@ class ABDD:
         return result
 
     def check_brute_force_equivalence(self, other: "ABDD") -> bool:
+        """
+        For debugging and testing.
+        Note: more robust version from 'evaluation.py' is used, which can even handle UBDAs as inputs.
+        """
         if self.variable_count != other.variable_count:
             raise ValueError("unequal number of variables for equivalence checking")
         for assign_tuple in itertools.product([False, True], repeat=self.variable_count):
@@ -155,8 +161,18 @@ class ABDD:
         return True
 
     def evaluate_for(self, assignment: list[bool], verbose=False) -> int:
-        def evaluate_box(box: TTreeAut, assignment: list[bool], node_map: dict[str, ABDDNode]) -> bool | ABDDNode:
+        """
+        Given an assignment of Boolean values
+        (ordered based on the order of variables in the ABDD, assuming they start at 1),
+        evaluate the ABDD by traversing the structure -- in case of reduction rules, traverse the box's transition relation.
+        """
 
+        def evaluate_box(box: TTreeAut, assignment: list[bool], node_map: dict[str, ABDDNode]) -> bool | ABDDNode:
+            """
+            Perform a run over the 'box', given a subset 'assignment' (a small part of the initial bigger assignment),
+            and either end in a terminal node, or end in a port state, which will map to some target node of the ABDD
+            based on the 'node_map'
+            """
             current = box.roots[0]
             outputs = box.get_output_edges(inverse=True)
             if verbose:
@@ -235,6 +251,9 @@ class ABDD:
                 current_node = box_eval
 
     def convert_to_treeaut_obj(self) -> TTreeAut:
+        """
+        Create a (folded) instance of a TTreeAut based on this ABDD.
+        """
         result = TTreeAut(
             [f"{r.node}" for r in self.roots], {f"{n.node}": {} for n in self.iterate_bfs_nodes()}, name=self.name
         )
@@ -313,17 +332,20 @@ class ABDD:
             i.node = counter
             counter += 1
 
-    def change_leaf_level():
-        """
-        Leaf level can only be changed such that it is still larger than any inner node level.
-        Before modifying the structure, a simple DFS traversal will obtain the maximum variable level
-        of inner nodes.
+    # TODO: in general, it might be necessary to be able to change the variable count of the ABDD,
+    # which would necessitate checking all edges pointing to leaf nodes and modifying rules etc.
+    # Right now it is on
+    # def change_leaf_level():
+    #     """
+    #     Leaf level can only be changed such that it is still larger than any inner node level.
+    #     Before modifying the structure, a simple DFS traversal will obtain the maximum variable level
+    #     of inner nodes.
 
-        After that, all edges leading to terminal nodes will be analyzed and reduction rules
-        will be modified so that if edge inner node -> terminal node will have short edge if the
-        variable difference is one and 'X'-edge if it is greater than one.
-        """
-        pass
+    #     After that, all edges leading to terminal nodes will be analyzed and reduction rules
+    #     will be modified so that if edge inner node -> terminal node will have short edge if the
+    #     variable difference is one and 'X'-edge if it is greater than one.
+    #     """
+    #     pass
 
 
 def obtain_child_node_info(target_str: str, leafnode_count: int = 2) -> list[int]:
@@ -341,7 +363,7 @@ def obtain_child_node_info(target_str: str, leafnode_count: int = 2) -> list[int
 
 def import_abdd_from_abdd_file(path: str, ncache: Optional[ABDDNodeCacheClass] = None) -> ABDD:
     """
-    TODO
+    Create an ABDD by importing from a .dd file (or .abdd or similar).
     """
     if ncache is None:
         ncache = ABDDNodeCacheClass()
@@ -425,7 +447,6 @@ def import_abdd_from_abdd_file(path: str, ncache: Optional[ABDDNodeCacheClass] =
             newnode = ABDDNode(node_idx)
 
             if int(node) in root_idxs:
-                # newnode.is_root = True
                 rootsmap[int(node)] = newnode
             newnode.var = var
             newnode.is_leaf = False
@@ -454,16 +475,12 @@ def convert_ta_to_abdd(
     to ABDD instance.
 
     Assumes no loop-edges are present.
-
-    TODO: root rule unfold
     """
     if not check_if_abdd(ta):
         ValueError(f"cannot turn {ta.name} to an ABDD")
 
     # statename -> corresponding node
     node_map: dict[str, ABDDNode] = {}
-    # visited_states: dict[str, ABDDNode] = {}
-    # state_idx_map: dict[str, int] = {}
     ncounter = node_start + 2  # idx 0 and idx 1 are reserved for terminal nodes
 
     vlen = len(ta.get_var_prefix())
@@ -474,8 +491,6 @@ def convert_ta_to_abdd(
     # - one state with "1"-labeled output edge
     # - no two states represent roots of isomorphic ABDDs (i.e. the BDA is normalized)
 
-    # if len(ta.roots) != 1:
-    #     raise ValueError("convert_ta_to_abdd(): ABDD-compatible BDA can have only one root")
     if len(ta.roots) != box_arities[ta.rootbox]:
         raise ValueError("convert_ta_to_abdd(): roots incompatible with root box")
 
@@ -484,8 +499,6 @@ def convert_ta_to_abdd(
             raise ValueError(
                 "convert_ta_to_abdd(): ABDD-compatible BDA can only have output transitions labeled with '0' and '1'"
             )
-        # if len(states) > 1:
-        #     raise ValueError("convert_ta_to_abdd(): ABDD-compatible BDA can only have one state with specifically labeled output transition")
         if sym == "0":
             for s in states:
                 node_map[s] = ncache.terminal_0
@@ -509,14 +522,12 @@ def convert_ta_to_abdd(
             edge.info.box_array = [None, None]
         node_map[edge.src].set_node_info_from_ta_transition(edge, node_map, var_prefix_len=vlen)
 
-    # node_map[ta.roots[0]].is_root = True
     result = ABDD(
         f"{ta.name}", var_count if var_count is not None else ta.get_var_max() - 1, [node_map[r] for r in ta.roots]
     )
     result.terminal_0 = ncache.terminal_0
     result.terminal_1 = ncache.terminal_1
     result.node_count = result.count_nodes()
-    # result.root_rule = "X" if result.root.var > 1 else None
     result.root_rule = ta.rootbox
     for i in result.iterate_bfs_nodes():
         hit = ncache.find_node(i)
@@ -574,3 +585,30 @@ def check_if_abdd(ta: TTreeAut) -> bool:
         eprint(f"inconsistent output variables: {create_string_from_name_set(output_vars)}")
         result = False
     return result
+
+
+def construct_node(
+    var: int, lb: Optional[str], lt: list[ABDDNode], hb: Optional[str], ht: list[ABDDNode], ncache: ABDDNodeCacheClass
+) -> ABDDNode:
+    """
+    For testing examples, it is much easier to interactively build the ABDD yourself bottom-up.
+    This function is another constructor for these purposes.
+    """
+    new = ABDDNode(ncache.counter)
+    new.var = var
+    new.low_box = lb
+    new.high_box = hb
+    new.low = lt
+    new.high = ht
+    new.is_leaf = False
+    new.leaf_val = None
+    lookup = ncache.find_node(new)
+    if lookup is None:
+        ncache.insert_node(new)
+        ncache.counter += 1
+        return new
+    else:
+        return lookup
+
+
+# End of file abdd.py

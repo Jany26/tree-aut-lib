@@ -1,9 +1,21 @@
+"""
+[file] abdd_node_cache.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Class encapsulating node cache (unique table).
+"""
+
 from typing import NewType, Optional
 
 from apply.abdd_node import ABDDNode
 
-
-# cache [ var, leaf_val, low_box, low_target, high_box, high_target ] -> node
+"""
+An ABDD node is uniquely identified by a tuple
+< var, leaf, low-edge = <box, targets>, high-edge = <box, targets> >, where:
+    - variable is None in case the node is terminal/leaf
+    - leaf is None in case the node is non-leaf
+    - a box is either long (string identifying the name of the box) or short (None),
+    - targets is a tuple of ABDDNode ObjectIDs (basically pointers), empty () in case of leaf nodes
+"""
 ABDDNodeCache = NewType(
     "ABDDNodeCache",
     dict[
@@ -34,12 +46,20 @@ class ABDDNodeCacheClass:
         self.counter = 2
 
     def insert_node(self, node: ABDDNode) -> None:
+        """
+        Insert a node into the unique table.
+        """
         low_tuple = tuple([id(n) for n in node.low])
         high_tuple = tuple([id(n) for n in node.high])
         lookup = tuple([node.var, node.leaf_val, node.low_box, low_tuple, node.high_box, high_tuple])
         self.cache[lookup] = node
 
     def find_node(self, node: ABDDNode) -> Optional[ABDDNode]:
+        """
+        Check the unique table for the ABDDNode 'node'. If no such node is found, return None.
+        This check is performed anytime a new node is created during Apply
+        (either during box-tree traversal, or during materialization).
+        """
         low_tuple = tuple([id(n) for n in node.low])
         high_tuple = tuple([id(n) for n in node.high])
         lookup = tuple([node.var, node.leaf_val, node.low_box, low_tuple, node.high_box, high_tuple])
@@ -48,6 +68,12 @@ class ABDDNodeCacheClass:
         return None
 
     def refresh_nodes(self):
+        """
+        Because nodes within separate ABDDs are indexed separately, sometimes during the Apply algorithm
+        the node indices might get duplicated (bug).
+        After each Apply operation, this function reindexes all nodes within the cache
+        such that duplications are resolved.
+        """
         counter = 2
         for tup, i in self.cache.items():
             if i.is_leaf:
@@ -97,3 +123,6 @@ class ABDDNodeCacheClass:
                 f"<{node.leaf_val}>" if node.is_leaf else f"{node.node}({node.var})",
             )
         return result
+
+
+# End of file abdd_node_cache.py

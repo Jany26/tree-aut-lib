@@ -1,3 +1,9 @@
+"""
+[file] abdd_apply_helper.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Helper class for the main Apply algorithm.
+"""
+
 from typing import Optional
 from apply.abdd import ABDD
 from apply.abdd_node import ABDDNode
@@ -16,6 +22,11 @@ class ABDDApplyHelper:
     This differs from ApplyCallCache in the sense that two different apply
     calls might create two nodes that represent the same boolean function.
 
+    'negation_cache' - Basically a call cache, just for negation, which is often used
+    during box tree traversal.
+
+    'abdd1', 'abdd2' - references to original ABDD inputs
+    'maxvar' - for checking nodes above leaves, etc. (from root to leaves, the variables are increasing)
     """
 
     call_cache: ABDDCallCacheClass
@@ -34,23 +45,13 @@ class ABDDApplyHelper:
         self.abdd1: ABDD = in1
         self.abdd2: Optional[ABDD] = in2
 
-        # self.counter_1: int = in1.count_nodes()
-        # self.counter_2: int = in2.count_nodes() if in2 is not None else 0
         if cache is None:
             insert_abdd_in_node_cache(self.node_cache, in1)
             if in2 is not None:
                 insert_abdd_in_node_cache(self.node_cache, in2)
         self.node_cache.refresh_nodes()
         self.counter = self.node_cache.counter
-
-        # self.counter: int = (
-        #     max([n.node for n in self.abdd1.iterate_bfs_nodes()] + [n.node for n in self.abdd2.iterate_bfs_nodes()])
-        #     if in2 is not None
-        #     else max([n.node for n in self.abdd1.iterate_bfs_nodes()])
-        # )
-        # self.counter = self.node_cache.counter
         self.maxvar = maxvar
-        self.depth = 0
 
     def find_negated_node(self, node: ABDDNode) -> Optional[ABDDNode]:
         if id(node) in self.negation_cache:
@@ -72,3 +73,6 @@ def insert_abdd_in_node_cache(ncache: ABDDNodeCacheClass, abdd1: ABDD) -> None:
         hit = ncache.find_node(n)
         if hit is not None:
             ncache.insert_node(n)
+
+
+# End of file abdd_apply_helper.py

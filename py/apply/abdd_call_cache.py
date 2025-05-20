@@ -1,3 +1,9 @@
+"""
+[file] abdd_call_cache.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Class encapsulating cache that stores Apply calls. (memoization, dynamic programming)
+"""
+
 from typing import NewType, Optional
 
 from apply.apply_edge import ApplyEdge
@@ -12,10 +18,10 @@ ABDDCallCache = NewType(
         tuple[
             BooleanOperation,  # operation used in the apply call
             int,  # at which variable level is apply called
-            tuple[int],  # node list of the first operand node
-            Optional[str],  # box used on the edge leading to the first operand node
-            tuple[int],  # node list of the second operand node
-            Optional[str],  # box used on the edge leading to the second operand node
+            Optional[str],  # box used on the first operand edge
+            tuple[int],  # node list of the first operand edge
+            Optional[str],  # box used on the second operand edge
+            tuple[int],  # node list of the second operand edge
         ],
         # returning a rule and target nodes
         tuple[Optional[str], list[ABDDNode]],
@@ -24,6 +30,19 @@ ABDDCallCache = NewType(
 
 
 class ABDDCallCacheClass:
+    """
+    Encapsulates call cache with the functions for lookup/update.
+
+    Call cache has lookups in the form:
+    < op, var, edge1 = <rule1, targets1> , edge2 = <rule2, targets2> >
+
+    Call cache is the one that makes it possible for Apply algorithm to be
+    O(|G1| x |G2|) instead of exponential (wrt. number of variables), since the
+    worst case scenario is that every edge will be applied with every edge,
+    because we don't have to evaluate the same pair of edges twice, as during
+    the second time we retrieve it from the cache immediately.
+    """
+
     def __init__(self):
         self.cache: ABDDCallCache = {}
 
@@ -36,16 +55,16 @@ class ABDDCallCacheClass:
         rule: Optional[str],
         targets: list[ABDDNode],
     ) -> None:
-        tgt1 = tuple([n.node for n in edge1.target])
-        tgt2 = tuple([n.node for n in edge2.target])
+        tgt1 = tuple([id(n) for n in edge1.target])
+        tgt2 = tuple([id(n) for n in edge2.target])
         lookup = (op, var, edge1.rule, tgt1, edge2.rule, tgt2)
         self.cache[lookup] = (rule, targets)
 
     def find_call(
         self, op: BooleanOperation, var: int, edge1: ApplyEdge, edge2: ApplyEdge
     ) -> Optional[tuple[Optional[str], list[ABDDNode]]]:
-        tgt1 = tuple([n.node for n in edge1.target])
-        tgt2 = tuple([n.node for n in edge2.target])
+        tgt1 = tuple([id(n) for n in edge1.target])
+        tgt2 = tuple([id(n) for n in edge2.target])
         lookup = (op, var, edge1.rule, tgt1, edge2.rule, tgt2)
         if lookup in self.cache:
             rule, nodes = self.cache[lookup]
@@ -92,3 +111,6 @@ class ABDDCallCacheClass:
                 node,
             )
         return result
+
+
+# End of file abdd_call_cache.py

@@ -1,8 +1,17 @@
+"""
+[file] negation.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Implementation of negation on ABDDs.
+"""
+
 from apply.abdd import ABDD
 from apply.abdd_node import ABDDNode
 from apply.abdd_apply_helper import ABDDApplyHelper
 
 
+# This cache can be computed in a similar way to box op-product, however,
+# only one box is needed and the op_table would actually be just a mapping {0: 1, 1: 0, P: !P}
+# Since box-box negated equivalents are evident, they have been inserted into this cache.
 negate_box_label = {
     None: None,
     "X": "X",
@@ -16,6 +25,10 @@ negate_box_label = {
 
 
 def negate_subtree(abdd: ABDD, node: ABDDNode, helper: ABDDApplyHelper) -> ABDDNode:
+    """
+    Negation can sometimes be used even during ABDD Apply (with binary Boolean operator), especially
+    when a boxtree contains nodes with 'negated' ports (see process_box_tree()).
+    """
     cache_hit = helper.find_negated_node(node)
     if cache_hit is not None:
         return cache_hit
@@ -34,7 +47,6 @@ def negate_subtree(abdd: ABDD, node: ABDDNode, helper: ABDDApplyHelper) -> ABDDN
     newnode.low_box = low_box
     newnode.high = neg_high
     newnode.high_box = high_box
-    # newnode.is_root = node.is_root
     newnode.is_leaf = node.is_leaf
 
     cache_hit = helper.node_cache.find_node(newnode)
@@ -46,3 +58,6 @@ def negate_subtree(abdd: ABDD, node: ABDDNode, helper: ABDDApplyHelper) -> ABDDN
         newnode = cache_hit
     helper.insert_negated_node(node, newnode)
     return newnode
+
+
+# End of file negation.py

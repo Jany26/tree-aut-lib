@@ -1,21 +1,30 @@
+"""
+[file] apply_edge.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Class encapsulating one edge of ABDDs with references to source nodes and the whole ABDD.
+This class helps to keep the number of arguments in Apply low,
+since we encapsulate the whole context of an edge in one class.
+"""
+
 from typing import Optional
 from apply.abdd_node import ABDDNode
 from apply.abdd import ABDD
 
 
 class ApplyEdge:
+    """
+    Helper structure which represents one edge of an ABDD.
+    Edge e is a tuple (e.node, e.rule), since we can have multiport reduction rules,
+    e.node is actually a list of ABDDNodes.
+
+    ApplyEdge contains references to nodes and rules so that modifying this information
+    in the ApplyEdge object will translate to the original ABDD.
+
+    For algorithm's (conceptual) purposes, only 'target' and 'rule' are needed.
+    For implementation's purposes (modifying, referencing, etc.), 'abdd', 'source' and 'direction' are needed.
+    """
+
     def __init__(self, abdd: ABDD, source: Optional[ABDDNode] = None, direction: Optional[bool] = None):
-        """
-        Helper structure which represents one edge of an ABDD.
-        Edge e is a tuple (e.node, e.rule), since we can have multiport reduction rules,
-        e.node is actually a list of ABDDNodes.
-
-        ApplyEdge contains references to nodes and rules so that modifying this information
-        in the ApplyEdge object will translate to the original ABDD.
-
-        For algorithm's (conceptual) purposes, only 'target' and 'rule' are needed.
-        For implementation's purposes (modifying, referencing, etc.), 'abdd', 'source' and 'direction' are needed.
-        """
         self.abdd: ABDD = abdd
         self.source: Optional[ABDDNode] = source
         self.direction: Optional[bool] = direction
@@ -43,3 +52,6 @@ class ApplyEdge:
                 self.rule == other.rule,
             ]
         )
+
+
+# End of file apply_edge.py

@@ -1,3 +1,9 @@
+"""
+[file] abdd_apply_main.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Top-level implementation of Apply() on ABDDs (Automata-based Binary Decision Diagrams).
+"""
+
 from typing import Optional
 
 from apply.abdd import ABDD
@@ -13,13 +19,7 @@ from apply.materialize import materialize_abdd_pattern
 from apply.materialization.pattern_generate import obtain_predicates
 
 from apply.negation import negate_subtree, negate_box_label
-from apply.short_circuit_evaluation import (
-    ShortCircuitEvaluation,
-    get_shc_lookup,
-    process_boxtree_leafcase,
-    short_circuit_evaluation,
-    early_return_lookup,
-)
+from apply.short_circuit_evaluation import process_boxtree_leafcase, short_circuit_evaluation, short_edge_corrector
 
 from apply.pregenerated.box_algebrae import boxtree_cache
 from apply.pregenerated.materialization_recipes import cached_materialization_recipes
@@ -79,6 +79,23 @@ def abdd_apply(
 def abdd_apply_from(
     op: BooleanOperation, var: Optional[int], e1: ApplyEdge, e2: ApplyEdge, helper: ABDDApplyHelper
 ) -> tuple[Optional[str], list[ABDDNode]]:
+    """
+    The main recursive Apply() function for ABDDs.
+    Utilizes node cache (unique table), call cache (dynamic programming), short-circuit evaluation.
+
+    First, materialization happens if needed (introducing a node to synchronize the source node variables).
+    Then, recursion itself happens inside the 'process_box_tree()' function which calculates the product of the two used
+    reduction rules (nodes of the tree contain some extra information about mapping
+    the intermediate results, negations, recursion, etc.).
+
+    'op': Boolean Operation (supported: AND, OR, XOR, NOR, NAND, IMPLY, IFF ~ XNOR)
+    'var': variable of the source nodes (None in case of the top-level call on the root of the ABDD)
+    'e1', 'e2': edge objects (see apply_edge.py) - contain information about reduction rules and target nodes
+    'helper': data class with extra meta data (references to caches, counters, debug info)
+
+    Note: negation cache is a special case for a call cache, since sometimes we can skip the computation of
+    recursive calls and return one of the operands, just in the negated form.
+    """
     # check call cache
     cache_hit = helper.call_cache.find_call(op, var, e1, e2)
     if cache_hit is not None:
@@ -113,30 +130,57 @@ def abdd_apply_from(
             return abdd_apply_from(op, matlevel, e1, e2, helper)
 
     # edges to leaves -> this might not be needed if short-circuit evaluation happens before materialization
+    # however, it seems necessary
     if all([n.is_leaf for n in e1.target]) and all([n.is_leaf for n in e2.target]):
         boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
-        helper.depth += 1
-        rule, nodes = process_boxtree_leafcase(boxtree, e1, e2, op, helper, matlevel)
-        helper.depth -= 1
-
+        treelevel = (
+            min(e1.source.var if e1.source is not None else 1, e2.source.var if e2.source is not None else 1) + 1
+        )
+        rule, nodes = process_boxtree_leafcase(boxtree, e1, e2, op, helper, matlevel, treelevel)
         helper.call_cache.insert_call(op, matlevel, e1, e2, rule, nodes)
         return rule, nodes
-
     # NOTE: inserting into and checking against the "node_cache" is done during boxtree exploration
 
     boxtree = boxtree_cache[(e1.rule, op, e2.rule)]
-    helper.depth += 1
     treelevel = min(e1.source.var if e1.source is not None else 1, e2.source.var if e2.source is not None else 1) + 1
     rule, nodes = process_boxtree_innercase(boxtree, e1, e2, op, helper, matlevel, treelevel)
-    helper.depth -= 1
-
     helper.call_cache.insert_call(op, matlevel, e1, e2, rule, nodes)
     return rule, nodes
 
 
 def process_boxtree_innercase(
-    boxtree: BoxTreeNode, e1: ApplyEdge, e2: ApplyEdge, op, helper: ABDDApplyHelper, varlevel: int, rootlevel: int
+    boxtree: BoxTreeNode,
+    e1: ApplyEdge,
+    e2: ApplyEdge,
+    op: BooleanOperation,
+    helper: ABDDApplyHelper,
+    varlevel: int,
+    rootlevel: int,
 ) -> tuple[Optional[str], list[ABDDNode]]:
+    """
+    [description]
+    Combine two edge objects (their reduction rules) while traversing an structure (boxtree), which has
+    information needed to properly merge reduction rules on the edges, such that semantics are in tact.
+
+    [parameters]
+    'boxtree': box tree (picked from the boxtree_cache before this function is called)
+    'e1', 'e2': the two edges needed for obtaining edge targets for boxes in the leaf nodes of the boxtree
+    'op': operation used in the parent apply call
+    'helper': metadata guiding the whole apply procedure (especially handling memoization, call cache)
+    'varlevel': variable of target nodes (since node materialization precedes boxtree traversal,
+        var should be the same for all edge targets)
+    'rootlevel': variable of the root node of the boxtree (important in case the boxtree contains non-leaf nodes)
+
+    [return]
+    The edge pointing to the root node of the boxtree
+        - either a short edge in case boxtree has non-leaf nodes
+        - or the reduced edge using box from the singular node of the box tree (root and leaf) with the properly
+            computed targets
+    """
+
+    # We represent constant Boolean functions with edge ---<X>---> 0/1
+    # Note that this breaks canonicity in some cases, and is one more reason why
+    # post-hoc canonization of the result of ABDD Apply() is needed.
     if boxtree.node == "True":
         rule = "X"
         nodes = [e1.abdd.terminal_1]
@@ -145,6 +189,7 @@ def process_boxtree_innercase(
         rule = "X"
         nodes = [e1.abdd.terminal_0]
         return rule, nodes
+
     if boxtree.is_leaf:
         rule = boxtree.node
         nodes: list[ABDDNode] = []
@@ -191,12 +236,19 @@ def process_boxtree_innercase(
         if boxtree.high
         else (None, [])
     )
+
+    # Edge case: when the box tree has non-leaf nodes, and is supposed to represent
+    # a Boolean function of two variables, then the leaf nodes represent boxes that reduce over one variable
+    # labeling such edges with reductions would be wrong, since they are inherently short,
+    # thus we need to specifically take care of this.
+    use_short = varlevel - rootlevel == 1
+
     new_abdd_node = ABDDNode(helper.counter)
     new_abdd_node.var = rootlevel
-    new_abdd_node.low_box = low_rule
-    new_abdd_node.low = low_targets
-    new_abdd_node.high_box = high_rule
-    new_abdd_node.high = high_targets
+    new_abdd_node.low_box = None if use_short else low_rule
+    new_abdd_node.low = short_edge_corrector(low_rule, low_targets) if use_short else low_targets
+    new_abdd_node.high_box = None if use_short else high_rule
+    new_abdd_node.high = short_edge_corrector(high_rule, high_targets) if use_short else high_targets
     new_abdd_node.is_leaf = False
 
     cache_hit = helper.node_cache.find_node(new_abdd_node)
@@ -210,3 +262,6 @@ def process_boxtree_innercase(
 
     rule = None
     return rule, nodes
+
+
+# End of file abdd_apply_main.py

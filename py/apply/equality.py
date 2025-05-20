@@ -1,3 +1,9 @@
+"""
+[file] equality.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Box language equality and sublanguage checks (used in boxtree and materialized recipe creation).
+"""
+
 from tree_automata import (
     TTreeAut,
     TTransition,
@@ -135,3 +141,6 @@ def matbox_sublang_of_box(aut: TTreeAut, box: TTreeAut, debug=False) -> bool:
 
     aut_subset_of_box = witness_BU_1 is None or witness_TD_1 is None
     return aut_subset_of_box
+
+
+# End of file equality.py

@@ -1,3 +1,9 @@
+"""
+[file] materialize.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Node materialization in ABDD Apply for synchronized simultaneousrecursive traversal.
+"""
+
 from apply.abdd_apply_helper import ABDDApplyHelper
 from apply.abdd_node import ABDDNode
 from apply.apply_edge import ApplyEdge
@@ -7,6 +13,15 @@ from apply.materialization.abdd_pattern import MaterializationRecipe
 def materialize_abdd_pattern(
     edge: ApplyEdge, mat_recipe: MaterializationRecipe, mat_level: int, helper: ABDDApplyHelper
 ) -> ApplyEdge:
+    """
+    Creates an edge that points to materialized nodes to replace the initial edge from the initial ABDD Apply call.
+
+    Based on the retrieved 'mat_recipe' and the given 'edge' to be materialized
+    (from which concrete values are retrieved to replace symbolic values in the recipe),
+    the edge pointing to intermediate (materialized) nodes is returned.
+    The materialized nodes are stored inside the node cache, which contain edges from materialized nodes to the
+    original 'edge' targets -- these edges will be visited during further Apply calls.
+    """
     if len(mat_recipe.init_targets) > 1:
         raise ValueError("Materialization above root has more than one target. Don't know what to do.")
     workset = [i for i in mat_recipe.init_targets]
@@ -16,7 +31,7 @@ def materialize_abdd_pattern(
     varmap = {f"out{i}": n.var for i, n in enumerate(edge.target)}
     varmap["mat"] = mat_level
 
-    # initial targets node creation
+    # initial targets node creation (for correctly being able to map edge targets etc.)
     for i in workset:
         if i.new:
             nodemap[i.name] = ABDDNode(helper.counter)
@@ -35,7 +50,6 @@ def materialize_abdd_pattern(
         currentnode.high_box = pattern.high_box
         currentnode.var = varmap[pattern.level]
         currentnode.is_leaf = False
-        helper
 
         # creating references to low edge target nodes
         newlow = []
@@ -70,3 +84,6 @@ def materialize_abdd_pattern(
     tgt = [nodemap[i.name] for i in mat_recipe.init_targets]
     result.target = tgt
     return result
+
+
+# End of file materialize.py

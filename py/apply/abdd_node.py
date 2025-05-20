@@ -1,3 +1,9 @@
+"""
+[file] abdd_node.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Class for representing nodes of ABDDs.
+"""
+
 from typing import Generator, Iterator, Optional, Union
 
 from tree_automata.transition import TTransition
@@ -6,6 +12,8 @@ from helpers.utils import box_arities, eprint
 
 class ABDDNode:
     """
+    One node of an ABDD. Contains information about
+
     States/Nodes and variables are represented as integers.
     In case of boxes with higher port arity than one, the child nodes will
     be represented as lists of integers (positions in the ordered list of
@@ -16,14 +24,16 @@ class ABDDNode:
     # the structure is NOT sorted like a binary search tree !
     # node idx is also used for reference in parent sets
     node: int
+
     # variable index, 0 is reserved for leaves and error checking, variables start from 1
     # TODO: perhaps it would be better to actually use normal index to store variable level,
     # and not always reference the overall abdd's level
     var: int
-    is_leaf: bool
-    is_root: bool
+
+    is_leaf: bool  # probably irrelevant since we can check leaf_val is None...
     # if is_leaf=True, it is the terminal node value [0/1]
     leaf_val: Optional[int]
+
     # None if the edge is short or node is a leaf
     low_box: Optional[str]
     # None if the edge is short or node is a leaf
@@ -36,16 +46,16 @@ class ABDDNode:
     high: list["ABDDNode"]
 
     def __init__(self, name: Union[str, int], state_prefix_len: int = 1):
-        # in ABDD-like structures, one node should always have one outgoing edge, which allows us to definitely
-        # infer all information about one ABDD node from exactly one edge of the ABDD-like structure (reduced BDA).
+        # in ABDD-convertible BDA/UBDA structures, one node should always have one outgoing edge,
+        # which allows us to definitely infer all information about one ABDD node from exactly one edge
+        # of the ABDD-like structure (reduced BDA).
         if type(name) == str:
             self.node = int(name[state_prefix_len:])
         if type(name) == int:
             self.node = name
-        self.var = 0  # normally, we start indexing variables from 1
+        self.var = 0  # normally, we start indexing variables from 1, but is set to 0 for nodes with unset data
 
         self.is_leaf = True
-        # self.is_root = False
         self.leaf_val = None
 
         self.low_box = None
@@ -54,24 +64,11 @@ class ABDDNode:
         self.high_box = None
         self.high = []
 
-    # def __repr__(self):
-    #     # leaf node: idx <leafval>
-    #     # internal node: idx [var] (target) [boxname] (target) [boxname]
-    #     if self.is_leaf:
-    #         return f"{self.node} <{self.leaf_val}>"
-    #     node: str = f"{self.node} [{self.var}]"
-    #     ltgt: str = "(" + ", ".join([str(i.node) for i in self.low]) + ")"
-    #     htgt: str = "(" + ", ".join([str(i.node) for i in self.high]) + ")"
-    #     lbox: str = f" [{self.low_box}] " if self.low_box is not None else ""
-    #     hbox: str = f" [{self.high_box}]" if self.high_box is not None else ""
-    #     return f"{node} {ltgt}{lbox} {htgt}{hbox}"
-
     def __repr__(self):
         attrib = [
             f"node={self.node}",
             f"var={self.var}",
             f"leaf{f' {self.leaf_val}' if self.leaf_val is not None else ''}" if self.is_leaf else "",
-            # f"root" if self.is_root else "",
             f"lbox={self.low_box}" if self.low != [] else "",
             f"low={prettyprint_nodes(self.low)}" if self.low != [] else "",
             f"hbox={self.high_box}" if self.high != [] else "",
@@ -128,6 +125,8 @@ class ABDDNode:
 
         return True
 
+    # the following three functions are used during TTreeAut -> ABDD conversion.
+
     def set_node_info_from_ta_transition(
         self, edge: TTransition, node_map: dict[str, "ABDDNode"], var_prefix_len: int = 1
     ):
@@ -164,10 +163,6 @@ class ABDDNode:
         self.high_box = None
         self.low = []
         self.high = []
-
-    def iterate_children(self, low=False, high=False) -> Generator["ABDDNode", None, None]:
-        for i in self.low + self.high:
-            yield i
 
     def check_node(self) -> bool:
         """
@@ -239,6 +234,10 @@ class ABDDNode:
         node.high.append(self)
 
     def explore_subtree_bfs(self, repeat=False) -> Iterator["ABDDNode"]:
+        """
+        BFS traversal of the ABDD rooted at the given node.
+        If repeat=False, each node is visited max. once.
+        """
         queue: list[ABDDNode] = [self]
         visited = set()
         while queue != []:
@@ -251,6 +250,10 @@ class ABDDNode:
             queue.extend(node.high)
 
     def explore_subtree_dfs(self, repeat=False) -> Iterator["ABDDNode"]:
+        """
+        DFS traversal of the ABDD rooted at the given node.
+        If repeat=False, each node is visited max. once.
+        """
         stack: list[ABDDNode] = [self]
         visited = set()
         while stack != []:
@@ -264,6 +267,11 @@ class ABDDNode:
             stack.extend(reversed(node.high))
 
     def explore_subtree_bfs_backrefs(self, repeat=False) -> Iterator[tuple["ABDDNode", bool, "ABDDNode"]]:
+        """
+        BFS traversal of the ABDD rooted at the given node, but instead of yielding nodes,
+        this yields triples (source-node, direction, target-node). Low edge -> direction=False.
+        If repeat=False, each node is visited max. once.
+        """
         queue: list[ABDDNode] = [(self, False, i) for i in self.low] + [(self, True, i) for i in self.high]
         visited = set()
         while queue != []:
@@ -276,6 +284,11 @@ class ABDDNode:
             queue.extend([(node, True, i) for i in node.high])
 
     def explore_subtree_dfs_backrefs(self, repeat=False) -> Iterator[tuple["ABDDNode", bool, "ABDDNode"]]:
+        """
+        DFS traversal of the ABDD rooted at the given node, but instead of yielding nodes,
+        this yields triples (source-node, direction, target-node). Low edge -> direction=False.
+        If repeat=False, each node is visited max. once.
+        """
         queue: list[ABDDNode] = [(self, True, i) for i in reversed(self.high)] + [
             (self, False, i) for i in reversed(self.low)
         ]
@@ -298,3 +311,6 @@ class ABDDNode:
 
 def prettyprint_nodes(l: list[ABDDNode]) -> str:
     return "[" + ", ".join([f"{i.node}({i.var})" if not i.is_leaf else f"<{i.leaf_val}>" for i in l]) + "]"
+
+
+# End of file abdd_node.py

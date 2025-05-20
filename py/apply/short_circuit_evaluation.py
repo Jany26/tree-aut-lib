@@ -1,24 +1,28 @@
+"""
+[file] short_circuit_evaluation.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Function for utilizing annihilation/absorption laws in ABDD Apply.
+"""
+
 from typing import Optional
 from enum import Enum
 
-# from apply.abdd_apply_main import negate_subtree
 from apply.abdd_node import ABDDNode
 from apply.apply_edge import ApplyEdge
-from apply.box_algebra.apply_tables import BooleanOperation
 from apply.abdd_apply_helper import ABDDApplyHelper
 from apply.negation import negate_subtree, negate_box_label
 
+from apply.box_algebra.apply_tables import BooleanOperation
 from apply.box_algebra.box_trees import BoxTreeNode
-from apply.pregenerated.box_algebrae import boxtree_cache
 
 
 class ShortCircuitEvaluation(Enum):
-    ZERO = 0
-    ONE = 1
-    FIRST = 2
-    SECOND = 3
-    NEG_FIRST = 4
-    NEG_SECOND = 5
+    ZERO = 0  # constant function annihilates the other edge to 0 - annihilation
+    ONE = 1  # constant function annihilates the other edge to 1  - annihilation
+    FIRST = 2  # when the constant function is neutral towards an operator - absorption
+    SECOND = 3  # when the constant function is neutral towards an operator - absorption
+    NEG_FIRST = 4  # when the constant function negates the edge
+    NEG_SECOND = 5  # when the constant function negates the edge
 
 
 # (leaf_value, OP, leaf_value) -> leaf_value / keep first / keep second / keep first negated / keep second negated
@@ -65,10 +69,16 @@ def get_shc_lookup(e: ApplyEdge) -> Optional[int]:
 
 
 def target_print(target: list[ABDDNode]) -> str:
+    """
+    Format target nodes of an edge, useful for debugging.
+    """
     return "[" + ", ".join([f"<{i.leaf_val}>" if i.is_leaf else f"{i.node}({i.var})" for i in target]) + "]"
 
 
 def source_print(source: Optional[ABDDNode]) -> str:
+    """
+    Format source node of an edge, useful for debugging.
+    """
     return "-" if source is None else (f"<{source.leaf_val}>" if source.is_leaf else f"{source.node}({source.var})")
 
 
@@ -87,6 +97,17 @@ def node_var_compare(node1: Optional[ABDDNode], node2: Optional[ABDDNode]) -> bo
 def short_circuit_evaluation(
     e1: ApplyEdge, op: BooleanOperation, e2: ApplyEdge, helper: ABDDApplyHelper
 ) -> tuple[Optional[str], list[ABDDNode]]:
+    """
+    Attempt short-circuit evaluation on two edges.
+    This is possible when one of the edges describes a constant Boolean function.
+    For example L1-[1], or H0-[0], or LPort-[0,0], etc.
+
+    Uses the table 'early_return_lookup' dictionary for obtaining information about what to return.
+        - assuming edge 'a' is constant function and edge 'b' is not, there are 3 cases of what can happen:
+            - return 0/1 -- annihilation properties of some operators (AND with 0, OR with 1)
+            - return edge b directly
+            - return edge b in negated form
+    """
     if not node_var_compare(e1.source, e2.source):
         return None, []
 
@@ -109,12 +130,21 @@ def short_circuit_evaluation(
     return None, []
 
 
-# failed attempt -> sometimes produces incorrect results
-# example: var1 -- L1 -- [<0>] <OR> var1 -- X  -- [var4]
 def short_circuit_evaluation_boxtree(
     boxtree: BoxTreeNode, e1: ApplyEdge, e2: ApplyEdge, op: BooleanOperation, helper: ABDDApplyHelper, varlevel: int
 ) -> tuple[Optional[str], list[ABDDNode]]:
-    # short_circuit_evaluation(boxtree, op, e1, e2, helper, e1.source.var)
+    """
+    # Short Circuit Evaluation version of a boxtree traversal.
+    # - this was supposed to be the equivalent to leafcase/innercase boxtree traversal
+    # - however, it is not working, because it can produce incorrect results
+    # - example:    edge1: x1 -- L1 --> [0]
+    #               <OR>
+    #               edge2: x1 -- X  --> [x4]
+    #       - creates LPort leading to x4, x4... which is kind of incorrect.
+    #       - it does not work because it assumes that it can work with semantics of
+    #       - a constant Boolean function, even when it is not (L1 leading to 0 describes a "leaf" edge),
+    #         but it is not a constant function [1 1 1 0] -- L1 leading to 1 would be a constant function [1 1 1 1]
+    """
     if boxtree.node == "True":
         rule = "X"
         nodes = [e1.abdd.terminal_1]
@@ -127,8 +157,6 @@ def short_circuit_evaluation_boxtree(
         rule = boxtree.node
         nodes: list[ABDDNode] = []
         for pc in boxtree.port_info:
-            # tgt1 = e1.target[pc.target1] if pc.target1 is not None else None
-            # tgt2 = e2.target[pc.target2] if pc.target2 is not None else None
             if pc.target1 is not None and pc.target2 is not None:
                 eval: ShortCircuitEvaluation = early_return_lookup[
                     (e1.target[pc.target1].leaf_val, op, e2.target[pc.target2].leaf_val)
@@ -152,7 +180,8 @@ def short_circuit_evaluation_boxtree(
                 term = e2.target[pc.target2]
                 nodes.append(negate_subtree(e2.abdd, term, helper) if pc.negation else term)
 
-        # Check LPort / HPort var level consistency -> if ShCirEval breaks this consistency, raise an Exception
+        # Check LPort / HPort var level consistency -> if short circuit evaluation
+        # breaks this consistency, raise an Exception
         # => optimization cannot be utilized, so apply should continue with materialization etc...
 
         if rule == "LPort" and nodes[1].leaf_val is not None and nodes[0].leaf_val is None:
@@ -194,8 +223,19 @@ def short_circuit_evaluation_boxtree(
 
 
 def process_boxtree_leafcase(
-    boxtree: BoxTreeNode, e1: ApplyEdge, e2: ApplyEdge, op: BooleanOperation, helper: ABDDApplyHelper, varlevel: int
+    boxtree: BoxTreeNode,
+    e1: ApplyEdge,
+    e2: ApplyEdge,
+    op: BooleanOperation,
+    helper: ABDDApplyHelper,
+    varlevel: int,
+    rootlevel: int,
 ) -> tuple[Optional[str], list[ABDDNode]]:
+    """
+    Traverse the box tree and correctly map ABDD nodes from edges 'e1' and 'e2' based on the information hidden in
+    PortConnectionInfo instances within leaf nodes of the boxtree.
+    In case recursion flag is true, use the produce_terminal() function.
+    """
     if boxtree.node == "True":
         rule = "X"
         nodes = [e1.abdd.terminal_1]
@@ -220,18 +260,25 @@ def process_boxtree_leafcase(
         return rule, nodes
 
     low_rule, low_targets = (
-        process_boxtree_leafcase(boxtree.low, e1, e2, op, helper, varlevel + 1) if boxtree.low else (None, [])
+        process_boxtree_leafcase(boxtree.low, e1, e2, op, helper, varlevel, rootlevel + 1)
+        if boxtree.low
+        else (None, [])
     )
     high_rule, high_targets = (
-        process_boxtree_leafcase(boxtree.high, e1, e2, op, helper, varlevel + 1) if boxtree.high else (None, [])
+        process_boxtree_leafcase(boxtree.high, e1, e2, op, helper, varlevel, rootlevel + 1)
+        if boxtree.high
+        else (None, [])
     )
 
+    use_short = rootlevel == helper.maxvar
+
     new_abdd_node = ABDDNode(helper.counter)
-    new_abdd_node.var = varlevel  # not sure with the variable
-    new_abdd_node.low_box = low_rule
-    new_abdd_node.low = low_targets
-    new_abdd_node.high_box = high_rule
-    new_abdd_node.high = high_targets
+    new_abdd_node.var = rootlevel
+    new_abdd_node.is_leaf = False
+    new_abdd_node.low_box = None if use_short else low_rule
+    new_abdd_node.low = short_edge_corrector(low_rule, low_targets) if use_short else low_targets
+    new_abdd_node.high_box = None if use_short else high_rule
+    new_abdd_node.high = short_edge_corrector(high_rule, high_targets) if use_short else high_targets
     cache_hit = helper.node_cache.find_node(new_abdd_node)
     nodes = []
     if cache_hit is not None:
@@ -245,6 +292,10 @@ def process_boxtree_leafcase(
 
 
 def produce_terminal(val1: int, val2: int, op: BooleanOperation, helper: ABDDApplyHelper) -> ABDDNode:
+    """
+    Combines two leaf nodes together according to the semantics of the used Boolean operator.
+    Basically leaf-level version of Apply.
+    """
     op_translate: dict[BooleanOperation, int] = {
         BooleanOperation.NOP: -1,
         BooleanOperation.AND: val1 and val2,
@@ -262,3 +313,20 @@ def produce_terminal(val1: int, val2: int, op: BooleanOperation, helper: ABDDApp
         return helper.abdd1.terminal_1
     else:
         raise ValueError("produce_terminal(): unsupported binary operator")
+
+
+def short_edge_corrector(rule: str, targets: list[ABDDNode]) -> list[ABDDNode]:
+    """
+    In case mapping cannot use the reduced edge, but due to box tree 'vector splitting' has to use short
+    edge instead of the box itself, this function will correctly pick the target
+    """
+    if rule == "LPort":
+        return [targets[1]]
+    if rule == "HPort":
+        return [targets[0]]
+
+    # in cases of L1/L0/H1/H0, we disregard the "sink" and just use the port mapped state (same with X)
+    return [targets[0]]
+
+
+# End of file short_circuit_evaluation.py

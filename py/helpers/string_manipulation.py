@@ -1,3 +1,9 @@
+"""
+[file] string_manipulation.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Helper functions for manipulating strings of statenames or variables.
+"""
+
 import re
 
 
@@ -5,6 +11,8 @@ def state_name_sort(states: list[str]) -> list[str]:
     """
     Sort the state names while ignoring the prefix.
     Also used with variables that have a non-numeric prefix.
+
+    Important note: is 'q10' should be after 'q2', even though it is lexicographically smaller.
     """
     if states == []:
         return []
@@ -24,6 +32,10 @@ def state_name_sort(states: list[str]) -> list[str]:
 
 
 def create_var_order_list(prefix: str, count: int, start=1) -> list[str]:
+    """
+    Used in normalization, this creates a list of variables, which can be
+    iterated in reverse.
+    """
     return [f"{prefix}{i+start}" for i in range(count)]
 
 
@@ -39,13 +51,14 @@ def get_var_prefix_from_list(var_list: list[str]) -> str:
 
 
 def get_var_translate(variables: list[str]) -> dict[str, int]:
+    """
+    Given a list of variable strings, get a translation dictionary
+    for their integer values
+    ['x1', 'x2', 'x3', 'x5'] -> {'x1': 1, 'x2': 2, 'x3': 3, 'x5': 5}
+    """
     prefix = get_var_prefix_from_list(variables)
     plen = len(prefix)
     return {var: int(var[plen:]) for var in variables}
-
-
-# def macrostring(macrostate: list[str]) -> str:
-#     return create_string_from_name_set(state_name_sort(macrostate))
 
 
 def create_string_from_name_set(state_list: list[str]) -> str:
@@ -90,3 +103,6 @@ def get_first_name_from_tuple_str(string: str) -> str:
     match = re.search("^\(.*,", string)
     result = match.group(0)[1:-1]
     return result
+
+
+# End of file string_manipulation.py

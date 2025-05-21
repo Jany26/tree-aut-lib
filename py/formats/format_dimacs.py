@@ -2,7 +2,8 @@
 [file] dimacs.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 [description] Simple parser of DIMACS files (import/export).
-[note] Better and faster version using "buddy" library is in ../cpp/
+[note] This parser tries using a Python implementation of BDDs which is slow.
+Better and faster version using "buddy" library is in ../cpp/
 """
 
 from io import TextIOWrapper

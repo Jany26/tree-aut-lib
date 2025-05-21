@@ -1,3 +1,9 @@
+"""
+[file] union.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Union of two tree automata.
+"""
+
 import copy
 
 from tree_automata import TTreeAut
@@ -26,3 +32,6 @@ def tree_aut_union(ta1: TTreeAut, ta2: TTreeAut) -> TTreeAut:
     result.roots = result.roots + ta1.roots
     result.port_arity = result.get_port_arity()
     return result
+
+
+# End of file union.py

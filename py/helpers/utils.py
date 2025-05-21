@@ -1,7 +1,9 @@
 """
 [file] utils.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
-[description] some helper utilities used throughout other modules
+[description] All boxes used during all ABDD-related things.
+[note] This module is for stuff that is utilized across all other submodules of the repository.
+It was also created to avoid circular imports, so the boxes are initialized first and imported from here.
 """
 
 import sys
@@ -10,9 +12,18 @@ from typing import Optional
 from tree_automata.automaton import TTreeAut
 from formats.format_vtf import import_treeaut_from_vtf
 
+
+# Pick if a top-down deterministic version of box X should be used.
+# In Apply-related algorithms for pregenerating stuff, top-down deterministic version should be used,
+# so this value should be True.
+# Note: it was already hardcoded into the searching and generating algorithms,
+# so we can leave it at False at all times.
+
+# For canonization, the old X box should be used, thus this should be False.
 USE_DET_VERSION = False
 
 
+# error print
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -92,3 +103,5 @@ box_catalogue: dict[str, TTreeAut] = {
     "boxLPort": box_lport,
     "boxHPort": box_hport,
 }
+
+# End of file utils.py

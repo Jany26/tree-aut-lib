@@ -1,3 +1,9 @@
+"""
+[file] transition.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Classes encapsulating Edge symbols and Transitions of UBDAs/TAs.
+"""
+
 from typing import Optional
 
 
@@ -110,3 +116,6 @@ class TTransition:
 
     def is_all_boxed(self) -> bool:
         return all([b is None for b in self.info.box_array])
+
+
+# End of file transition.py

@@ -16,11 +16,7 @@ from tree_automata import TTreeAut, TTransition, TEdge, iterate_edges, iterate_s
 from helpers.utils import box_arities
 
 
-# @ABDD     # Automata-based reduction BDDs
-# %Name example-abdd
-# %Vars 100
-# %Root 1
-def abdd_preamble(ta: TTreeAut, file, name: str) -> None:
+def abdd_preamble(ta: TTreeAut, file: TextIOWrapper, name: str) -> None:
     file.write("@ABDD\n")
     file.write(f"# imported from {ta.name}\n")
     final_name = ta.name if name == "" else name

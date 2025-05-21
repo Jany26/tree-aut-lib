@@ -1,7 +1,7 @@
 """
 [file] render_dot.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
-[description] Functions for exporting tree automaton into DOT format (.dot)
+[description] Functions for exporting trees/TAs/UBDAs into DOT format (.dot)
 for generating a graphical representation of the TA. (IMAGE OUTPUT)
 [note] see graphviz library for python documentation
 [link] https://graphviz.readthedocs.io/en/stable/manual.html
@@ -19,9 +19,6 @@ from tree_automata import TTreeAut, TTransition, TTreeNode
 from tree_automata.tree_node import convert_string_to_tree
 from bdd.bdd_class import BDD
 from bdd.bdd_node import BDDnode
-
-from formats.format_vtf import import_treeaut_from_vtf, export_treeaut_to_vtf
-from formats.format_tmb import import_treeaut_from_tmb, export_treeaut_to_tmb
 
 from helpers.utils import box_catalogue
 
@@ -119,7 +116,15 @@ def dot_transition_handle(graph: graphviz.Digraph, edge: TTransition, key: str, 
                 temp = f"{name}_{current_child}_{current_box}"
 
                 graph.node(temp, label="", shape="point", width="0.05", height="0.05")
-                graph.edge(name, temp, penwidth="1.0", arrowsize="0.5", arrowhead="vee", label=edge_label)
+                graph.edge(
+                    name,
+                    temp,
+                    penwidth="1.0",
+                    arrowsize="0.5",
+                    arrowhead="vee",
+                    label=edge_label,
+                    style="dashed" if current_box == 0 else "solid",
+                )
 
                 if verbose:
                     print(f" > > box handling node {temp}")
@@ -134,6 +139,7 @@ def dot_transition_handle(graph: graphviz.Digraph, edge: TTransition, key: str, 
                         penwidth="1.0",
                         arrowsize="0.5",
                         arrowhead="vee",
+                        style="dashed" if j == 0 else "solid",
                     )
 
                     if verbose:
@@ -147,6 +153,7 @@ def dot_transition_handle(graph: graphviz.Digraph, edge: TTransition, key: str, 
                     penwidth="1.0",
                     arrowsize="0.5",
                     arrowhead="vee",
+                    style="dashed" if current_child == 0 else "solid",
                 )
                 if verbose:
                     print(" > > nobox handling edge", name, "->", edge.children[current_child], f"label={edge_label}")
@@ -160,6 +167,7 @@ def dot_transition_handle(graph: graphviz.Digraph, edge: TTransition, key: str, 
                 penwidth="1.0",
                 arrowsize="0.5",
                 arrowhead="vee",
+                style="dashed" if current_child == 0 else "solid",
             )
             if verbose:
                 print(f" > normal edge {name} ->", {edge.children[current_child]}, f"label={current_box}")
@@ -214,7 +222,14 @@ def treeaut_to_dot(ta: TTreeAut, verbose=False, caption=False) -> graphviz.Digra
         for idx, n in enumerate(ta.roots):
             dot.node(f"{n}", shape="circle", style="filled", fillcolor="khaki" if n in output_states else "bisque")
             rootlabel = f"⊕{idx}" if multiport else box_labels[ta.rootbox]
-            dot.edge(rootbox_node, f"{n}", label=rootlabel, penwidth="2.0", arrowsize="0.5")
+            dot.edge(
+                rootbox_node,
+                f"{n}",
+                label=rootlabel,
+                penwidth="2.0",
+                arrowsize="0.5",
+                style="dashed" if idx == 0 and multiport else "solid",
+            )
 
     for state in ta.get_states():
         # NODE: inner node (state of TA)

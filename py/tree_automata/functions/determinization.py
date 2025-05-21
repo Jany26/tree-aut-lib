@@ -1,3 +1,9 @@
+"""
+[file] determinization.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Bottom-up determinization of a given tree automaton.
+"""
+
 import copy
 import itertools
 
@@ -183,3 +189,6 @@ def tree_aut_determinization(ta: TTreeAut, alphabet: dict[str, int], verbose=Fal
         print(f"determinization of {ta.name} done")
 
     return result
+
+
+# End of file determinization.py

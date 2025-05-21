@@ -1,7 +1,11 @@
+"""
+[file] witness.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Isomorphism checks of two tree automata.
+"""
+
 # naive brute force isomorphism check of 2 tree automata
-
-
-# also a variant that does ignores specificity of port transitions,
+# also a variant that ignores the specificity of port transitions,
 # only looks whether "some" outgoing port transition is present in a state
 
 import itertools
@@ -145,3 +149,6 @@ def tree_aut_isomorphic(aut1: TTreeAut, aut2: TTreeAut, ignore_ports=False) -> d
             continue
         return state_map
     return {}
+
+
+# End of file isomorphism.py

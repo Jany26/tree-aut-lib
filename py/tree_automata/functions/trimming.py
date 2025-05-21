@@ -1,3 +1,9 @@
+"""
+[file] trimming.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Making a tree automaton reduced (i.e. all states are accessible).
+"""
+
 import copy
 
 from tree_automata import TTreeAut
@@ -68,3 +74,6 @@ def trim(ta: TTreeAut) -> TTreeAut:
     #       while checking visited variables (in order), and flagging the transitions that break the order
 
     return work_treeaut
+
+
+# End of file trimming.py

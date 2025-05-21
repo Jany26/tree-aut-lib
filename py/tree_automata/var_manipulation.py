@@ -246,38 +246,6 @@ def add_variables_fixpoint(ta: TTreeAut, maxvar: Optional[int] = None):
             break
 
 
-def find_useless_loop_transitions(ta: TTreeAut) -> Dict[str, set[str]]:
-    """
-    Useless loop transitions will never be used, since there is only one variable that is checked while within the state.
-
-    E.g.:
-    q0 -- x1 -> (q1, q2)
-    q1 -- __ -> (q1, q1)  == this loop is useless
-    q1 -- x2 -> (q3, q4)  == for variables x3 or higher, the looping transition would not be useless.
-
-    Returns a state name -> set of transition keys dictionary to edges that can be removed.
-
-    NOTE: This was part of an attempt to fix normalization, with var_cache fix it is now discontinued.
-    """
-    var_translator = ta.var
-
-
-def find_all_root_leaf_paths(ta: TTreeAut) -> list[list[tuple[str, str, int]]]:
-    """
-    A path is a list of tuples containing state, key, child-index
-        - state and key are for edge lookup
-        - child index is for knowing how the next item was reached
-
-    E.g.:
-    `[ (q0, k0, 0), (q1, k1, 1), ... ]`
-        - starting in state q0, taking edge with key k0, and visiting child at index 0
-        - the next state is q1, and next edge taken is at key k1, etc...
-
-    NOTE: This was an attempt to check the result of normalization in a brute-force manner, now discontinued.
-    """
-    pass
-
-
 def check_variable_overlap(ta: TTreeAut, max_var: Optional[int] = None) -> bool:
     """
     For each state, check if there is a possibility to reach this state using some var xi

@@ -1,3 +1,9 @@
+"""
+[file] tree_node.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Class for simple tree nodes -> members of tree automata languages.
+"""
+
 from optparse import Option
 from typing import Generator, Optional
 import re
@@ -16,9 +22,9 @@ class TTreeNode:
     Inner and leaf nodes have a parent, when connected using add_child() and connect_child() methods.
 
     [attributes]
-    'value' = what is in the node
+    'value' = what is in the node (a symbol from an alphabet Sigma)
     'parent' = if None, then the node is a root
-    'children' = since trees can be n-arylist
+    'children' = since trees can be n-ary, this is a list
     """
 
     def __init__(self, value):
@@ -27,7 +33,7 @@ class TTreeNode:
         self.children: list[TTreeNode] = []
         self.depth: int = 0
 
-    # TODO pretty print of a tree
+    # TODO: pretty print of a tree
     def __repr__(self):
         # vertical space # of lines => # of leaves + 3 * (# of leaves - 1)
         # if 4 leaves -> 3 in-between spaces
@@ -230,3 +236,6 @@ def convert_tree_to_string(node: TTreeNode) -> str:
                 temp += ";"
         temp += "]"
         return temp
+
+
+# End of file tree_node.py

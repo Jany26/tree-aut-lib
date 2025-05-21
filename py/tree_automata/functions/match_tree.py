@@ -1,3 +1,9 @@
+"""
+[file] match_tree.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Check if a run of a tree automaton over a given tree is accepting.
+"""
+
 from tree_automata import TTreeAut, TTreeNode
 
 
@@ -89,3 +95,6 @@ def match_tree_bottom_up(ta: TTreeAut, root: TTreeNode) -> bool:
         if potential_root in ta.roots:
             temp.append(potential_root)
     return len(temp) != 0
+
+
+# End of file match_tree.py

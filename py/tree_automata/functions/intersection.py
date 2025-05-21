@@ -1,3 +1,9 @@
+"""
+[file] emptiness.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Intersection of two tree automata.
+"""
+
 import copy
 
 from tree_automata import TTreeAut, TTransition, TEdge
@@ -74,3 +80,6 @@ def tree_aut_intersection(ta1: TTreeAut, ta2: TTreeAut, verbose=False) -> TTreeA
     result.port_arity = result.get_port_arity()
     result.name = f"intersection({ta1.name},{ta2.name})"
     return result
+
+
+# End of file intersection.py

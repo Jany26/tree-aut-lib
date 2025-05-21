@@ -69,8 +69,6 @@ def all_states_handle(ta: TTreeAut, file: TextIOWrapper) -> None:
 def edge_handle(edge: TTransition, file: TextIOWrapper, debug=False) -> None:
     if debug:
         print(f"- - edge_handle {edge} - -")
-    # if output_edge_handle(edge, file, debug):
-    # return
 
     # BUG: trying to make a nicer self-loop
     # (using same rank for the node and arbitrary node)

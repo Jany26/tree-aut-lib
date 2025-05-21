@@ -1,3 +1,9 @@
+"""
+[file] automaton.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Class encapsulating all tree automaton / box / UBDA / BDA behavior.
+"""
+
 import copy
 from typing import Generator, Iterator
 
@@ -420,6 +426,7 @@ class TTreeAut:
         self.roots = original_rootstates
         return result
 
+    # NOTE: this might sometimes be useful
     # def get_reachable_states_from(self, state: str) -> set:
     #     queue = [state]
     #     visited = set()
@@ -1062,7 +1069,6 @@ class TTreeAutMetaData:
             return prefix_len
 
         prefixes_are_set = False
-        # for edges in self.ta.transitions.values():
         for key, edge in iterate_key_edge_tuples(self.ta):
             self.state = max(self.state, len(edge.src))
             self.label = max(self.label, len(edge.info.label))
@@ -1084,6 +1090,7 @@ class TTreeAutMetaData:
             for child in edge.children:
                 self.child = max(self.child, len(child))
 
-        # for arity in self.ta.get_symbol_arity_dict().values():
-        #     self.arity = max(self.arity, arity)
         self.arity = max(len(t.children) for t in iterate_edges(self.ta))
+
+
+# End of file automaton.py

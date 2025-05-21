@@ -1,3 +1,10 @@
+"""
+[file] witness.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Functions for generating a witness -- i.e. some tree from a TA's
+language -> if a witness is generated, TA's language is non-empty.
+"""
+
 from typing import Optional
 
 from tree_automata import TTreeNode, TTransition
@@ -52,3 +59,6 @@ def generate_witness_string(edge_dict: dict[str, TTransition], root: str) -> str
             if i < len(edge_dict[root].children) - 1:
                 parent_string += ";"
         return parent_string + "]"
+
+
+# End of file witness.py

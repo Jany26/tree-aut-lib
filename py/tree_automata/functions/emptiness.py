@@ -1,3 +1,9 @@
+"""
+[file] emptiness.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Check if a language of a given tree automaton is empty.
+"""
+
 from typing import Optional
 
 from tree_automata import TTreeAut, TTransition, TEdge, TTreeNode, iterate_edges
@@ -87,7 +93,6 @@ def output_search_top_down(
                     break
             # we dont know anything about the state =
             visited.append(state)
-            # print(f"checking {child} -> ??? GOING DEEPER")
             output_reachable: bool = output_search_top_down(ta, child, visited, out_dict, edge_lookup, debug, total)
             visited.remove(state)
             # skipping NOT OK transition
@@ -209,8 +214,6 @@ def non_empty_bottom_up(ta: TTreeAut, verbose=False) -> tuple[Optional[TTreeNode
                         f"neBU({ta.name})",
                     )
                 )
-            # for state_name, edge_dict in ta.transitions.items():
-            #     for edge in edge_dict.values():
             for edge in iterate_edges(ta):
                 if edge.info.label != symbol or edge.children not in tuples:
                     continue
@@ -221,3 +224,6 @@ def non_empty_bottom_up(ta: TTreeAut, verbose=False) -> tuple[Optional[TTreeNode
     if verbose:
         print(f">> {ta.name} has empty lang")
     return None, ""
+
+
+# End of file emptiness.py

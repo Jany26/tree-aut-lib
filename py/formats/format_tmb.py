@@ -3,7 +3,10 @@
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 [description] Import/Export into TMB (Timbuk) format for tree automata.
 [note] See TIMBUK documentation for the format information and where and how
-it was initially used.
+it was initially used. Timbuk was only used during initial phases of working
+with tree automata, once the focus was on canonization algorithms and ABDDs,
+only .vtf format was used, since it was modified to be able to contain extra
+information about boxes, variables etc...
 [link] https://people.irisa.fr/Thomas.Genet/timbuk/
 """
 
@@ -220,54 +223,6 @@ def write_transitions_tmb_file(ta: TTreeAut, tgt: TextIOWrapper) -> None:
             tgt.write("," if i < arity - 1 else "")
         tgt.write(f") -> {edge.src}\n")
     tgt.write("\n\n")
-
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# HELPER FUNCTIONS FOR TMB EXPORT - STRING
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-
-# def write_arities_tmb_str(arities):
-#     result = "Ops"
-#     for i in arities:
-#         result += f" {i}:{arities[i]}"
-#     result += "\n\n"
-#     return result
-
-
-# def write_name_tmb_str(name):
-#     return "Automaton " + (f"{name}" if name != "" else "unnamed") + "\n\n"
-
-
-# def write_states_tmb_str(states):
-#     result = "States"
-#     for i in states:
-#         result += f" {i}:0"
-#     result += "\n\n"
-#     return result
-
-
-# def write_roots_tmb_str(states):
-#     result = "Final States"
-#     for i in states:
-#         result += f" {i}"
-#     result += "\n\n"
-#     return result
-
-
-# def write_transitions_tmb_str(ta):
-#     result = "Transitions\n"
-#     # for edge_dict in ta.transitions.values():
-#     #     for edge in edge_dict.values():
-#     for edge in iterate_edges(ta):
-#         temp = f"{edge.info.label}("
-#         for i in range(len(edge.children)):
-#             temp += f"{edge.children[i]}"
-#             temp += ", " if (i < len(edge.children) - 1) else ""
-#         temp += f") -> {edge.src}\n"
-#         result += temp
-#     result += "\n\n"
-#     return result
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

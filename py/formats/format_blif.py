@@ -2,7 +2,8 @@
 [file] blif_parser.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
 [description] Simple parser of BLIF files (assumes bottom-up order of constructs)
-[note] Better and faster version using BuDDy library is in ../cpp/
+[note] This parser tries using a Python implementation of BDDs which is slow.
+Better and faster version using BuDDy library is in ../cpp/
 """
 
 from io import TextIOWrapper
@@ -12,6 +13,15 @@ from typing import Optional
 from bdd.bdd_apply import apply_function
 from bdd.bdd_class import BDD
 from bdd.bdd_node import BDDnode
+
+
+# Usage example:
+# blif = BlifParser()
+# blif.parse("../benchmark/blif/C17.blif")
+# print(blif.result.count_nodes())
+# temp = create_treeaut_from_bdd(blif.result)
+# temp.reformat_states()
+# export_treeaut_to_vtf(temp, "../benchmark/blif/C17.vtf")
 
 
 class BlifParser:
@@ -208,13 +218,5 @@ class BlifParser:
                 i += 1
                 continue
 
-
-# Usage example:
-# blif = BlifParser()
-# blif.parse("../benchmark/blif/C17.blif")
-# print(blif.result.count_nodes())
-# temp = create_treeaut_from_bdd(blif.result)
-# temp.reformat_states()
-# export_treeaut_to_vtf(temp, "../benchmark/blif/C17.vtf")
 
 # end of blif_parser.py

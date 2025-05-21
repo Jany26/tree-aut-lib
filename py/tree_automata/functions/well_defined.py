@@ -1,3 +1,9 @@
+"""
+[file] well_defined.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Checking if a given automaton is well-defined -- i.e. can be a box.
+"""
+
 import itertools
 
 from tree_automata import TTreeAut, iterate_edges
@@ -164,3 +170,6 @@ def is_well_defined(ta: TTreeAut, display_errors=False) -> bool:
     if not result and display_errors:
         print(error_msg)
     return result
+
+
+# End of file well_defined.py

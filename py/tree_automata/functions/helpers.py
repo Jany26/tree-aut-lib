@@ -14,7 +14,4 @@ def generate_possible_children(state: str, parents: list[str], size: int) -> lis
     """
     possibilities = product(parents, repeat=size)
     result = [list(k) for k in possibilities if state in k]
-    # for k in possibilities:
-    #     if state in k:
-    #         result.append(list(k))
     return result

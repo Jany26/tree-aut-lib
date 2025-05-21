@@ -1,3 +1,9 @@
+"""
+[file] complement.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Complement of a tree automaton.
+"""
+
 from tree_automata.functions.determinization import tree_aut_determinization
 from tree_automata import TTreeAut
 
@@ -13,3 +19,6 @@ def tree_aut_complement(ta: TTreeAut, alphabet: dict[str, int], verbose=False) -
     result.roots = roots
     result.name = f"complement({ta.name})"
     return result
+
+
+# End of file complement.py

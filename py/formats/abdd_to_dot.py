@@ -1,8 +1,7 @@
 """
 [file] abdd_to_dot.py
 [author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
-[description] Functions for exporting tree automaton into DOT format (.dot)
-for generating a graphical representation of the TA. (IMAGE OUTPUT)
+[description] Functions for exporting ABDD instance into DOT format (.dot).
 [note] see graphviz library for python documentation
 [link] https://graphviz.readthedocs.io/en/stable/manual.html
 """
@@ -40,11 +39,9 @@ def draw_abdd_node(
     sourceid = parentid
     multiedge = False
     if len(tgtlist) > 1:
-        # print(f'node {helperid} {type(helperid)}')
         multiedge = True
         helperid = f"{parentid}_{'H' if dir else 'L'}"
         graph.node(helperid, shape="point", width="0.001", height="0.001")
-        # print(f'edge {parentid} -> {helperid} label={box} {[type(parentid), type(helperid), type(box)]}')
         graph.edge(
             parentid,
             helperid,
@@ -67,9 +64,6 @@ def draw_abdd_node(
 
         edgelabel = f"{i}" if multiedge else box_labels[box]
 
-        # print(sourceid, edgelabel, tgtname)
-        # print(type(sourceid), type(edgelabel), type(tgtname))
-
         graph.edge(
             sourceid,
             tgtname,
@@ -88,7 +82,6 @@ def draw_abdd_node(
 
 def abdd_to_dot(abdd: ABDD) -> graphviz.Digraph:
     dot = graphviz.Digraph()
-    # dot.attr(fontname="Helvetica")
     dot.graph_attr["fontname"] = "Helvetica"
     dot.node_attr["fontname"] = "Helvetica"
     dot.edge_attr["fontname"] = "Helvetica"
@@ -122,25 +115,6 @@ def abdd_to_dot(abdd: ABDD) -> graphviz.Digraph:
         draw_abdd_node(dot, n, n.low_box, n.low, cache, dir=False)
         draw_abdd_node(dot, n, n.high_box, n.high, cache, dir=True)
         cache.add(rootid)
-
-    # if len(abdd.roots) > 1:
-    #     abovehelperid = f"->{helperid}"
-    #     dot.node(abovehelperid, shape="point", width="0.001", height="0.001")
-    #     dot.node(helperid, shape="point", width="0.001", height="0.001")
-    #     rootlabel = f"{abdd.root_rule}" if abdd.root_rule is not None else "S"
-    #     dot.edge(abovehelperid, helperid, label=rootlabel, penwidth="1.0", arrowsize="0.5", arrowhead="vee")
-    #     for n in abdd.roots:
-    #         rootid = f"{n.node}({n.var})" if not n.is_leaf else f"{n.leaf_val}"
-    #         dot.node(
-    #             rootid,
-    #             label=f"{n.var}" if not n.is_leaf else n.leaf_val,
-    #             shape="box" if n.is_leaf else "circle",
-    #             style="filled" if n.is_leaf else "solid",
-    #         )
-    #         dot.edge(helperid, rootid, label=rootlabel, penwidth="1.0", arrowsize="0.5", arrowhead="vee")
-    #         draw_abdd_node(dot, n, n.low_box, n.low, cache, dir=False)
-    #         draw_abdd_node(dot, n, n.high_box, n.high, cache, dir=True)
-    #         cache.add(rootid)
 
     return dot
 

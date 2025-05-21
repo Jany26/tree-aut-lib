@@ -6,6 +6,9 @@ used in this project.
 [note] See VATA (documentation and source files for the format information and
 where and how it was initially used. 'libVATA' is a C++ library for efficient
 manipulation with non-deterministic finite (tree) automata.
+A modification of this format is used to represent UBDAs/BDAs,
+or other ABDD-convertible structures.
+It was modified such that transition symbols contained variables and boxes.
 [link] https://github.com/ondrik/libvata
 """
 

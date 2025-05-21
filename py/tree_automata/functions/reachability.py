@@ -1,3 +1,9 @@
+"""
+[file] reachability.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Obtaining sets of reachable states of a tree automaton.
+"""
+
 from tree_automata import TTreeAut, iterate_edges
 from tree_automata.functions.helpers import generate_possible_children
 
@@ -104,3 +110,6 @@ def reachable_bottom_up(ta: TTreeAut) -> list[str]:
                     worklist.append(edge.src)
                     result.append(edge.src)  # similarly for dictionary
     return result
+
+
+# End of file reachability.py

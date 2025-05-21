@@ -1,3 +1,9 @@
+"""
+[file] helpers.py
+[author] Jany26  (Jan Matufka)  <xmatuf00@stud.fit.vutbr.cz>
+[description] Helper functions for tree automata operations.
+"""
+
 from itertools import product
 
 # Helper function for bottom-up tree parsing
@@ -15,3 +21,6 @@ def generate_possible_children(state: str, parents: list[str], size: int) -> lis
     possibilities = product(parents, repeat=size)
     result = [list(k) for k in possibilities if state in k]
     return result
+
+
+# End of file helpers.py

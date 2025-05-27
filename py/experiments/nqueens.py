@@ -97,12 +97,16 @@ def run_nqueens_benchmark(path: str):
     print("full", len([i for i in iterate_states_bfs(abdd)]))
 
 
-if __name__ == "__main__":
+def nqueens_analysis():
     START = 4
     CUTOFF = 10
     for i in range(START, CUTOFF):
         print(f"../benchmark/bdds/queens/queens-{i}-output.bdd")
         run_nqueens_benchmark(f"../benchmark/bdds/queens/queens-{i}-output.bdd")
+
+
+if __name__ == "__main__":
+    nqueens_analysis()
 
 
 # End of file nqueens.py

@@ -72,10 +72,10 @@ def folding_test_dimacs():
         report_line += f"\t| {order_name}"
     print(report_line)
 
-    dimacs_sorter = create_dimacs_file_order("../data/uf20/")
+    dimacs_sorter = create_dimacs_file_order("../benchmark/cnf-20var-processed/")
     for benchmark in sorted(dimacs_sorter.keys()):
-        filename = dimacs_sorter[benchmark]
-        print(f"{filename}", end="\r")
+        filename: str = dimacs_sorter[benchmark]
+        print(f"{filename.split('/')[-1].split('.')[0]}", end="\r")
 
         test_folding_on_sub_benchmarks(
             f"{filename}", f"../data/dimacs/uf20/{filename.split('.')[-1]}", orders=None, root_num=None

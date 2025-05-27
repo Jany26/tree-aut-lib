@@ -7,6 +7,7 @@ from BLIF files (benchmarks).
 (box orders) and gets box usage statistics for ABDD model.
 """
 
+from io import TextIOWrapper
 import re
 import os
 import copy
@@ -26,7 +27,7 @@ from bdd.bdd_to_treeaut import add_dont_care_boxes
 from helpers.utils import box_orders
 
 
-def check_variable_naming(file):
+def check_variable_naming(file: TextIOWrapper):
     variable_map: dict[int, set[str]] = {}
     for idx, line in enumerate(file, start=1):
         if line.startswith("#") or line == "\n":
@@ -44,7 +45,7 @@ def check_variable_naming(file):
                     print(f"{file.name}:{idx}: trying to add '{i}' to variable {var} = {variable_map[var]}")
 
 
-def check_outputs(file):
+def check_outputs(file: TextIOWrapper):
     outputs_initial = set()
     inputs_initial = set()
     current_outputs = set()
@@ -92,7 +93,7 @@ def check_outputs(file):
     print(f"diff     =", sorted_difference)
 
 
-def check_duplicate_outputs(file):
+def check_duplicate_outputs(file: TextIOWrapper):
     output_occurence: dict[str, int] = {}  # variable -> line-number in file
     for idx, line in enumerate(file, start=1):
         if line.startswith("#") or line == "\n":
@@ -108,7 +109,7 @@ def check_duplicate_outputs(file):
                 )
 
 
-def check_hierarchy(file):
+def check_hierarchy(file: TextIOWrapper):
     inputs_initial = set()
     outputs_parsed = set()
     for idx, line in enumerate(file, start=1):
@@ -146,7 +147,7 @@ def get_all_node_counts(filePath: str) -> dict:
     return result
 
 
-def print_subtrees(filePath, reportPath):
+def print_subtrees(filePath: str, reportPath: str):
     report = open(f"{reportPath}", "w")
     path = f"{filePath}"
     results = get_all_node_counts(path)
@@ -159,7 +160,7 @@ def print_subtrees(filePath, reportPath):
                 temp[nodeCount] = []
             sorter.add(nodeCount)
             temp[nodeCount].append(state)
-        sorter = list(sorter)
+        sorter: list = list(sorter)
         sorter.sort()
         max = sorter[-1]
         # found = False
@@ -206,6 +207,8 @@ def test_folding_on_sub_benchmarks(path, export, orders=None, root_num=None):
         os.makedirs(export)
     print(f"importing...", end="\r")
     initial = abdd.import_treeaut_from_abdd(path)
+    initial.name = initial.name.split("/")[-1].split(".")[0]
+    initial.reformat_vars()
     if root_num is not None:
         print(f"trimming...", end="\r")
         initial.roots = [f"{root_num}"]
@@ -214,11 +217,11 @@ def test_folding_on_sub_benchmarks(path, export, orders=None, root_num=None):
     vars = int(initial.get_var_order()[-1])
     initialChanged = add_dont_care_boxes(initial, vars)
     print(f"unfolding...", end="\r")
-    unfolded = ubda_unfolding(initialChanged)
+    unfolded = ubda_unfolding(initialChanged, vars)
 
     unfolded_extra = copy.deepcopy(unfolded)
     add_variables_bottom_up(unfolded_extra, vars)
-    var_order = create_var_order_list("", vars + 2, start=0)
+    var_order = create_var_order_list("", vars, start=1)
     print(f"normalizing...", end="\r")
     normalized = ubda_normalize(unfolded_extra, var_order)
     print(f"reformatting...", end="\r")
@@ -270,7 +273,7 @@ def folding_test_blif(test=None):
         root = int(data[2])
         print(f"{benchmark}.{varname}", end="\r")
         test_folding_on_sub_benchmarks(
-            f"../tests/blif/{benchmark}/{name}.abdd",  # import path
+            f"../benchmark/blif-processed/{benchmark}/{name}.abdd",  # import path
             f"../data/blif/{benchmark}/{varname}",  # export path
             # rootNum=None  # root
             orders=test,
@@ -346,8 +349,8 @@ def blif_consistency_check(path):
 if __name__ == "__main__":
     path = "../tests/blif/"
     # blif_consistency_check()
-    folding_test_blif()
     # print_box_counts_blif()
+    folding_test_blif()
 
 
 # End of file blif_analysis.py

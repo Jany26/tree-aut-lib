@@ -166,14 +166,18 @@ def get_progressive_cnf_node_counts(benchmark_path, outdir, report_file: str):
     report.close()
 
 
-if __name__ == "__main__":
-    done = 106
-    for i in range(done, 1001):
+def prog_dimacs_analysis():
+    START = 106
+    for i in range(START, 1001):
         print(f"working uf20-0{i}.cnf")
         outpath = "../data/dimacs_analysis/"
         benchmark = f"../benchmark/dimacs/uf20/uf20-0{i}.cnf"
         report_file_path = f"../data/dimacs_analysis/uf20-0{i}/report.csv"
         get_progressive_cnf_node_counts(benchmark, outpath, report_file_path)
+
+
+if __name__ == "__main__":
+    prog_dimacs_analysis()
 
 
 # End of file experiment.py

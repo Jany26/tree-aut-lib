@@ -213,6 +213,7 @@ def process_boxtree_innercase(
                     nodes.append(cache_hit)
                 else:
                     nodes.append(node)
+                    helper.counter += 1
                     helper.node_cache.insert_node(node)
             elif pc.target1 is not None:
                 resultnode = e1.target[pc.target1]

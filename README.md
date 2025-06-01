@@ -31,7 +31,7 @@ Supervisor: ondrik / Ing. Ondrej Lengal, Ph.D. <lengal@fit.vutbr.cz>
 - `graphviz` (2.43.0+)- OS support for DOT language: https://graphviz.org/download/
 - C++14 (for BLIF and DIMACS parsers in `./cpp`)
 - Python 3.12+
-- Python Virtual Environment + installing the dependencies in `abdds/requirements.txt`
+- Python Virtual Environment + installing the dependencies in `requirements.txt`
     - Graphviz Python API for visualization of ABDDs/Tree Automata/UBDAs
     - Pandas, Matplotlib for creating graphs/plots
     - all other items in requirements are for working with Jupyter Notebooks
@@ -48,7 +48,7 @@ Supervisor: ondrik / Ing. Ondrej Lengal, Ph.D. <lengal@fit.vutbr.cz>
 │   └── nta  # NTAs (sanity tests of tree automata operations)
 ├── cpp  # BLIF and DIMACS parsers to create BDDs using BuDDy library (C++)
 ├── py  # proof-of-concept implementation of ABDDs (Python)
-│   ├── apply  # implementation of Apply on ABDDs <MAIN FOCUS>
+│   ├── apply  # implementation of Apply on ABDDs
 │   │   ├── box_algebra  # reduced edge combining using automata operations
 │   │   ├── materialization  # how to split reduced edges during Apply
 │   │   └── pregenerated  # cached patterns for fast lookup during Apply
